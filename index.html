@@ -142,6 +142,20 @@
   .restorebar button:hover{text-decoration:underline}
   .stSel{display:block; margin-top:4px; width:auto; font-size:11.5px; padding:2px 4px; color:var(--ink2); border-radius:6px}
   .emptyrow td{color:var(--muted); font-size:13.5px; padding:16px 8px}
+  .discInp{
+    display:block; width:100px; margin-left:auto; margin-top:3px;
+    font-size:11.5px; color:var(--muted); text-align:right;
+    border:1px dashed transparent; background:none; border-radius:6px; padding:2px 5px;
+  }
+  .discInp:hover{border-color:var(--grid)}
+  .discInp:focus{border:1px solid var(--accent); outline:none; color:var(--ink); background:#fff}
+  .sentInp{width:130px; padding:4px 6px; font-size:12.5px}
+  .rc-table input[type="text"]{min-width:120px}
+  .rc-table .rc-name{min-width:220px}
+  .rc-table input[type="number"]{width:90px; text-align:right}
+  .rc-table td{padding:6px 6px}
+  .rc-cb{width:auto}
+  .impline{font-weight:600}
 
   /* ---------- client view ---------- */
   .clientwrap{display:grid; grid-template-columns:minmax(0,1fr) 280px; gap:18px; align-items:start}
@@ -252,6 +266,7 @@
     <button class="tab active" data-tab="staff">1 · Build a quote</button>
     <button class="tab" data-tab="client">2 · Client quote</button>
     <button class="tab" data-tab="pipeline">3 · Pipeline</button>
+    <button class="tab" data-tab="settings">4 · Settings</button>
   </nav>
 
   <!-- ================= TAB 1 : STAFF ================= -->
@@ -261,8 +276,11 @@
       <button class="btn" id="newQuoteBtn">+ New quote</button>
       <select id="tplSel" title="Start from a template"></select>
       <select id="prevSel" title="Copy a previous quote"></select>
+      <button class="btn ghost" id="importBtn" title="Import an RMS accommodation statement CSV">Import RMS statement</button>
+      <input type="file" id="importFile" accept=".csv,.txt" style="display:none">
     </div>
     <div id="restoreBar" class="restorebar" style="display:none"></div>
+    <div id="importBar" class="restorebar" style="display:none"></div>
 
     <div class="grid2">
       <div class="card">
@@ -285,14 +303,14 @@
           <label>Quote valid for (days)<input id="f-valid" type="number" min="1"></label>
           <label>Discount %<input id="f-disc" type="number" step="0.5" min="0"></label>
         </div>
-        <p class="hint" style="margin-top:10px">GST is fixed at 10% and added automatically. Validity and discounts are set per quote; prices live in the rate card.</p>
+        <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab.</p>
       </div>
     </div>
 
     <div class="card">
       <div class="cardhead">
         <h2>Line items</h2>
-        <span class="hint">prices pull from the rate card; type over any price to override it for this quote. Click the unit under Qty to rename it.</span>
+        <span class="hint">prices pull from the rate card and include GST. Type over any price to override it, click the unit under Qty to rename it, and use the disc % box under a price for a line discount.</span>
       </div>
       <div class="tablewrap">
         <table class="lines">
@@ -316,10 +334,12 @@
     </div>
 
     <div class="actions">
-      <button class="btn primary" id="previewBtn">Preview the client quote →</button>
-      <button class="btn" id="sendBtn">Mark as sent</button>
+      <button class="btn primary" id="emailBtn">Email quote →</button>
+      <button class="btn" id="previewBtn">Preview the client quote</button>
+      <button class="btn" id="sendBtn">Mark as sent (no email)</button>
       <button class="btn ghost" id="pdfBtn2">Download PDF</button>
     </div>
+    <p class="hint">Email quote opens your mail program addressed to the client with the subject filled in, attaches nothing (download the PDF and attach it), and logs the quote as sent in the pipeline and the tracker sheet.</p>
 
   </section>
 
@@ -345,11 +365,48 @@
       </div>
       <div class="tablewrap">
         <table class="pipe">
-          <thead><tr><th>Quote</th><th>Client</th><th>Event</th><th>Event date</th><th class="num">Value</th><th>Status</th><th>Follow-up</th></tr></thead>
+          <thead><tr><th>Quote</th><th>Client</th><th>Event</th><th>Event date</th><th>Date sent</th><th class="num">Value</th><th>Status</th><th>Follow-up</th><th></th></tr></thead>
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
+      <p class="hint" style="margin-top:10px">Change a status or date sent and the tracker sheet updates itself. The × removes a quote here and deletes its row from the tracker sheet.</p>
     </div>
+
+  </section>
+
+  <!-- ================= TAB 4 : SETTINGS ================= -->
+  <section id="tab-settings" class="panel">
+
+    <div class="card">
+      <div class="cardhead">
+        <h2>Rate card</h2>
+        <span class="hint">prices include GST. Changes apply to new lines; existing quotes keep their prices.</span>
+      </div>
+      <div class="tablewrap" id="rcEditor"></div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="rcAdd">+ Add an item</button>
+        <button class="btn ghost" id="rcReset">Reset to the standard rate card</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Default notes on new quotes</h2>
+        <textarea id="s-notes" rows="4"></textarea>
+      </div>
+      <div class="card">
+        <h2>Default payment &amp; terms on new quotes</h2>
+        <textarea id="s-terms" rows="4"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Email subject line</h2>
+      <input type="text" id="s-subject">
+      <p class="hint" style="margin-top:8px">Used by the Email quote button. You can use {number}, {event}, {org} and {contact}.</p>
+    </div>
+
+    <p class="hint">Settings save automatically to this browser.</p>
 
   </section>
 
@@ -360,41 +417,40 @@
 <script>
 "use strict";
 
-/* ---------- rate card ---------- */
-const RATE_GROUPS = [
-  {group:"Rooms & venue", items:[
-    {id:"conf_full",  name:"Conference Room - full day",             unit:"per day",      price:450},
-    {id:"conf_half",  name:"Conference Room - half day",             unit:"per half day", price:280},
-    {id:"board_full", name:"Boardroom - full day",                   unit:"per day",      price:300},
-    {id:"board_half", name:"Boardroom - half day",                   unit:"per half day", price:180},
-    {id:"func_eve",   name:"Function Room - evening hire",           unit:"flat",         price:600}
+/* ---------- rate card (defaults from the Functions Package Guide; editable on the Settings tab) ---------- */
+const DEFAULT_RATE_GROUPS = [
+  {group:"Function rooms", items:[
+    {id:"fr13_full", name:"Conference Rooms 1-3 (combined) - full day", unit:"per day",      price:500},
+    {id:"fr13_half", name:"Conference Rooms 1-3 (combined) - half day", unit:"per half day", price:250},
+    {id:"fr5_full",  name:"Conference Room 5 - full day",               unit:"per day",      price:300},
+    {id:"fr5_half",  name:"Conference Room 5 - half day",               unit:"per half day", price:150},
+    {id:"aud_full",  name:"Auditorium - full day",                      unit:"per day",      price:1000},
+    {id:"aud_half",  name:"Auditorium - half day",                      unit:"per half day", price:500},
+    {id:"marq_full", name:"Marquee - full day",                         unit:"per day",      price:150},
+    {id:"marq_half", name:"Marquee - half day",                         unit:"per half day", price:75},
+    {id:"din_full",  name:"Dining Room - full day",                     unit:"per day",      price:500},
+    {id:"din_half",  name:"Dining Room - half day",                     unit:"per half day", price:250}
   ]},
   {group:"Catering", items:[
-    {id:"mtea",    name:"Morning tea",                unit:"per person", price:8.5,  pp:true, meal:true},
-    {id:"atea",    name:"Afternoon tea",              unit:"per person", price:8.5,  pp:true, meal:true},
-    {id:"wlunch",  name:"Working lunch",              unit:"per person", price:18,   pp:true, meal:true},
-    {id:"canape",  name:"Canapés - 1 hour",           unit:"per person", price:22,   pp:true, meal:true},
-    {id:"buffet",  name:"Buffet dinner",              unit:"per person", price:42,   pp:true, meal:true},
-    {id:"grazing", name:"Grazing table",              unit:"per person", price:15,   pp:true, meal:true}
-  ]},
-  {group:"Beverages", items:[
-    {id:"tc",   name:"Tea & coffee station - all day",        unit:"per person", price:6,   pp:true, meal:true},
-    {id:"soft", name:"Juice & soft drinks",                   unit:"per person", price:5.5, pp:true, meal:true},
-    {id:"bev",  name:"Beverage package - standard, 3 hrs",    unit:"per person", price:35,  pp:true, meal:true}
-  ]},
-  {group:"Equipment & extras", items:[
-    {id:"av",    name:"AV package - projector, screen & mics", unit:"flat",       price:120},
-    {id:"flip",  name:"Whiteboard & flipchart",                unit:"flat",       price:25},
-    {id:"staff", name:"Additional staff",                      unit:"per hour",   price:45},
-    {id:"linen", name:"Linen & styling",                       unit:"flat",       price:150},
-    {id:"cake",  name:"Cake service",                          unit:"per person", price:4, pp:true, meal:true}
-  ]},
-  {group:"Other", items:[
-    {id:"custom", name:"Custom item (type your own)", unit:"flat", price:0, custom:true, meal:true}
+    {id:"bf_hot",     name:"Breakfast - Hot",           unit:"per person", price:30, pp:true, meal:true},
+    {id:"bf_cont",    name:"Breakfast - Continental",   unit:"per person", price:20, pp:true, meal:true},
+    {id:"lunch_sit",  name:"Lunch - Sit Down",          unit:"per person", price:25, pp:true, meal:true},
+    {id:"lunch_pack", name:"Lunch - Packed",            unit:"per person", price:20, pp:true, meal:true},
+    {id:"din2",       name:"Dinner - 2 Course",         unit:"per person", price:35, pp:true, meal:true},
+    {id:"din1",       name:"Dinner - 1 Course",         unit:"per person", price:30, pp:true, meal:true},
+    {id:"diet",       name:"Special dietary surcharge", unit:"per person", price:10, pp:true, meal:true}
   ]}
 ];
-const RATE = {};
-RATE_GROUPS.forEach(g => g.items.forEach(it => RATE[it.id] = it));
+const CUSTOM_ITEM = {id:"custom", name:"Custom item (type your own)", unit:"flat", price:0, custom:true, meal:true};
+let RATE_GROUPS = [];
+let RATE = {};
+let ITEM_GROUP = {};
+function buildRate(stored){
+  const src = (stored && stored.length) ? stored : JSON.parse(JSON.stringify(DEFAULT_RATE_GROUPS));
+  RATE_GROUPS = src.filter(g => g.group !== "Other").concat([{group:"Other", items:[CUSTOM_ITEM]}]);
+  RATE = {}; ITEM_GROUP = {};
+  RATE_GROUPS.forEach(g => g.items.forEach(it => { RATE[it.id] = it; ITEM_GROUP[it.id] = g.group; }));
+}
 
 /* ---------- helpers ---------- */
 const today = new Date();
@@ -490,15 +546,17 @@ function postToSheet(payload){
   const url = sheetEndpoint();
   if(!url) return false;
   try{
-    fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, payload))});
+    fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, payload))}).catch(function(){});
   }catch(e){}
   return true;
 }
 
 /* ---------- local storage ---------- */
-const LS_QUOTES = "wslr_quotes_v1";
-const LS_DRAFT  = "wslr_draft_v1";
-const LS_PREPBY = "wslr_prepby";
+const LS_QUOTES   = "wslr_quotes_v1";
+const LS_DRAFT    = "wslr_draft_v1";
+const LS_PREPBY   = "wslr_prepby";
+const LS_RATECARD = "wslr_ratecard_v1";
+const LS_DEFAULTS = "wslr_defaults_v1";
 function lsGet(k, fb){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }catch(e){ return fb; } }
 function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
@@ -515,17 +573,28 @@ function nextQuoteNum(){
   return "Q-" + (max + 1);
 }
 
+/* ---------- editable defaults (Settings tab) ---------- */
+function getDefaults(){
+  return Object.assign({
+    notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date.",
+    terms: "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. A $1000 refundable security bond applies to group stays. Payment by EFT is preferred; please use your quote number as the payment reference.",
+    subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}"
+  }, lsGet(LS_DEFAULTS, {}));
+}
+function saveDefaults(part){ lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part)); }
+
 /* ---------- state: the quote being built ---------- */
 function blankQuote(num){
   let prep = "";
   try{ prep = localStorage.getItem(LS_PREPBY) || ""; }catch(e){}
+  const d = getDefaults();
   return {
     num: num,
     contact: "", org: "", email: "", event: "",
     dateStart: "", dateEnd: "", guests: "",
     validDays: 14, discountPct: 0, prepBy: prep,
-    notes: "Room hire includes setup, pack-down and cleaning. Final guest numbers and dietary requirements are due 7 days before the event. We can hold your dates for 14 days from the quote date.",
-    terms: "A deposit confirms your booking; the balance is due prior to the event unless otherwise arranged. Payment by EFT is preferred. Please use your quote number as the payment reference.",
+    notes: d.notes,
+    terms: d.terms,
     lines: [],
     status: "Draft",
     accepted: false,
@@ -545,27 +614,27 @@ function autosaveDraft(){
 
 /* ---------- templates ---------- */
 const TEMPLATES = [
-  {name:"Day conference",      lines:[{id:"conf_full"}, {id:"mtea", pp:true}, {id:"wlunch", pp:true}, {id:"tc", pp:true}, {id:"av"}]},
-  {name:"Half-day meeting",    lines:[{id:"conf_half"}, {id:"mtea", pp:true}, {id:"tc", pp:true}, {id:"av"}]},
-  {name:"Evening function",    lines:[{id:"func_eve"}, {id:"canape", pp:true}, {id:"bev", pp:true}, {id:"staff", qty:4}]},
-  {name:"Party & celebration", lines:[{id:"func_eve"}, {id:"buffet", pp:true}, {id:"soft", pp:true}, {id:"cake", pp:true}, {id:"linen"}]}
+  {name:"Catered conference day",     lines:[{id:"fr13_full"}, {id:"lunch_sit", pp:true}]},
+  {name:"Conference day (room only)", lines:[{id:"fr13_full"}]},
+  {name:"Catered group stay (meals per day)", lines:[{id:"bf_cont", pp:true}, {id:"din2", pp:true}]},
+  {name:"Auditorium event",           lines:[{id:"aud_full"}]}
 ];
 function applyTemplate(idx){
   const t = TEMPLATES[idx];
   if(!t) return;
   const g = Number(Q.guests) || 0;
-  Q.lines = t.lines.map(d => ({id: d.id, desc: null, qty: d.pp ? (g || 1) : (d.qty || 1), price: RATE[d.id].price}));
+  const defs = t.lines.filter(d => RATE[d.id]);
+  if(!defs.length){ showToast("The items this template uses are no longer in the rate card."); return; }
+  Q.lines = Q.lines.concat(defs.map(d => ({id: d.id, desc: null, qty: d.pp ? (g || 1) : (d.qty || 1), price: RATE[d.id].price})));
   refresh();
   showToast(g
-    ? t.name + " template applied for " + g + " guests."
-    : t.name + " template applied. Tip: set Guests first and the per-person quantities fill in automatically.");
+    ? t.name + " added for " + g + " guests."
+    : t.name + " added. Tip: set Guests first and the per-person quantities fill in automatically.");
 }
 
-/* ---------- item groups (for the tracker sheet flags) ---------- */
-const ITEM_GROUP = {};
-RATE_GROUPS.forEach(g => g.items.forEach(it => ITEM_GROUP[it.id] = g.group));
-function hasCatering(){ return Q.lines.some(l => (Number(l.qty)||0) > 0 && (ITEM_GROUP[l.id] === "Catering" || ITEM_GROUP[l.id] === "Beverages")); }
-function hasRooms(){ return Q.lines.some(l => (Number(l.qty)||0) > 0 && ITEM_GROUP[l.id] === "Rooms & venue"); }
+/* ---------- flags for the tracker sheet ---------- */
+function hasCatering(){ return Q.lines.some(l => (Number(l.qty)||0) > 0 && /cater/i.test(ITEM_GROUP[l.id] || "")); }
+function hasRooms(){ return Q.lines.some(l => (Number(l.qty)||0) > 0 && /room/i.test(ITEM_GROUP[l.id] || "")); }
 
 /* ---------- status chips ---------- */
 const CHIP = {
@@ -582,17 +651,25 @@ function chip(status){
   return '<span class="chip" style="background:rgba(' + k.c + ',.13)"><b style="color:rgb(' + k.c + ')">' + k.icon + '</b>' + esc(status) + '</span>';
 }
 
-/* ---------- totals ---------- */
-function totals(){
-  const sub  = Q.lines.reduce((s,l) => s + (Number(l.qty)||0) * (Number(l.price)||0), 0);
-  const disc = sub * (Number(Q.discountPct)||0) / 100;
-  const net  = sub - disc;
-  const gst  = net * GST_PCT / 100;
-  return {sub, disc, net, gst, total: net + gst};
+/* ---------- totals: all prices include GST ---------- */
+function lineItem(l){
+  return RATE[l.id] || {id: l.id, name: "(removed item)", unit: "flat", price: Number(l.price)||0, custom: true, meal: true};
 }
-/* unit for a line: starts as the rate-card unit, but every line can be renamed to anything */
+function lineDiscPct(l){
+  return Math.min(100, Math.max(0, Number(l.disc) || 0));
+}
+function lineTotal(l){
+  return (Number(l.qty)||0) * (Number(l.price)||0) * (1 - lineDiscPct(l)/100);
+}
+function totals(){
+  const sub  = Q.lines.reduce((s,l) => s + lineTotal(l), 0);
+  const disc = sub * (Number(Q.discountPct)||0) / 100;
+  const total = sub - disc;
+  const gst = total / 11;
+  return {sub, disc, total, gst};
+}
 function lineUnit(l){
-  const it = RATE[l.id];
+  const it = lineItem(l);
   return (l.unit !== null && l.unit !== undefined) ? l.unit : (it.custom ? "flat" : it.unit);
 }
 function validUntilISO(){ return isoDate(plusDays(today, Number(Q.validDays)||14)); }
@@ -620,22 +697,25 @@ function upsertSnapshot(snap){
 
 /* ---------- tab 1: line items ---------- */
 function itemOptions(selectedId){
-  return RATE_GROUPS.map(g =>
-    '<optgroup label="' + esc(g.group) + '">' +
-    g.items.map(it => '<option value="' + it.id + '"' + (it.id === selectedId ? " selected" : "") + '>' + esc(it.name) + '</option>').join("") +
-    '</optgroup>'
-  ).join("");
+  const missing = !RATE[selectedId];
+  return (missing ? '<option value="" selected disabled>(removed item)</option>' : '') +
+    RATE_GROUPS.map(g =>
+      '<optgroup label="' + esc(g.group) + '">' +
+      g.items.map(it => '<option value="' + it.id + '"' + (it.id === selectedId ? " selected" : "") + '>' + esc(it.name) + '</option>').join("") +
+      '</optgroup>'
+    ).join("");
 }
 
 function renderLines(){
   const tb = document.getElementById("linesBody");
   if(!Q.lines.length){
-    tb.innerHTML = '<tr class="emptyrow"><td colspan="5">No line items yet. Use "+ Add a line" below, or start from a template above.</td></tr>';
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="5">No line items yet. Use "+ Add a line" below, start from a template, or import an RMS statement above.</td></tr>';
   } else {
     tb.innerHTML = Q.lines.map((l, i) => {
-      const it = RATE[l.id];
-      const overridden = !it.custom && Number(l.price) !== it.price;
+      const it = lineItem(l);
+      const overridden = !it.custom && RATE[l.id] && Number(l.price) !== it.price;
       const unit = lineUnit(l);
+      const dpct = lineDiscPct(l);
       const whenCtl = (it.meal)
         ? (l.when
             ? '<span class="whenrow"><input type="date" class="whenDate" data-i="' + i + '" value="' + esc(l.when.date || "") + '"><input type="time" class="whenTime" data-i="' + i + '" value="' + esc(l.when.time || "") + '"><button class="whenClear" data-i="' + i + '" title="Remove day &amp; time">×</button></span>'
@@ -650,9 +730,10 @@ function renderLines(){
         '</td>' +
         '<td class="num"><input type="number" class="qtyInp" data-i="' + i + '" min="0" value="' + l.qty + '"><input type="text" class="unitInp" data-i="' + i + '" value="' + esc(unit) + '" title="Click to rename this unit, e.g. per platter"></td>' +
         '<td class="num"><input type="number" class="priceInp" data-i="' + i + '" step="0.01" min="0" value="' + l.price + '">' +
+          '<input type="number" class="discInp" data-i="' + i + '" min="0" max="100" step="0.5" placeholder="disc %" value="' + (dpct > 0 ? dpct : "") + '" title="Discount for this line only, in percent">' +
           (overridden ? '<button class="resetBtn" data-i="' + i + '" title="Back to the rate-card price">adjusted · reset to ' + money(it.price) + '</button>' : '') +
         '</td>' +
-        '<td class="num ltot">' + money((Number(l.qty)||0) * (Number(l.price)||0)) + '</td>' +
+        '<td class="num ltot">' + money(lineTotal(l)) + '</td>' +
         '<td><button class="xBtn" data-i="' + i + '" title="Remove line">×</button></td>' +
       '</tr>';
     }).join("");
@@ -661,6 +742,7 @@ function renderLines(){
   tb.querySelectorAll(".itemSel").forEach(el => el.addEventListener("change", e => {
     const i = Number(e.target.dataset.i);
     const it = RATE[e.target.value];
+    if(!it) return;
     Q.lines[i] = {id: it.id, desc: null, qty: it.pp ? (Number(Q.guests)||1) : 1, price: it.price};
     refresh();
   }));
@@ -668,6 +750,10 @@ function renderLines(){
     Q.lines[Number(e.target.dataset.i)].unit = e.target.value;
     autosaveDraft();
     renderClient();
+  }));
+  tb.querySelectorAll(".discInp").forEach(el => el.addEventListener("input", e => {
+    Q.lines[Number(e.target.dataset.i)].disc = e.target.value;
+    lightUpdate(e.target);
   }));
   tb.querySelectorAll(".whenAdd").forEach(el => el.addEventListener("click", e => {
     const i = Number(e.currentTarget.dataset.i);
@@ -722,35 +808,38 @@ function lightUpdate(inputEl){
   const row = inputEl.closest("tr");
   const i = Number(inputEl.dataset.i);
   const l = Q.lines[i];
-  if(row) row.querySelector(".ltot").textContent = money((Number(l.qty)||0) * (Number(l.price)||0));
+  if(row) row.querySelector(".ltot").textContent = money(lineTotal(l));
   autosaveDraft();
   renderTotals();
   renderClient();
   renderPipeline();
 }
 
-function renderTotals(){
-  const t = totals();
-  document.getElementById("totals").innerHTML =
-    '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
+function totalsHTML(t, grandLabel){
+  return '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
     (t.disc > 0 ? '<div><span>Discount (' + Q.discountPct + '%)</span><span>-' + money(t.disc) + '</span></div>' : '') +
-    '<div><span>GST (10%)</span><span>' + money(t.gst) + '</span></div>' +
-    '<div class="grand"><span>Total</span><span>' + money(t.total) + '</span></div>';
+    '<div class="grand"><span>' + grandLabel + '</span><span>' + money(t.total) + '</span></div>' +
+    '<div><span>Includes GST (10%)</span><span>' + money(t.gst) + '</span></div>';
+}
+function renderTotals(){
+  document.getElementById("totals").innerHTML = totalsHTML(totals(), "Total (inc GST)");
 }
 
 /* ---------- tab 2: client quote page ---------- */
 function renderClient(){
   const t = totals();
   const rows = Q.lines.filter(l => (Number(l.qty)||0) > 0).map(l => {
-    const it = RATE[l.id];
+    const it = lineItem(l);
     const nm = it.custom ? (l.desc || "Custom item") : it.name;
     const unit = lineUnit(l);
+    const dpct = lineDiscPct(l);
     const when = it.meal ? fmtWhen(l.when) : "";
     return '<tr><td>' + esc(nm) + ((unit && unit !== "flat") ? '<span class="cunit"> · ' + esc(unit) + '</span>' : "") +
+           (dpct > 0 ? '<span class="cunit"> · less ' + dpct + '%</span>' : "") +
            (when ? '<div class="cwhen">' + when + '</div>' : '') + '</td>' +
            '<td class="num">' + l.qty + '</td>' +
            '<td class="num">' + money(l.price) + '</td>' +
-           '<td class="num">' + money((Number(l.qty)||0) * (Number(l.price)||0)) + '</td></tr>';
+           '<td class="num">' + money(lineTotal(l)) + '</td></tr>';
   }).join("");
 
   const acceptBlock = Q.accepted
@@ -770,18 +859,13 @@ function renderClient(){
     '<div class="tablewrap"><table class="qp-table">' +
       '<thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Total</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>' +
-    '<div class="qp-totals">' +
-      '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
-      (t.disc > 0 ? '<div><span>Discount (' + Q.discountPct + '%)</span><span>-' + money(t.disc) + '</span></div>' : '') +
-      '<div><span>GST (10%)</span><span>' + money(t.gst) + '</span></div>' +
-      '<div class="grand"><span>Total</span><span>' + money(t.total) + '</span></div>' +
-    '</div>' +
-    '<div class="qp-aud">All prices in Australian dollars (AUD), GST inclusive total shown</div>' +
+    '<div class="qp-totals">' + totalsHTML(t, "Total") + '</div>' +
+    '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>' +
     '<div class="qp-notes">' + esc(Q.notes) + '</div>' +
     '<div class="qp-pay"><b>Payment &amp; terms</b><br>' + esc(Q.terms) +
       '<div class="qp-bank">' + BANK_LINES.join('<br>') + '</div></div>' +
     acceptBlock +
-    '<div class="qp-print-note">To confirm this quote, use the acceptance link in your email, or simply reply and we\'ll take care of it.</div>' +
+    '<div class="qp-print-note">To confirm this quote, simply reply to the email it came with and we\'ll take care of the rest.</div>' +
     '<div class="qp-foot">' + esc(VENUE) + ' · ' + VENUE_ADDR1 + ', ' + VENUE_ADDR2 + ' · ' + VENUE_ABN + ' · Phone: ' + VENUE_PHONE + ' · ' + VENUE_EMAIL + ' · ' + VENUE_WEB + '</div>';
 
   const ab = document.getElementById("acceptBtn");
@@ -837,7 +921,27 @@ function setStatus(num, status){
   postToSheet({action: "status", num: num, status: status});
   renderClient();
   renderPipeline();
-  showToast("Quote " + num + " marked as " + status + (sheetEndpoint() ? ". Tracker sheet updated." : "."));
+  showToast("Quote " + num + " marked as " + status + ". Tracker sheet updated.");
+}
+function setDateSent(num, iso){
+  if(!iso) return;
+  const i = SAVED.findIndex(s => s.num === num);
+  if(i >= 0){
+    SAVED[i].sentAt = iso + "T12:00:00";
+    saveQuotes();
+  }
+  if(Q.num === num) Q.sentAt = iso + "T12:00:00";
+  postToSheet({action: "dateSent", num: num, dateSent: iso});
+  renderPipeline();
+  showToast("Date sent for " + num + " updated. Tracker sheet updated.");
+}
+function deleteQuote(num){
+  const i = SAVED.findIndex(s => s.num === num);
+  if(i >= 0){ SAVED.splice(i, 1); saveQuotes(); }
+  postToSheet({action: "delete", num: num});
+  renderPrevOptions();
+  renderPipeline();
+  showToast("Quote " + num + " deleted here and removed from the tracker sheet.");
 }
 function renderPipeline(){
   const rows = pipelineRows();
@@ -857,7 +961,7 @@ function renderPipeline(){
 
   const tb = document.getElementById("pipeBody");
   if(!rows.length){
-    tb.innerHTML = '<tr class="emptyrow"><td colspan="7">No quotes yet. Build one on tab 1 and use "Mark as sent"; it will appear here and in the tracker sheet.</td></tr>';
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="9">No quotes yet. Build one on tab 1 and email it or mark it as sent; it will appear here and in the tracker sheet.</td></tr>';
     return;
   }
   tb.innerHTML = rows.map(r =>
@@ -866,32 +970,50 @@ function renderPipeline(){
       '<td>' + esc(r.org || r.contact || "-") + '</td>' +
       '<td>' + esc(r.event || "-") + '</td>' +
       '<td>' + esc(shortRange(r.dateStart, r.dateEnd)) + '</td>' +
+      '<td>' + (r.unsaved ? '<span class="fmuted">-</span>' : '<input type="date" class="sentInp" data-num="' + esc(r.num) + '" value="' + esc(String(r.sentAt || "").slice(0, 10)) + '" title="Change the date sent">') + '</td>' +
       '<td class="num">' + money0(r.total) + '</td>' +
       '<td>' + chip(r.status) + (r.unsaved ? '' : statusSel(r.num, r.status)) + '</td>' +
       '<td>' + followCell(followFor(r)) + '</td>' +
+      '<td>' + (r.unsaved ? '' : '<button class="xBtn delQ" data-num="' + esc(r.num) + '" title="Delete this quote here and in the tracker sheet">×</button>') + '</td>' +
     '</tr>'
   ).join("");
 
   tb.querySelectorAll(".stSel").forEach(el => el.addEventListener("change", e => {
     setStatus(e.target.dataset.num, e.target.value);
   }));
+  tb.querySelectorAll(".sentInp").forEach(el => el.addEventListener("change", e => {
+    setDateSent(e.target.dataset.num, e.target.value);
+  }));
+  tb.querySelectorAll(".delQ").forEach(el => el.addEventListener("click", e => {
+    const b = e.currentTarget;
+    if(b.dataset.armed){
+      deleteQuote(b.dataset.num);
+    } else {
+      b.dataset.armed = "1";
+      b.textContent = "sure?";
+      setTimeout(() => { b.dataset.armed = ""; b.textContent = "×"; }, 3500);
+    }
+  }));
 }
 
 /* ---------- actions ---------- */
-function doSend(){
+function readyToSend(){
   if(!(String(Q.contact||"").trim() || String(Q.org||"").trim())){
-    showToast("Add a contact name or organisation before marking the quote as sent.");
-    return;
+    showToast("Add a contact name or organisation first.");
+    return false;
   }
   if(!Q.lines.some(l => (Number(l.qty)||0) > 0)){
-    showToast("Add at least one line item before marking the quote as sent.");
-    return;
+    showToast("Add at least one line item first.");
+    return false;
   }
+  return true;
+}
+function sendCore(){
   if(!Q.accepted) Q.status = "Sent";
   if(!Q.sentAt) Q.sentAt = new Date().toISOString();
   upsertSnapshot(snapshotQ());
   lsDel(LS_DRAFT);
-  const logged = postToSheet({action: "sent", quote: {
+  postToSheet({action: "sent", quote: {
     num: Q.num, contact: Q.contact, org: Q.org, email: Q.email, event: Q.event,
     dateStart: Q.dateStart, dateEnd: Q.dateEnd, guests: Q.guests,
     total: totals().total, validUntil: validUntilISO(),
@@ -899,9 +1021,27 @@ function doSend(){
   }});
   renderPrevOptions();
   renderPipeline();
-  showToast(logged
-    ? "Quote " + Q.num + " marked as sent, saved here, and logged to the tracker sheet."
-    : "Quote " + Q.num + " marked as sent and saved. Sheet logging is not connected yet.");
+}
+function emailSubject(){
+  return getDefaults().subject
+    .replace("{number}", Q.num).replace("{event}", Q.event || "your event")
+    .replace("{org}", Q.org || "").replace("{contact}", Q.contact || "");
+}
+function doEmail(){
+  if(!readyToSend()) return;
+  if(!String(Q.email||"").trim()){
+    showToast("Add the client's email address first.");
+    return;
+  }
+  const href = "mailto:" + String(Q.email).trim() + "?subject=" + encodeURIComponent(emailSubject());
+  sendCore();
+  showToast("Email opened for " + Q.email + ". Quote " + Q.num + " logged as sent in the pipeline and tracker sheet. Remember to attach the PDF.");
+  window.location.href = href;
+}
+function doSend(){
+  if(!readyToSend()) return;
+  sendCore();
+  showToast("Quote " + Q.num + " marked as sent, saved here, and logged to the tracker sheet.");
 }
 function doAccept(){
   Q.accepted = true;
@@ -986,13 +1126,216 @@ function showRestoreBar(){
   });
 }
 
+/* ---------- RMS statement import ---------- */
+function parseCSVText(text){
+  const rows = [];
+  let row = [], field = "", inQ = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(inQ){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else inQ = false;
+      } else field += c;
+    } else {
+      if(c === '"') inQ = true;
+      else if(c === ",") { row.push(field); field = ""; }
+      else if(c === "\n"){ row.push(field); rows.push(row); row = []; field = ""; }
+      else if(c !== "\r") field += c;
+    }
+  }
+  if(field !== "" || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+function parseMoney(s){
+  s = String(s || "").replace(/[$,\s]/g, "");
+  if(s.startsWith("(") && s.endsWith(")")) s = "-" + s.slice(1, -1);
+  const n = Number(s);
+  return isNaN(n) ? 0 : n;
+}
+function parseRmsDate(s){
+  const m = /^(\d{1,2})-([A-Za-z]{3,})-(\d{2,4})$/.exec(String(s || "").trim());
+  if(!m) return "";
+  const MON = {jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12};
+  const mo = MON[m[2].slice(0, 3).toLowerCase()];
+  if(!mo) return "";
+  let y = Number(m[3]);
+  if(y < 100) y += 2000;
+  return y + "-" + String(mo).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
+}
+function parseStatement(text){
+  const rows = parseCSVText(text);
+  const charges = [];
+  rows.forEach(r => {
+    const det = String(r[2] || "");
+    const charge = parseMoney(r[3]);
+    const payment = parseMoney(r[4]);
+    const m = /^\s*([\w-]+):\s*(.+?)\s*-\s*\((\d{1,2}-[A-Za-z]{3,}-\d{2,4})\s*-\s*(\d{1,2}-[A-Za-z]{3,}-\d{2,4})\)/.exec(det);
+    if(m && charge > 0){
+      charges.push({room: m[1], rate: m[2].trim(), from: parseRmsDate(m[3]), to: parseRmsDate(m[4]), price: charge, disc: 0});
+      return;
+    }
+    if(/discount/i.test(det) && payment > 0 && charges.length){
+      const last = charges[charges.length - 1];
+      const pm = /(\d+(?:\.\d+)?)\s*%/.exec(det);
+      last.disc = pm ? Number(pm[1]) : Math.round(payment / last.price * 1000) / 10;
+    }
+  });
+  return charges;
+}
+let PENDING_IMPORT = null;
+function groupedImportLines(charges){
+  const map = {};
+  charges.forEach(c => {
+    const k = c.rate + "|" + c.price + "|" + c.disc + "|" + c.from + "|" + c.to;
+    if(!map[k]) map[k] = Object.assign({}, c, {qty: 0, rooms: []});
+    map[k].qty++;
+    map[k].rooms.push(c.room);
+  });
+  return Object.values(map).map(g => ({
+    id: "custom",
+    desc: g.rate + ", " + fmtRange(g.from, g.to),
+    qty: g.qty, price: g.price, disc: g.disc || 0, unit: "per room"
+  }));
+}
+function perRoomImportLines(charges){
+  return charges.map(c => ({
+    id: "custom",
+    desc: c.rate + " - room " + c.room + ", " + fmtRange(c.from, c.to),
+    qty: 1, price: c.price, disc: c.disc || 0, unit: "per stay"
+  }));
+}
+function showImportBar(charges){
+  PENDING_IMPORT = charges;
+  const bar = document.getElementById("importBar");
+  const gross = charges.reduce((s,c) => s + c.price, 0);
+  const net = charges.reduce((s,c) => s + c.price * (1 - (c.disc||0)/100), 0);
+  const groups = groupedImportLines(charges).length;
+  bar.innerHTML = '<span class="impline">Statement read: ' + charges.length + ' rooms, ' + esc(fmtRange(charges[0].from, charges[0].to)) + ', ' + money(gross) + ' before discounts (' + money(net) + ' after).</span> Add as: ' +
+    '<button id="impGroup">' + groups + ' grouped line' + (groups === 1 ? "" : "s") + '</button> ' +
+    '<button id="impRooms">' + charges.length + ' individual room lines</button> ' +
+    '<button id="impCancel" class="dis">Cancel</button>';
+  bar.style.display = "flex";
+  document.getElementById("impGroup").addEventListener("click", () => applyImport("grouped"));
+  document.getElementById("impRooms").addEventListener("click", () => applyImport("rooms"));
+  document.getElementById("impCancel").addEventListener("click", () => {
+    PENDING_IMPORT = null;
+    bar.style.display = "none";
+  });
+}
+function applyImport(mode){
+  if(!PENDING_IMPORT || !PENDING_IMPORT.length) return;
+  const lines = (mode === "grouped") ? groupedImportLines(PENDING_IMPORT) : perRoomImportLines(PENDING_IMPORT);
+  Q.lines = Q.lines.concat(lines);
+  Q.dateStart = PENDING_IMPORT[0].from;
+  Q.dateEnd = PENDING_IMPORT[0].to;
+  const n = PENDING_IMPORT.length;
+  PENDING_IMPORT = null;
+  document.getElementById("importBar").style.display = "none";
+  syncForm();
+  refresh();
+  showToast("Added " + lines.length + " line" + (lines.length === 1 ? "" : "s") + " covering " + n + " rooms from the statement. Event dates set from the stay.");
+}
+function readStatementFile(f){
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const charges = parseStatement(String(reader.result || ""));
+    if(!charges.length){
+      showToast("No room charges found in that file. It should be an RMS statement CSV with charge and discount rows.");
+      return;
+    }
+    showImportBar(charges);
+  };
+  reader.readAsText(f);
+}
+
+/* ---------- settings tab ---------- */
+function editableGroups(){ return RATE_GROUPS.filter(g => g.group !== "Other"); }
+function persistRate(){
+  lsSet(LS_RATECARD, editableGroups());
+  buildRate(lsGet(LS_RATECARD, null));
+  renderTplOptions();
+  refresh();
+}
+function renderRcEditor(){
+  const host = document.getElementById("rcEditor");
+  const groups = editableGroups();
+  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th>Unit</th><th class="num">Price (inc GST)</th><th title="New lines start with quantity = guest count">Qty = guests</th><th title="Shows the day &amp; time control on lines">Day &amp; time</th><th></th></tr></thead><tbody>';
+  groups.forEach((g, gi) => {
+    g.items.forEach((it, ii) => {
+      html += '<tr>' +
+        '<td><input type="text" class="rc-name" data-gi="' + gi + '" data-ii="' + ii + '" data-k="name" value="' + esc(it.name) + '"></td>' +
+        '<td><input type="text" list="rcGroups" data-gi="' + gi + '" data-ii="' + ii + '" data-k="group" value="' + esc(g.group) + '"></td>' +
+        '<td><input type="text" data-gi="' + gi + '" data-ii="' + ii + '" data-k="unit" value="' + esc(it.unit) + '" style="min-width:100px"></td>' +
+        '<td class="num"><input type="number" step="0.5" min="0" data-gi="' + gi + '" data-ii="' + ii + '" data-k="price" value="' + it.price + '"></td>' +
+        '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="pp"' + (it.pp ? " checked" : "") + '></td>' +
+        '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="meal"' + (it.meal ? " checked" : "") + '></td>' +
+        '<td><button class="xBtn rc-del" data-gi="' + gi + '" data-ii="' + ii + '" title="Remove this item">×</button></td>' +
+      '</tr>';
+    });
+  });
+  html += '</tbody></table><datalist id="rcGroups">' +
+    groups.map(g => '<option value="' + esc(g.group) + '">').join("") + '</datalist>';
+  host.innerHTML = html;
+
+  host.querySelectorAll("input").forEach(el => el.addEventListener("change", e => {
+    const gi = Number(e.target.dataset.gi), ii = Number(e.target.dataset.ii), k = e.target.dataset.k;
+    const groups2 = editableGroups();
+    const item = groups2[gi] && groups2[gi].items[ii];
+    if(!item) return;
+    if(k === "group"){
+      const newName = e.target.value.trim() || groups2[gi].group;
+      if(newName !== groups2[gi].group){
+        groups2[gi].items.splice(ii, 1);
+        let target = groups2.find(g => g.group === newName);
+        if(!target){ target = {group: newName, items: []}; groups2.push(target); }
+        target.items.push(item);
+        RATE_GROUPS = groups2.filter(g => g.items.length).concat([{group:"Other", items:[CUSTOM_ITEM]}]);
+      }
+    } else if(k === "price"){
+      item.price = Number(e.target.value) || 0;
+    } else if(k === "pp" || k === "meal"){
+      item[k] = e.target.checked;
+    } else {
+      item[k] = e.target.value;
+    }
+    persistRate();
+    renderRcEditor();
+  }));
+  host.querySelectorAll(".rc-del").forEach(el => el.addEventListener("click", e => {
+    const b = e.currentTarget;
+    if(!b.dataset.armed){
+      b.dataset.armed = "1";
+      b.textContent = "sure?";
+      setTimeout(() => { b.dataset.armed = ""; b.textContent = "×"; }, 3500);
+      return;
+    }
+    const gi = Number(b.dataset.gi), ii = Number(b.dataset.ii);
+    const groups2 = editableGroups();
+    if(groups2[gi]){
+      groups2[gi].items.splice(ii, 1);
+      RATE_GROUPS = groups2.filter(g => g.items.length).concat([{group:"Other", items:[CUSTOM_ITEM]}]);
+    }
+    persistRate();
+    renderRcEditor();
+  }));
+}
+function renderSettings(){
+  const d = getDefaults();
+  document.getElementById("s-notes").value = d.notes;
+  document.getElementById("s-terms").value = d.terms;
+  document.getElementById("s-subject").value = d.subject;
+  renderRcEditor();
+}
+
 let toastTimer;
 function showToast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 4200);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 4600);
 }
 
 /* ---------- tabs ---------- */
@@ -1031,6 +1374,7 @@ document.getElementById("addLine").addEventListener("click", () => {
 });
 document.getElementById("previewBtn").addEventListener("click", () => switchTab("client"));
 document.getElementById("sendBtn").addEventListener("click", doSend);
+document.getElementById("emailBtn").addEventListener("click", doEmail);
 document.getElementById("newQuoteBtn").addEventListener("click", startNewQuote);
 document.getElementById("tplSel").addEventListener("change", e => {
   if(e.target.value !== "") applyTemplate(Number(e.target.value));
@@ -1039,6 +1383,45 @@ document.getElementById("tplSel").addEventListener("change", e => {
 document.getElementById("prevSel").addEventListener("change", e => {
   if(e.target.value !== "") copyFromQuote(e.target.value);
   e.target.value = "";
+});
+document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change", e => {
+  readStatementFile(e.target.files[0]);
+  e.target.value = "";
+});
+const staffPanel = document.getElementById("tab-staff");
+staffPanel.addEventListener("dragover", e => e.preventDefault());
+staffPanel.addEventListener("drop", e => {
+  e.preventDefault();
+  if(e.dataTransfer.files && e.dataTransfer.files[0]) readStatementFile(e.dataTransfer.files[0]);
+});
+
+/* settings bindings */
+document.getElementById("s-notes").addEventListener("input", e => saveDefaults({notes: e.target.value}));
+document.getElementById("s-terms").addEventListener("input", e => saveDefaults({terms: e.target.value}));
+document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
+document.getElementById("rcAdd").addEventListener("click", () => {
+  const groups = editableGroups();
+  const target = groups[groups.length - 1] || {group: "Catering", items: []};
+  if(!groups.length) RATE_GROUPS = [target].concat([{group:"Other", items:[CUSTOM_ITEM]}]);
+  target.items.push({id: "itm_" + Date.now().toString(36), name: "New item", unit: "flat", price: 0});
+  persistRate();
+  renderRcEditor();
+});
+document.getElementById("rcReset").addEventListener("click", e => {
+  const b = e.currentTarget;
+  if(!b.dataset.armed){
+    b.dataset.armed = "1";
+    b.textContent = "Click again to reset the rate card";
+    setTimeout(() => { b.dataset.armed = ""; b.textContent = "Reset to the standard rate card"; }, 4000);
+    return;
+  }
+  b.dataset.armed = ""; b.textContent = "Reset to the standard rate card";
+  lsDel(LS_RATECARD);
+  buildRate(null);
+  persistRate();
+  renderRcEditor();
+  showToast("Rate card reset to the Functions Package Guide prices.");
 });
 
 /* ---------- downloadable PDF (via the browser's save-as-PDF) ---------- */
@@ -1055,9 +1438,11 @@ document.getElementById("pdfBtn2").addEventListener("click", downloadPDF);
 
 /* ---------- go ---------- */
 document.getElementById("appLogo").src = LOGO_DATA;
+buildRate(lsGet(LS_RATECARD, null));
 Q = blankQuote(nextQuoteNum());
 renderTplOptions();
 renderPrevOptions();
+renderSettings();
 syncForm();
 showRestoreBar();
 refresh();
