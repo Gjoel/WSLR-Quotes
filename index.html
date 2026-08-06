@@ -150,6 +150,8 @@
   .discInp:hover{border-color:var(--grid)}
   .discInp:focus{border:1px solid var(--accent); outline:none; color:var(--ink); background:#fff}
   .sentInp{width:130px; padding:4px 6px; font-size:12.5px}
+  .qlink{color:var(--accent); text-decoration:none; font-size:13px}
+  .qlink:hover{text-decoration:underline}
   .rc-table input[type="text"]{min-width:120px}
   .rc-table .rc-name{min-width:220px}
   .rc-table input[type="number"]{width:90px; text-align:right}
@@ -406,6 +408,12 @@
       <p class="hint" style="margin-top:8px">Used by the Email quote button. You can use {number}, {event}, {org} and {contact}.</p>
     </div>
 
+    <div class="card">
+      <h2>Email message</h2>
+      <textarea id="s-body" rows="8"></textarea>
+      <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit each email before sending. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
+    </div>
+
     <p class="hint">Settings save automatically to this browser.</p>
 
   </section>
@@ -578,7 +586,8 @@ function getDefaults(){
   return Object.assign({
     notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date.",
     terms: "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. A $1000 refundable security bond applies to group stays. Payment by EFT is preferred; please use your quote number as the payment reference.",
-    subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}"
+    subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
+    body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999"
   }, lsGet(LS_DEFAULTS, {}));
 }
 function saveDefaults(part){ lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part)); }
@@ -598,7 +607,8 @@ function blankQuote(num){
     lines: [],
     status: "Draft",
     accepted: false,
-    sentAt: null
+    sentAt: null,
+    token: null
   };
 }
 let Q = blankQuote("Q-1001"); // renumbered properly during init at the bottom
@@ -632,9 +642,58 @@ function applyTemplate(idx){
     : t.name + " added. Tip: set Guests first and the per-person quantities fill in automatically.");
 }
 
-/* ---------- flags for the tracker sheet ---------- */
-function hasCatering(){ return Q.lines.some(l => (Number(l.qty)||0) > 0 && /cater/i.test(ITEM_GROUP[l.id] || "")); }
-function hasRooms(){ return Q.lines.some(l => (Number(l.qty)||0) > 0 && /room/i.test(ITEM_GROUP[l.id] || "")); }
+/* ---------- summaries for the quotes sheet ---------- */
+function genToken(){
+  const a = new Uint8Array(16);
+  crypto.getRandomValues(a);
+  return Array.from(a, b => b.toString(16).padStart(2, "0")).join("");
+}
+function linkForToken(tok){ return tok ? sheetEndpoint() + "?t=" + tok : ""; }
+function mealsSummary(){
+  const m = {breakfast: 0, lunch: 0, dinner: 0};
+  Q.lines.forEach(l => {
+    const q = Number(l.qty) || 0;
+    if(q <= 0) return;
+    const it = lineItem(l);
+    const name = String(it.custom ? (l.desc || "") : it.name).toLowerCase();
+    const id = String(l.id);
+    if(id.indexOf("bf_") === 0 || /breakfast/.test(name)) m.breakfast += q;
+    else if(id.indexOf("lunch_") === 0 || /lunch/.test(name)) m.lunch += q;
+    else if(id === "din1" || id === "din2" || /dinner/.test(name)) m.dinner += q;
+  });
+  return m;
+}
+function roomsSummary(){
+  const r = {r1:"", r2:"", r3:"", r5:"", marquee:"", auditorium:"", dining:""};
+  const mark = (k, v) => { if(r[k] !== "Full") r[k] = v; };
+  Q.lines.forEach(l => {
+    const q = Number(l.qty) || 0;
+    if(q <= 0) return;
+    const it = lineItem(l);
+    const name = String(it.custom ? (l.desc || "") : it.name).toLowerCase();
+    const id = String(l.id);
+    const v = (/half/.test(name) || /_half$/.test(id)) ? "Half" : "Full";
+    if(id.indexOf("fr13") === 0 || /rooms? 1\s*-\s*3/.test(name)){ mark("r1", v); mark("r2", v); mark("r3", v); }
+    else if(id.indexOf("fr5") === 0 || /room 5/.test(name)) mark("r5", v);
+    else if(id.indexOf("marq") === 0 || /marquee/.test(name)) mark("marquee", v);
+    else if(id.indexOf("aud") === 0 || /auditorium/.test(name)) mark("auditorium", v);
+    else if(id.indexOf("din_") === 0 || /dining room/.test(name)) mark("dining", v);
+  });
+  return r;
+}
+function displayLines(){
+  return Q.lines.filter(l => (Number(l.qty)||0) > 0).map(l => {
+    const it = lineItem(l);
+    return {
+      name: it.custom ? (l.desc || "Custom item") : it.name,
+      qty: l.qty,
+      price: Number(l.price) || 0,
+      disc: lineDiscPct(l),
+      unit: lineUnit(l),
+      when: it.meal ? fmtWhen(l.when) : ""
+    };
+  });
+}
 
 /* ---------- status chips ---------- */
 const CHIP = {
@@ -686,6 +745,7 @@ function snapshotQ(){
     total: t.total,
     status: Q.status, accepted: Q.accepted,
     sentAt: Q.sentAt, validUntil: validUntilISO(),
+    token: Q.token || null,
     savedAt: new Date().toISOString()
   };
 }
@@ -826,8 +886,12 @@ function renderTotals(){
 }
 
 /* ---------- tab 2: client quote page ---------- */
+function anyLineDisc(){
+  return Q.lines.some(l => (Number(l.qty)||0) > 0 && lineDiscPct(l) > 0);
+}
 function renderClient(){
   const t = totals();
+  const showDisc = anyLineDisc();
   const rows = Q.lines.filter(l => (Number(l.qty)||0) > 0).map(l => {
     const it = lineItem(l);
     const nm = it.custom ? (l.desc || "Custom item") : it.name;
@@ -835,10 +899,10 @@ function renderClient(){
     const dpct = lineDiscPct(l);
     const when = it.meal ? fmtWhen(l.when) : "";
     return '<tr><td>' + esc(nm) + ((unit && unit !== "flat") ? '<span class="cunit"> · ' + esc(unit) + '</span>' : "") +
-           (dpct > 0 ? '<span class="cunit"> · less ' + dpct + '%</span>' : "") +
            (when ? '<div class="cwhen">' + when + '</div>' : '') + '</td>' +
            '<td class="num">' + l.qty + '</td>' +
            '<td class="num">' + money(l.price) + '</td>' +
+           (showDisc ? '<td class="num">' + (dpct > 0 ? dpct + "%" : "") + '</td>' : '') +
            '<td class="num">' + money(lineTotal(l)) + '</td></tr>';
   }).join("");
 
@@ -857,7 +921,7 @@ function renderClient(){
     '<div class="qp-for">Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : '') + '</div>' +
     '<div class="qp-event">' + esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests</div>' +
     '<div class="tablewrap"><table class="qp-table">' +
-      '<thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Total</th></tr></thead>' +
+      '<thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit</th>' + (showDisc ? '<th class="num">Disc.</th>' : '') + '<th class="num">Total</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>' +
     '<div class="qp-totals">' + totalsHTML(t, "Total") + '</div>' +
     '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>' +
@@ -966,7 +1030,7 @@ function renderPipeline(){
   }
   tb.innerHTML = rows.map(r =>
     '<tr class="' + (r.mine ? "mine" : "") + '">' +
-      '<td><b>' + esc(r.num) + '</b>' + (r.mine ? '<span class="you">' + (r.unsaved ? "editing now" : "this quote") + '</span>' : '') + '</td>' +
+      '<td><b>' + esc(r.num) + '</b>' + (r.token ? ' <a class="qlink" href="' + esc(linkForToken(r.token)) + '" target="_blank" rel="noopener" title="Open the client\'s quote link">↗</a>' : '') + (r.mine ? '<span class="you">' + (r.unsaved ? "editing now" : "this quote") + '</span>' : '') + '</td>' +
       '<td>' + esc(r.org || r.contact || "-") + '</td>' +
       '<td>' + esc(r.event || "-") + '</td>' +
       '<td>' + esc(shortRange(r.dateStart, r.dateEnd)) + '</td>' +
@@ -1009,33 +1073,42 @@ function readyToSend(){
   return true;
 }
 function sendCore(){
+  if(!Q.token) Q.token = genToken();
   if(!Q.accepted) Q.status = "Sent";
   if(!Q.sentAt) Q.sentAt = new Date().toISOString();
-  upsertSnapshot(snapshotQ());
+  const snap = snapshotQ();
+  upsertSnapshot(snap);
   lsDel(LS_DRAFT);
-  postToSheet({action: "sent", quote: {
-    num: Q.num, contact: Q.contact, org: Q.org, email: Q.email, event: Q.event,
-    dateStart: Q.dateStart, dateEnd: Q.dateEnd, guests: Q.guests,
-    total: totals().total, validUntil: validUntilISO(),
-    catering: hasCatering(), confRooms: hasRooms(), preparedBy: Q.prepBy
-  }});
+  postToSheet({action: "sent", quote: Object.assign({}, snap, {
+    link: linkForToken(Q.token),
+    meals: mealsSummary(),
+    rooms: roomsSummary(),
+    display: {lines: displayLines(), totals: totals(), issued: isoDate(today)}
+  })});
   renderPrevOptions();
   renderPipeline();
 }
-function emailSubject(){
-  return getDefaults().subject
-    .replace("{number}", Q.num).replace("{event}", Q.event || "your event")
-    .replace("{org}", Q.org || "").replace("{contact}", Q.contact || "");
+function fillTemplate(s){
+  return String(s || "")
+    .split("{number}").join(Q.num)
+    .split("{event}").join(Q.event || "your event")
+    .split("{org}").join(Q.org || "")
+    .split("{contact}").join(firstName(Q.contact))
+    .split("{link}").join(linkForToken(Q.token))
+    .split("{prepBy}").join(Q.prepBy || "The Functions Team");
 }
+function emailSubject(){ return fillTemplate(getDefaults().subject); }
 function doEmail(){
   if(!readyToSend()) return;
   if(!String(Q.email||"").trim()){
     showToast("Add the client's email address first.");
     return;
   }
-  const href = "mailto:" + String(Q.email).trim() + "?subject=" + encodeURIComponent(emailSubject());
   sendCore();
-  showToast("Email opened for " + Q.email + ". Quote " + Q.num + " logged as sent in the pipeline and tracker sheet. Remember to attach the PDF.");
+  const href = "mailto:" + String(Q.email).trim() +
+    "?subject=" + encodeURIComponent(emailSubject()) +
+    "&body=" + encodeURIComponent(fillTemplate(getDefaults().body));
+  showToast("Email opened for " + Q.email + " with the acceptance link included. Quote " + Q.num + " logged as sent.");
   window.location.href = href;
 }
 function doSend(){
@@ -1326,6 +1399,7 @@ function renderSettings(){
   document.getElementById("s-notes").value = d.notes;
   document.getElementById("s-terms").value = d.terms;
   document.getElementById("s-subject").value = d.subject;
+  document.getElementById("s-body").value = d.body;
   renderRcEditor();
 }
 
@@ -1400,6 +1474,7 @@ staffPanel.addEventListener("drop", e => {
 document.getElementById("s-notes").addEventListener("input", e => saveDefaults({notes: e.target.value}));
 document.getElementById("s-terms").addEventListener("input", e => saveDefaults({terms: e.target.value}));
 document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
+document.getElementById("s-body").addEventListener("input", e => saveDefaults({body: e.target.value}));
 document.getElementById("rcAdd").addEventListener("click", () => {
   const groups = editableGroups();
   const target = groups[groups.length - 1] || {group: "Catering", items: []};
