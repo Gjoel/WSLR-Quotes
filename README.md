@@ -6,7 +6,7 @@ A clickable prototype of a quoting system for **Wollongong Surf Leisure Resort**
 
 ## How to view it
 
-- **Online:** <https://gjoel.github.io/wslr-quote-system/>
+- **Online:** <https://gjoel.github.io/WSLR-Quotes/>
 - **Offline:** download `index.html` and double-click it — it is fully self-contained and works without internet.
 
 ## What to try
