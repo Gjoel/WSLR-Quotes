@@ -37,14 +37,6 @@
   }
   .tab:hover{color:var(--ink)}
   .tab.active{color:var(--ink); border-bottom-color:var(--accent)}
-  .unitInp{
-    display:block; width:110px; margin-left:auto; margin-top:3px;
-    font-size:11.5px; color:var(--muted); text-align:right;
-    border:1px dashed transparent; background:none; border-radius:6px; padding:2px 5px;
-  }
-  .unitInp:hover{border-color:var(--grid)}
-  .unitInp:focus{border:1px solid var(--accent); outline:none; color:var(--ink); background:#fff}
-
   .panel{display:none}
   .panel.active{display:block; animation:fadein .18s ease}
   @keyframes fadein{from{opacity:.4}to{opacity:1}}
@@ -185,7 +177,6 @@
   .qp-event{color:var(--ink2); font-size:13.5px; margin-bottom:16px}
   .qp-table th{font-size:11px}
   .qp-table td{font-size:14px}
-  .cunit{color:var(--muted); font-size:12.5px}
   .cwhen{color:var(--ink2); font-size:12.5px; margin-top:2px}
   .qp-totals{margin:12px 0 0 auto; max-width:300px; font-variant-numeric:tabular-nums}
   .qp-totals > div{display:flex; justify-content:space-between; padding:3px 8px; font-size:14px; color:var(--ink2)}
@@ -318,7 +309,7 @@
     <div class="card">
       <div class="cardhead">
         <h2>Line items</h2>
-        <span class="hint">prices pull from the rate card and include GST. Type over any price to override it, click the unit under Qty to rename it, use the Disc % column for a line-only discount, and click the ✎ pen to reword a preselected item for this quote.</span>
+        <span class="hint">prices pull from the rate card and include GST. Type over any price to override it, use the Disc % column for a line-only discount, and click the ✎ pen to reword a preselected item for this quote.</span>
       </div>
       <div class="tablewrap">
         <table class="lines">
@@ -347,7 +338,7 @@
       <button class="btn" id="sendBtn">Mark as sent (no email)</button>
       <button class="btn ghost" id="pdfBtn2">Download PDF</button>
     </div>
-    <p class="hint">Email quote sends the email straight to the client from the resort's quote system, with the quote PDF attached and the acceptance link in the message, and logs the quote as sent in the pipeline and the tracker sheet.</p>
+    <p class="hint">Email quote opens your mail program addressed to the client with the subject and message filled in ready to send (download the PDF if you want to attach it), and logs the quote as sent in the pipeline and the tracker sheet.</p>
 
   </section>
 
@@ -417,7 +408,7 @@
     <div class="card">
       <h2>Email message</h2>
       <textarea id="s-body" rows="8"></textarea>
-      <p class="hint" style="margin-top:8px">Sent as the body of the quote email, with the PDF attached automatically. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
+      <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit each email before sending. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
     </div>
 
     <p class="hint">Settings save automatically to this browser.</p>
@@ -606,7 +597,7 @@ function getDefaults(){
     notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date.",
     terms: "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. A $1000 refundable security bond applies to group stays. Payment by EFT is preferred; please use your quote number as the payment reference.",
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
-    body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is attached as a PDF. You can also view and accept it online here:\n\n{link}\n\nIf anything needs adjusting, just reply to this email and we will update it for you."
+    body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999"
   }, lsGet(LS_DEFAULTS, {}));
 }
 function saveDefaults(part){ lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part)); }
@@ -645,7 +636,7 @@ function autosaveDraft(){
 const TEMPLATES = [
   {name:"Catered conference day",     lines:[{id:"fr13_full"}, {id:"lunch_sit", pp:true}]},
   {name:"Conference day (room only)", lines:[{id:"fr13_full"}]},
-  {name:"Catered group stay (meals per day)", lines:[{id:"bf_cont", pp:true}, {id:"din2", pp:true}]},
+  {name:"Catered group stay (daily meals)", lines:[{id:"bf_cont", pp:true}, {id:"din2", pp:true}]},
   {name:"Auditorium event",           lines:[{id:"aud_full"}]}
 ];
 function applyTemplate(idx){
@@ -658,7 +649,7 @@ function applyTemplate(idx){
   refresh();
   showToast(g
     ? t.name + " added for " + g + " guests."
-    : t.name + " added. Tip: set Guests first and the per-person quantities fill in automatically.");
+    : t.name + " added. Tip: set Guests first and the catering quantities fill in automatically.");
 }
 
 /* ---------- summaries for the quotes sheet ---------- */
@@ -799,7 +790,6 @@ function renderLines(){
     tb.innerHTML = Q.lines.map((l, i) => {
       const it = lineItem(l);
       const overridden = !it.custom && RATE[l.id] && Number(l.price) !== it.price;
-      const unit = lineUnit(l);
       const dpct = lineDiscPct(l);
       const whenCtl = (it.meal)
         ? (l.when
@@ -813,10 +803,10 @@ function renderLines(){
           (!it.custom && !renamed ? '<button class="penBtn" data-i="' + i + '" title="Reword this item on this quote (the rate card keeps the standard name)">✎</button>' : '') + '</div>' +
           ((it.custom || renamed) ? '<input class="descInp" data-i="' + i + '" placeholder="' + (it.custom ? 'Describe it, e.g. Beach BBQ package' : 'Wording shown on the quote') + '" value="' + esc(l.desc || "") + '">' : '') +
           (renamed ? '<button class="nameResetBtn" data-i="' + i + '" title="Back to the standard wording">reworded · reset to the standard name</button>' : '') +
-          '<span class="ratehint">' + (it.custom ? "your item, your price, your unit" : "rate card " + money(it.price) + " · " + it.unit) + '</span>' +
+          '<span class="ratehint">' + (it.custom ? "your item, your price" : "rate card " + money(it.price)) + '</span>' +
           whenCtl +
         '</td>' +
-        '<td class="num"><input type="number" class="qtyInp" data-i="' + i + '" min="0" value="' + l.qty + '"><input type="text" class="unitInp" data-i="' + i + '" value="' + esc(unit) + '" title="Click to rename this unit, e.g. per platter"></td>' +
+        '<td class="num"><input type="number" class="qtyInp" data-i="' + i + '" min="0" value="' + l.qty + '"></td>' +
         '<td class="num"><input type="number" class="priceInp" data-i="' + i + '" step="0.01" min="0" value="' + l.price + '">' +
           (overridden ? '<button class="resetBtn" data-i="' + i + '" title="Back to the rate-card price">adjusted · reset to ' + money(it.price) + '</button>' : '') +
         '</td>' +
@@ -833,11 +823,6 @@ function renderLines(){
     if(!it) return;
     Q.lines[i] = {id: it.id, desc: null, qty: it.pp ? (Number(Q.guests)||1) : 1, price: it.price};
     refresh();
-  }));
-  tb.querySelectorAll(".unitInp").forEach(el => el.addEventListener("input", e => {
-    Q.lines[Number(e.target.dataset.i)].unit = e.target.value;
-    autosaveDraft();
-    renderClient();
   }));
   tb.querySelectorAll(".discInp").forEach(el => el.addEventListener("input", e => {
     Q.lines[Number(e.target.dataset.i)].disc = e.target.value;
@@ -940,10 +925,9 @@ function renderClient(){
   const rows = Q.lines.filter(l => (Number(l.qty)||0) > 0).map(l => {
     const it = lineItem(l);
     const nm = lineName(l);
-    const unit = lineUnit(l);
     const dpct = lineDiscPct(l);
     const when = it.meal ? fmtWhen(l.when) : "";
-    return '<tr><td>' + esc(nm) + ((unit && unit !== "flat") ? '<span class="cunit"> · ' + esc(unit) + '</span>' : "") +
+    return '<tr><td>' + esc(nm) +
            (when ? '<div class="cwhen">' + when + '</div>' : '') + '</td>' +
            '<td class="num">' + l.qty + '</td>' +
            '<td class="num">' + money(l.price) + '</td>' +
@@ -1117,19 +1101,19 @@ function readyToSend(){
   }
   return true;
 }
-function sendCore(action, extra){
+function sendCore(){
   if(!Q.token) Q.token = genToken();
   if(!Q.accepted) Q.status = "Sent";
   if(!Q.sentAt) Q.sentAt = new Date().toISOString();
   const snap = snapshotQ();
   upsertSnapshot(snap);
   lsDel(LS_DRAFT);
-  postToSheet(Object.assign({action: action || "sent", quote: Object.assign({}, snap, {
+  postToSheet({action: "sent", quote: Object.assign({}, snap, {
     link: linkForToken(Q.token),
     meals: mealsSummary(),
     rooms: roomsSummary(),
     display: {lines: displayLines(), totals: totals(), issued: isoDate(today)}
-  })}, extra || {}));
+  })});
   renderPrevOptions();
   renderPipeline();
 }
@@ -1149,13 +1133,12 @@ function doEmail(){
     showToast("Add the client's email address first.");
     return;
   }
-  if(!Q.token) Q.token = genToken(); // so {link} resolves in the body
-  sendCore("email", {
-    to: String(Q.email).trim(),
-    subject: emailSubject(),
-    body: fillTemplate(getDefaults().body)
-  });
-  showToast("Quote " + Q.num + " emailed to " + Q.email + " with the PDF attached, and logged as sent.");
+  sendCore();
+  const href = "mailto:" + String(Q.email).trim() +
+    "?subject=" + encodeURIComponent(emailSubject()) +
+    "&body=" + encodeURIComponent(fillTemplate(getDefaults().body));
+  showToast("Email opened for " + Q.email + " with the acceptance link included. Quote " + Q.num + " logged as sent.");
+  window.location.href = href;
 }
 function doSend(){
   if(!readyToSend()) return;
@@ -1380,13 +1363,12 @@ function persistRate(){
 function renderRcEditor(){
   const host = document.getElementById("rcEditor");
   const groups = editableGroups();
-  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th>Unit</th><th class="num">Price (inc GST)</th><th title="New lines start with quantity = guest count">Qty = guests</th><th title="Shows the day &amp; time control on lines">Day &amp; time</th><th></th></tr></thead><tbody>';
+  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th title="New lines start with quantity = guest count">Qty = guests</th><th title="Shows the day &amp; time control on lines">Day &amp; time</th><th></th></tr></thead><tbody>';
   groups.forEach((g, gi) => {
     g.items.forEach((it, ii) => {
       html += '<tr>' +
         '<td><input type="text" class="rc-name" data-gi="' + gi + '" data-ii="' + ii + '" data-k="name" value="' + esc(it.name) + '"></td>' +
         '<td><input type="text" list="rcGroups" data-gi="' + gi + '" data-ii="' + ii + '" data-k="group" value="' + esc(g.group) + '"></td>' +
-        '<td><input type="text" data-gi="' + gi + '" data-ii="' + ii + '" data-k="unit" value="' + esc(it.unit) + '" style="min-width:100px"></td>' +
         '<td class="num"><input type="number" step="0.5" min="0" data-gi="' + gi + '" data-ii="' + ii + '" data-k="price" value="' + it.price + '"></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="pp"' + (it.pp ? " checked" : "") + '></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="meal"' + (it.meal ? " checked" : "") + '></td>' +
@@ -1559,11 +1541,11 @@ document.getElementById("pdfBtn2").addEventListener("click", downloadPDF);
 
 /* ---------- go ---------- */
 document.getElementById("appLogo").src = LOGO_DATA;
-/* one-time: drop the old hardcoded sign-off from a saved default email body */
+/* one-time: drop the auto-send era email body (it said a PDF was attached) from saved settings */
 (function(){
-  const OLD_BODY = "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999";
+  const AUTOSEND_BODY = "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is attached as a PDF. You can also view and accept it online here:\n\n{link}\n\nIf anything needs adjusting, just reply to this email and we will update it for you.";
   const st = lsGet(LS_DEFAULTS, null);
-  if(st && st.body === OLD_BODY){ delete st.body; lsSet(LS_DEFAULTS, st); }
+  if(st && st.body === AUTOSEND_BODY){ delete st.body; lsSet(LS_DEFAULTS, st); }
 })();
 /* one-time: add the Accommodation & camping group to rate cards saved before it existed */
 (function(){
