@@ -142,13 +142,19 @@
   .restorebar button:hover{text-decoration:underline}
   .stSel{display:block; margin-top:4px; width:auto; font-size:11.5px; padding:2px 4px; color:var(--ink2); border-radius:6px}
   .emptyrow td{color:var(--muted); font-size:13.5px; padding:16px 8px}
-  .discInp{
-    display:block; width:100px; margin-left:auto; margin-top:3px;
-    font-size:11.5px; color:var(--muted); text-align:right;
-    border:1px dashed transparent; background:none; border-radius:6px; padding:2px 5px;
+  .discInp{width:74px; text-align:right}
+  .selrow{display:flex; align-items:center; gap:2px; margin-bottom:3px}
+  .selrow select{margin-bottom:0}
+  .penBtn{
+    appearance:none; border:none; background:none; color:var(--muted); flex:none;
+    font-size:13px; cursor:pointer; padding:3px 4px; line-height:1;
   }
-  .discInp:hover{border-color:var(--grid)}
-  .discInp:focus{border:1px solid var(--accent); outline:none; color:var(--ink); background:#fff}
+  .penBtn:hover{color:var(--accent)}
+  .nameResetBtn{
+    display:block; margin-top:2px; appearance:none; border:none; background:none;
+    color:#9a6700; font-size:11.5px; cursor:pointer; padding:0; text-align:left;
+  }
+  .nameResetBtn:hover{text-decoration:underline}
   .sentInp{width:130px; padding:4px 6px; font-size:12.5px}
   .qlink{color:var(--accent); text-decoration:none; font-size:13px}
   .qlink:hover{text-decoration:underline}
@@ -312,11 +318,11 @@
     <div class="card">
       <div class="cardhead">
         <h2>Line items</h2>
-        <span class="hint">prices pull from the rate card and include GST. Type over any price to override it, click the unit under Qty to rename it, and use the disc % box under a price for a line discount.</span>
+        <span class="hint">prices pull from the rate card and include GST. Type over any price to override it, click the unit under Qty to rename it, use the Disc % column for a line-only discount, and click the ✎ pen to reword a preselected item for this quote.</span>
       </div>
       <div class="tablewrap">
         <table class="lines">
-          <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Line total</th><th></th></tr></thead>
+          <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Disc %</th><th class="num">Line total</th><th></th></tr></thead>
           <tbody id="linesBody"></tbody>
         </table>
       </div>
@@ -438,6 +444,18 @@ const DEFAULT_RATE_GROUPS = [
     {id:"marq_half", name:"Marquee - half day",                         unit:"per half day", price:75},
     {id:"din_full",  name:"Dining Room - full day",                     unit:"per day",      price:500},
     {id:"din_half",  name:"Dining Room - half day",                     unit:"per half day", price:250}
+  ]},
+  {group:"Accommodation & camping", items:[
+    {id:"acc_motel_bud", name:"Motel Budget",                unit:"per night", price:120},
+    {id:"acc_motel_std", name:"Motel Standard",              unit:"per night", price:140},
+    {id:"acc_1br_std",   name:"1 Bedroom Standard",          unit:"per night", price:160},
+    {id:"acc_1br_ter",   name:"1 Bedroom Terrace",           unit:"per night", price:180},
+    {id:"acc_2br_std",   name:"2 Bedroom Standard",          unit:"per night", price:190},
+    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow",          unit:"per night", price:210},
+    {id:"acc_2br_ter",   name:"2 Bedroom Terrace",           unit:"per night", price:230},
+    {id:"camp_unpow",    name:"Unpowered Campsite",          unit:"per night", price:36},
+    {id:"camp_pow_wf",   name:"Powered Waterfront Campsite", unit:"per night", price:51},
+    {id:"camp_pow_dt",   name:"Powered Drive Thru Site",     unit:"per night", price:51}
   ]},
   {group:"Catering", items:[
     {id:"bf_hot",     name:"Breakfast - Hot",           unit:"per person", price:30, pp:true, meal:true},
@@ -565,6 +583,7 @@ const LS_DRAFT    = "wslr_draft_v1";
 const LS_PREPBY   = "wslr_prepby";
 const LS_RATECARD = "wslr_ratecard_v1";
 const LS_DEFAULTS = "wslr_defaults_v1";
+const LS_ACCOM_FLAG = "wslr_accom_v1";
 function lsGet(k, fb){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }catch(e){ return fb; } }
 function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
@@ -685,7 +704,7 @@ function displayLines(){
   return Q.lines.filter(l => (Number(l.qty)||0) > 0).map(l => {
     const it = lineItem(l);
     return {
-      name: it.custom ? (l.desc || "Custom item") : it.name,
+      name: lineName(l),
       qty: l.qty,
       price: Number(l.price) || 0,
       disc: lineDiscPct(l),
@@ -731,6 +750,12 @@ function lineUnit(l){
   const it = lineItem(l);
   return (l.unit !== null && l.unit !== undefined) ? l.unit : (it.custom ? "flat" : it.unit);
 }
+function lineName(l){
+  const it = lineItem(l);
+  if(it.custom) return l.desc || "Custom item";
+  const d = String(l.desc === null || l.desc === undefined ? "" : l.desc).trim();
+  return d || it.name;
+}
 function validUntilISO(){ return isoDate(plusDays(today, Number(Q.validDays)||14)); }
 
 /* ---------- snapshots (saved quotes) ---------- */
@@ -769,7 +794,7 @@ function itemOptions(selectedId){
 function renderLines(){
   const tb = document.getElementById("linesBody");
   if(!Q.lines.length){
-    tb.innerHTML = '<tr class="emptyrow"><td colspan="5">No line items yet. Use "+ Add a line" below, start from a template, or import an RMS statement above.</td></tr>';
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="6">No line items yet. Use "+ Add a line" below, start from a template, or import an RMS statement above.</td></tr>';
   } else {
     tb.innerHTML = Q.lines.map((l, i) => {
       const it = lineItem(l);
@@ -781,18 +806,21 @@ function renderLines(){
             ? '<span class="whenrow"><input type="date" class="whenDate" data-i="' + i + '" value="' + esc(l.when.date || "") + '"><input type="time" class="whenTime" data-i="' + i + '" value="' + esc(l.when.time || "") + '"><button class="whenClear" data-i="' + i + '" title="Remove day &amp; time">×</button></span>'
             : '<button class="whenAdd" data-i="' + i + '">+ day &amp; time</button>')
         : '';
+      const renamed = !it.custom && l.desc !== null && l.desc !== undefined;
       return '<tr>' +
         '<td class="itemcell">' +
-          '<select class="itemSel" data-i="' + i + '">' + itemOptions(l.id) + '</select>' +
-          (it.custom ? '<input class="descInp" data-i="' + i + '" placeholder="Describe it, e.g. Beach BBQ package" value="' + esc(l.desc || "") + '">' : '') +
+          '<div class="selrow"><select class="itemSel" data-i="' + i + '">' + itemOptions(l.id) + '</select>' +
+          (!it.custom && !renamed ? '<button class="penBtn" data-i="' + i + '" title="Reword this item on this quote (the rate card keeps the standard name)">✎</button>' : '') + '</div>' +
+          ((it.custom || renamed) ? '<input class="descInp" data-i="' + i + '" placeholder="' + (it.custom ? 'Describe it, e.g. Beach BBQ package' : 'Wording shown on the quote') + '" value="' + esc(l.desc || "") + '">' : '') +
+          (renamed ? '<button class="nameResetBtn" data-i="' + i + '" title="Back to the standard wording">reworded · reset to the standard name</button>' : '') +
           '<span class="ratehint">' + (it.custom ? "your item, your price, your unit" : "rate card " + money(it.price) + " · " + it.unit) + '</span>' +
           whenCtl +
         '</td>' +
         '<td class="num"><input type="number" class="qtyInp" data-i="' + i + '" min="0" value="' + l.qty + '"><input type="text" class="unitInp" data-i="' + i + '" value="' + esc(unit) + '" title="Click to rename this unit, e.g. per platter"></td>' +
         '<td class="num"><input type="number" class="priceInp" data-i="' + i + '" step="0.01" min="0" value="' + l.price + '">' +
-          '<input type="number" class="discInp" data-i="' + i + '" min="0" max="100" step="0.5" placeholder="disc %" value="' + (dpct > 0 ? dpct : "") + '" title="Discount for this line only, in percent">' +
           (overridden ? '<button class="resetBtn" data-i="' + i + '" title="Back to the rate-card price">adjusted · reset to ' + money(it.price) + '</button>' : '') +
         '</td>' +
+        '<td class="num"><input type="number" class="discInp" data-i="' + i + '" min="0" max="100" step="0.5" placeholder="0" value="' + (dpct > 0 ? dpct : "") + '" title="Discount for this line only, in percent"></td>' +
         '<td class="num ltot">' + money(lineTotal(l)) + '</td>' +
         '<td><button class="xBtn" data-i="' + i + '" title="Remove line">×</button></td>' +
       '</tr>';
@@ -847,10 +875,27 @@ function renderLines(){
     });
     el.addEventListener("change", refresh); // rebuild on blur so the "adjusted" tag appears
   });
-  tb.querySelectorAll(".descInp").forEach(el => el.addEventListener("input", e => {
-    Q.lines[Number(e.target.dataset.i)].desc = e.target.value;
-    autosaveDraft();
-    renderClient();
+  tb.querySelectorAll(".descInp").forEach(el => {
+    el.addEventListener("input", e => {
+      Q.lines[Number(e.target.dataset.i)].desc = e.target.value;
+      autosaveDraft();
+      renderClient();
+    });
+    el.addEventListener("change", e => {
+      const l = Q.lines[Number(e.target.dataset.i)];
+      if(l && !lineItem(l).custom && String(l.desc || "").trim() === ""){ l.desc = null; refresh(); }
+    });
+  });
+  tb.querySelectorAll(".penBtn").forEach(el => el.addEventListener("click", e => {
+    const i = Number(e.currentTarget.dataset.i);
+    Q.lines[i].desc = lineItem(Q.lines[i]).name;
+    refresh();
+    const inp = tb.querySelector('.descInp[data-i="' + i + '"]');
+    if(inp){ inp.focus(); inp.select(); }
+  }));
+  tb.querySelectorAll(".nameResetBtn").forEach(el => el.addEventListener("click", e => {
+    Q.lines[Number(e.currentTarget.dataset.i)].desc = null;
+    refresh();
   }));
   tb.querySelectorAll(".resetBtn").forEach(el => el.addEventListener("click", e => {
     const i = Number(e.currentTarget.dataset.i);
@@ -894,7 +939,7 @@ function renderClient(){
   const showDisc = anyLineDisc();
   const rows = Q.lines.filter(l => (Number(l.qty)||0) > 0).map(l => {
     const it = lineItem(l);
-    const nm = it.custom ? (l.desc || "Custom item") : it.name;
+    const nm = lineName(l);
     const unit = lineUnit(l);
     const dpct = lineDiscPct(l);
     const when = it.meal ? fmtWhen(l.when) : "";
@@ -1513,6 +1558,19 @@ document.getElementById("pdfBtn2").addEventListener("click", downloadPDF);
 
 /* ---------- go ---------- */
 document.getElementById("appLogo").src = LOGO_DATA;
+/* one-time: add the Accommodation & camping group to rate cards saved before it existed */
+(function(){
+  const stored = lsGet(LS_RATECARD, null);
+  if(!stored || !stored.length || lsGet(LS_ACCOM_FLAG, false)) return;
+  const has = stored.some(g => g.group === "Accommodation & camping" || (g.items || []).some(it => /^(acc_|camp_)/.test(String(it.id))));
+  if(!has){
+    const def = DEFAULT_RATE_GROUPS.find(g => g.group === "Accommodation & camping");
+    const ci = stored.findIndex(g => g.group === "Catering");
+    stored.splice(ci >= 0 ? ci : stored.length, 0, JSON.parse(JSON.stringify(def)));
+    lsSet(LS_RATECARD, stored);
+  }
+  lsSet(LS_ACCOM_FLAG, true);
+})();
 buildRate(lsGet(LS_RATECARD, null));
 Q = blankQuote(nextQuoteNum());
 renderTplOptions();
