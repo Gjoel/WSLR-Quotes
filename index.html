@@ -347,7 +347,7 @@
       <button class="btn" id="sendBtn">Mark as sent (no email)</button>
       <button class="btn ghost" id="pdfBtn2">Download PDF</button>
     </div>
-    <p class="hint">Email quote opens your mail program addressed to the client with the subject filled in, attaches nothing (download the PDF and attach it), and logs the quote as sent in the pipeline and the tracker sheet.</p>
+    <p class="hint">Email quote sends the email straight to the client from the resort's quote system, with the quote PDF attached and the acceptance link in the message, and logs the quote as sent in the pipeline and the tracker sheet.</p>
 
   </section>
 
@@ -417,7 +417,7 @@
     <div class="card">
       <h2>Email message</h2>
       <textarea id="s-body" rows="8"></textarea>
-      <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit each email before sending. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
+      <p class="hint" style="margin-top:8px">Sent as the body of the quote email, with the PDF attached automatically. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
     </div>
 
     <p class="hint">Settings save automatically to this browser.</p>
@@ -606,7 +606,7 @@ function getDefaults(){
     notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date.",
     terms: "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. A $1000 refundable security bond applies to group stays. Payment by EFT is preferred; please use your quote number as the payment reference.",
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
-    body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999"
+    body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is attached as a PDF. You can also view and accept it online here:\n\n{link}\n\nIf anything needs adjusting, just reply to this email and we will update it for you."
   }, lsGet(LS_DEFAULTS, {}));
 }
 function saveDefaults(part){ lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part)); }
@@ -1117,19 +1117,19 @@ function readyToSend(){
   }
   return true;
 }
-function sendCore(){
+function sendCore(action, extra){
   if(!Q.token) Q.token = genToken();
   if(!Q.accepted) Q.status = "Sent";
   if(!Q.sentAt) Q.sentAt = new Date().toISOString();
   const snap = snapshotQ();
   upsertSnapshot(snap);
   lsDel(LS_DRAFT);
-  postToSheet({action: "sent", quote: Object.assign({}, snap, {
+  postToSheet(Object.assign({action: action || "sent", quote: Object.assign({}, snap, {
     link: linkForToken(Q.token),
     meals: mealsSummary(),
     rooms: roomsSummary(),
     display: {lines: displayLines(), totals: totals(), issued: isoDate(today)}
-  })});
+  })}, extra || {}));
   renderPrevOptions();
   renderPipeline();
 }
@@ -1149,12 +1149,13 @@ function doEmail(){
     showToast("Add the client's email address first.");
     return;
   }
-  sendCore();
-  const href = "mailto:" + String(Q.email).trim() +
-    "?subject=" + encodeURIComponent(emailSubject()) +
-    "&body=" + encodeURIComponent(fillTemplate(getDefaults().body));
-  showToast("Email opened for " + Q.email + " with the acceptance link included. Quote " + Q.num + " logged as sent.");
-  window.location.href = href;
+  if(!Q.token) Q.token = genToken(); // so {link} resolves in the body
+  sendCore("email", {
+    to: String(Q.email).trim(),
+    subject: emailSubject(),
+    body: fillTemplate(getDefaults().body)
+  });
+  showToast("Quote " + Q.num + " emailed to " + Q.email + " with the PDF attached, and logged as sent.");
 }
 function doSend(){
   if(!readyToSend()) return;
@@ -1320,7 +1321,7 @@ function perRoomImportLines(charges){
   return charges.map(c => ({
     id: "custom",
     desc: c.rate + " - room " + c.room + ", " + fmtRange(c.from, c.to),
-    qty: 1, price: c.price, disc: c.disc || 0, unit: "per stay"
+    qty: 1, price: c.price, disc: c.disc || 0, unit: "flat"
   }));
 }
 function showImportBar(charges){
@@ -1558,6 +1559,12 @@ document.getElementById("pdfBtn2").addEventListener("click", downloadPDF);
 
 /* ---------- go ---------- */
 document.getElementById("appLogo").src = LOGO_DATA;
+/* one-time: drop the old hardcoded sign-off from a saved default email body */
+(function(){
+  const OLD_BODY = "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999";
+  const st = lsGet(LS_DEFAULTS, null);
+  if(st && st.body === OLD_BODY){ delete st.body; lsSet(LS_DEFAULTS, st); }
+})();
 /* one-time: add the Accommodation & camping group to rate cards saved before it existed */
 (function(){
   const stored = lsGet(LS_RATECARD, null);
