@@ -299,10 +299,11 @@
         <div class="fields">
           <label>Quote number<input id="f-num" type="text"></label>
           <label>Prepared by<input id="f-prepby" type="text" placeholder="Your name"></label>
+          <label>Preparer email (acceptance alerts)<input id="f-prepemail" type="email" placeholder="functions@wslr.com.au"></label>
           <label>Quote valid for (days)<input id="f-valid" type="number" min="1"></label>
           <label>Discount %<input id="f-disc" type="number" step="0.5" min="0"></label>
         </div>
-        <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab.</p>
+        <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab. When the client accepts or declines online, the alert email goes to the preparer email above (the functions inbox always gets a copy).</p>
       </div>
     </div>
 
@@ -572,6 +573,8 @@ function postToSheet(payload){
 const LS_QUOTES   = "wslr_quotes_v1";
 const LS_DRAFT    = "wslr_draft_v1";
 const LS_PREPBY   = "wslr_prepby";
+const LS_PREPEMAIL = "wslr_prepemail";
+const DEFAULT_PREP_EMAIL = "functions@wslr.com.au";
 const LS_RATECARD = "wslr_ratecard_v1";
 const LS_DEFAULTS = "wslr_defaults_v1";
 const LS_ACCOM_FLAG = "wslr_accom_v1";
@@ -606,12 +609,15 @@ function saveDefaults(part){ lsSet(LS_DEFAULTS, Object.assign(getDefaults(), par
 function blankQuote(num){
   let prep = "";
   try{ prep = localStorage.getItem(LS_PREPBY) || ""; }catch(e){}
+  let prepEmail = "";
+  try{ prepEmail = localStorage.getItem(LS_PREPEMAIL) || ""; }catch(e){}
   const d = getDefaults();
   return {
     num: num,
     contact: "", org: "", email: "", event: "",
     dateStart: "", dateEnd: "", guests: "",
     validDays: 14, discountPct: 0, prepBy: prep,
+    prepEmail: prepEmail || DEFAULT_PREP_EMAIL,
     notes: d.notes,
     terms: d.terms,
     lines: [],
@@ -756,6 +762,7 @@ function snapshotQ(){
     num: Q.num, contact: Q.contact, org: Q.org, email: Q.email, event: Q.event,
     dateStart: Q.dateStart, dateEnd: Q.dateEnd, guests: Q.guests,
     validDays: Q.validDays, discountPct: Q.discountPct, prepBy: Q.prepBy,
+    prepEmail: String(Q.prepEmail || "").trim() || DEFAULT_PREP_EMAIL,
     notes: Q.notes, terms: Q.terms,
     lines: JSON.parse(JSON.stringify(Q.lines)),
     total: t.total,
@@ -936,7 +943,7 @@ function renderClient(){
   }).join("");
 
   const acceptBlock = Q.accepted
-    ? '<div class="accepted-box">✓ Thanks ' + esc(firstName(Q.contact)) + ', this quote is accepted.<br><span>A confirmation email is on its way, and we\'ll be in touch shortly to lock in the details.</span></div>'
+    ? '<div class="accepted-box">✓ Thanks ' + esc(firstName(Q.contact)) + ', this quote is accepted.<br><span>We\'ll be in touch shortly to lock in the details.</span></div>'
     : '<div class="acceptrow"><button class="btn accept" id="acceptBtn">Accept this quote</button><a class="btn ghost" id="askBtn" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a></div>';
 
   document.getElementById("quotePage").innerHTML =
@@ -1455,7 +1462,7 @@ function refresh(){ autosaveDraft(); renderLines(); renderTotals(); renderClient
 const BINDINGS = [
   ["f-contact", "contact"], ["f-org", "org"], ["f-email", "email"], ["f-event", "event"],
   ["f-date-start", "dateStart"], ["f-date-end", "dateEnd"], ["f-guests", "guests"],
-  ["f-num", "num"], ["f-prepby", "prepBy"], ["f-valid", "validDays"], ["f-disc", "discountPct"],
+  ["f-num", "num"], ["f-prepby", "prepBy"], ["f-prepemail", "prepEmail"], ["f-valid", "validDays"], ["f-disc", "discountPct"],
   ["f-notes", "notes"], ["f-terms", "terms"]
 ];
 BINDINGS.forEach(pair => {
@@ -1463,6 +1470,7 @@ BINDINGS.forEach(pair => {
   el.addEventListener("input", () => {
     Q[pair[1]] = (el.type === "number") ? (el.value === "" ? "" : Number(el.value)) : el.value;
     if(pair[1] === "prepBy"){ try{ localStorage.setItem(LS_PREPBY, el.value); }catch(e){} }
+    if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
     softRefresh();
   });
 });
