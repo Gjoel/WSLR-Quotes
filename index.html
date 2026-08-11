@@ -688,6 +688,8 @@
     <div class="card">
       <div class="cardhead">
         <h2>Every quote, one page</h2>
+        <span class="hint" id="pipeSync"></span>
+        <button class="btn ghost" id="syncNowBtn" title="Pull the latest quotes and statuses from the tracker sheet now" style="margin-left:auto">↻ Sync now</button>
       </div>
       <div class="tablewrap">
         <table class="pipe">
@@ -695,7 +697,7 @@
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
-      <p class="hint" style="margin-top:10px">Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span>, the tracker sheet colours its rows the same way. Change a status or date sent and the tracker sheet updates itself. The × removes a quote here and deletes its row from the tracker sheet.</p>
+      <p class="hint" style="margin-top:10px">This pipeline is shared: quotes made on any computer appear here for everyone, pulled from the tracker sheet whenever the tool opens, this tab is shown, or you press Sync now. Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span>, the tracker sheet colours its rows the same way. Change a status or date sent (here, on another computer, or by hand in the sheet) and everywhere else follows. The × removes a quote for everyone, including its row in the tracker sheet.</p>
     </div>
 
   </section>
@@ -1073,9 +1075,15 @@ function sheetEndpoint(){
 function postToSheet(payload){
   const url = sheetEndpoint();
   if(!url) return false;
-  try{
-    fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, payload))}).catch(function(){});
-  }catch(e){}
+  if(CLIENT_MODE){
+    /* the organiser's page: fire and forget, exactly as before */
+    try{
+      fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, payload))}).catch(function(){});
+    }catch(e){}
+    return true;
+  }
+  /* staff: queue it so it retries until the sheet confirms (see the sync module below) */
+  queuePost(payload);
   return true;
 }
 
@@ -1174,6 +1182,181 @@ function nextQuoteNum(){
   const d = lsGet(LS_DRAFT, null);
   if(d && d.q) scan(d.q.num);
   return "Q-" + (max + 1);
+}
+
+/* ---------- cross-computer pipeline sync ----------
+   The tracker sheet is the shared copy of every quote. Changes made here
+   (sent, submitted, status, date sent, delete) queue in an outbox and post
+   until they get through, so nothing is lost offline; pullPipeline() then
+   reads the whole pipeline back (GET ?list=1) and merges it, so quotes and
+   status changes from other computers, and edits made by hand in the sheet,
+   appear here. The sheet wins for status and date sent, except while a
+   change of ours is still queued. Local drafts never leave this computer
+   until they're sent. */
+const LS_OUTBOX = "wslr_outbox_v1";
+let OUTBOX = lsGet(LS_OUTBOX, []);
+let FLUSH_BUSY = false;
+let PIPE_STATE = "idle";     // idle | loading | ok | offline
+let PIPE_LAST_OK = 0;        // when the last successful pull finished
+let PULL_BUSY = false;
+
+function queuePost(payload){
+  OUTBOX.push({payload: payload, t: new Date().toISOString()});
+  lsSet(LS_OUTBOX, OUTBOX);
+  renderPipeSync();
+  flushOutbox();
+}
+function flushOutbox(done){
+  if(CLIENT_MODE || FLUSH_BUSY || !OUTBOX.length || !sheetEndpoint()){
+    if(done) done();
+    return;
+  }
+  FLUSH_BUSY = true;
+  const step = () => {
+    if(!OUTBOX.length){
+      FLUSH_BUSY = false;
+      renderPipeSync();
+      if(done) done();
+      return;
+    }
+    fetch(sheetEndpoint(), {
+      method: "POST",
+      headers: {"Content-Type": "text/plain;charset=utf-8"}, // avoids a CORS preflight; Apps Script reads it fine
+      body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, OUTBOX[0].payload))
+    })
+      .then(r => r.text())
+      .then(() => {
+        OUTBOX.shift();
+        lsSet(LS_OUTBOX, OUTBOX);
+        step();
+      })
+      .catch(() => { FLUSH_BUSY = false; renderPipeSync(); if(done) done(); }); // still offline; try again next sync
+  };
+  step();
+}
+function outboxTouches(num){
+  return OUTBOX.some(o => o.payload && (o.payload.num === num || (o.payload.quote && o.payload.quote.num === num)));
+}
+
+function pullPipeline(force){
+  if(CLIENT_MODE) return;              // the organiser's page shows their quote only
+  const url = sheetEndpoint();
+  if(!url || PULL_BUSY) return;
+  if(!force && Date.now() - PIPE_LAST_OK < 60000) return;   // fresh enough
+  PULL_BUSY = true;
+  PIPE_STATE = "loading";
+  renderPipeSync();
+  flushOutbox(() => {                  // our own changes land first, then we read
+    fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "list=1&token=" + encodeURIComponent(SHEET_TOKEN))
+      .then(r => r.json())
+      .then(data => {
+        PULL_BUSY = false;
+        if(!data || !data.ok || !Array.isArray(data.quotes)) throw new Error("bad response");
+        mergeServerQuotes(data.quotes);
+        PIPE_STATE = "ok";
+        PIPE_LAST_OK = Date.now();
+        renderPipeSync();
+      })
+      .catch(() => {
+        PULL_BUSY = false;
+        PIPE_STATE = "offline";
+        renderPipeSync();
+      });
+  });
+}
+
+/* a quote from the sheet -> a local snapshot (the bulky send-time extras stay behind) */
+function serverSnap(sq){
+  const s = JSON.parse(JSON.stringify(sq));
+  delete s.display; delete s.meals; delete s.rooms; delete s.link;
+  s.status = STATUSES.includes(s.status) ? s.status : (s.status || "Sent");
+  s.accepted = s.status === "Accepted";
+  s._synced = true;
+  return s;
+}
+function mergeServerQuotes(list){
+  let changed = false;
+  const serverNums = {};
+  list.forEach(sq => {
+    if(!sq || !sq.num) return;
+    serverNums[sq.num] = true;
+    const i = SAVED.findIndex(s => s.num === sq.num);
+    if(i < 0){
+      SAVED.push(serverSnap(sq));      // a quote from another computer (or a hand-typed row)
+      changed = true;
+      return;
+    }
+    const local = SAVED[i];
+    const sT = Date.parse(sq.savedAt || "") || 0;
+    const lT = Date.parse(local.savedAt || "") || 0;
+    if(!sq.rowOnly && sT > lT){        // re-sent or re-submitted elsewhere: take the newer copy
+      const keepStatus = local.status, keepSent = local.sentAt;
+      SAVED[i] = serverSnap(sq);
+      if(outboxTouches(sq.num)){ SAVED[i].status = keepStatus; SAVED[i].accepted = keepStatus === "Accepted"; SAVED[i].sentAt = keepSent; }
+      changed = true;
+    }
+    if(!outboxTouches(sq.num)){        // the sheet wins for status & date sent, unless our change is still queued
+      if(sq.status && STATUSES.includes(sq.status) && sq.status !== SAVED[i].status){
+        SAVED[i].status = sq.status;
+        SAVED[i].accepted = sq.status === "Accepted";
+        changed = true;
+      }
+      if(sq.sentAt && String(sq.sentAt).slice(0, 10) !== String(SAVED[i].sentAt || "").slice(0, 10)){
+        SAVED[i].sentAt = sq.sentAt;
+        changed = true;
+      }
+    }
+    if(!SAVED[i]._synced){ SAVED[i]._synced = true; changed = true; }
+  });
+  /* quotes deleted on another computer: gone from the sheet after having been seen there */
+  for(let i = SAVED.length - 1; i >= 0; i--){
+    const s = SAVED[i];
+    if(!serverNums[s.num] && s._synced && !outboxTouches(s.num)){
+      if(Q.num === s.num){ s._synced = false; continue; }  // never yank the quote being edited
+      SAVED.splice(i, 1);
+      changed = true;
+    }
+  }
+  /* keep the live quote's chips honest, and never share a quote number */
+  if(serverNums[Q.num]){
+    const mine = SAVED.find(s => s.num === Q.num);
+    if(mine && !hasContent(Q) ){
+      Q.num = nextQuoteNum();          // this blank page was about to reuse a number another computer took
+      changed = true;
+    } else if(mine && Q.status === "Draft" && mine.token && mine.token !== Q.token){
+      const old = Q.num;
+      Q.num = nextQuoteNum();          // same number, different quote: this draft moves to a free number
+      changed = true;
+      showToast("Another computer is already using " + old + ", so this draft is now " + Q.num + ".");
+    } else if(mine && !outboxTouches(Q.num) && (mine.token === Q.token || !Q.token)){
+      if(mine.status !== Q.status){ Q.status = mine.status; Q.accepted = mine.status === "Accepted"; changed = true; }
+      if(mine.sentAt && mine.sentAt !== Q.sentAt){ Q.sentAt = mine.sentAt; changed = true; }
+    }
+  }
+  if(changed){
+    saveQuotes();
+    renderPrevOptions();
+    renderPipeline();
+    renderClient();
+  }
+}
+
+function renderPipeSync(){
+  const el = document.getElementById("pipeSync");
+  if(!el) return;
+  const waiting = OUTBOX.length
+    ? ' · <span class="manualbadge">' + OUTBOX.length + ' change' + (OUTBOX.length === 1 ? "" : "s") + ' waiting to reach the sheet</span>'
+    : "";
+  if(PIPE_STATE === "loading"){
+    el.innerHTML = '<span class="autobadge">syncing with the tracker sheet…</span>' + waiting;
+  } else if(PIPE_STATE === "ok"){
+    const t = new Date(PIPE_LAST_OK).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+    el.innerHTML = '<span class="autobadge">every computer’s quotes · synced ' + t + ' ✓</span>' + waiting;
+  } else if(PIPE_STATE === "offline"){
+    el.innerHTML = '<span class="manualbadge">sheet unreachable, showing this computer’s quotes</span>' + waiting;
+  } else {
+    el.innerHTML = "";
+  }
 }
 
 /* ---------- editable defaults (Settings tab) ---------- */
@@ -3296,7 +3479,7 @@ function renderPipeline(){
       '<td>' + esc(r.event || "-") + '</td>' +
       '<td>' + esc(shortRange(r.dateStart, r.dateEnd)) + '</td>' +
       '<td>' + (r.unsaved ? '<span class="fmuted">-</span>' : '<input type="date" class="sentInp" data-num="' + esc(r.num) + '" value="' + esc(String(r.sentAt || "").slice(0, 10)) + '" title="Change the date sent">') + '</td>' +
-      '<td class="num">' + money0(r.total) + '</td>' +
+      '<td class="num">' + (r.total === null || r.total === undefined ? '<span class="fmuted" title="A row typed straight into the tracker sheet, no value stored">-</span>' : money0(r.total)) + '</td>' +
       '<td>' + chip(r.status) + (r.unsaved ? '' : statusSel(r.num, r.status)) + '</td>' +
       '<td>' + followCell(followFor(r)) + '</td>' +
       '<td>' + (r.unsaved ? '' : '<button class="xBtn delQ" data-num="' + esc(r.num) + '" title="Delete this quote here and in the tracker sheet">×</button>') + '</td>' +
@@ -3452,10 +3635,11 @@ function renderPrevOptions(){
   const sel = document.getElementById("prevSel");
   const opts = ['<option value="">Copy a previous quote...</option>'];
   SAVED.slice().reverse().forEach(s => {
+    if(s.rowOnly) return; // a row typed straight into the sheet: nothing stored to copy from
     opts.push('<option value="' + esc(s.num) + '">' + esc(s.num + " · " + (s.org || s.contact || "no name") + " · " + money(s.total) + " · " + s.status) + '</option>');
   });
   sel.innerHTML = opts.join("");
-  sel.disabled = SAVED.length === 0;
+  sel.disabled = opts.length === 1;
 }
 function renderTplOptions(){
   const sel = document.getElementById("tplSel");
@@ -3754,6 +3938,7 @@ function switchTab(name){
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + name));
   window.scrollTo({top:0, behavior:"instant"});
   updateStickySubmit();
+  if(name === "pipeline") pullPipeline(false);   // opening the pipeline refreshes it from the sheet
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
@@ -3969,6 +4154,14 @@ if(CLIENT_MODE){
   refresh();
   renderSyncBadge();
   loadSharedSettings();
+  /* the shared pipeline: pull now, when this tab regains focus, and every few minutes */
+  pullPipeline(true);
+  const syncBtn = document.getElementById("syncNowBtn");
+  if(syncBtn) syncBtn.addEventListener("click", () => pullPipeline(true));
+  window.addEventListener("focus", () => pullPipeline(false));
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) pullPipeline(false); });
+  window.addEventListener("online", () => flushOutbox());
+  setInterval(() => { if(!document.hidden) pullPipeline(false); }, 5 * 60 * 1000);
 }
 </script>
 </body>
