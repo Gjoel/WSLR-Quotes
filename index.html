@@ -219,6 +219,8 @@
   .fmuted{color:var(--muted)}
   .fdue{font-weight:600}
   tr.mine td{background:rgba(42,120,214,.06)}
+  tr.catered td{background:rgba(84,150,58,.13)}
+  tr.selfcater td{background:rgba(191,144,0,.13)}
   .you{
     font-size:10.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
     color:var(--accent); background:rgba(42,120,214,.12); border-radius:99px; padding:2px 7px; margin-left:6px;
@@ -672,13 +674,15 @@
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
-      <p class="hint" style="margin-top:10px">Change a status or date sent and the tracker sheet updates itself. The × removes a quote here and deletes its row from the tracker sheet.</p>
+      <p class="hint" style="margin-top:10px">Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span> — the tracker sheet colours its rows the same way. Change a status or date sent and the tracker sheet updates itself. The × removes a quote here and deletes its row from the tracker sheet.</p>
     </div>
 
   </section>
 
   <!-- ================= TAB 4 : SETTINGS ================= -->
   <section id="tab-settings" class="panel">
+
+    <p class="hint" style="margin:0 0 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap"><span id="syncBadge"></span> Everything on this tab is shared: edits save to the tracker sheet and load on every computer that opens the tool. If the sheet can't be reached, changes keep working on this computer and share next time it connects.</p>
 
     <div class="card">
       <div class="cardhead">
@@ -723,7 +727,7 @@
       <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit each email before sending. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
     </div>
 
-    <p class="hint">Settings save automatically to this browser.</p>
+    <p class="hint">Settings save automatically — to this browser straight away, and to the tracker sheet for everyone else.</p>
 
   </section>
 
@@ -1016,6 +1020,78 @@ function postToSheet(payload){
   return true;
 }
 
+/* ---------- shared settings: the tracker sheet is the source of truth for every computer ---------- */
+let SETTINGS_SYNC_STATE = "local"; // local | loading | saving | synced | offline
+function renderSyncBadge(){
+  const el = document.getElementById("syncBadge");
+  if(!el) return;
+  const map = {
+    local:   ['manualbadge', 'this computer only'],
+    loading: ['autobadge',   'checking the tracker sheet…'],
+    saving:  ['autobadge',   'saving to the tracker sheet…'],
+    synced:  ['autobadge',   'shared via the tracker sheet ✓'],
+    offline: ['manualbadge', 'sheet unreachable — saved on this computer, will share next time']
+  };
+  const m = map[SETTINGS_SYNC_STATE] || map.local;
+  el.innerHTML = '<span class="' + m[0] + '">' + m[1] + '</span>';
+}
+function collectSharedSettings(){
+  return {
+    ratecard: editableGroups(),
+    sections: sectionOverrides(),
+    defaults: getDefaults(),
+    updated: new Date().toISOString()
+  };
+}
+function applySharedSettings(s){
+  if(!s || typeof s !== "object") return false;
+  let touched = false;
+  if(Array.isArray(s.ratecard) && s.ratecard.length){ lsSet(LS_RATECARD, s.ratecard); touched = true; }
+  if(s.sections && typeof s.sections === "object"){ lsSet(LS_SECTIONS, s.sections); touched = true; }
+  if(s.defaults && typeof s.defaults === "object"){ lsSet(LS_DEFAULTS, s.defaults); touched = true; }
+  if(touched) buildRate(lsGet(LS_RATECARD, null));
+  return touched;
+}
+function loadSharedSettings(){
+  const url = sheetEndpoint();
+  if(!url) return;
+  SETTINGS_SYNC_STATE = "loading";
+  renderSyncBadge();
+  fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "settings=1&token=" + encodeURIComponent(SHEET_TOKEN))
+    .then(r => r.json())
+    .then(data => {
+      if(data && data.settings && applySharedSettings(data.settings)){
+        renderTplOptions();
+        renderSettings();
+        refresh();
+      }
+      SETTINGS_SYNC_STATE = "synced";
+      renderSyncBadge();
+    })
+    .catch(() => {
+      SETTINGS_SYNC_STATE = "offline";
+      renderSyncBadge();
+    });
+}
+let SETTINGS_PUSH_TIMER = null;
+function pushSharedSettings(){
+  clearTimeout(SETTINGS_PUSH_TIMER);
+  SETTINGS_PUSH_TIMER = setTimeout(function(){
+    const url = sheetEndpoint();
+    if(!url) return;
+    SETTINGS_SYNC_STATE = "saving";
+    renderSyncBadge();
+    fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "text/plain;charset=utf-8"}, // avoids a CORS preflight; Apps Script reads it fine
+      body: JSON.stringify({token: SHEET_TOKEN, action: "saveSettings", settings: collectSharedSettings()})
+    })
+      .then(r => r.text())
+      .then(() => { SETTINGS_SYNC_STATE = "synced"; renderSyncBadge(); })
+      .catch(() => { SETTINGS_SYNC_STATE = "offline"; renderSyncBadge(); });
+  }, 900);
+}
+
 /* ---------- local storage ---------- */
 const LS_QUOTES   = "wslr_quotes_v1";
 const LS_DRAFT    = "wslr_draft_v1";
@@ -1051,7 +1127,10 @@ function getDefaults(){
     body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999"
   }, lsGet(LS_DEFAULTS, {}));
 }
-function saveDefaults(part){ lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part)); }
+function saveDefaults(part){
+  lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part));
+  if(typeof pushSharedSettings === "function") pushSharedSettings();
+}
 
 /* ---------- state: the quote being built ---------- */
 function blankQuote(num){
@@ -2533,7 +2612,15 @@ function buildDisplayPayload(){
     keyDates: (Q.features && Q.features.depositDates) ? keyDatesRows(pm !== "noprices") : [],
     message: String(Q.sel.message || ""),
     who: w ? {adults: whoAdults(), k412: Number(w.k412) || 0, k13: Number(w.k13) || 0, babies: Number(w.babies) || 0, diet: Number(w.diet) || 0} : null,
-    venueTimes: JSON.parse(JSON.stringify(Q.sel.venueTimes || {}))
+    venueTimes: JSON.parse(JSON.stringify(Q.sel.venueTimes || {})),
+    nights: nightsCount(),
+    units: unitsSelected(),
+    venuesCount: venuesSelected(),
+    depositEst: 100 * (unitsSelected() + venuesSelected()),
+    menuOn: MENU_GROUPS.map(g => {
+      const opts = enabledOptions(g);
+      return opts.length ? (g.title.replace(/ — .*$/, "") + ": " + opts.map(o => o.name).join("; ")) : null;
+    }).filter(Boolean)
   };
 }
 function renderClient(){
@@ -2914,14 +3001,32 @@ function daysUntil(iso){
   const base = new Date(isoDate(today) + "T12:00:00");
   return Math.round((d - base) / 86400000);
 }
+function snapHasCatering(s){
+  const sel = s && s.sel;
+  if(!sel || !sel.cater) return false;
+  return Object.keys(sel.cater).some(k => { const c = sel.cater[k]; return c && (Number(c.days) || 0) > 0; });
+}
+function snapHasAccom(s){
+  const sel = s && s.sel;
+  return !!(sel && (sel.accom || []).some(b => (Number(b.qty) || 0) > 0));
+}
 function pipelineRows(){
-  const rows = SAVED.slice().reverse().map(s => Object.assign({}, s, {mine: s.num === Q.num}));
+  const rows = SAVED.slice().reverse().map(s => {
+    const src = (s.num === Q.num) ? Q : s; // the quote being edited shows its live colour
+    return Object.assign({}, s, {
+      mine: s.num === Q.num,
+      catered: snapHasCatering(src),
+      selfcater: !snapHasCatering(src) && snapHasAccom(src)
+    });
+  });
   if(hasContent(Q) && !SAVED.some(s => s.num === Q.num)){
     rows.unshift({
       num: Q.num, contact: Q.contact, org: Q.org, event: Q.event,
       dateStart: Q.dateStart, dateEnd: Q.dateEnd,
       total: totals().total, status: Q.status, sentAt: Q.sentAt,
-      validUntil: validUntilISO(), mine: true, unsaved: true
+      validUntil: validUntilISO(), mine: true, unsaved: true,
+      catered: snapHasCatering(Q),
+      selfcater: !snapHasCatering(Q) && snapHasAccom(Q)
     });
   }
   return rows;
@@ -3001,7 +3106,7 @@ function renderPipeline(){
     return;
   }
   tb.innerHTML = rows.map(r =>
-    '<tr class="' + (r.mine ? "mine" : "") + '">' +
+    '<tr class="' + (r.mine ? "mine " : "") + (r.catered ? "catered" : (r.selfcater ? "selfcater" : "")) + '">' +
       '<td><b>' + esc(r.num) + '</b>' + (r.token ? ' <a class="qlink" href="' + esc(linkForToken(r.token)) + '" target="_blank" rel="noopener" title="Open the client\'s quote link">↗</a>' : '') + (r.mine ? '<span class="you">' + (r.unsaved ? "editing now" : "this quote") + '</span>' : '') + '</td>' +
       '<td>' + esc(r.org || r.contact || "-") + '</td>' +
       '<td>' + esc(r.event || "-") + '</td>' +
@@ -3328,6 +3433,7 @@ function persistRate(){
   buildRate(lsGet(LS_RATECARD, null));
   renderTplOptions();
   refresh();
+  pushSharedSettings();
 }
 function renderRcEditor(){
   const host = document.getElementById("rcEditor");
@@ -3407,6 +3513,7 @@ function saveSecOverride(id, key, val){
   renderSecEditor();
   renderSecBoxes();
   renderClient();
+  pushSharedSettings();
 }
 function renderSecEditor(){
   const host = document.getElementById("secEditor");
@@ -3431,6 +3538,7 @@ function renderSecEditor(){
     renderSecEditor();
     renderSecBoxes();
     renderClient();
+    pushSharedSettings();
     showToast("Section reset to the standard template wording.");
   }));
 }
@@ -3654,6 +3762,8 @@ renderSettings();
 syncForm();
 showRestoreBar();
 refresh();
+renderSyncBadge();
+loadSharedSettings();
 </script>
 </body>
 </html>
