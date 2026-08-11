@@ -224,6 +224,202 @@
     color:var(--accent); background:rgba(42,120,214,.12); border-radius:99px; padding:2px 7px; margin-left:6px;
   }
 
+  /* ---------- shared: steppers, section shells ---------- */
+  .pkgsec{border-top:1px solid var(--grid); padding-top:12px; margin-top:14px}
+  .pkgsec:first-of-type{border-top:none; padding-top:0; margin-top:0}
+  .pkghead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:6px}
+  .pkghead h3{margin:0; font-size:13.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink2)}
+  .nightschip{font-size:12.5px; color:var(--ink2); background:var(--page); border:1px solid var(--grid); border-radius:99px; padding:3px 10px}
+  .pkgname{font-size:14px; font-weight:600}
+  .pkgmeta{font-size:12px; color:var(--muted); line-height:1.4}
+  .stepper{display:inline-flex; align-items:center; gap:0; border:1px solid var(--grid); border-radius:8px; background:#fff; overflow:hidden; vertical-align:middle}
+  .stepper button{
+    appearance:none; border:none; background:none; font-size:17px; font-weight:600; color:var(--accent);
+    width:32px; padding:4px 0; cursor:pointer; line-height:1.2;
+  }
+  .stepper button:hover{background:rgba(42,120,214,.08)}
+  .stepper button:disabled{color:var(--muted); cursor:default; background:none}
+  .stepper .stepval{min-width:42px; text-align:center; font-weight:600; font-size:14px; font-variant-numeric:tabular-nums; border-left:1px solid var(--grid); border-right:1px solid var(--grid); padding:4px 2px}
+  .pkgsub{font-weight:600; font-size:13.5px; white-space:nowrap; text-align:right; min-width:86px; font-variant-numeric:tabular-nums}
+  .pkgsub .pdisc{display:block; font-weight:400; font-size:11px; color:#9a6700}
+  .ppl{display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--ink2)}
+  .ppl input{width:60px; text-align:right; padding:4px 6px; font-size:13px}
+  .churchrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .churchrow select{width:auto; font-weight:600}
+  .pkgfoot{font-size:12px; color:var(--muted); margin-top:8px}
+  .sleeps{
+    display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:.3px; white-space:nowrap;
+    color:#0b5394; background:rgba(42,120,214,.13); border-radius:99px; padding:2px 9px; vertical-align:1px;
+  }
+
+  /* ---------- staff prep table (tab 1) ---------- */
+  .preprow{
+    display:grid; grid-template-columns:auto minmax(0,1fr) 96px 74px auto 92px; gap:4px 12px;
+    align-items:center; padding:8px 2px; border-bottom:1px dashed var(--grid);
+  }
+  .preprow:last-child{border-bottom:none}
+  .preprow.off > *:not(.prepon){opacity:.42}
+  .prepon{width:auto}
+  .prepcol{font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; text-align:right}
+  .prephead{border-bottom:1px solid var(--grid); padding-bottom:4px}
+  .prephead .prepcol:nth-child(2){text-align:left}
+  .preprow input.pin{width:100%; text-align:right; padding:5px 7px; font-size:13.5px}
+  @media (max-width:760px){
+    .preprow{grid-template-columns:auto minmax(0,1fr) auto; }
+    .preprow .pin, .prephead{display:none}
+  }
+
+  /* ---------- organiser's interactive builder (tab 2) ---------- */
+  .cb-sec{margin-top:24px}
+  .cb-sec > h3{margin:0 0 2px; font-size:12px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink2); border-top:1.5px solid var(--ink); padding-top:14px}
+  .cb-hint{font-size:12.5px; color:var(--muted); margin:2px 0 10px}
+  .cb-row{
+    display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:4px 14px;
+    align-items:center; padding:9px 2px; border-bottom:1px dashed var(--grid);
+  }
+  .cb-row:last-child{border-bottom:none}
+  .cb-price{font-size:12.5px; color:var(--ink2)}
+  .cb-avail{font-size:11.5px; color:var(--muted)}
+  .blockrows{grid-column:1 / -1; padding-left:14px; border-left:2px solid var(--grid); margin:2px 0 4px}
+  .blockrow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:5px 0; font-size:13px; color:var(--ink2)}
+  .blockrow .pkgsub{min-width:80px; margin-left:auto}
+  .addblock{appearance:none; border:none; background:none; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer; padding:2px 0; display:block}
+  .addblock:hover{text-decoration:underline}
+  .blkx{appearance:none; border:none; background:none; color:var(--muted); font-size:15px; cursor:pointer; padding:2px 4px}
+  .blkx:hover{color:var(--crit)}
+  .splitrow{display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--ink2); margin:8px 0 2px; padding:9px 12px; background:var(--page); border-radius:8px}
+  .splitrow input{width:auto; margin-top:2px}
+  .capbar{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px;
+    padding:9px 12px; border-radius:8px; font-size:13px; font-weight:600;
+    background:rgba(12,163,12,.09); color:#0a6b0a;
+  }
+  .capbar.short{background:rgba(236,131,90,.14); color:#a34c14}
+  .capbar .capsub{font-weight:400; font-size:12px}
+  .cb-total{margin:16px 0 0 auto; max-width:320px; font-variant-numeric:tabular-nums}
+  .cb-total > div{display:flex; justify-content:space-between; padding:3px 8px; font-size:14px; color:var(--ink2)}
+  .cb-total > div span:last-child{color:var(--ink)}
+  .cb-total .grand{border-top:1.5px solid var(--ink); margin-top:5px; padding-top:7px; font-weight:700; font-size:16px}
+  .cb-total .savings span{color:var(--good)}
+  .submitted-box{
+    margin-top:22px; background:rgba(42,120,214,.09); border:1px solid rgba(42,120,214,.4);
+    border-radius:10px; padding:16px 18px; text-align:center; font-weight:700; font-size:15px;
+  }
+  .submitted-box span{display:block; font-weight:400; font-size:13px; color:var(--ink2); margin-top:4px}
+  .fixedtag{font-size:10.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); background:var(--page); border:1px solid var(--grid); border-radius:99px; padding:1px 7px; margin-left:6px}
+
+  /* ---------- tariff & availability import ---------- */
+  .impstatus{
+    display:flex; gap:8px 16px; flex-wrap:wrap; align-items:center; margin:6px 0 10px;
+    font-size:12.5px; color:var(--ink2); background:rgba(42,120,214,.07);
+    border:1px solid rgba(42,120,214,.25); border-radius:8px; padding:7px 11px;
+  }
+  .impstatus b{font-weight:600}
+  .impstatus .impclear{appearance:none; border:none; background:none; color:var(--crit); font-size:12px; cursor:pointer; padding:0; font-weight:600}
+  .impstatus .impclear:hover{text-decoration:underline}
+  .impwarn{color:#a34c14; font-size:12px}
+  .pinreset{
+    display:block; appearance:none; border:none; background:none; color:#9a6700;
+    font-size:10.5px; cursor:pointer; padding:1px 0 0; text-align:right; width:100%;
+  }
+  .pinreset:hover{text-decoration:underline}
+  .pinsub{display:block; font-size:10.5px; color:var(--muted); text-align:right; padding-top:1px}
+
+  /* ---------- menu ---------- */
+  .menuTgl{
+    appearance:none; border:none; background:none; color:var(--accent); font-size:12.5px;
+    font-weight:600; cursor:pointer; padding:2px 0 0; display:inline-block;
+  }
+  .menuTgl:hover{text-decoration:underline}
+  .menulist{grid-column:1 / -1; margin:4px 0 6px; padding:10px 14px; background:var(--page); border-radius:8px; font-size:12.5px; color:var(--ink2)}
+  .menulist .mo{padding:3px 0}
+  .menulist .mo b{color:var(--ink); font-weight:600}
+  .menuextras{margin-top:10px; padding:10px 14px; background:var(--page); border-radius:8px; font-size:12.5px; color:var(--ink2)}
+  .menuchk{display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:2px 14px; margin:4px 0 8px}
+  .menuchk label{display:flex; gap:7px; align-items:flex-start; font-size:12.5px; color:var(--ink2); padding:3px 0; font-weight:400}
+  .menuchk input{width:auto; margin-top:2px}
+  .menugrp{font-size:11.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); margin:10px 0 2px}
+
+  /* ---------- organiser extras ---------- */
+  .ppLine{
+    margin:8px 0 0 auto; max-width:320px; text-align:right; font-size:13px;
+    color:var(--ink2); padding:0 8px; font-weight:600;
+  }
+  .keydates{
+    margin-top:16px; padding:12px 14px; background:var(--page); border-radius:8px;
+    font-size:13px; color:var(--ink2);
+  }
+  .keydates b{color:var(--ink)}
+  .keydates .kd{display:flex; gap:10px; padding:3px 0; align-items:baseline}
+  .keydates .kd .kdate{font-weight:600; color:var(--ink); white-space:nowrap; min-width:110px}
+  .whoRow{
+    display:flex; gap:8px 16px; flex-wrap:wrap; align-items:flex-end;
+    padding:10px 12px; background:var(--page); border-radius:8px; margin-bottom:8px;
+  }
+  .whoRow label{display:flex; flex-direction:column; gap:2px; font-size:11.5px; font-weight:600; color:var(--ink2)}
+  .whoRow label .whonote{font-weight:400; color:var(--muted)}
+  .whoRow input{width:72px; text-align:right; padding:4px 6px; font-size:13px}
+  .whoRow .whohead{font-size:13px; font-weight:700; color:var(--ink); width:100%}
+  .vtimeInp{margin-top:4px; font-size:12.5px; padding:5px 8px}
+  .orgmsg textarea{font-size:13.5px}
+  .bandRow{
+    grid-column:1 / -1; display:flex; gap:6px 14px; align-items:flex-end; flex-wrap:wrap;
+    font-size:11.5px; color:var(--ink2); padding:5px 0 6px 10px;
+    border-left:2px solid var(--grid); margin:0 0 4px;
+  }
+  .bandRow .bandhead{font-weight:700; color:var(--ink); padding-bottom:5px}
+  .bandRow label{display:flex; flex-direction:column; gap:2px; font-weight:600}
+  .bandRow input{width:58px; text-align:right; padding:3px 6px; font-size:12.5px}
+
+  /* ---------- tier validation ---------- */
+  .tierwarn{
+    margin-top:8px; padding:9px 12px; border-radius:8px; font-size:12.5px;
+    background:rgba(236,131,90,.13); color:#a34c14; border:1px solid rgba(236,131,90,.4);
+  }
+
+  .blockrow input[type="date"]{width:136px; padding:4px 6px; font-size:12.5px}
+  .blockrow .blkmeta{font-size:11.5px; color:var(--muted)}
+
+  /* ---------- info section picker ---------- */
+  .secgrid{display:grid; grid-template-columns:1fr 1fr; gap:4px 18px}
+  @media (max-width:700px){ .secgrid{grid-template-columns:1fr} }
+  .secitem{display:flex; align-items:flex-start; gap:8px; padding:5px 2px; font-size:13.5px}
+  .secitem input{width:auto; margin-top:2px}
+  .secitem .sectitle{font-weight:600}
+  .secitem .secwhy{display:block; font-size:11.5px; color:var(--muted)}
+  .autobadge{
+    font-size:10.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+    color:var(--good); background:rgba(12,163,12,.12); border-radius:99px; padding:2px 8px;
+  }
+  .manualbadge{
+    font-size:10.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+    color:#9a6700; background:rgba(154,103,0,.12); border-radius:99px; padding:2px 8px;
+  }
+  .secauto{appearance:none; border:none; background:none; font:inherit; font-size:12.5px; font-weight:600; color:var(--accent); cursor:pointer; padding:0}
+  .secauto:hover{text-decoration:underline}
+
+  /* ---------- settings: section editor ---------- */
+  .se-item{border-top:1px solid var(--grid); padding:12px 0}
+  .se-item:first-child{border-top:none; padding-top:2px}
+  .se-head{display:flex; gap:10px; align-items:center; margin-bottom:6px}
+  .se-head input{font-weight:600}
+  .se-item textarea{font-size:13px; color:var(--ink2)}
+  .se-reset{
+    appearance:none; border:none; background:none; color:#9a6700; font-size:11.5px;
+    cursor:pointer; padding:0; white-space:nowrap;
+  }
+  .se-reset:hover{text-decoration:underline}
+
+  /* ---------- client quote: info sections & price modes ---------- */
+  .qp-sechead{margin:26px 0 4px; font-size:12px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink2); border-top:1.5px solid var(--ink); padding-top:14px}
+  .qp-sec{margin-top:12px; font-size:13px; color:var(--ink2); line-height:1.55}
+  .qp-sec h4{margin:0 0 3px; font-size:13px; color:var(--ink); letter-spacing:.2px}
+  .qp-pricenote{
+    margin:14px 0 0 auto; font-size:13.5px; color:var(--ink2); text-align:right;
+    padding:8px 12px; background:var(--page); border-radius:8px; max-width:340px;
+  }
+  .hiddenflag{font-size:12px; color:#9a6700; text-align:right; padding:2px 8px}
+
   /* ---------- toast ---------- */
   #toast{
     position:fixed; right:18px; bottom:18px; max-width:400px;
@@ -236,9 +432,16 @@
 
   /* ---------- print / save-as-PDF ---------- */
   .qp-print-note{display:none}
+  .qp-printonly{display:none}
+  .totals .savings span{color:var(--good)}
   @media print{
     body{background:#fff}
-    header.top, nav.tabs, #tab-staff, #tab-pipeline, .sidecard, #toast{display:none !important}
+    header.top, nav.tabs, #tab-staff, #tab-pipeline, #tab-settings, .sidecard, #toast{display:none !important}
+    .cb-live, .submitted-box{display:none !important}
+    .qp-printonly{display:block}
+    .qp-sec{orphans:3; widows:3}
+    .qp-sec h4{break-after:avoid}
+    .qp-sechead{break-after:avoid}
     #tab-client{display:block !important}
     .wrap{max-width:none; padding:0}
     .clientwrap{display:block}
@@ -262,8 +465,8 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="staff">1 · Build a quote</button>
-    <button class="tab" data-tab="client">2 · Client quote</button>
+    <button class="tab active" data-tab="staff">1 · Prepare the quote</button>
+    <button class="tab" data-tab="client">2 · Organiser's page</button>
     <button class="tab" data-tab="pipeline">3 · Pipeline</button>
     <button class="tab" data-tab="settings">4 · Settings</button>
   </nav>
@@ -301,16 +504,106 @@
           <label>Prepared by<input id="f-prepby" type="text" placeholder="Your name"></label>
           <label>Preparer email (acceptance alerts)<input id="f-prepemail" type="email" placeholder="functions@wslr.com.au"></label>
           <label>Quote valid for (days)<input id="f-valid" type="number" min="1"></label>
-          <label>Discount %<input id="f-disc" type="number" step="0.5" min="0"></label>
+          <label>Extra discount % (whole quote)<input id="f-disc" type="number" step="0.5" min="0"></label>
+          <label>Pricing shown to the client
+            <select id="f-pricemode">
+              <option value="full">Full pricing</option>
+              <option value="nototal">Hide the final total</option>
+              <option value="noprices">Hide all prices</option>
+            </select>
+          </label>
+          <label>Security bond ($)<input id="f-bond" type="number" min="0" step="50"></label>
         </div>
-        <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab. When the client accepts or declines online, the alert email goes to the preparer email above (the functions inbox always gets a copy).</p>
+        <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab. "Pricing shown to the client" hides the final total (or every price) on the client quote and PDF only — you always see the full numbers here. The security bond amount appears in the deposit &amp; payment information on the quote. When the client accepts or declines online, the alert email goes to the preparer email above (the functions inbox always gets a copy).</p>
       </div>
     </div>
 
     <div class="card">
       <div class="cardhead">
-        <h2>Line items</h2>
-        <span class="hint">prices pull from the rate card and include GST. Type over any price to override it, use the Disc % column for a line-only discount, and click the ✎ pen to reword a preselected item for this quote.</span>
+        <h2>What the organiser can build from</h2>
+        <span class="hint">tick what's on offer, set this quote's prices and availability, and (optionally) pre-fill a suggested package — the organiser picks their own quantities on their quote page.</span>
+      </div>
+
+      <div class="pkgsec">
+        <div class="pkghead">
+          <h3>Accommodation</h3>
+          <span style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <button class="btn ghost" id="tariffBtn" style="padding:5px 12px; font-size:13px" title="Import an RMS rates report (.xlsx or .csv) and/or an RMS availability chart (.csv) — nightly prices and availability prefill from them">Import tariff &amp; availability</button>
+            <span class="nightschip" id="nightsChip"></span>
+          </span>
+          <input type="file" id="tariffFile" accept=".csv,.xlsx" multiple style="display:none">
+        </div>
+        <div id="impStatus"></div>
+        <div class="preprow prephead">
+          <span class="prepcol"></span><span class="prepcol">Cabin type</span><span class="prepcol">$ / night</span><span class="prepcol">Units avail</span><span class="prepcol">Suggest</span><span class="prepcol">Suggested $</span>
+        </div>
+        <div id="prepAccom"></div>
+      </div>
+
+      <div class="pkgsec">
+        <div class="pkghead">
+          <h3>Conference rooms &amp; venues</h3>
+          <span class="hint">picked in half-day steps · half day = 6 continuous hours or less</span>
+        </div>
+        <div class="preprow prephead">
+          <span class="prepcol"></span><span class="prepcol">Venue</span><span class="prepcol">$ full day</span><span class="prepcol">$ half day</span><span class="prepcol">Suggest</span><span class="prepcol">Suggested $</span>
+        </div>
+        <div id="prepVenues"></div>
+      </div>
+
+      <div class="pkgsec">
+        <div class="pkghead">
+          <h3>Catering</h3>
+          <span class="hint">the organiser picks meals × people × days · minimum group size 20</span>
+        </div>
+        <div class="preprow prephead">
+          <span class="prepcol"></span><span class="prepcol">Meal</span><span class="prepcol">$ / person</span><span class="prepcol"></span><span class="prepcol">Suggest</span><span class="prepcol">Suggested $</span>
+        </div>
+        <div id="prepCater"></div>
+      </div>
+
+      <div class="pkgsec">
+        <div class="pkghead">
+          <h3>Menu shown to the organiser</h3>
+          <span class="hint">from Kate's menu selection form — untick anything not on offer for this event. They can't order from it; it shows what they could get.</span>
+        </div>
+        <div id="prepMenu"></div>
+      </div>
+
+      <div class="pkgsec">
+        <div class="pkghead">
+          <h3>Church &amp; charitable discount</h3>
+        </div>
+        <div class="churchrow">
+          <label class="secitem" style="padding:0; font-weight:600"><input type="checkbox" id="f-acnc"> <span>This group is a registered church or ACNC charity</span></label>
+          <select id="f-church" style="display:none">
+            <option value="0">No tier preset — the organiser picks</option>
+            <option value="20">Preset 20% — self catered / fewer than 3 catered main meals</option>
+            <option value="50">Preset 50% — 3+ group catered main meals, everyone catered for</option>
+          </select>
+        </div>
+        <p class="hint" style="margin-top:6px">Ticked: the 20%/50% concessional conditions appear on the quote and the organiser can pick their tier — choosing 50% without at least 3 group-catered main meals (with everyone staying onsite catered for) explains why it doesn't qualify. The discount applies to accommodation and venue hire only, never catering. Unticked: no church content appears anywhere.</p>
+      </div>
+
+      <div class="pkgsec">
+        <div class="pkghead">
+          <h3>Extras on the organiser's page</h3>
+        </div>
+        <div class="secgrid">
+          <label class="secitem"><input type="checkbox" id="f-feat-pp"> <span><span class="sectitle">Cost per person</span><span class="secwhy">a "≈ $X per person" line under their total</span></span></label>
+          <label class="secitem"><input type="checkbox" id="f-feat-deposit"> <span><span class="sectitle">Deposit &amp; key dates</span><span class="secwhy">their deposit, bond and deadline dates worked out from the selection</span></span></label>
+          <label class="secitem"><input type="checkbox" id="f-feat-kids"> <span><span class="sectitle">Children's &amp; dietary pricing</span><span class="secwhy">adults / 4–12 (half) / 1–3 ($5) / under 1 (free) + dietary (+$10) priced properly per meal</span></span></label>
+        </div>
+        <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission — that part is built in.</p>
+      </div>
+
+      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote — always check RMS first. Prices and unit counts start from the rate card (Settings tab) but only apply to this quote.</p>
+    </div>
+
+    <div class="card">
+      <div class="cardhead">
+        <h2>Fixed extras</h2>
+        <span class="hint">lines the organiser sees but can't change — custom items, or rooms imported from an RMS statement. Type over any price, use Disc % for a line-only discount.</span>
       </div>
       <div class="tablewrap">
         <table class="lines">
@@ -320,6 +613,15 @@
       </div>
       <button class="btn ghost" id="addLine">+ Add a line</button>
       <div class="totals" id="totals"></div>
+    </div>
+
+    <div class="card">
+      <div class="cardhead">
+        <h2>Information shown on the quote</h2>
+        <span id="secModeWrap"></span>
+      </div>
+      <p class="hint" style="margin:0 0 10px">The standard information from the quote template. On automatic, sections switch themselves on to match what's in the quote (e.g. catering rules appear once catering is added). Tick or untick anything to take manual control for this quote. Wording is editable on the Settings tab.</p>
+      <div class="secgrid" id="secBoxes"></div>
     </div>
 
     <div class="card">
@@ -348,8 +650,9 @@
     <div class="clientwrap">
       <div class="quotepage" id="quotePage"></div>
       <aside class="sidecard card">
+        <p>This is the live page the organiser gets: they pick their own cabins, venues and catering from what you switched on, then submit their selection for confirmation.</p>
         <button class="btn primary" id="pdfBtn" style="width:100%">Download PDF</button>
-        <p class="hint" style="margin-top:8px">Opens your browser's print box: choose "Save as PDF".</p>
+        <p class="hint" style="margin-top:8px">Opens your browser's print box: choose "Save as PDF". The PDF captures the selection as it stands.</p>
       </aside>
     </div>
   </section>
@@ -387,6 +690,14 @@
         <button class="btn" id="rcAdd">+ Add an item</button>
         <button class="btn ghost" id="rcReset">Reset to the standard rate card</button>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="cardhead">
+        <h2>Standard information sections</h2>
+        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond amount; {menuoptions} becomes the menu options ticked for the quote.</span>
+      </div>
+      <div id="secEditor"></div>
     </div>
 
     <div class="grid2">
@@ -438,16 +749,17 @@ const DEFAULT_RATE_GROUPS = [
     {id:"din_half",  name:"Dining Room - half day",                     unit:"per half day", price:250}
   ]},
   {group:"Accommodation & camping", items:[
-    {id:"acc_motel_bud", name:"Motel Budget",                unit:"per night", price:120},
-    {id:"acc_motel_std", name:"Motel Standard",              unit:"per night", price:140},
-    {id:"acc_1br_std",   name:"1 Bedroom Standard",          unit:"per night", price:160},
-    {id:"acc_1br_ter",   name:"1 Bedroom Terrace",           unit:"per night", price:180},
-    {id:"acc_2br_std",   name:"2 Bedroom Standard",          unit:"per night", price:190},
-    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow",          unit:"per night", price:210},
-    {id:"acc_2br_ter",   name:"2 Bedroom Terrace",           unit:"per night", price:230},
-    {id:"camp_unpow",    name:"Unpowered Campsite",          unit:"per night", price:36},
-    {id:"camp_pow_wf",   name:"Powered Waterfront Campsite", unit:"per night", price:51},
-    {id:"camp_pow_dt",   name:"Powered Drive Thru Site",     unit:"per night", price:51}
+    {id:"acc_4br_house", name:"4 Bedroom House (air con)",                unit:"per night", price:930, sleeps:10, avail:1,  beds:"4 king beds or 8 king single beds; queen sofa bed in lounge room"},
+    {id:"acc_2br_ter",   name:"2 Bedroom Terrace Apartment (air con)",    unit:"per night", price:465, sleeps:6,  avail:3,  beds:"2 king beds or 4 king single beds; sofa with 2 chaise single beds"},
+    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow Unit (air con)",        unit:"per night", price:378, sleeps:6,  avail:5,  beds:"2 double beds or 4 single beds; queen sofa bed in lounge room"},
+    {id:"acc_2br_std",   name:"2 Bedroom Air Conditioned Unit",           unit:"per night", price:344, sleeps:7,  avail:8,  beds:"1 king bed & 2 single beds; 2 queen sofa beds in lounge room"},
+    {id:"acc_1br_ter",   name:"1 Bedroom Terrace Unit (air con)",         unit:"per night", price:333, sleeps:6,  avail:6,  beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
+    {id:"acc_1br_std",   name:"1 Bedroom Air Conditioned Unit",           unit:"per night", price:277, sleeps:6,  avail:33, beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
+    {id:"acc_motel_std", name:"Motel Style Air Conditioned Unit",         unit:"per night", price:212, sleeps:4,  avail:36, beds:"1 king bed or 2 king single beds & bunk bed"},
+    {id:"acc_motel_bud", name:"Motel Style Budget Unit (communal parking)",unit:"per night", price:176, sleeps:4,  avail:16, beds:"1 king bed or 2 king single beds & bunk bed"},
+    {id:"camp_unpow",    name:"Unpowered Campsite",                       unit:"per night", price:36},
+    {id:"camp_pow_wf",   name:"Powered Waterfront Campsite",              unit:"per night", price:51},
+    {id:"camp_pow_dt",   name:"Powered Drive Thru Site",                  unit:"per night", price:51}
   ]},
   {group:"Catering", items:[
     {id:"bf_hot",     name:"Breakfast - Hot",           unit:"per person", price:30, pp:true, meal:true},
@@ -470,11 +782,55 @@ function buildRate(stored){
   RATE_GROUPS.forEach(g => g.items.forEach(it => { RATE[it.id] = it; ITEM_GROUP[it.id] = g.group; }));
 }
 
+/* ---------- guided package builder config ---------- */
+const ACCOM_GROUP = "Accommodation & camping";
+const VENUE_GROUP = "Function rooms";
+const CATER_GROUP = "Catering";
+function accomItems(){
+  const g = RATE_GROUPS.find(x => x.group === ACCOM_GROUP);
+  return g ? g.items.filter(it => !it.pp) : [];
+}
+function caterItems(){
+  const g = RATE_GROUPS.find(x => x.group === CATER_GROUP);
+  return g ? g.items.filter(it => it.pp) : [];
+}
+/* venues are picked in half-day steps; each maps to the full/half day items in the rate card */
+const VENUES = [
+  {key:"fr13", name:"Conference Rooms 1, 2 & 3", cap:"up to 150 people · walls open into one space", fullId:"fr13_full", halfId:"fr13_half"},
+  {key:"fr5",  name:"Conference Room 5",          cap:"up to 45 people · fully separate room",        fullId:"fr5_full",  halfId:"fr5_half"},
+  {key:"aud",  name:"Auditorium",                 cap:"up to 500 people · 30.0m × 15.0m",             fullId:"aud_full",  halfId:"aud_half"},
+  {key:"marq", name:"Marquee",                    cap:"up to 160 people · complimentary if staying onsite (book ahead)", fullId:"marq_full", halfId:"marq_half"},
+  {key:"din",  name:"Dining Room",                cap:"up to 120 people",                             fullId:"din_full",  halfId:"din_half"}
+];
+function isAccomLine(l){
+  if(ITEM_GROUP[l.id] === ACCOM_GROUP) return true;
+  const it = RATE[l.id];
+  if(it && it.pp) return false;
+  return !it && lineUnit(l) === "per room"; // RMS-imported room lines
+}
+function isVenueLine(l){ return ITEM_GROUP[l.id] === VENUE_GROUP; }
+function isCaterLine(l){
+  if(ITEM_GROUP[l.id] === CATER_GROUP) return true;
+  const it = RATE[l.id];
+  return !!(it && it.pp && it.meal && ITEM_GROUP[l.id] !== VENUE_GROUP && ITEM_GROUP[l.id] !== ACCOM_GROUP && l.id !== "custom");
+}
+
 /* ---------- helpers ---------- */
 const today = new Date();
 function plusDays(base, n){ const d = new Date(base); d.setDate(d.getDate() + n); return d; }
 function isoDate(d){
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function isoAddDays(iso, n){
+  const d = new Date(iso + "T12:00:00");
+  if(isNaN(d)) return iso;
+  d.setDate(d.getDate() + n);
+  return isoDate(d);
+}
+function isoDiffDays(a, b){
+  const da = new Date(a + "T12:00:00"), db = new Date(b + "T12:00:00");
+  if(isNaN(da) || isNaN(db)) return 0;
+  return Math.round((db - da) / 86400000);
 }
 function fmtDate(x){
   if(!x) return "-";
@@ -552,6 +908,97 @@ const GST_PCT = 10; // fixed, never varies per quote
 const LOGO_DATA = "data:image/png;base64,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";
 const LOGO_QP = '<img class="qp-logo" src="' + LOGO_DATA + '" alt="Wollongong Surf Leisure Resort">';
 
+/* ---------- standard information sections (wording from the quote template; editable on Settings) ---------- */
+const INFO_SECTIONS = [
+  {id:"accom_notes", title:"About your accommodation", why:"auto when accommodation is quoted",
+   text:"All units are fully self contained with kitchen and bathroom facilities. Linen is supplied on all beds; beach towels are not supplied. Guests have free use of the 25m indoor heated pool, spa and steam room during their stay, and complimentary pool towels are available. If extra rooms are added after the initial booking is made, pricing may differ, as we operate on dynamic pricing which changes every day depending on occupancy. For more information on our accommodation visit www.wslr.com.au."},
+  {id:"church", title:"Church & charitable group discount conditions", why:"auto when a church discount is applied",
+   text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and conference room hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of $100 per cabin or conference room are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and conference room hire applies on conditions a) to d) if you choose to self cater or have fewer than 3 group main meals during your stay."},
+  {id:"venue_info", title:"Conference rooms & auditorium", why:"auto when venue hire is quoted",
+   text:"Conference Rooms 1, 2 & 3 hold a maximum of 150 persons — rooms 1 & 2 sit next to each other and the walls between them can be opened up to form larger rooms. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds a maximum of 500 persons, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). All conference rooms are equipped with 55 inch flat screen TVs, and Wi-Fi is complimentary for all conference delegates. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee. No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner."},
+  {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
+   text:"All meals are served buffet style, and your group chooses one option per meal service with our catering team closer to the date. {menuoptions}"},
+  {id:"catering_info", title:"Catering", why:"auto when catering is quoted",
+   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Catering must be booked at least 1 month prior to your arrival date, subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval — otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
+  {id:"children", title:"Children's pricing & dietary requirements", why:"auto when catering is quoted",
+   text:"Children's catering is charged as: 12 months and under free; 1–3 years $5.00 per meal; 4–12 years 50% of the full rate; 13 years and over full rate. Medically diagnosed special dietary requirements (e.g. gluten free, intolerances, allergies) incur a surcharge of $10.00 per person per meal; special diet meals are served by our Catering Team Leader on duty, and it is the customer's responsibility to make themselves known to our staff. Any additional persons added after your final details are submitted 14 days prior to arrival incur an additional $10 per person per meal surcharge."},
+  {id:"selfcater", title:"Self catering", why:"auto when accommodation is quoted without catering",
+   text:"If you are self catering, you are responsible for all cleaning and for supplying all plates, bowls, cutlery, cups, utensils and cleaning equipment to clean up after your meals if using the Marquee or a common area. Our kitchen is not available for customer use or for self catered meals."},
+  {id:"coffee", title:"Barista coffee", why:"switch on if the group would like the coffee van",
+   text:"Looking for a real barista coffee whilst staying with us? Contact Andrew from Murphy's Coffee Co, looking after locals with his coffee van — mob. 0413 582 497 · murphyscoffeeco@outlook.com.au."},
+  {id:"booking_info", title:"To proceed with a booking", why:"on for every quote",
+   text:"To proceed with a booking we require: your group name, contact person, postal address and mobile number; arrival and departure dates; the number of rooms and each type of room you wish to book; all meals you wish to have included as part of your package; and the dates and times of use of the conference rooms. Once we receive this information we will proceed with a booking and forward an invoice for a deposit. Reservations are unconfirmed until deposits are received."},
+  {id:"deposit", title:"Deposit, payment & security bond", why:"on for every quote",
+   text:"A $100 deposit per unit booked is required within 4 weeks from the date of booking to secure your reservation and any church discount. The balance of your account must be received prior to the arrival date, and is payable by cash, EFTPOS, Mastercard or Visa (personal cheques are welcome if received 21 days prior to arrival). A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
+  {id:"cancel", title:"Cancellation conditions", why:"on for every quote",
+   text:"There will be no refunds of any payments made if the entire booking is cancelled within 14 days of the scheduled arrival date. If the entire booking is cancelled 14 days or more prior to your arrival, the deposit is refunded less a $50 per room booking fee. Any rooms cancelled within the 14 day period will be charged at the full rate; there are no fees or charges for rooms cancelled 14 days or more prior to your arrival date."},
+  {id:"conduct", title:"Code of conduct", why:"auto for group stays",
+   text:"A responsible adult must be nominated as your Group Manager, and agrees to assist with all conduct and security matters concerning your group — this assistance is essential between 9.00pm and 8.00am. The following are breaches of the Code of Conduct: loutish behaviour by any member of your group; noise emanating from a unit after 10.00pm (this breach may result in the eviction of your entire group, with no credit or refund granted); excessive noise after 10.00pm from a room containing more persons than indicated on the rooming list (a double breach); and the excessive use of alcohol or offensive language. The Group Manager is not permitted to depart the WSLR grounds while any member of the group remains on site, and the Group Manager's nominated mobile phone must not be switched off at any time during your stay."},
+  {id:"checkin", title:"Check-in, check-out & facilities", why:"auto for group stays",
+   text:"Check in is between 2.00pm and 8.00pm Monday to Saturday, and 2.00pm to 5.00pm Sunday — if your arrival time is likely to be outside these times, please advise reception. Check out is between 8.00am and 10.00am; late check out is available on request, subject to availability. Pool hours are 8.00am to 8.45pm Monday to Saturday and 8.00am to 5.45pm Sunday (the pool is closed 3.30pm to 7.30pm Monday to Friday during NSW school terms for swimming training). Other sporting facilities are available at a discounted hire fee. No pets."},
+  {id:"final_conf", title:"Final confirmation details", why:"auto for group stays",
+   text:"If you have booked more than 50 accommodation units and/or a peak period, your final details for accommodation are due 28 days prior to your arrival date. Otherwise, final numbers and details are required 14 days prior to your arrival. An email will be sent to you 10 weeks prior to your arrival."},
+  {id:"other", title:"Other information", why:"on for every quote",
+   text:"You do not have exclusivity of the resort — there will be other holiday makers and permanent residents on site during your stay. For things to see and do, restaurants and dining, events, maps and itineraries throughout the Wollongong and Illawarra region, see www.visitwollongong.com. For detailed map information on our location: https://goo.gl/maps/oCRniwYWBAiMw4zC9. Would you like to meet with one of our staff to discuss your next function at the resort? A meeting can be arranged at a date, time and venue convenient to you — just let us know."}
+];
+const LS_SECTIONS = "wslr_sections_v1";
+function sectionContent(id){
+  const base = INFO_SECTIONS.find(s => s.id === id);
+  if(!base) return null;
+  const ov = (lsGet(LS_SECTIONS, {}) || {})[id] || {};
+  return {id: id, title: ov.title || base.title, text: ov.text || base.text, why: base.why};
+}
+function anyCatOn(ids){ return ids.some(id => RATE[id] && catEntry(id).on); }
+function quoteHasAccom(){
+  return (Q.sel.accom || []).some(b => (Number(b.qty) || 0) > 0 && catEntry(b.id).on) ||
+    anyCatOn(accomItems().map(it => it.id)) ||
+    Q.lines.some(l => (Number(l.qty) || 0) > 0 && isAccomLine(l));
+}
+function quoteHasVenue(){
+  return VENUES.some(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on) ||
+    anyCatOn(VENUES.map(v => v.fullId)) ||
+    Q.lines.some(l => (Number(l.qty) || 0) > 0 && isVenueLine(l));
+}
+function quoteHasCater(){
+  return caterItems().some(it => { const c = (Q.sel.cater || {})[it.id]; return c && (Number(c.ppl) || 0) > 0 && (Number(c.days) || 0) > 0 && catEntry(it.id).on; }) ||
+    anyCatOn(caterItems().map(it => it.id)) ||
+    Q.lines.some(l => (Number(l.qty) || 0) > 0 && isCaterLine(l));
+}
+function autoSectionIds(){
+  const accom = quoteHasAccom(), venue = quoteHasVenue(), cater = quoteHasCater();
+  const on = {
+    accom_notes: accom,
+    church: !!Q.acnc || (Number(Q.sel.church) || 0) > 0,
+    venue_info: venue,
+    menu: cater,
+    catering_info: cater,
+    children: cater,
+    selfcater: accom && !cater,
+    coffee: false,
+    booking_info: true,
+    deposit: true,
+    cancel: true,
+    conduct: accom,
+    checkin: accom,
+    final_conf: accom,
+    other: true
+  };
+  return INFO_SECTIONS.filter(s => on[s.id]).map(s => s.id);
+}
+function activeSectionIds(){
+  if(Q.sections && typeof Q.sections === "object"){
+    return INFO_SECTIONS.filter(s => Q.sections[s.id]).map(s => s.id);
+  }
+  return autoSectionIds();
+}
+function resolvedSections(){
+  const bondTxt = money0(Number(Q.bond) || 0);
+  return activeSectionIds().map(id => {
+    const c = sectionContent(id);
+    return {title: c.title, text: String(c.text).split("{bond}").join(bondTxt).split("{menuoptions}").join(menuSectionText())};
+  }).filter(s => String(s.text).trim() !== "");
+}
+
 /* ---------- sheet logging (Google Apps Script web app) ---------- */
 const DEFAULT_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwH01LNaO8ifVNqXUugTT6WcHReneXZvMN4Aro3AIB9hu-sPyN5jvjhEKT4liMXbYhJ/exec";
 const SHEET_TOKEN = "wslr-quotes-2026";
@@ -597,8 +1044,9 @@ function nextQuoteNum(){
 /* ---------- editable defaults (Settings tab) ---------- */
 function getDefaults(){
   return Object.assign({
-    notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date.",
-    terms: "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. A $1000 refundable security bond applies to group stays. Payment by EFT is preferred; please use your quote number as the payment reference.",
+    notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date. All accommodation is subject to availability at the time of booking.",
+    terms: "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
+    bond: 2000,
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
     body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999"
   }, lsGet(LS_DEFAULTS, {}));
@@ -620,17 +1068,112 @@ function blankQuote(num){
     prepEmail: prepEmail || DEFAULT_PREP_EMAIL,
     notes: d.notes,
     terms: d.terms,
-    lines: [],
+    priceMode: "full",
+    bond: Number(d.bond) || 2000,
+    acnc: false,        // registered church / ACNC charity — reveals the 20%/50% concessional rates
+    sections: null,
+    catalog: {},        // per-quote menu curation: {itemId: {on, price, avail}}
+    rates: {},          // imported nightly tariffs: {itemId: {"2026-08-21": 770, ...}}
+    availCal: {},       // imported per-date availability: {itemId: {"2026-08-21": 0, ...}}
+    ratesInfo: null,    // {from, to, items, file}
+    availInfo: null,
+    menu: {},           // menu option overrides: {optionKey: false} (default on)
+    features: {perPerson: true, depositDates: true, kids: true}, // toggleable organiser-page extras
+    sel: blankSel(),    // the organiser's (or staff-suggested) selections
+    lines: [],          // fixed extras the organiser can't change
     status: "Draft",
     accepted: false,
     sentAt: null,
+    submittedAt: null,
     token: null
   };
 }
+function blankSel(){
+  return {accom: [], venues: {}, cater: {}, church: 0, split: false,
+          who: null, venueTimes: {}, message: ""};
+}
+/* upgrade quotes saved by earlier versions into the current model */
+function normalizeQuote(q){
+  if(!q.catalog) q.catalog = {};
+  if(!q.rates) q.rates = {};
+  if(!q.availCal) q.availCal = {};
+  if(!q.menu) q.menu = {};
+  if(!q.features) q.features = {perPerson: true, depositDates: true, kids: true};
+  if(q.sel){
+    if(q.sel.who === undefined) q.sel.who = null;
+    if(!q.sel.venueTimes) q.sel.venueTimes = {};
+    if(q.sel.message === undefined) q.sel.message = "";
+    /* older drafts stored a single per-meal total; carry it into the adults band */
+    Object.keys(q.sel.cater || {}).forEach(id => {
+      const c = q.sel.cater[id];
+      if(c && c.eat !== undefined){
+        if(c.eat !== "" && c.eat !== null) c.eatA = c.eat;
+        delete c.eat;
+      }
+    });
+  }
+  if(!q.priceMode) q.priceMode = "full";
+  if(q.acnc === undefined) q.acnc = !!(q.sel && Number(q.sel.church) > 0) || !!(Number(q.churchDisc) > 0);
+  delete q.churchOffer;
+  if(q.sel && q.sel.accom){
+    if(q.sel.church === undefined) q.sel.church = 0;
+    /* blocks saved as {nights: N|null} become date ranges */
+    q.sel.accom.forEach(b => {
+      if(b.from === undefined){
+        const n = Number(b.nights);
+        if(b.nights !== null && b.nights !== undefined && n > 0 && q.dateStart){
+          b.from = q.dateStart;
+          b.to = isoAddDays(q.dateStart, n);
+        } else {
+          b.from = null; b.to = null;
+        }
+        delete b.nights;
+      }
+    });
+    if(!q.acnc && Number(q.sel.church) > 0) q.acnc = true;
+    return q;
+  }
+  const sel = blankSel();
+  if(q.churchDisc) sel.church = Number(q.churchDisc) || 0;
+  const keep = [];
+  (q.lines || []).forEach(l => {
+    const it = RATE[l.id];
+    const grp = ITEM_GROUP[l.id];
+    const qty = Number(l.qty) || 0;
+    if(it && grp === ACCOM_GROUP && !it.pp){
+      if(qty > 0) sel.accom.push({id: l.id, qty: qty, from: null, to: null});
+      if(l.price !== undefined && Number(l.price) !== it.price) (q.catalog[l.id] = q.catalog[l.id] || {}).price = Number(l.price);
+      if(Number(l.disc) === 20 || Number(l.disc) === 50) sel.church = Number(l.disc);
+    } else if(it && grp === VENUE_GROUP){
+      const v = VENUES.find(x => x.fullId === l.id || x.halfId === l.id);
+      if(v && qty > 0) sel.venues[v.key] = (Number(sel.venues[v.key]) || 0) + (l.id === v.halfId ? qty * 0.5 : qty);
+      if(l.price !== undefined && Number(l.price) !== it.price) (q.catalog[l.id] = q.catalog[l.id] || {}).price = Number(l.price);
+      if(Number(l.disc) === 20 || Number(l.disc) === 50) sel.church = Number(l.disc);
+    } else if(it && it.pp){
+      if(qty > 0) sel.cater[l.id] = {ppl: qty, days: (Number(l.nights) > 0 ? Number(l.nights) : 1)};
+      if(l.price !== undefined && Number(l.price) !== it.price) (q.catalog[l.id] = q.catalog[l.id] || {}).price = Number(l.price);
+    } else {
+      keep.push(l);
+    }
+  });
+  q.sel = sel;
+  q.lines = keep;
+  delete q.churchDisc;
+  if(!q.acnc && Number(sel.church) > 0) q.acnc = true;
+  return q;
+}
 let Q = blankQuote("Q-1001"); // renumbered properly during init at the bottom
 
+function hasSel(q){
+  const s = q.sel;
+  if(!s) return false;
+  return (s.accom || []).some(b => (Number(b.qty) || 0) > 0) ||
+    Object.keys(s.venues || {}).some(k => (Number(s.venues[k]) || 0) > 0) ||
+    Object.keys(s.cater || {}).some(k => s.cater[k] && (Number(s.cater[k].ppl) || 0) > 0 && (Number(s.cater[k].days) || 0) > 0);
+}
 function hasContent(q){
-  return (q.lines && q.lines.length > 0) ||
+  return hasSel(q) || (q.lines && q.lines.length > 0) ||
+    (q.catalog && Object.keys(q.catalog).length > 0) ||
     String(q.contact || "").trim() !== "" || String(q.org || "").trim() !== "" ||
     String(q.event || "").trim() !== "" || String(q.email || "").trim() !== "";
 }
@@ -640,22 +1183,26 @@ function autosaveDraft(){
 
 /* ---------- templates ---------- */
 const TEMPLATES = [
-  {name:"Catered conference day",     lines:[{id:"fr13_full"}, {id:"lunch_sit", pp:true}]},
-  {name:"Conference day (room only)", lines:[{id:"fr13_full"}]},
-  {name:"Catered group stay (daily meals)", lines:[{id:"bf_cont", pp:true}, {id:"din2", pp:true}]},
-  {name:"Auditorium event",           lines:[{id:"aud_full"}]}
+  {name:"Catered conference day",     venues:{fr13: 1}, cater:["lunch_sit"]},
+  {name:"Conference day (room only)", venues:{fr13: 1}},
+  {name:"Catered group stay (daily meals)", cater:["bf_cont", "din2"], caterAllDays: true},
+  {name:"Auditorium event",           venues:{aud: 1}}
 ];
 function applyTemplate(idx){
   const t = TEMPLATES[idx];
   if(!t) return;
   const g = Number(Q.guests) || 0;
-  const defs = t.lines.filter(d => RATE[d.id]);
-  if(!defs.length){ showToast("The items this template uses are no longer in the rate card."); return; }
-  Q.lines = Q.lines.concat(defs.map(d => ({id: d.id, desc: null, qty: d.pp ? (g || 1) : (d.qty || 1), price: RATE[d.id].price})));
+  Object.keys(t.venues || {}).forEach(k => {
+    Q.sel.venues[k] = Math.max(Number(Q.sel.venues[k]) || 0, t.venues[k]);
+  });
+  (t.cater || []).forEach(id => {
+    if(!RATE[id]) return;
+    Q.sel.cater[id] = {ppl: g || 1, days: t.caterAllDays ? nightsCount() : 1};
+  });
   refresh();
   showToast(g
-    ? t.name + " added for " + g + " guests."
-    : t.name + " added. Tip: set Guests first and the catering quantities fill in automatically.");
+    ? t.name + " suggested for " + g + " guests. The organiser can adjust it on their page."
+    : t.name + " suggested. Tip: set Guests first and the catering people fill in automatically.");
 }
 
 /* ---------- summaries for the quotes sheet ---------- */
@@ -667,58 +1214,127 @@ function genToken(){
 function linkForToken(tok){ return tok ? sheetEndpoint() + "?t=" + tok : ""; }
 function mealsSummary(){
   const m = {breakfast: 0, lunch: 0, dinner: 0};
-  Q.lines.forEach(l => {
-    const q = Number(l.qty) || 0;
-    if(q <= 0) return;
-    const it = lineItem(l);
-    const name = String(it.custom ? (l.desc || "") : it.name).toLowerCase();
-    const id = String(l.id);
-    if(id.indexOf("bf_") === 0 || /breakfast/.test(name)) m.breakfast += q;
-    else if(id.indexOf("lunch_") === 0 || /lunch/.test(name)) m.lunch += q;
-    else if(id === "din1" || id === "din2" || /dinner/.test(name)) m.dinner += q;
+  const add = (id, name, covers) => {
+    if(covers <= 0) return;
+    name = String(name || "").toLowerCase();
+    if(String(id).indexOf("bf_") === 0 || /breakfast/.test(name)) m.breakfast += covers;
+    else if(String(id).indexOf("lunch_") === 0 || /lunch/.test(name)) m.lunch += covers;
+    else if(id === "din1" || id === "din2" || /dinner/.test(name)) m.dinner += covers;
+  };
+  Object.keys(Q.sel.cater || {}).forEach(id => {
+    const c = Q.sel.cater[id];
+    if(!c || !catEntry(id).on) return;
+    if(kidsOn() && id === "diet") return;
+    add(id, (RATE[id] || {}).name, caterRowPeople(id) * (Number(c.days) || 0));
   });
+  Q.lines.forEach(l => add(l.id, lineItem(l).custom ? (l.desc || "") : lineItem(l).name, (Number(l.qty) || 0) * lineNights(l)));
   return m;
 }
 function roomsSummary(){
   const r = {r1:"", r2:"", r3:"", r5:"", marquee:"", auditorium:"", dining:""};
   const mark = (k, v) => { if(r[k] !== "Full") r[k] = v; };
+  VENUES.forEach(v => {
+    const d = Number((Q.sel.venues || {})[v.key]) || 0;
+    if(d <= 0 || !catEntry(v.fullId).on) return;
+    const val = d >= 1 ? "Full" : "Half";
+    if(v.key === "fr13"){ mark("r1", val); mark("r2", val); mark("r3", val); }
+    else if(v.key === "fr5") mark("r5", val);
+    else if(v.key === "marq") mark("marquee", val);
+    else if(v.key === "aud") mark("auditorium", val);
+    else if(v.key === "din") mark("dining", val);
+  });
   Q.lines.forEach(l => {
     const q = Number(l.qty) || 0;
     if(q <= 0) return;
     const it = lineItem(l);
     const name = String(it.custom ? (l.desc || "") : it.name).toLowerCase();
-    const id = String(l.id);
-    const v = (/half/.test(name) || /_half$/.test(id)) ? "Half" : "Full";
-    if(id.indexOf("fr13") === 0 || /rooms? 1\s*-\s*3/.test(name)){ mark("r1", v); mark("r2", v); mark("r3", v); }
-    else if(id.indexOf("fr5") === 0 || /room 5/.test(name)) mark("r5", v);
-    else if(id.indexOf("marq") === 0 || /marquee/.test(name)) mark("marquee", v);
-    else if(id.indexOf("aud") === 0 || /auditorium/.test(name)) mark("auditorium", v);
-    else if(id.indexOf("din_") === 0 || /dining room/.test(name)) mark("dining", v);
+    const v = /half/.test(name) ? "Half" : "Full";
+    if(/rooms? 1\s*-?\s*3|rooms? 1, ?2/.test(name)){ mark("r1", v); mark("r2", v); mark("r3", v); }
+    else if(/room 5/.test(name)) mark("r5", v);
+    else if(/marquee/.test(name)) mark("marquee", v);
+    else if(/auditorium/.test(name)) mark("auditorium", v);
+    else if(/dining room/.test(name)) mark("dining", v);
   });
   return r;
 }
+/* flatten the selection + fixed extras into displayable quote lines */
 function displayLines(){
-  return Q.lines.filter(l => (Number(l.qty)||0) > 0).map(l => {
-    const it = lineItem(l);
-    return {
-      name: lineName(l),
-      qty: l.qty,
-      price: Number(l.price) || 0,
-      disc: lineDiscPct(l),
-      unit: lineUnit(l),
-      when: it.meal ? fmtWhen(l.when) : ""
-    };
+  const out = [];
+  const n = nightsCount();
+  (Q.sel.accom || []).forEach(b => {
+    const it = RATE[b.id], c = catEntry(b.id);
+    if(!it || !c.on || (Number(b.qty) || 0) <= 0) return;
+    const bn = blockNights(b);
+    const r = blockRange(b);
+    const partial = !!(b.from || b.to);
+    const qty = Number(b.qty) || 0;
+    const tot = blockTotal(b);
+    out.push({
+      name: it.name, qty: b.qty,
+      nights: 0, nightsWord: "nights", part: partial,
+      beds: it.beds || "", sleeps: it.sleeps || 0,
+      price: qty > 0 ? Math.round(tot / qty * 100) / 100 : 0, disc: 0,
+      unit: "per unit for " + bn + " night" + (bn === 1 ? "" : "s"),
+      when: (partial && r) ? ("arrive " + shortDate(r.from) + " · leave " + shortDate(r.to)) : "",
+      total: tot
+    });
   });
+  VENUES.forEach(v => {
+    const d = Number((Q.sel.venues || {})[v.key]) || 0;
+    if(d <= 0 || !catEntry(v.fullId).on) return;
+    const full = Math.floor(d), half = (d % 1) ? 1 : 0;
+    const vt = (Q.sel.venueTimes || {})[v.key] || "";
+    if(full > 0) out.push({name: (RATE[v.fullId] || {name: v.name + " - full day"}).name, qty: full, nights: 0, beds: "", price: catEntry(v.fullId).price, disc: 0, unit: "per day", when: vt, total: full * catEntry(v.fullId).price});
+    if(half > 0) out.push({name: (RATE[v.halfId] || {name: v.name + " - half day"}).name, qty: half, nights: 0, beds: "", price: catEntry(v.halfId).price, disc: 0, unit: "per half day", when: (full > 0 ? "" : vt), total: half * catEntry(v.halfId).price});
+  });
+  if(kidsOn()){
+    let dietMeals = 0;
+    caterItems().forEach(it => {
+      if(it.id === "diet" || !catEntry(it.id).on) return;
+      const c = (Q.sel.cater || {})[it.id];
+      const days = c ? (Number(c.days) || 0) : 0;
+      if(days <= 0 || caterRowPeople(it.id) <= 0) return;
+      const b = mealBands(it.id);
+      const p = catEntry(it.id).price;
+      const dTag = days > 1 ? days : 0;
+      if(b.adults > 0) out.push({name: it.name + " — adults & 13+", qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
+      if(b.k412 > 0) out.push({name: it.name + " — children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
+      if(b.k13 > 0) out.push({name: it.name + " — children 1–3", qty: b.k13, nights: dTag, nightsWord: "days", beds: "", price: 5, disc: 0, unit: "per person", when: "", total: b.k13 * days * 5});
+      dietMeals += b.diet * days;
+    });
+    if(dietMeals > 0){
+      out.push({name: "Special dietary surcharge (medically diagnosed)", qty: dietMeals, nights: 0, nightsWord: "meals", beds: "", price: 10, disc: 0, unit: "per meal", when: "", total: dietMeals * 10});
+    }
+  } else {
+    caterItems().forEach(it => {
+      const c = (Q.sel.cater || {})[it.id];
+      if(!c || !catEntry(it.id).on) return;
+      const ppl = Number(c.ppl) || 0, days = Number(c.days) || 0;
+      if(ppl <= 0 || days <= 0) return;
+      out.push({name: it.name, qty: ppl, nights: days > 1 ? days : 0, nightsWord: "days", beds: "", price: catEntry(it.id).price, disc: 0, unit: "per person", when: "", total: ppl * days * catEntry(it.id).price});
+    });
+  }
+  Q.lines.filter(l => (Number(l.qty) || 0) > 0).forEach(l => {
+    const it = lineItem(l);
+    out.push({
+      name: lineName(l), qty: l.qty,
+      nights: lineNights(l) > 1 ? lineNights(l) : 0, nightsWord: "nights",
+      beds: "", price: Number(l.price) || 0, disc: lineDiscPct(l),
+      unit: lineUnit(l), when: it.meal ? fmtWhen(l.when) : "", total: lineTotal(l), fixed: true
+    });
+  });
+  return out;
 }
 
 /* ---------- status chips ---------- */
 const CHIP = {
-  Draft:    {c:"137,135,129", icon:"✎"},
-  Sent:     {c:"42,120,214",  icon:"➤"},
-  Viewed:   {c:"74,58,167",   icon:"◎"},
-  Accepted: {c:"12,163,12",   icon:"✓"},
-  Declined: {c:"208,59,59",   icon:"✕"},
-  Expired:  {c:"236,131,90",  icon:"⌛"}
+  Draft:     {c:"137,135,129", icon:"✎"},
+  Sent:      {c:"42,120,214",  icon:"➤"},
+  Viewed:    {c:"74,58,167",   icon:"◎"},
+  Submitted: {c:"13,148,136",  icon:"⬆"},
+  Accepted:  {c:"12,163,12",   icon:"✓"},
+  Declined:  {c:"208,59,59",   icon:"✕"},
+  Expired:   {c:"236,131,90",  icon:"⌛"}
 };
 const STATUSES = Object.keys(CHIP);
 function chip(status){
@@ -733,15 +1349,267 @@ function lineItem(l){
 function lineDiscPct(l){
   return Math.min(100, Math.max(0, Number(l.disc) || 0));
 }
+function lineNights(l){
+  const n = Number(l.nights);
+  return (n && n > 0) ? n : 1;
+}
 function lineTotal(l){
-  return (Number(l.qty)||0) * (Number(l.price)||0) * (1 - lineDiscPct(l)/100);
+  return (Number(l.qty)||0) * lineNights(l) * (Number(l.price)||0) * (1 - lineDiscPct(l)/100);
+}
+/* ---------- selection maths ---------- */
+function catEntry(id){
+  const it = RATE[id] || {};
+  const c = (Q.catalog && Q.catalog[id]) || {};
+  return {
+    on: c.on !== undefined ? !!c.on : true,
+    price: (c.price !== undefined && c.price !== null && c.price !== "") ? (Number(c.price) || 0) : (Number(it.price) || 0),
+    avail: (c.avail !== undefined && c.avail !== null && c.avail !== "") ? (Number(c.avail) || 0) : (it.avail !== undefined ? Number(it.avail) : null)
+  };
+}
+function setCat(id, key, val){
+  if(!Q.catalog) Q.catalog = {};
+  if(!Q.catalog[id]) Q.catalog[id] = {};
+  Q.catalog[id][key] = val;
+}
+function manualPrice(id){
+  const c = (Q.catalog && Q.catalog[id]) || {};
+  return (c.price !== undefined && c.price !== null && c.price !== "") ? (Number(c.price) || 0) : null;
+}
+function manualAvail(id){
+  const c = (Q.catalog && Q.catalog[id]) || {};
+  return (c.avail !== undefined && c.avail !== null && c.avail !== "") ? (Number(c.avail) || 0) : null;
+}
+/* the event's nights as ISO dates */
+function stayNightsList(){
+  if(!Q.dateStart) return [];
+  const n = nightsCount(), out = [];
+  for(let i = 0; i < n; i++) out.push(isoAddDays(Q.dateStart, i));
+  return out;
+}
+/* a block's date range, clamped inside the event */
+function blockRange(b){
+  const evFrom = Q.dateStart || null;
+  const evTo = evFrom ? isoAddDays(evFrom, nightsCount()) : null;
+  let from = b.from || evFrom;
+  let to = b.to || evTo;
+  if(!from || !to) return null;
+  if(evFrom && from < evFrom) from = evFrom;
+  if(evTo && to > evTo) to = evTo;
+  if(to <= from) to = isoAddDays(from, 1);
+  return {from: from, to: to};
+}
+function blockNightsList(b){
+  const r = blockRange(b);
+  if(!r) return [];
+  const out = [];
+  let d = r.from, guard = 0;
+  while(d < r.to && guard < 366){ out.push(d); d = isoAddDays(d, 1); guard++; }
+  return out;
+}
+function blockNights(b){
+  const len = blockNightsList(b).length;
+  return len || 1;
+}
+/* nightly price: staff-typed override > imported tariff > rate card */
+function nightlyRate(id, iso){
+  const m = manualPrice(id);
+  if(m !== null) return m;
+  const r = Q.rates && Q.rates[id];
+  if(r && iso && r[iso] !== undefined) return Number(r[iso]) || 0;
+  const it = RATE[id];
+  return Number(it && it.price) || 0;
+}
+/* min/max nightly rate across the stay (or across the whole import if no dates) */
+function rateRange(id){
+  let dates = stayNightsList();
+  const r = Q.rates && Q.rates[id];
+  if(!dates.length && r) dates = Object.keys(r);
+  if(!dates.length) return {min: nightlyRate(id, null), max: nightlyRate(id, null), varies: false, missing: 0};
+  let min = Infinity, max = -Infinity, missing = 0;
+  dates.forEach(d => {
+    if(manualPrice(id) === null && (!r || r[d] === undefined)) missing++;
+    const v = nightlyRate(id, d);
+    if(v < min) min = v;
+    if(v > max) max = v;
+  });
+  if(min === Infinity){ min = 0; max = 0; }
+  return {min: min, max: max, varies: max > min, missing: missing};
+}
+function blockTotal(b){
+  const nights = blockNightsList(b);
+  if(!nights.length) return (Number(b.qty) || 0) * nightlyRate(b.id, null); // no dates set: 1 night at base
+  return (Number(b.qty) || 0) * nights.reduce((s, d) => s + nightlyRate(b.id, d), 0);
+}
+function blockAvgRate(b){
+  const nights = blockNightsList(b);
+  if(!nights.length) return nightlyRate(b.id, null);
+  return nights.reduce((s, d) => s + nightlyRate(b.id, d), 0) / nights.length;
+}
+/* availability on one night: staff-typed override > imported chart > rate card default */
+function availOn(id, iso){
+  const m = manualAvail(id);
+  if(m !== null) return m;
+  const a = Q.availCal && Q.availCal[id];
+  if(a && iso && a[iso] !== undefined) return Number(a[iso]);
+  const it = RATE[id];
+  return (it && it.avail !== undefined) ? Number(it.avail) : null;
+}
+/* units of this type already selected covering a given night */
+function usedOn(id, iso){
+  return (Q.sel.accom || []).reduce((s, b) => {
+    if(b.id !== id) return s;
+    return blockNightsList(b).indexOf(iso) >= 0 ? s + (Number(b.qty) || 0) : s;
+  }, 0);
+}
+/* can one more unit be added over these nights? returns true/false */
+function canAddOver(id, nightsList){
+  if(!nightsList.length){
+    const a = availOn(id, null);
+    return a === null || accomQtyTotal(id) < a;
+  }
+  return nightsList.every(d => {
+    const a = availOn(id, d);
+    return a === null || usedOn(id, d) < a;
+  });
+}
+/* lowest remaining availability across the stay, for display ("up to N available") */
+function availDisplay(id){
+  const nights = stayNightsList();
+  if(!nights.length) return availOn(id, null);
+  let min = null;
+  nights.forEach(d => {
+    const a = availOn(id, d);
+    if(a !== null && (min === null || a < min)) min = a;
+  });
+  return min;
+}
+function accomQtyTotal(id){
+  return (Q.sel.accom || []).filter(b => b.id === id).reduce((s, b) => s + (Number(b.qty) || 0), 0);
+}
+function selAccomSub(){
+  return (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + blockTotal(b) : s, 0);
+}
+function venueDayTotal(v, d){
+  const full = Math.floor(d), half = (d % 1) ? 1 : 0;
+  return full * catEntry(v.fullId).price + half * catEntry(v.halfId).price;
+}
+function selVenueSub(){
+  return VENUES.reduce((s, v) => {
+    const d = Number((Q.sel.venues || {})[v.key]) || 0;
+    if(d <= 0 || !catEntry(v.fullId).on) return s;
+    return s + venueDayTotal(v, d);
+  }, 0);
+}
+/* children's & dietary pricing (feature toggle): adults full, 4–12 half, 1–3 $5/meal, under 1 free, dietary +$10/meal */
+function kidsOn(){ return !!(Q.features && Q.features.kids); }
+function who(){
+  if(!Q.sel.who) Q.sel.who = {adults: "", k412: "", k13: "", babies: "", diet: ""};
+  return Q.sel.who;
+}
+/* adults defaults to the guest count until the organiser types their own split */
+function whoAdults(){
+  const w = who();
+  if(w.adults === "" || w.adults === null || w.adults === undefined) return Number(Q.guests) || 0;
+  return Number(w.adults) || 0;
+}
+function whoMeals(){ const w = who(); return whoAdults() + (Number(w.k412) || 0) + (Number(w.k13) || 0); }
+function whoAll(){ const w = who(); return whoMeals() + (Number(w.babies) || 0); }
+/* per-meal eating counts (kids mode): each band defaults to the group's number; "" = follow the group */
+function bandDefault(key){
+  const w = who();
+  if(key === "eatA") return whoAdults();
+  if(key === "eatK") return Number(w.k412) || 0;
+  if(key === "eatT") return Number(w.k13) || 0;
+  if(key === "eatD") return Number(w.diet) || 0;
+  return 0;
+}
+function bandVal(c, key){
+  if(!c) return bandDefault(key);
+  const v = c[key];
+  if(v === "" || v === null || v === undefined) return bandDefault(key);
+  return Math.max(0, Number(v) || 0);
+}
+function mealBands(id){
+  const c = (Q.sel.cater || {})[id];
+  return {
+    adults: bandVal(c, "eatA"),
+    k412:  bandVal(c, "eatK"),
+    k13:   bandVal(c, "eatT"),
+    diet:  bandVal(c, "eatD")
+  };
+}
+function mealEaters(id){
+  const b = mealBands(id);
+  return b.adults + b.k412 + b.k13;
+}
+function groupHasKids(){
+  const w = who();
+  return (Number(w.k412) || 0) > 0 || (Number(w.k13) || 0) > 0;
+}
+function mealsAreSpecific(){
+  return groupHasKids() || (Number(who().diet) || 0) > 0;
+}
+function bandCost(b, price){
+  return b.adults * price + b.k412 * price * 0.5 + b.k13 * 5 + b.diet * 10;
+}
+function caterRowPeople(id){
+  if(kidsOn()) return mealEaters(id);
+  const c = (Q.sel.cater || {})[id];
+  return c ? (Number(c.ppl) || 0) : 0;
+}
+function caterRowCost(id){
+  const c = (Q.sel.cater || {})[id];
+  if(!c || !catEntry(id).on) return 0;
+  const days = Math.max(0, Number(c.days) || 0);
+  if(!days) return 0;
+  if(kidsOn()) return days * bandCost(mealBands(id), catEntry(id).price);
+  return (Number(c.ppl) || 0) * days * catEntry(id).price;
+}
+function selCaterSub(){
+  return caterItems().reduce((s, it) => {
+    if(kidsOn() && it.id === "diet") return s; // folded into the dietary count
+    return s + caterRowCost(it.id);
+  }, 0);
+}
+/* deposit & key dates, worked out from the selection and the template's rules */
+function unitsSelected(){
+  return (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + (Number(b.qty) || 0) : s, 0);
+}
+function venuesSelected(){
+  return VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on).length;
+}
+function keyDates(){
+  if(!Q.dateStart) return null;
+  const finalDays = unitsSelected() > 50 ? 28 : 14;
+  return {
+    arrive: Q.dateStart,
+    catering: isoAddDays(Q.dateStart, -30),
+    finalNums: isoAddDays(Q.dateStart, -finalDays),
+    finalDays: finalDays,
+    email: isoAddDays(Q.dateStart, -70)
+  };
+}
+function fixedSub(){
+  return Q.lines.reduce((s, l) => s + lineTotal(l), 0);
+}
+/* how many people the selected cabins sleep (upper bound across blocks) */
+function selSleeps(){
+  return (Q.sel.accom || []).reduce((s, b) => {
+    const it = RATE[b.id];
+    if(!it || !catEntry(b.id).on) return s;
+    return s + (Number(b.qty) || 0) * (Number(it.sleeps) || 0);
+  }, 0);
 }
 function totals(){
-  const sub  = Q.lines.reduce((s,l) => s + lineTotal(l), 0);
-  const disc = sub * (Number(Q.discountPct)||0) / 100;
-  const total = sub - disc;
+  const accom = selAccomSub(), venue = selVenueSub(), cater = selCaterSub(), fixed = fixedSub();
+  const sub = accom + venue + cater + fixed;
+  const churchPct = Number(Q.sel.church) || 0;
+  const church = (accom + venue) * churchPct / 100;
+  const afterChurch = sub - church;
+  const disc = afterChurch * (Number(Q.discountPct) || 0) / 100;
+  const total = afterChurch - disc;
   const gst = total / 11;
-  return {sub, disc, total, gst};
+  return {sub, church, churchPct, disc, total, gst};
 }
 function lineUnit(l){
   const it = lineItem(l);
@@ -764,6 +1632,18 @@ function snapshotQ(){
     validDays: Q.validDays, discountPct: Q.discountPct, prepBy: Q.prepBy,
     prepEmail: String(Q.prepEmail || "").trim() || DEFAULT_PREP_EMAIL,
     notes: Q.notes, terms: Q.terms,
+    priceMode: Q.priceMode || "full",
+    bond: Q.bond, acnc: !!Q.acnc,
+    sections: Q.sections ? JSON.parse(JSON.stringify(Q.sections)) : null,
+    catalog: JSON.parse(JSON.stringify(Q.catalog || {})),
+    rates: JSON.parse(JSON.stringify(Q.rates || {})),
+    availCal: JSON.parse(JSON.stringify(Q.availCal || {})),
+    ratesInfo: Q.ratesInfo ? JSON.parse(JSON.stringify(Q.ratesInfo)) : null,
+    availInfo: Q.availInfo ? JSON.parse(JSON.stringify(Q.availInfo)) : null,
+    menu: JSON.parse(JSON.stringify(Q.menu || {})),
+    features: JSON.parse(JSON.stringify(Q.features || {perPerson: true, depositDates: true, kids: true})),
+    sel: JSON.parse(JSON.stringify(Q.sel || blankSel())),
+    submittedAt: Q.submittedAt || null,
     lines: JSON.parse(JSON.stringify(Q.lines)),
     total: t.total,
     status: Q.status, accepted: Q.accepted,
@@ -792,7 +1672,7 @@ function itemOptions(selectedId){
 function renderLines(){
   const tb = document.getElementById("linesBody");
   if(!Q.lines.length){
-    tb.innerHTML = '<tr class="emptyrow"><td colspan="6">No line items yet. Use "+ Add a line" below, start from a template, or import an RMS statement above.</td></tr>';
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="6">No fixed extras — most quotes won\'t need any. Use "+ Add a line" for one-off items (e.g. equipment hire), or import an RMS statement above to quote exact rooms already held.</td></tr>';
   } else {
     tb.innerHTML = Q.lines.map((l, i) => {
       const it = lineItem(l);
@@ -813,7 +1693,9 @@ function renderLines(){
           '<span class="ratehint">' + (it.custom ? "your item, your price" : "rate card " + money(it.price)) + '</span>' +
           whenCtl +
         '</td>' +
-        '<td class="num"><input type="number" class="qtyInp" data-i="' + i + '" min="0" value="' + l.qty + '"></td>' +
+        '<td class="num"><input type="number" class="qtyInp" data-i="' + i + '" min="0" value="' + l.qty + '">' +
+          (lineNights(l) > 1 ? '<span class="ratehint" style="text-align:right">× ' + lineNights(l) + ' ' + (isCaterLine(l) ? 'days' : 'nights') + '</span>' : '') +
+        '</td>' +
         '<td class="num"><input type="number" class="priceInp" data-i="' + i + '" step="0.01" min="0" value="' + l.price + '">' +
           (overridden ? '<button class="resetBtn" data-i="' + i + '" title="Back to the rate-card price">adjusted · reset to ' + money(it.price) + '</button>' : '') +
         '</td>' +
@@ -907,6 +1789,8 @@ function lightUpdate(inputEl){
   const l = Q.lines[i];
   if(row) row.querySelector(".ltot").textContent = money(lineTotal(l));
   autosaveDraft();
+  renderPrep();
+  renderSecBoxes();
   renderTotals();
   renderClient();
   renderPipeline();
@@ -914,37 +1798,981 @@ function lightUpdate(inputEl){
 
 function totalsHTML(t, grandLabel){
   return '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
-    (t.disc > 0 ? '<div><span>Discount (' + Q.discountPct + '%)</span><span>-' + money(t.disc) + '</span></div>' : '') +
+    (t.church > 0 ? '<div class="savings"><span>Church discount − ' + t.churchPct + '% (accommodation &amp; venues)</span><span>−' + money(t.church) + '</span></div>' : '') +
+    (t.disc > 0 ? '<div><span>Discount (' + Q.discountPct + '%)</span><span>−' + money(t.disc) + '</span></div>' : '') +
     '<div class="grand"><span>' + grandLabel + '</span><span>' + money(t.total) + '</span></div>' +
     '<div><span>Includes GST (10%)</span><span>' + money(t.gst) + '</span></div>';
 }
 function renderTotals(){
-  document.getElementById("totals").innerHTML = totalsHTML(totals(), "Total (inc GST)");
+  const pm = Q.priceMode || "full";
+  document.getElementById("totals").innerHTML = totalsHTML(totals(), "Total (inc GST)") +
+    (pm === "nototal" ? '<div class="hiddenflag">final total hidden on the client quote</div>'
+     : pm === "noprices" ? '<div class="hiddenflag">all prices hidden on the client quote</div>' : '');
 }
 
-/* ---------- tab 2: client quote page ---------- */
+/* ---------- selection mutators (shared by staff pre-fill and the organiser's page) ---------- */
+function nightsCount(){
+  if(!Q.dateStart) return 1;
+  const a = new Date(Q.dateStart + "T12:00:00");
+  const b = Q.dateEnd ? new Date(Q.dateEnd + "T12:00:00") : null;
+  if(!b || isNaN(a) || isNaN(b) || b <= a) return 1;
+  return Math.max(1, Math.round((b - a) / 86400000));
+}
+function cleanupAccom(){
+  Q.sel.accom = (Q.sel.accom || []).filter(b => (Number(b.qty) || 0) > 0);
+}
+function availToast(id){
+  const a = availDisplay(id);
+  showToast(a === 0
+    ? "That cabin type has no availability on one or more of the selected nights."
+    : "Only " + a + " of that cabin type are available across those nights — check the availability chart.");
+}
+function wholeStayBlock(id){
+  return (Q.sel.accom || []).find(x => x.id === id && !x.from && !x.to);
+}
+function stepAccom(id, dir){
+  let b = wholeStayBlock(id) || (Q.sel.accom || []).find(x => x.id === id);
+  if(dir > 0){
+    const nights = b ? blockNightsList(b) : stayNightsList();
+    if(!canAddOver(id, nights)){ availToast(id); return; }
+  }
+  if(!b){
+    if(dir <= 0) return;
+    Q.sel.accom.push({id: id, qty: 1, from: null, to: null});
+  } else {
+    b.qty = Math.max(0, (Number(b.qty) || 0) + dir);
+  }
+  cleanupAccom();
+  refresh();
+}
+function stepBlockQty(i, dir){
+  const b = Q.sel.accom[i];
+  if(!b) return;
+  if(dir > 0 && !canAddOver(b.id, blockNightsList(b))){ availToast(b.id); return; }
+  b.qty = Math.max(0, (Number(b.qty) || 0) + dir);
+  cleanupAccom();
+  refresh();
+}
+function setBlockDates(i, from, to){
+  const b = Q.sel.accom[i];
+  if(!b) return;
+  const evFrom = Q.dateStart || null;
+  const evTo = evFrom ? isoAddDays(evFrom, nightsCount()) : null;
+  if(from){
+    if(evFrom && from < evFrom) from = evFrom;
+    if(evTo && from >= evTo) from = isoAddDays(evTo, -1);
+    b.from = from;
+  }
+  if(to){
+    if(evTo && to > evTo) to = evTo;
+    b.to = to;
+  }
+  if(b.from && b.to && b.to <= b.from) b.to = isoAddDays(b.from, 1);
+  /* whole event range chosen? treat as whole-stay so it follows date changes */
+  if(evFrom && b.from === evFrom && b.to === evTo){ b.from = null; b.to = null; }
+  refresh();
+}
+function addAccomBlock(id){
+  const n = nightsCount();
+  const from = Q.dateStart || null;
+  Q.sel.accom.push({
+    id: id, qty: 1,
+    from: from,
+    to: from ? isoAddDays(from, Math.max(1, n - 1)) : null
+  });
+  refresh();
+}
+function removeAccomBlock(i){
+  Q.sel.accom.splice(i, 1);
+  refresh();
+}
+function setSplit(v){
+  Q.sel.split = !!v;
+  if(!v){
+    const byId = {};
+    (Q.sel.accom || []).forEach(b => { byId[b.id] = (byId[b.id] || 0) + (Number(b.qty) || 0); });
+    Q.sel.accom = Object.keys(byId).filter(id => byId[id] > 0).map(id => ({id: id, qty: byId[id], from: null, to: null}));
+  }
+  refresh();
+}
+function stepVenue(key, dir){
+  const cur = Number((Q.sel.venues || {})[key]) || 0;
+  const next = Math.max(0, Math.round((cur + dir * 0.5) * 2) / 2);
+  if(next <= 0) delete Q.sel.venues[key]; else Q.sel.venues[key] = next;
+  refresh();
+}
+function stepCaterDays(id, dir){
+  const c = (Q.sel.cater || {})[id];
+  const cur = c ? (Number(c.days) || 0) : 0;
+  const next = Math.max(0, cur + dir);
+  if(next <= 0) delete Q.sel.cater[id];
+  else if(c) c.days = next;
+  else Q.sel.cater[id] = {ppl: Number(Q.guests) || 1, days: next};
+  refresh();
+}
+function setChurchTier(v){
+  Q.sel.church = Number(v) || 0;
+  refresh();
+}
+/* ---------- RMS tariff & availability import ---------- */
+const RMS_ALIASES = [
+  ["4 BEDROOM EXECUTIVE", "acc_4br_house"], ["4 BEDROOM HOUSE", "acc_4br_house"],
+  ["TERRACE APARTMENT", "acc_2br_ter"],
+  ["BUNGALOW", "acc_2br_bung"],
+  ["2 BEDROOM AIR", "acc_2br_std"], ["2 BEDROOM STANDARD", "acc_2br_std"],
+  ["1 BEDROOM TERRACE", "acc_1br_ter"],
+  ["1 BEDROOM AIR", "acc_1br_std"], ["1 BEDROOM STANDARD", "acc_1br_std"],
+  ["MOTEL AIR", "acc_motel_std"], ["MOTEL STANDARD", "acc_motel_std"],
+  ["MOTEL BUDGET", "acc_motel_bud"],
+  ["POWERED WATERFRONT", "camp_pow_wf"],
+  ["POWERED DRIVE", "camp_pow_dt"],
+  ["UNPOWERED CAMP", "camp_unpow"]
+];
+function rmsMatch(name){
+  const n = String(name || "").toUpperCase().replace(/\s+/g, " ").trim();
+  if(!n) return null;
+  for(let i = 0; i < RMS_ALIASES.length; i++){
+    if(n.indexOf(RMS_ALIASES[i][0]) >= 0) return RMS_ALIASES[i][1];
+  }
+  return null;
+}
+function parseDMY(s){
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s).trim());
+  if(!m) return null;
+  return m[3] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
+}
+function cellToISO(v){
+  if(v === null || v === undefined || v === "") return null;
+  if(v instanceof Date && !isNaN(v)) return isoDate(v);
+  if(typeof v === "number" && v > 20000 && v < 80000){ // Excel serial date
+    return isoDate(new Date(Date.UTC(1899, 11, 30) + v * 86400000));
+  }
+  return parseDMY(v);
+}
+/* RMS rates report: header row has "Date" + one column per date; rows are categories with nightly $ */
+function parseRatesGrid(rows){
+  let dateCols = null, headerAt = -1;
+  for(let r = 0; r < Math.min(rows.length, 6); r++){
+    const cols = [];
+    (rows[r] || []).forEach((c, i) => { const iso = cellToISO(c); if(iso) cols.push({i: i, iso: iso}); });
+    if(cols.length >= 3){ dateCols = cols; headerAt = r; break; }
+  }
+  if(!dateCols) return null;
+  const rates = {}, skipped = [];
+  let matched = 0;
+  for(let r = headerAt + 1; r < rows.length; r++){
+    const row = rows[r] || [];
+    const name = String(row[1] || row[0] || "").trim();
+    if(!name || /^category$/i.test(name)) continue;
+    const id = rmsMatch(name);
+    const vals = {};
+    let any = false;
+    dateCols.forEach(dc => {
+      const v = row[dc.i];
+      const num = (typeof v === "number") ? v : parseFloat(String(v).replace(/[$,\s]/g, ""));
+      if(!isNaN(num) && num > 0){ vals[dc.iso] = num; any = true; }
+    });
+    if(!any) continue;
+    if(!id){ skipped.push(name); continue; }
+    rates[id] = Object.assign(rates[id] || {}, vals);
+    matched++;
+  }
+  if(!matched) return null;
+  const dates = dateCols.map(d => d.iso).sort();
+  return {rates: rates, dates: dates, matched: matched, skipped: skipped};
+}
+/* RMS availability chart: 3 header rows (day names / day numbers / months), col B = total units */
+const MONTHS3 = {JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11};
+function parseAvailGrid(rows){
+  if(rows.length < 5) return null;
+  const dayRow = rows[0] || [], numRow = rows[1] || [], monRow = rows[2] || [];
+  const firstCol = 2;
+  const monKey = c => String(c || "").trim().slice(0, 3).toUpperCase();
+  if(!(monKey(monRow[firstCol]) in MONTHS3)) return null;
+  const dayName = String(dayRow[firstCol] || "").trim().slice(0, 3);
+  const d0 = Number(numRow[firstCol]), m0 = MONTHS3[monKey(monRow[firstCol])];
+  if(!d0 && d0 !== 0) return null;
+  /* infer the year: prefer the event's year, else nearby years, matching the weekday */
+  const candidates = [];
+  if(Q.dateStart){ const y = Number(Q.dateStart.slice(0, 4)); candidates.push(y, y + 1, y - 1); }
+  const nowY = today.getFullYear();
+  [nowY, nowY + 1, nowY - 1, nowY + 2].forEach(y => { if(candidates.indexOf(y) < 0) candidates.push(y); });
+  let year = null;
+  for(let i = 0; i < candidates.length; i++){
+    const d = new Date(candidates[i], m0, d0, 12);
+    if(d.toLocaleDateString("en-GB", {weekday: "short"}).slice(0, 3) === dayName){ year = candidates[i]; break; }
+  }
+  if(year === null) year = candidates[0] || nowY;
+  const isoCols = [];
+  let y = year, prevM = m0;
+  for(let c = firstCol; c < dayRow.length; c++){
+    const dn = Number(numRow[c]), mk = monKey(monRow[c]);
+    if(!(mk in MONTHS3) || (!dn && dn !== 0)) continue;
+    const m = MONTHS3[mk];
+    if(m < prevM) y++;
+    prevM = m;
+    isoCols.push({i: c, iso: isoDate(new Date(y, m, dn, 12))});
+  }
+  if(isoCols.length < 3) return null;
+  const avail = {}, totals = {};
+  let matched = 0, skippedCount = 0;
+  for(let r = 3; r < rows.length; r++){
+    const row = rows[r] || [];
+    const name = String(row[0] || "").trim();
+    if(!name) continue;
+    const id = rmsMatch(name);
+    if(!id){ skippedCount++; continue; }
+    const tot = Number(row[1]);
+    if(!isNaN(tot)) totals[id] = tot;
+    const vals = {};
+    isoCols.forEach(dc => {
+      const v = Number(row[dc.i]);
+      if(!isNaN(v)) vals[dc.iso] = v;
+    });
+    avail[id] = Object.assign(avail[id] || {}, vals);
+    matched++;
+  }
+  if(!matched) return null;
+  const dates = isoCols.map(d => d.iso).sort();
+  return {avail: avail, totals: totals, dates: dates, matched: matched, skippedCount: skippedCount};
+}
+let SHEETJS_P = null;
+function loadSheetJS(){
+  if(window.XLSX) return Promise.resolve();
+  if(SHEETJS_P) return SHEETJS_P;
+  SHEETJS_P = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = () => res();
+    s.onerror = () => { SHEETJS_P = null; rej(new Error("no-sheetjs")); };
+    document.head.appendChild(s);
+  });
+  return SHEETJS_P;
+}
+function fileToRows(f){
+  return new Promise((res, rej) => {
+    if(/\.xlsx$/i.test(f.name)){
+      loadSheetJS().then(() => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try{
+            const wb = XLSX.read(reader.result, {type: "array", cellDates: false});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            res(XLSX.utils.sheet_to_json(ws, {header: 1, raw: true, defval: ""}));
+          }catch(e){ rej(e); }
+        };
+        reader.onerror = () => rej(new Error("read"));
+        reader.readAsArrayBuffer(f);
+      }).catch(rej);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => res(parseCSVText(String(reader.result || "")));
+    reader.onerror = () => rej(new Error("read"));
+    reader.readAsText(f);
+  });
+}
+function readTariffFiles(files){
+  const list = Array.from(files || []);
+  if(!list.length) return;
+  const notes = [];
+  let chain = Promise.resolve();
+  list.forEach(f => {
+    chain = chain.then(() => fileToRows(f)).then(rows => {
+      const ratesRes = parseRatesGrid(rows);
+      if(ratesRes){
+        Q.rates = ratesRes.rates;
+        Q.ratesInfo = {from: ratesRes.dates[0], to: ratesRes.dates[ratesRes.dates.length - 1], items: ratesRes.matched, file: f.name, skipped: ratesRes.skipped.length};
+        notes.push("Tariff: " + ratesRes.matched + " unit types, " + shortDate(ratesRes.dates[0]) + " – " + shortDate(ratesRes.dates[ratesRes.dates.length - 1]));
+        return;
+      }
+      const availRes = parseAvailGrid(rows);
+      if(availRes){
+        Q.availCal = availRes.avail;
+        Q.availInfo = {from: availRes.dates[0], to: availRes.dates[availRes.dates.length - 1], items: availRes.matched, file: f.name};
+        /* the chart's total-units column prefias the sleeps/units defaults where the rate card has none */
+        notes.push("Availability: " + availRes.matched + " unit types, " + shortDate(availRes.dates[0]) + " – " + shortDate(availRes.dates[availRes.dates.length - 1]));
+        return;
+      }
+      notes.push(f.name + ": not recognised — expected an RMS rates report or availability chart");
+    }).catch(e => {
+      notes.push(f.name + (String(e && e.message).indexOf("no-sheetjs") >= 0
+        ? ": couldn't load the Excel reader (offline?) — save it as CSV and import that instead"
+        : ": couldn't be read"));
+    });
+  });
+  chain.then(() => {
+    refresh();
+    showToast(notes.join(" · "));
+  });
+}
+function clearTariff(){
+  Q.rates = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
+  refresh();
+  showToast("Imported tariff & availability cleared — back to base prices and unit counts.");
+}
+function renderImpStatus(){
+  const host = document.getElementById("impStatus");
+  if(!Q.ratesInfo && !Q.availInfo){ host.innerHTML = ""; return; }
+  const bits = [];
+  if(Q.ratesInfo) bits.push("<span>Tariff <b>" + esc(shortDate(Q.ratesInfo.from)) + " – " + esc(shortDate(Q.ratesInfo.to)) + "</b> · " + Q.ratesInfo.items + " unit types" + (Q.ratesInfo.skipped ? " <span class='fmuted'>(" + Q.ratesInfo.skipped + " rows skipped)</span>" : "") + "</span>");
+  if(Q.availInfo) bits.push("<span>Availability <b>" + esc(shortDate(Q.availInfo.from)) + " – " + esc(shortDate(Q.availInfo.to)) + "</b> · " + Q.availInfo.items + " unit types</span>");
+  let warn = "";
+  if(Q.ratesInfo && Q.dateStart){
+    const missing = stayNightsList().filter(d => d < Q.ratesInfo.from || d > Q.ratesInfo.to).length;
+    if(missing) warn = '<span class="impwarn">⚠ ' + missing + ' stay night' + (missing === 1 ? '' : 's') + ' outside the imported tariff — base prices used for those</span>';
+  }
+  host.innerHTML = '<div class="impstatus">' + bits.join(" · ") + warn + '<button class="impclear" id="impClear">clear import</button></div>';
+  const ic = document.getElementById("impClear");
+  if(ic) ic.addEventListener("click", clearTariff);
+}
+
+/* ---------- menu library (from the WSLR menu selection form; Head of Catering: Kate Hammond) ---------- */
+const MENU_GROUPS = [
+  {key:"bf_hot", title:"Hot breakfast", itemIds:["bf_hot"], options:[
+    {k:"bfh_main", name:"Hot buffet", detail:"Scrambled eggs; bacon; sausages; mushrooms; tomatoes; hashbrowns; baked beans — plus the continental selection. Juice, tea & coffee."}
+  ]},
+  {key:"bf_cont", title:"Continental breakfast", itemIds:["bf_cont"], options:[
+    {k:"bfc_main", name:"Continental buffet", detail:"Selection of breads; cereals; tinned fruit; yogurt; condiments; juice; tea; coffee; water."}
+  ]},
+  {key:"lunch_sit", title:"Dine-in lunch — the group picks one", itemIds:["lunch_sit"], options:[
+    {k:"l_pasta", name:"Pasta", detail:"Beef mince or Mediterranean vegetable mix · penne or spiral · Napoletana, Carbonara, Bolognaise or Pesto · garlic bread, parmesan & garden salad"},
+    {k:"l_fish", name:"Fish", detail:"Battered fillets or grilled/steamed · choice of potato · salad or seasonal vegetables · sauces"},
+    {k:"l_burger", name:"Burger & chips", detail:"Beef & cheese, chicken or vegetable pattie · lettuce, tomato, onion, beetroot · tomato, BBQ or burger sauce · hot chips"},
+    {k:"l_nachos", name:"Nachos", detail:"Beef & bean or Mediterranean vegetable mix · corn chips, pico de gallo, guacamole, sour cream, salsa & cheese"},
+    {k:"l_schnitzel", name:"Chicken schnitzel", detail:"Choice of potato · salad or seasonal vegetables · gravy & sauces"},
+    {k:"l_quiche", name:"Quiche", detail:"Lorraine or vegetable · hot chips, garden salad, sauces & condiments"},
+    {k:"l_frittata", name:"Frittata", detail:"With hot chips & garden salad, or wedges & steamed seasonal vegetables"},
+    {k:"l_hotdogs", name:"Hot dogs", detail:"Long roll, hot chips, onions, bacon pieces, shredded cheese & sauces"},
+    {k:"l_wraps", name:"Platter of wraps", detail:"A variety of cold cuts with salad using fresh in-season ingredients"}
+  ]},
+  {key:"lunch_pack", title:"Takeaway lunch — the group picks one", itemIds:["lunch_pack"], options:[
+    {k:"t_sand", name:"Sandwiches", detail:"Cold cuts, cheese & salad · a piece of fruit and a juice box each · packed in a box for your distribution"},
+    {k:"t_wraps", name:"Wraps", detail:"Cold cuts, cheese & salad · a piece of fruit and a juice box each · packed in a box for your distribution"},
+    {k:"t_rolls", name:"Rolls", detail:"Cold cuts, cheese & salad · a piece of fruit and a juice box each · packed in a box for your distribution"}
+  ]},
+  {key:"dinner", title:"Dine-in dinner — the group picks one", itemIds:["din1", "din2"], options:[
+    {k:"d_roast", name:"Roast with vegetables", detail:"Roast chicken, beef or pork · choice of potato · salad or seasonal vegetables · gravy & sauces"},
+    {k:"d_stirfry", name:"Stir fry / curry", detail:"Chicken, beef, pork or tofu · green curry, teriyaki, honey soy or sweet & sour · steamed rice or hokkien noodles · seasonal vegetables"},
+    {k:"d_cottage", name:"Cottage pie", detail:"Rich beef & vegetable filling topped with cheesy creamy mash · steamed seasonal vegetables"},
+    {k:"d_lasagne", name:"Lasagne", detail:"Beef or vegetable · garlic bread, parmesan & garden salad"},
+    {k:"d_lunchmenu", name:"Any hot dine-in lunch option", detail:"Any hot dine-in lunch menu can also be selected for the dinner menu"}
+  ]},
+  {key:"dessert", title:"Dessert — included with the 2-course dinner", itemIds:["din2"], options:[
+    {k:"ds_mousse", name:"Chocolate mousse"},
+    {k:"ds_danish", name:"Apple danish with custard"},
+    {k:"ds_cheesecake", name:"Cheesecake slice"},
+    {k:"ds_cake", name:"Chocolate cake"},
+    {k:"ds_sticky", name:"Sticky date pudding with caramel sauce"}
+  ]},
+  {key:"mtea", title:"Morning tea", itemIds:[], options:[
+    {k:"mt_muffins", name:"Assorted muffins"}, {k:"mt_biscuits", name:"Assorted biscuits"}, {k:"mt_fruit", name:"Fruit platter"}
+  ]},
+  {key:"atea", title:"Afternoon tea", itemIds:[], options:[
+    {k:"at_pastries", name:"Mini pastries"}, {k:"at_cake", name:"Cake slices"}, {k:"at_cheese", name:"Cheese & crackers platter"}, {k:"at_fruit", name:"Fruit platter"}
+  ]},
+  {key:"bev", title:"Beverages", itemIds:[], options:[
+    {k:"bv_tea", name:"Tea & coffee station"}, {k:"bv_juice", name:"Juice"}, {k:"bv_soft", name:"Soft drinks"}, {k:"bv_water", name:"Bottled water"}, {k:"bv_sparkling", name:"Sparkling water"}
+  ]}
+];
+function menuOptOn(k){ return !Q.menu || Q.menu[k] !== false; }
+function enabledOptions(g){ return g.options.filter(o => menuOptOn(o.k)); }
+function menuGroupsForItem(id){ return MENU_GROUPS.filter(g => g.itemIds.indexOf(id) >= 0); }
+function menuExtrasText(){
+  const parts = MENU_GROUPS.filter(g => !g.itemIds.length)
+    .map(g => { const o = enabledOptions(g); return o.length ? g.title.toLowerCase() + " (" + o.map(x => x.name.toLowerCase()).join(", ") + ")" : null; })
+    .filter(Boolean);
+  return parts.length ? "Also available for your event — " + parts.join("; ") + ". Just ask our team when finalising catering." : "";
+}
+function menuSectionText(){
+  const parts = [];
+  MENU_GROUPS.forEach(g => {
+    const linked = g.itemIds.length ? g.itemIds.some(id => RATE[id] && catEntry(id).on) : quoteHasCater();
+    if(!linked) return;
+    const opts = enabledOptions(g);
+    if(!opts.length) return;
+    parts.push(g.title.replace(/ — .*$/, "") + ": " + opts.map(o => o.name).join("; ") + ".");
+  });
+  return parts.join(" ");
+}
+
+/* ---------- church / ACNC eligibility ---------- */
+const MAIN_MEAL_IDS = ["bf_hot", "bf_cont", "lunch_sit", "lunch_pack", "din1", "din2"];
+function mainMealServices(){
+  return MAIN_MEAL_IDS.reduce((s, id) => {
+    const c = (Q.sel.cater || {})[id];
+    if(!c || !RATE[id] || !catEntry(id).on) return s;
+    const ppl = caterRowPeople(id), days = Number(c.days) || 0;
+    return (ppl > 0 && days > 0) ? s + days : s;
+  }, 0);
+}
+function fiftyCheck(){
+  const services = mainMealServices();
+  const guests = Number(Q.guests) || 0;
+  let underCatered = false;
+  if(guests > 0){
+    if(kidsOn()){
+      const anyMeals = MAIN_MEAL_IDS.some(id => {
+        const c = (Q.sel.cater || {})[id];
+        return c && RATE[id] && catEntry(id).on && (Number(c.days) || 0) > 0;
+      });
+      if(anyMeals && whoAll() > 0 && whoAll() < guests) underCatered = true;
+      MAIN_MEAL_IDS.forEach(id => {
+        const c = (Q.sel.cater || {})[id];
+        if(c && RATE[id] && catEntry(id).on && (Number(c.days) || 0) > 0){
+          if(mealEaters(id) < whoMeals()) underCatered = true;
+        }
+      });
+    } else {
+      MAIN_MEAL_IDS.forEach(id => {
+        const c = (Q.sel.cater || {})[id];
+        if(c && RATE[id] && catEntry(id).on && (Number(c.days) || 0) > 0 && (Number(c.ppl) || 0) > 0 && (Number(c.ppl) || 0) < guests) underCatered = true;
+      });
+    }
+  }
+  const shortMeals = services < 3;
+  return {ok: !shortMeals && !underCatered, services: services, shortMeals: shortMeals, underCatered: underCatered, guests: guests};
+}
+function fiftyMessage(f){
+  let msg = "To qualify for the 50% rate you need at least 3 group-catered main meals during your stay, with everyone staying onsite catered for. ";
+  if(f.shortMeals) msg += "You currently have " + f.services + " catered main meal service" + (f.services === 1 ? "" : "s") + " selected. ";
+  if(f.underCatered) msg += "Some meals are set for fewer people than your " + f.guests + " guests. ";
+  msg += "You can choose the 20% rate now, or add meals above and try again — our team is happy to help.";
+  return msg;
+}
+let TIER_MSG = "";
+const MENU_OPEN = {};
+let CATER_STRUCT = ""; // which per-meal inputs exist; rebuild only when this flips
+function caterStructSig(){
+  const w = who();
+  return [kidsOn(), mealsAreSpecific(), (Number(w.k412) || 0) > 0, (Number(w.k13) || 0) > 0, (Number(w.diet) || 0) > 0].join("|");
+}
+
+/* ---------- tab 1: staff prep (offer / price / availability / suggestion) ---------- */
+function prepLight(){
+  autosaveDraft();
+  renderSecBoxes();
+  renderTotals();
+  renderClient();
+  renderPipeline();
+}
+function stepperHTML(kind, id, val, opts){
+  opts = opts || {};
+  return '<div class="stepper" data-kind="' + kind + '" data-id="' + esc(String(id)) + '">' +
+    '<button class="stDown"' + (opts.canDown === false ? " disabled" : "") + '>−</button>' +
+    '<span class="stepval">' + val + '</span>' +
+    '<button class="stUp"' + (opts.canUp === false ? ' disabled' + (opts.upTitle ? ' title="' + esc(opts.upTitle) + '"' : '') : '') + '>+</button>' +
+  '</div>';
+}
+function sleepsPill(it){
+  return it.sleeps ? ' <span class="sleeps">Sleeps up to ' + it.sleeps + '</span>' : '';
+}
+function renderPrep(){
+  const n = nightsCount();
+  document.getElementById("nightsChip").textContent = Q.dateStart
+    ? n + " night" + (n === 1 ? "" : "s") + " · " + shortRange(Q.dateStart, Q.dateEnd || Q.dateStart)
+    : "set the event dates above · priced per night";
+
+  renderImpStatus();
+
+  /* accommodation */
+  document.getElementById("prepAccom").innerHTML = accomItems().map(it => {
+    const c = catEntry(it.id);
+    const q = accomQtyTotal(it.id);
+    const blocks = (Q.sel.accom || []).filter(b => b.id === it.id);
+    const sub = blocks.reduce((s, b) => s + blockTotal(b), 0);
+    const canUp = canAddOver(it.id, stayNightsList());
+    /* price cell: staff-typed override > imported nightly tariff > rate card */
+    const m = manualPrice(it.id);
+    const hasCal = Q.rates && Q.rates[it.id] && Object.keys(Q.rates[it.id]).length > 0;
+    const rr = rateRange(it.id);
+    let priceCell;
+    if(hasCal && m === null){
+      const ph = rr.varies ? Math.round(rr.min) + "–" + Math.round(rr.max) : String(Math.round(rr.min));
+      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="" placeholder="' + esc(ph) + '" title="Nightly rates from the imported tariff — type a price to override every night">' +
+        '<span class="pinsub">from tariff' + (rr.missing ? ' · ' + rr.missing + ' night' + (rr.missing === 1 ? '' : 's') + ' missing' : '') + '</span></div>';
+    } else if(hasCal){
+      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + m + '" title="Your override — every night at this price">' +
+        '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="price" title="Go back to the imported nightly rates">typed · use tariff</button></div>';
+    } else {
+      priceCell = '<input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + c.price + '" title="Per-night price on this quote">';
+    }
+    /* availability cell: staff-typed override > imported chart > rate card default */
+    const ma = manualAvail(it.id);
+    const hasAvailCal = Q.availCal && Q.availCal[it.id] && Object.keys(Q.availCal[it.id]).length > 0;
+    let availCell;
+    if(hasAvailCal && ma === null){
+      const disp = availDisplay(it.id);
+      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="" placeholder="' + (disp === null ? "—" : disp) + '" title="Lowest availability across the stay, from the imported chart — type a number to override every night">' +
+        '<span class="pinsub">from chart</span></div>';
+    } else if(hasAvailCal){
+      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + ma + '" title="Your override — same cap every night">' +
+        '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="avail" title="Go back to the imported availability">typed · use chart</button></div>';
+    } else {
+      availCell = '<input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + (c.avail === null ? '' : c.avail) + '" placeholder="—" title="Units the organiser can book, for this quote">';
+    }
+    return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
+      '<input type="checkbox" class="prepon rc-cb" data-kind="accom" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this cabin type on this quote">' +
+      '<div><span class="pkgname">' + esc(it.name) + '</span>' + sleepsPill(it) +
+        (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') + '</div>' +
+      priceCell +
+      availCell +
+      stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canUp, upTitle: canUp ? "" : "No availability left on one or more nights"}) +
+      '<div class="pkgsub">' + (q > 0 ? money(sub) : '<span class="fmuted">—</span>') + '</div>' +
+    '</div>';
+  }).join("") || '<p class="hint">No accommodation items in the rate card. Add some on the Settings tab.</p>';
+
+  /* venues */
+  document.getElementById("prepVenues").innerHTML = VENUES.filter(v => RATE[v.fullId] || RATE[v.halfId]).map(v => {
+    const c = catEntry(v.fullId);
+    const ch = catEntry(v.halfId);
+    const d = Number((Q.sel.venues || {})[v.key]) || 0;
+    const sub = d > 0 ? venueDayTotal(v, d) : 0;
+    return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
+      '<input type="checkbox" class="prepon rc-cb" data-kind="venue" data-id="' + esc(v.key) + '"' + (c.on ? ' checked' : '') + ' title="Offer this venue on this quote">' +
+      '<div><span class="pkgname">' + esc(v.name) + '</span>' +
+        '<div class="pkgmeta">' + esc(v.cap) + '</div></div>' +
+      '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
+      '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
+      stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0}) +
+      '<div class="pkgsub">' + (d > 0 ? money(sub) : '<span class="fmuted">—</span>') + '</div>' +
+    '</div>';
+  }).join("");
+
+  /* catering */
+  document.getElementById("prepCater").innerHTML = caterItems().map(it => {
+    const c = catEntry(it.id);
+    const selc = (Q.sel.cater || {})[it.id];
+    const d = selc ? (Number(selc.days) || 0) : 0;
+    const ppl = selc ? selc.ppl : (Number(Q.guests) || "");
+    const sub = (selc && d > 0) ? (Number(selc.ppl) || 0) * d * c.price : 0;
+    return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
+      '<input type="checkbox" class="prepon rc-cb" data-kind="cater" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this meal on this quote">' +
+      '<div><span class="pkgname">' + esc(it.name) + '</span></div>' +
+      '<input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + c.price + '" title="Per-person price on this quote">' +
+      '<span></span>' +
+      '<div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; flex-wrap:wrap">' +
+        '<span class="ppl"><input type="number" class="prepPpl" data-id="' + esc(it.id) + '" min="1" value="' + esc(ppl) + '"' + (d > 0 ? '' : ' disabled') + '> ×</span>' +
+        stepperHTML("cater", it.id, d, {canDown: d > 0}) +
+        '<span class="pkgmeta">day' + (d === 1 ? '' : 's') + '</span>' +
+      '</div>' +
+      '<div class="pkgsub">' + (d > 0 ? money(sub) : '<span class="fmuted">—</span>') + '</div>' +
+    '</div>';
+  }).join("");
+
+  wireSelSteppers(document.getElementById("tab-staff"));
+  const host = document.getElementById("tab-staff");
+  host.querySelectorAll(".prepon").forEach(el => el.addEventListener("change", e => {
+    const id = e.target.dataset.id, kind = e.target.dataset.kind, on = e.target.checked;
+    if(kind === "venue"){
+      const v = VENUES.find(x => x.key === id);
+      if(v){ setCat(v.fullId, "on", on); setCat(v.halfId, "on", on); }
+    } else {
+      setCat(id, "on", on);
+    }
+    refresh();
+  }));
+  host.querySelectorAll(".prepPrice").forEach(el => {
+    el.addEventListener("input", e => {
+      setCat(e.target.dataset.id, "price", e.target.value === "" ? "" : Number(e.target.value));
+      prepLight();
+    });
+    el.addEventListener("change", refresh);
+  });
+  host.querySelectorAll(".prepAvail").forEach(el => el.addEventListener("change", e => {
+    setCat(e.target.dataset.id, "avail", e.target.value === "" ? "" : Number(e.target.value));
+    refresh();
+  }));
+  host.querySelectorAll(".prepPpl").forEach(el => el.addEventListener("input", e => {
+    const c = (Q.sel.cater || {})[e.target.dataset.id];
+    if(!c) return;
+    c.ppl = e.target.value === "" ? "" : Number(e.target.value);
+    prepLight();
+  }));
+  host.querySelectorAll(".pinreset").forEach(el => el.addEventListener("click", e => {
+    const id = e.currentTarget.dataset.id, k = e.currentTarget.dataset.k;
+    if(Q.catalog[id]) delete Q.catalog[id][k];
+    refresh();
+  }));
+
+  renderPrepMenu();
+}
+function renderPrepMenu(){
+  const host = document.getElementById("prepMenu");
+  host.innerHTML = MENU_GROUPS.map(g =>
+    '<div class="menugrp">' + esc(g.title) + '</div>' +
+    '<div class="menuchk">' + g.options.map(o =>
+      '<label title="' + esc(o.detail || "") + '"><input type="checkbox" class="menuCb" data-k="' + esc(o.k) + '"' + (menuOptOn(o.k) ? ' checked' : '') + '> <span>' + esc(o.name) + '</span></label>'
+    ).join('') + '</div>'
+  ).join('');
+  host.querySelectorAll(".menuCb").forEach(el => el.addEventListener("change", e => {
+    if(!Q.menu) Q.menu = {};
+    if(e.target.checked) delete Q.menu[e.target.dataset.k];
+    else Q.menu[e.target.dataset.k] = false;
+    autosaveDraft();
+    renderClient();
+  }));
+}
+/* wires +/- steppers for accom (type level), venues and catering inside a container */
+function wireSelSteppers(host){
+  host.querySelectorAll(".stepper").forEach(st => {
+    const kind = st.dataset.kind, id = st.dataset.id;
+    const up = st.querySelector(".stUp"), dn = st.querySelector(".stDown");
+    const go = dir => {
+      if(kind === "accom") stepAccom(id, dir);
+      else if(kind === "venue") stepVenue(id, dir);
+      else if(kind === "cater") stepCaterDays(id, dir);
+      else if(kind === "blockqty") stepBlockQty(Number(id), dir);
+    };
+    if(up) up.addEventListener("click", () => go(1));
+    if(dn) dn.addEventListener("click", () => go(-1));
+  });
+}
+
+/* ---------- tab 1: information sections ---------- */
+function renderSecBoxes(){
+  const autoMode = !(Q.sections && typeof Q.sections === "object");
+  const activeIds = activeSectionIds();
+  document.getElementById("secModeWrap").innerHTML = autoMode
+    ? '<span class="autobadge">automatic</span>'
+    : '<span class="manualbadge">manual for this quote</span> <button class="secauto" id="secAutoBtn">back to automatic</button>';
+  document.getElementById("secBoxes").innerHTML = INFO_SECTIONS.map(s => {
+    const c = sectionContent(s.id);
+    const on = activeIds.indexOf(s.id) >= 0;
+    return '<label class="secitem"><input type="checkbox" class="secCb" data-id="' + esc(s.id) + '"' + (on ? " checked" : "") + '>' +
+      '<span><span class="sectitle">' + esc(c.title) + '</span>' +
+      '<span class="secwhy">' + esc(s.why) + '</span></span></label>';
+  }).join("");
+
+  const autoBtn = document.getElementById("secAutoBtn");
+  if(autoBtn) autoBtn.addEventListener("click", () => {
+    Q.sections = null;
+    autosaveDraft();
+    renderSecBoxes();
+    renderClient();
+    showToast("Back to automatic — sections now follow what's in the quote.");
+  });
+  document.querySelectorAll("#secBoxes .secCb").forEach(el => el.addEventListener("change", e => {
+    if(!(Q.sections && typeof Q.sections === "object")){
+      Q.sections = {};
+      autoSectionIds().forEach(id => { Q.sections[id] = true; });
+    }
+    Q.sections[e.target.dataset.id] = e.target.checked;
+    autosaveDraft();
+    renderSecBoxes();
+    renderClient();
+  }));
+}
+
+/* ---------- tab 2: the organiser's interactive quote page ---------- */
 function anyLineDisc(){
   return Q.lines.some(l => (Number(l.qty)||0) > 0 && lineDiscPct(l) > 0);
 }
+function perPersonHTML(t){
+  const g = Number(Q.guests) || 0;
+  if(!(Q.features && Q.features.perPerson) || g <= 0 || !(t.total > 0)) return '';
+  return '<div class="ppLine">≈ ' + money0(Math.round(t.total / g)) + ' per person across your ' + g + ' guests</div>';
+}
+function cbTotalsHTML(t, pm){
+  if(pm === "noprices")
+    return '<div class="qp-pricenote">Pricing for this package is available from our functions team — contact us any time.</div>';
+  if(pm === "nototal")
+    return '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>';
+  return '<div class="cb-total">' +
+    '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
+    (t.church > 0 ? '<div class="savings"><span>Church discount − ' + t.churchPct + '% (accommodation &amp; venues)</span><span>−' + money(t.church) + '</span></div>' : '') +
+    (t.disc > 0 ? '<div><span>Discount (' + Q.discountPct + '%)</span><span>−' + money(t.disc) + '</span></div>' : '') +
+    '<div class="grand"><span>Your total</span><span>' + money(t.total) + '</span></div>' +
+    '<div><span>Includes GST (10%)</span><span>' + money(t.gst) + '</span></div>' +
+    '</div>' +
+    perPersonHTML(t) +
+    '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>';
+}
+function keyDatesRows(showPrices){
+  const u = unitsSelected(), vs = venuesSelected();
+  const kd = keyDates();
+  if(!kd && !(u + vs)) return [];
+  const anyCater = caterItems().some(it => { const c = (Q.sel.cater || {})[it.id]; return c && catEntry(it.id).on && (Number(c.days) || 0) > 0; });
+  const rows = [];
+  if(showPrices && (u + vs) > 0){
+    rows.push(['Deposit', money0(100 * (u + vs)) + ' — $100 × ' + (u + vs) + ' cabin' + (u + vs === 1 ? '' : 's') + (vs ? ' / conference room' + (vs === 1 ? '' : 's') : '') + ', due within 4 weeks of booking to secure your reservation' + (Number(Q.sel.church) > 0 ? ' and discount' : '')]);
+  }
+  if(showPrices && Number(Q.bond) > 0){
+    rows.push(['Security bond', money0(Q.bond) + ' — paid prior to or on arrival, refunded on departure under the Code of Conduct']);
+  }
+  if(kd){
+    rows.push([fmtDate(kd.email), 'expect our confirmation email (about 10 weeks before arrival)']);
+    if(anyCater) rows.push([fmtDate(kd.catering), 'catering locked in — at least 1 month before arrival']);
+    rows.push([fmtDate(kd.finalNums), 'final numbers & details due (' + kd.finalDays + ' days before arrival' + (kd.finalDays === 28 ? ' — applies to 50+ units / peak periods' : '') + ')']);
+    rows.push([fmtDate(kd.arrive), 'arrival — the balance of your account is due before this date']);
+  }
+  return rows;
+}
+function keyDatesHTML(showPrices){
+  if(!(Q.features && Q.features.depositDates)) return '';
+  const rows = keyDatesRows(showPrices);
+  if(!rows.length) return '';
+  return '<div class="keydates"><b>Money &amp; key dates for your event</b>' +
+    rows.map(r => '<div class="kd"><span class="kdate">' + r[0] + '</span><span>' + r[1] + '</span></div>').join('') +
+    '</div>';
+}
+/* everything the tracker sheet / emailed quote page needs, in one payload */
+function buildDisplayPayload(){
+  const t = totals();
+  const g = Number(Q.guests) || 0;
+  const pm = Q.priceMode || "full";
+  const w = kidsOn() ? who() : null;
+  return {
+    lines: displayLines(),
+    totals: t,
+    issued: isoDate(today),
+    priceMode: pm,
+    sections: resolvedSections(),
+    perPerson: (Q.features && Q.features.perPerson && pm === "full" && g > 0 && t.total > 0)
+      ? ("≈ " + money0(Math.round(t.total / g)) + " per person across " + g + " guests") : "",
+    keyDates: (Q.features && Q.features.depositDates) ? keyDatesRows(pm !== "noprices") : [],
+    message: String(Q.sel.message || ""),
+    who: w ? {adults: whoAdults(), k412: Number(w.k412) || 0, k13: Number(w.k13) || 0, babies: Number(w.babies) || 0, diet: Number(w.diet) || 0} : null,
+    venueTimes: JSON.parse(JSON.stringify(Q.sel.venueTimes || {}))
+  };
+}
 function renderClient(){
   const t = totals();
-  const showDisc = anyLineDisc();
-  const rows = Q.lines.filter(l => (Number(l.qty)||0) > 0).map(l => {
-    const it = lineItem(l);
-    const nm = lineName(l);
-    const dpct = lineDiscPct(l);
-    const when = it.meal ? fmtWhen(l.when) : "";
-    return '<tr><td>' + esc(nm) +
-           (when ? '<div class="cwhen">' + when + '</div>' : '') + '</td>' +
-           '<td class="num">' + l.qty + '</td>' +
-           '<td class="num">' + money(l.price) + '</td>' +
-           (showDisc ? '<td class="num">' + (dpct > 0 ? dpct + "%" : "") + '</td>' : '') +
-           '<td class="num">' + money(lineTotal(l)) + '</td></tr>';
-  }).join("");
+  const pm = Q.priceMode || "full";
+  const showPrices = pm !== "noprices";
+  const n = nightsCount();
+  const split = !!Q.sel.split;
 
-  const acceptBlock = Q.accepted
-    ? '<div class="accepted-box">✓ Thanks ' + esc(firstName(Q.contact)) + ', this quote is accepted.<br><span>We\'ll be in touch shortly to lock in the details.</span></div>'
-    : '<div class="acceptrow"><button class="btn accept" id="acceptBtn">Accept this quote</button><a class="btn ghost" id="askBtn" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a></div>';
+  /* --- accommodation (interactive) --- */
+  const accomOn = accomItems().filter(it => catEntry(it.id).on);
+  let accomHtml = "";
+  if(accomOn.length){
+    const evFrom = Q.dateStart || '';
+    const evTo = evFrom ? isoAddDays(evFrom, n) : '';
+    const rows = accomOn.map(it => {
+      const q = accomQtyTotal(it.id);
+      const blocks = [];
+      (Q.sel.accom || []).forEach((b, i) => { if(b.id === it.id) blocks.push({b: b, i: i}); });
+      const sub = blocks.reduce((s, x) => s + blockTotal(x.b), 0);
+      const avail = availDisplay(it.id);
+      const meta = avail !== null ? ('up to ' + avail + ' available on your dates') : '';
+      let blockHtml = '';
+      if(split){
+        blockHtml = '<div class="blockrows">' +
+          blocks.map(x => {
+            const r = blockRange(x.b);
+            const bn = blockNights(x.b);
+            const whole = !x.b.from && !x.b.to;
+            return '<div class="blockrow">' +
+              stepperHTML("blockqty", x.i, x.b.qty) + ' unit' + (Number(x.b.qty) === 1 ? '' : 's') +
+              ' <span class="blkmeta">arrive</span> <input type="date" class="blkFrom" data-i="' + x.i + '" value="' + esc(r ? r.from : '') + '"' + (evFrom ? ' min="' + evFrom + '" max="' + isoAddDays(evTo, -1) + '"' : '') + '>' +
+              ' <span class="blkmeta">leave</span> <input type="date" class="blkTo" data-i="' + x.i + '" value="' + esc(r ? r.to : '') + '"' + (evFrom ? ' min="' + isoAddDays(evFrom, 1) + '" max="' + evTo + '"' : '') + '>' +
+              ' <span class="cb-avail">' + bn + ' night' + (bn === 1 ? '' : 's') + (whole ? ' · whole stay' : '') + '</span>' +
+              (showPrices ? '<span class="pkgsub">' + money(blockTotal(x.b)) + '</span>' : '') +
+              (blocks.length > 1 || !whole ? '<button class="blkx" data-i="' + x.i + '" title="Remove these cabins">×</button>' : '') +
+            '</div>';
+          }).join('') +
+          ((avail === null || avail > 0 || blocks.length)
+            ? '<button class="addblock" data-id="' + esc(it.id) + '">+ add ' + esc(it.name) + ' for different dates</button>'
+            : '') +
+        '</div>';
+      }
+      return '<div class="cb-row">' +
+        '<div><span class="pkgname">' + esc(it.name) + '</span>' + sleepsPill(it) +
+          (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') +
+          (meta ? '<div class="cb-price">' + esc(meta) + '</div>' : '') + '</div>' +
+        (split
+          ? '<div class="cb-avail" style="text-align:right">' + q + ' selected</div>'
+          : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canAddOver(it.id, stayNightsList())})) +
+        '<div class="pkgsub">' + (q > 0 && showPrices ? money(sub) : (q > 0 ? q + ' ✓' : '<span class="fmuted">—</span>')) + '</div>' +
+        blockHtml +
+      '</div>';
+    }).join('');
+
+    const cap = selSleeps();
+    const guests = Number(Q.guests) || 0;
+    const short = guests > 0 && cap < guests;
+    const capHtml = '<div class="capbar' + (short ? ' short' : '') + '" id="capBar">' +
+      (cap > 0
+        ? ('Your cabins sleep up to <b>&nbsp;' + cap + '&nbsp;</b> people' +
+           (guests ? '<span class="capsub">· you expect ' + guests + ' guest' + (guests === 1 ? '' : 's') + (short ? ' — you may need more cabins' : ' ✓') + '</span>' : '') +
+           (split ? '<span class="capsub">· capacity varies on split nights</span>' : ''))
+        : 'No cabins selected yet' + (guests ? ' <span class="capsub">· you expect ' + guests + ' guests</span>' : '')) +
+      '</div>';
+
+    accomHtml = '<div class="cb-sec"><h3>Accommodation</h3>' +
+      '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ' · choose how many of each cabin type you\'d like</p>' +
+      '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
+        '<span><b>Some cabins are only needed for part of the stay</b><br>' +
+        '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin — you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>' +
+      rows + capHtml + '</div>';
+  }
+
+  /* --- venues (interactive) --- */
+  const venuesOn = VENUES.filter(v => (RATE[v.fullId] || RATE[v.halfId]) && catEntry(v.fullId).on);
+  const venueHtml = venuesOn.length
+    ? '<div class="cb-sec"><h3>Conference rooms &amp; venues</h3>' +
+      '<p class="cb-hint">in half-day steps · a half day is 6 continuous hours or less</p>' +
+      venuesOn.map(v => {
+        const c = catEntry(v.fullId), ch = catEntry(v.halfId);
+        const d = Number((Q.sel.venues || {})[v.key]) || 0;
+        return '<div class="cb-row">' +
+          '<div><span class="pkgname">' + esc(v.name) + '</span>' +
+            '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
+            (showPrices ? '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>' : '') +
+            (d > 0 ? '<input type="text" class="vtimeInp" data-key="' + esc(v.key) + '" placeholder="days & times you plan to use it (e.g. Sat 9am–4pm)" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">' : '') +
+          '</div>' +
+          stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0}) +
+          '<div class="pkgsub">' + (d > 0 && showPrices ? money(venueDayTotal(v, d)) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">—</span>')) + '</div>' +
+        '</div>';
+      }).join('') + '</div>'
+    : '';
+
+  /* --- catering (interactive) --- */
+  const kidsMode = kidsOn();
+  CATER_STRUCT = caterStructSig();
+  const caterOn = caterItems().filter(it => catEntry(it.id).on && !(kidsMode && it.id === "diet"));
+  const extrasTxt = menuExtrasText();
+  const w = kidsMode ? who() : null;
+  const whoHtml = kidsMode
+    ? '<div class="whoRow"><span class="whohead">Who\'s eating? <span class="cb-avail" style="font-weight:400">— each meal starts with your whole group; change the eating number on a meal if not everyone\'s joining. Prices adjust automatically.</span></span>' +
+      '<label>Adults &amp; 13+<input type="number" class="whoInp" data-w="adults" min="0" value="' + esc(whoAdults() || "") + '"></label>' +
+      '<label>Children 4–12 <span class="whonote">half price</span><input type="number" class="whoInp" data-w="k412" min="0" value="' + esc(w.k412) + '"></label>' +
+      '<label>Children 1–3 <span class="whonote">$5 per meal</span><input type="number" class="whoInp" data-w="k13" min="0" value="' + esc(w.k13) + '"></label>' +
+      '<label>Under 12 months <span class="whonote">free</span><input type="number" class="whoInp" data-w="babies" min="0" value="' + esc(w.babies) + '"></label>' +
+      '<label>Special dietary <span class="whonote">medically diagnosed · +$10 per meal</span><input type="number" class="whoInp" data-w="diet" min="0" value="' + esc(w.diet) + '"></label>' +
+      '</div>'
+    : '';
+  const caterHtml = caterOn.length
+    ? '<div class="cb-sec"><h3>Catering</h3>' +
+      '<p class="cb-hint">buffet style in our Private Dining Room · minimum group size 20 · your group picks the actual dishes with our catering team closer to the date</p>' +
+      whoHtml +
+      caterOn.map(it => {
+        const c = catEntry(it.id);
+        const selc = (Q.sel.cater || {})[it.id];
+        const d = selc ? (Number(selc.days) || 0) : 0;
+        const ppl = selc ? selc.ppl : (Number(Q.guests) || '');
+        const sub = caterRowCost(it.id);
+        const groups = menuGroupsForItem(it.id).map(g => ({g: g, opts: enabledOptions(g)})).filter(x => x.opts.length);
+        const open = !!MENU_OPEN[it.id];
+        const menuBtn = groups.length
+          ? '<button class="menuTgl" data-id="' + esc(it.id) + '">' + (open ? 'hide menu options ▴' : 'see menu options ▾') + '</button>'
+          : '';
+        const menuHtml = (groups.length && open)
+          ? '<div class="menulist">' + groups.map(x =>
+              (groups.length > 1 ? '<div class="mo"><b>' + esc(x.g.title) + '</b></div>' : '') +
+              x.opts.map(o => '<div class="mo"><b>' + esc(o.name) + '</b>' + (o.detail ? ' — ' + esc(o.detail) : '') + '</div>').join('')
+            ).join('') + '</div>'
+          : '';
+        return '<div class="cb-row" data-cid="' + esc(it.id) + '">' +
+          '<div><span class="pkgname">' + esc(it.name) + '</span>' +
+            (showPrices ? '<div class="cb-price">' + money(c.price) + ' per person</div>' : '') +
+            menuBtn + '</div>' +
+          '<div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; flex-wrap:wrap">' +
+            (kidsMode
+              ? (mealsAreSpecific()
+                  ? '<span class="ppl"><b class="eatTot">' + mealEaters(it.id) + '</b>&nbsp;eating ×</span>'
+                  : '<span class="ppl"><input type="number" class="cbEat" data-id="' + esc(it.id) + '" min="0" value="' + (mealEaters(it.id) || '') + '"' + (d > 0 ? '' : ' disabled') + ' title="How many are eating this meal — defaults to your whole group"> eating ×</span>')
+              : '<span class="ppl"><input type="number" class="cbPpl" data-id="' + esc(it.id) + '" min="1" value="' + esc(ppl) + '"' + (d > 0 ? '' : ' disabled') + '> people ×</span>') +
+            stepperHTML("cater", it.id, d, {canDown: d > 0}) +
+            '<span class="pkgmeta">day' + (d === 1 ? '' : 's') + '</span>' +
+          '</div>' +
+          '<div class="pkgsub">' + (d > 0 && showPrices ? money(sub) : (d > 0 ? '✓' : '<span class="fmuted">—</span>')) + '</div>' +
+          (kidsMode && mealsAreSpecific() && d > 0
+            ? (function(){
+                const b = mealBands(it.id);
+                const w2 = who();
+                return '<div class="bandRow"><span class="bandhead">Eating this meal:</span>' +
+                  '<label>adults &amp; 13+<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatA" min="0" value="' + b.adults + '"></label>' +
+                  ((Number(w2.k412) || 0) > 0 ? '<label>children 4–12<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatK" min="0" value="' + b.k412 + '"></label>' : '') +
+                  ((Number(w2.k13) || 0) > 0 ? '<label>children 1–3<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatT" min="0" value="' + b.k13 + '"></label>' : '') +
+                  ((Number(w2.diet) || 0) > 0 ? '<label>special dietary<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatD" min="0" value="' + b.diet + '"></label>' : '') +
+                '</div>';
+              })()
+            : '') +
+          menuHtml +
+        '</div>';
+      }).join('') +
+      (extrasTxt ? '<div class="menuextras">' + esc(extrasTxt) + '</div>' : '') +
+      '</div>'
+    : '';
+
+  /* --- church discount tier (only when staff have marked the group ACNC/church) --- */
+  const churchPct = Number(Q.sel.church) || 0;
+  const f50 = fiftyCheck();
+  const churchHtml = Q.acnc
+    ? '<div class="cb-sec"><h3>Church &amp; charitable discount</h3>' +
+      '<p class="cb-hint">as a registered church / ACNC charity your group can choose a concessional tier — the full conditions are in the important information below</p>' +
+      '<select id="cbChurch">' +
+      '<option value="0"' + (churchPct === 0 ? ' selected' : '') + '>Not applicable</option>' +
+      '<option value="20"' + (churchPct === 20 ? ' selected' : '') + '>20% off accommodation &amp; venues — self catered, or fewer than 3 catered main meals</option>' +
+      '<option value="50"' + (churchPct === 50 ? ' selected' : '') + '>50% off accommodation &amp; venues — 3+ group catered main meals, everyone catered for</option>' +
+      '</select>' +
+      (TIER_MSG ? '<div class="tierwarn" id="tierMsg">' + esc(TIER_MSG) + '</div>' : '') +
+      (churchPct === 50 && !f50.ok && !TIER_MSG
+        ? '<div class="tierwarn">Heads up — your meal selections no longer meet the 50% conditions (' + f50.services + ' catered main meal service' + (f50.services === 1 ? '' : 's') + ' selected' + (f50.underCatered ? ', and some meals cover fewer than your ' + f50.guests + ' guests' : '') + '). Add meals above, drop to 20%, or our team will confirm with you.</div>'
+        : '') +
+      (churchPct > 0 && showPrices && t.church > 0 ? '<p class="cb-hint" style="color:var(--good); font-weight:600">You\'re saving ' + money(t.church) + ' on accommodation and venue hire.</p>' : '') +
+      '</div>'
+    : '';
+
+  /* --- fixed extras --- */
+  const fixedLines = Q.lines.filter(l => (Number(l.qty) || 0) > 0);
+  const fixedHtml = fixedLines.length
+    ? '<div class="cb-sec"><h3>Also on this quote</h3>' +
+      '<p class="cb-hint">arranged with our functions team — talk to us to change these</p>' +
+      fixedLines.map(l => {
+        const nn = lineNights(l);
+        const when = lineItem(l).meal ? fmtWhen(l.when) : '';
+        return '<div class="cb-row"><div><span class="pkgname">' + esc(lineName(l)) + '</span><span class="fixedtag">fixed</span>' +
+          (when ? '<div class="pkgmeta">' + when + '</div>' : '') + '</div>' +
+          '<div class="cb-avail" style="text-align:right">' + l.qty + (nn > 1 ? ' × ' + nn + ' nights' : '') + (lineDiscPct(l) > 0 ? ' · −' + lineDiscPct(l) + '%' : '') + '</div>' +
+          '<div class="pkgsub">' + (showPrices ? money(lineTotal(l)) : '') + '</div></div>';
+      }).join('') + '</div>'
+    : '';
+
+  /* --- info sections, submit, print summary --- */
+  const secs = resolvedSections();
+  const secHtml = secs.length
+    ? '<div class="qp-sechead">Important information</div>' +
+      secs.map(s => '<div class="qp-sec"><h4>' + esc(s.title) + '</h4>' + esc(s.text) + '</div>').join('')
+    : '';
+
+  const anySel = hasSel(Q) || fixedLines.length > 0;
+  let submitBlock;
+  if(Q.accepted || Q.status === "Accepted"){
+    submitBlock = '<div class="accepted-box">✓ Thanks ' + esc(firstName(Q.contact)) + ', this quote is accepted.<br><span>We\'ll be in touch shortly to lock in the details.</span></div>';
+  } else if(Q.status === "Submitted"){
+    submitBlock = '<div class="submitted-box">✓ Selection received, ' + esc(firstName(Q.contact)) + '.' +
+      '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit. You can keep adjusting and resubmit any time.</span></div>' +
+      '<div class="acceptrow"><button class="btn accept" id="submitBtn">Update my selection</button>' +
+      '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a></div>';
+  } else {
+    submitBlock = '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>Submit my selection for confirmation</button>' +
+      '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a></div>' +
+      '<p class="qp-aud" style="text-align:center; margin-top:6px">Submitting doesn\'t lock anything in — our team confirms availability and final pricing with you first.</p>';
+  }
+
+  const printRows = displayLines().map(l =>
+    '<tr><td>' + esc(l.name) +
+      (l.unit && l.unit !== 'flat' ? '<span class="cwhen"> · ' + esc(l.unit) + '</span>' : '') +
+      (l.beds ? '<div class="cwhen">' + esc(l.beds) + '</div>' : '') +
+      (l.when ? '<div class="cwhen">' + l.when + '</div>' : '') + '</td>' +
+    '<td class="num">' + l.qty + (l.nights > 1 ? '<div class="cwhen">× ' + l.nights + ' ' + String(l.nightsWord || 'nights').replace(/s$/, '') + (l.nights === 1 ? '' : 's') + '</div>' : '') + '</td>' +
+    (showPrices ? '<td class="num">' + money(l.price) + '</td>' : '') +
+    (showPrices ? '<td class="num">' + money(l.total) + '</td>' : '') + '</tr>'
+  ).join('');
+  const printTotals = pm === "full"
+    ? '<div class="qp-totals">' + totalsHTML(t, "Total") + '</div>' + perPersonHTML(t) + '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>'
+    : (pm === "nototal" ? '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>'
+       : '<div class="qp-pricenote">Pricing for this package is available from our functions team.</div>');
+  const printSummary = '<div class="qp-printonly">' +
+    (displayLines().length
+      ? '<div class="tablewrap"><table class="qp-table"><thead><tr><th>Item</th><th class="num">Qty</th>' + (showPrices ? '<th class="num">Unit</th><th class="num">Total</th>' : '') + '</tr></thead><tbody>' + printRows + '</tbody></table></div>' + printTotals
+      : '<p class="cb-hint">No selections yet.</p>') +
+    keyDatesHTML(showPrices) +
+    (String(Q.sel.message || '').trim() ? '<div class="qp-sec"><h4>Notes from you</h4>' + esc(Q.sel.message) + '</div>' : '') +
+    '</div>';
 
   document.getElementById("quotePage").innerHTML =
     '<div class="qp-head">' +
@@ -956,20 +2784,126 @@ function renderClient(){
     '</div>' +
     '<div class="qp-for">Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : '') + '</div>' +
     '<div class="qp-event">' + esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests</div>' +
-    '<div class="tablewrap"><table class="qp-table">' +
-      '<thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit</th>' + (showDisc ? '<th class="num">Disc.</th>' : '') + '<th class="num">Total</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table></div>' +
-    '<div class="qp-totals">' + totalsHTML(t, "Total") + '</div>' +
-    '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>' +
+    '<div class="cb-live">' +
+      '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">Build your package below — pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.</p>' +
+      accomHtml + venueHtml + caterHtml + churchHtml + fixedHtml +
+      '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
+      keyDatesHTML(showPrices) +
+      '<div class="cb-sec orgmsg"><h3>Anything we should know?</h3>' +
+        '<p class="cb-hint">questions, arrival plans, dietary details, how you\'ll use the rooms — this comes straight to our team with your submission</p>' +
+        '<textarea id="cbMsg" rows="3" placeholder="Type anything you\'d like us to know…">' + esc(Q.sel.message || '') + '</textarea></div>' +
+    '</div>' +
+    printSummary +
     '<div class="qp-notes">' + esc(Q.notes) + '</div>' +
     '<div class="qp-pay"><b>Payment &amp; terms</b><br>' + esc(Q.terms) +
       '<div class="qp-bank">' + BANK_LINES.join('<br>') + '</div></div>' +
-    acceptBlock +
+    secHtml +
+    submitBlock +
     '<div class="qp-print-note">To confirm this quote, simply reply to the email it came with and we\'ll take care of the rest.</div>' +
     '<div class="qp-foot">' + esc(VENUE) + ' · ' + VENUE_ADDR1 + ', ' + VENUE_ADDR2 + ' · ' + VENUE_ABN + ' · Phone: ' + VENUE_PHONE + ' · ' + VENUE_EMAIL + ' · ' + VENUE_WEB + '</div>';
 
-  const ab = document.getElementById("acceptBtn");
-  if(ab) ab.addEventListener("click", doAccept);
+  /* wire the organiser's controls */
+  const page = document.getElementById("quotePage");
+  wireSelSteppers(page);
+  const splitCb = document.getElementById("cbSplit");
+  if(splitCb) splitCb.addEventListener("change", e => setSplit(e.target.checked));
+  page.querySelectorAll(".addblock").forEach(el => el.addEventListener("click", e => addAccomBlock(e.currentTarget.dataset.id)));
+  page.querySelectorAll(".blkx").forEach(el => el.addEventListener("click", e => removeAccomBlock(Number(e.currentTarget.dataset.i))));
+  page.querySelectorAll(".blkFrom").forEach(el => el.addEventListener("change", e => setBlockDates(Number(e.target.dataset.i), e.target.value, null)));
+  page.querySelectorAll(".blkTo").forEach(el => el.addEventListener("change", e => setBlockDates(Number(e.target.dataset.i), null, e.target.value)));
+  page.querySelectorAll(".menuTgl").forEach(el => el.addEventListener("click", e => {
+    const id = e.currentTarget.dataset.id;
+    MENU_OPEN[id] = !MENU_OPEN[id];
+    renderClient();
+  }));
+  page.querySelectorAll(".cbPpl").forEach(el => el.addEventListener("input", e => {
+    const c = (Q.sel.cater || {})[e.target.dataset.id];
+    if(!c) return;
+    c.ppl = e.target.value === "" ? "" : Number(e.target.value);
+    const row = e.target.closest(".cb-row");
+    const sub = row && row.querySelector(".pkgsub");
+    const ce = catEntry(e.target.dataset.id);
+    if(sub && (Q.priceMode || "full") !== "noprices") sub.innerHTML = money((Number(c.ppl) || 0) * (Number(c.days) || 0) * ce.price);
+    document.getElementById("cbTotals").innerHTML = cbTotalsHTML(totals(), Q.priceMode || "full");
+    autosaveDraft();
+    renderTotals();
+    renderPipeline();
+  }));
+  function refreshCaterRows(){
+    page.querySelectorAll(".cb-row[data-cid]").forEach(row => {
+      const id = row.dataset.cid;
+      const c = (Q.sel.cater || {})[id];
+      const tot = row.querySelector(".eatTot");
+      if(tot) tot.textContent = mealEaters(id);
+      const eatInp = row.querySelector(".cbEat");
+      if(eatInp && (!c || c.eatA === "" || c.eatA === undefined) && document.activeElement !== eatInp) eatInp.value = mealEaters(id) || "";
+      row.querySelectorAll(".bandInp").forEach(bi => {
+        const k = bi.dataset.b;
+        if(c && c[k] !== "" && c[k] !== undefined && c[k] !== null) return; /* their own number — leave it */
+        if(document.activeElement !== bi) bi.value = bandDefault(k);
+      });
+      const sub = row.querySelector(".pkgsub");
+      if(sub && c && (Number(c.days) || 0) > 0 && (Q.priceMode || "full") !== "noprices") sub.innerHTML = money(caterRowCost(id));
+    });
+    const ct = document.getElementById("cbTotals");
+    if(ct) ct.innerHTML = cbTotalsHTML(totals(), Q.priceMode || "full");
+    autosaveDraft();
+    renderTotals();
+    renderPipeline();
+  }
+  page.querySelectorAll(".whoInp").forEach(el => {
+    el.addEventListener("input", e => {
+      who()[e.target.dataset.w] = e.target.value === "" ? "" : Number(e.target.value);
+      refreshCaterRows();
+    });
+    /* band inputs appear/disappear with the group make-up — rebuild (after typing) only when that flips */
+    el.addEventListener("change", () => {
+      if(caterStructSig() !== CATER_STRUCT) renderClient();
+    });
+  });
+  page.querySelectorAll(".cbEat").forEach(el => el.addEventListener("input", e => {
+    const c = (Q.sel.cater || {})[e.target.dataset.id];
+    if(!c) return;
+    const v = e.target.value;
+    c.eatA = (v === "" || Number(v) === bandDefault("eatA")) ? "" : Number(v);
+    refreshCaterRows();
+  }));
+  page.querySelectorAll(".bandInp").forEach(el => el.addEventListener("input", e => {
+    const c = (Q.sel.cater || {})[e.target.dataset.id];
+    if(!c) return;
+    const k = e.target.dataset.b;
+    const v = e.target.value;
+    c[k] = (v === "" || Number(v) === bandDefault(k)) ? "" : Number(v);
+    refreshCaterRows();
+  }));
+  page.querySelectorAll(".vtimeInp").forEach(el => el.addEventListener("input", e => {
+    if(!Q.sel.venueTimes) Q.sel.venueTimes = {};
+    Q.sel.venueTimes[e.target.dataset.key] = e.target.value;
+    autosaveDraft();
+  }));
+  const msgTa = document.getElementById("cbMsg");
+  if(msgTa) msgTa.addEventListener("input", e => {
+    Q.sel.message = e.target.value;
+    autosaveDraft();
+  });
+  const churchSel = document.getElementById("cbChurch");
+  if(churchSel) churchSel.addEventListener("change", e => {
+    const v = Number(e.target.value) || 0;
+    if(v === 50){
+      const f = fiftyCheck();
+      if(!f.ok){
+        TIER_MSG = fiftyMessage(f);
+        e.target.value = String(Q.sel.church || 0); /* keep the previous tier */
+        renderClient();
+        return;
+      }
+    }
+    TIER_MSG = "";
+    setChurchTier(v);
+    document.getElementById("f-church").value = String(Q.sel.church || 0);
+  });
+  const sb = document.getElementById("submitBtn");
+  if(sb) sb.addEventListener("click", doSubmit);
 }
 
 /* ---------- tab 3: pipeline ---------- */
@@ -993,10 +2927,12 @@ function pipelineRows(){
   return rows;
 }
 function followFor(r){
+  if(r.status === "Submitted") return "confirm";
   if(r.status === "Sent" || r.status === "Viewed") return daysUntil(r.validUntil);
   return null;
 }
 function followCell(f){
+  if(f === "confirm") return '<span class="overdue">⚠ confirm selection</span>';
   if(f === null || f === undefined) return '<span class="fmuted">-</span>';
   if(f < 0)  return '<span class="overdue">⚠ ' + (-f) + ' day' + (f === -1 ? "" : "s") + ' overdue</span>';
   if(f === 0) return '<span class="fdue">due today</span>';
@@ -1102,8 +3038,12 @@ function readyToSend(){
     showToast("Add a contact name or organisation first.");
     return false;
   }
-  if(!Q.lines.some(l => (Number(l.qty)||0) > 0)){
-    showToast("Add at least one line item first.");
+  const anythingOn = accomItems().some(it => catEntry(it.id).on) ||
+    VENUES.some(v => RATE[v.fullId] && catEntry(v.fullId).on) ||
+    caterItems().some(it => catEntry(it.id).on) ||
+    Q.lines.some(l => (Number(l.qty)||0) > 0);
+  if(!anythingOn){
+    showToast("Everything is switched off — offer at least one item, or add a fixed extra.");
     return false;
   }
   return true;
@@ -1119,7 +3059,7 @@ function sendCore(){
     link: linkForToken(Q.token),
     meals: mealsSummary(),
     rooms: roomsSummary(),
-    display: {lines: displayLines(), totals: totals(), issued: isoDate(today)}
+    display: buildDisplayPayload()
   })});
   renderPrevOptions();
   renderPipeline();
@@ -1152,19 +3092,24 @@ function doSend(){
   sendCore();
   showToast("Quote " + Q.num + " marked as sent, saved here, and logged to the tracker sheet.");
 }
-function doAccept(){
-  Q.accepted = true;
-  Q.status = "Accepted";
-  const i = SAVED.findIndex(s => s.num === Q.num);
-  if(i >= 0){
-    SAVED[i].status = "Accepted";
-    SAVED[i].accepted = true;
-    saveQuotes();
-    postToSheet({action: "status", num: Q.num, status: "Accepted"});
-  }
+function doSubmit(){
+  Q.status = "Submitted";
+  Q.submittedAt = new Date().toISOString();
+  if(!Q.sentAt) Q.sentAt = Q.submittedAt;
+  if(!Q.token) Q.token = genToken();
+  const snap = snapshotQ();
+  upsertSnapshot(snap);
+  /* the full selection travels to the tracker sheet: who's eating, message, venue times, totals */
+  postToSheet({action: "submitted", quote: Object.assign({}, snap, {
+    link: linkForToken(Q.token),
+    meals: mealsSummary(),
+    rooms: roomsSummary(),
+    display: buildDisplayPayload()
+  })});
   renderClient();
+  renderPrevOptions();
   renderPipeline();
-  showToast("Quote " + Q.num + " accepted by " + firstName(Q.contact) + ". Pipeline updated on tab 3.");
+  showToast("Selection for " + Q.num + " submitted and logged to the tracker sheet. In the live version this also emails the functions team, who confirm availability and final pricing.");
 }
 
 /* ---------- new / template / copy controls ---------- */
@@ -1185,13 +3130,28 @@ function copyFromQuote(num){
   const s = SAVED.find(x => x.num === num);
   if(!s) return;
   const b = blankQuote(nextQuoteNum());
-  Q = Object.assign(b, {
+  Q = Object.assign(b, JSON.parse(JSON.stringify({
     contact: s.contact, org: s.org, email: s.email, event: s.event,
     dateStart: s.dateStart, dateEnd: s.dateEnd, guests: s.guests,
     validDays: s.validDays, discountPct: s.discountPct,
     notes: s.notes, terms: s.terms,
-    lines: JSON.parse(JSON.stringify(s.lines || []))
-  });
+    priceMode: s.priceMode || "full",
+    bond: (s.bond !== undefined && s.bond !== null && s.bond !== "") ? s.bond : b.bond,
+    acnc: s.acnc,
+    churchDisc: s.churchDisc,
+    sections: s.sections || null,
+    catalog: s.catalog || {},
+    rates: s.rates || {},
+    availCal: s.availCal || {},
+    ratesInfo: s.ratesInfo || null,
+    availInfo: s.availInfo || null,
+    menu: s.menu || {},
+    features: s.features,
+    sel: s.sel || null,
+    lines: s.lines || []
+  })));
+  if(!Q.sel) Q.sel = null; // force legacy conversion below
+  normalizeQuote(Q);
   syncForm();
   refresh();
   showToast("Copied " + num + " into new quote " + Q.num + ". The original is unchanged.");
@@ -1222,7 +3182,9 @@ function showRestoreBar(){
     '<button id="restoreYes">Restore it</button> <button id="restoreNo" class="dis">Discard</button>';
   bar.style.display = "flex";
   document.getElementById("restoreYes").addEventListener("click", () => {
-    Q = Object.assign(blankQuote(dq.num), dq);
+    Q = Object.assign(blankQuote(dq.num), JSON.parse(JSON.stringify(dq)));
+    if(dq.sel === undefined) Q.sel = null; // legacy draft: convert its line items
+    normalizeQuote(Q);
     bar.style.display = "none";
     syncForm();
     refresh();
@@ -1370,13 +3332,15 @@ function persistRate(){
 function renderRcEditor(){
   const host = document.getElementById("rcEditor");
   const groups = editableGroups();
-  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th title="New lines start with quantity = guest count">Qty = guests</th><th title="Shows the day &amp; time control on lines">Day &amp; time</th><th></th></tr></thead><tbody>';
+  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th class="num" title="How many people the unit sleeps — shown as the Sleeps badge">Sleeps</th><th class="num" title="Default units available — the per-quote number starts from this">Units</th><th title="Priced per person">Per person</th><th title="Shows the day &amp; time control on fixed lines">Day &amp; time</th><th></th></tr></thead><tbody>';
   groups.forEach((g, gi) => {
     g.items.forEach((it, ii) => {
       html += '<tr>' +
         '<td><input type="text" class="rc-name" data-gi="' + gi + '" data-ii="' + ii + '" data-k="name" value="' + esc(it.name) + '"></td>' +
         '<td><input type="text" list="rcGroups" data-gi="' + gi + '" data-ii="' + ii + '" data-k="group" value="' + esc(g.group) + '"></td>' +
         '<td class="num"><input type="number" step="0.5" min="0" data-gi="' + gi + '" data-ii="' + ii + '" data-k="price" value="' + it.price + '"></td>' +
+        '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="sleeps" value="' + (it.sleeps || "") + '" placeholder="—"></td>' +
+        '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="avail" value="' + (it.avail || "") + '" placeholder="—"></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="pp"' + (it.pp ? " checked" : "") + '></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="meal"' + (it.meal ? " checked" : "") + '></td>' +
         '<td><button class="xBtn rc-del" data-gi="' + gi + '" data-ii="' + ii + '" title="Remove this item">×</button></td>' +
@@ -1403,6 +3367,9 @@ function renderRcEditor(){
       }
     } else if(k === "price"){
       item.price = Number(e.target.value) || 0;
+    } else if(k === "sleeps" || k === "avail"){
+      const v = Number(e.target.value);
+      if(e.target.value === "" || !v) delete item[k]; else item[k] = v;
     } else if(k === "pp" || k === "meal"){
       item[k] = e.target.checked;
     } else {
@@ -1429,6 +3396,44 @@ function renderRcEditor(){
     renderRcEditor();
   }));
 }
+function sectionOverrides(){ return lsGet(LS_SECTIONS, {}) || {}; }
+function saveSecOverride(id, key, val){
+  const base = INFO_SECTIONS.find(s => s.id === id);
+  const ov = sectionOverrides();
+  const cur = ov[id] || {};
+  if(base && String(val) === base[key]) delete cur[key]; else cur[key] = String(val);
+  if(!cur.title && !cur.text) delete ov[id]; else ov[id] = cur;
+  lsSet(LS_SECTIONS, ov);
+  renderSecEditor();
+  renderSecBoxes();
+  renderClient();
+}
+function renderSecEditor(){
+  const host = document.getElementById("secEditor");
+  const ov = sectionOverrides();
+  host.innerHTML = INFO_SECTIONS.map(s => {
+    const o = ov[s.id] || {};
+    const overridden = !!(o.title || o.text);
+    return '<div class="se-item">' +
+      '<div class="se-head">' +
+        '<input type="text" class="se-title" data-id="' + esc(s.id) + '" value="' + esc(o.title || s.title) + '">' +
+        (overridden ? '<button class="se-reset" data-id="' + esc(s.id) + '" title="Back to the standard template wording">edited · reset to standard</button>' : '') +
+      '</div>' +
+      '<textarea class="se-text" data-id="' + esc(s.id) + '" rows="3">' + esc(o.text || s.text) + '</textarea>' +
+    '</div>';
+  }).join("");
+  host.querySelectorAll(".se-title").forEach(el => el.addEventListener("change", e => saveSecOverride(e.target.dataset.id, "title", e.target.value)));
+  host.querySelectorAll(".se-text").forEach(el => el.addEventListener("change", e => saveSecOverride(e.target.dataset.id, "text", e.target.value)));
+  host.querySelectorAll(".se-reset").forEach(el => el.addEventListener("click", e => {
+    const ov2 = sectionOverrides();
+    delete ov2[e.currentTarget.dataset.id];
+    lsSet(LS_SECTIONS, ov2);
+    renderSecEditor();
+    renderSecBoxes();
+    renderClient();
+    showToast("Section reset to the standard template wording.");
+  }));
+}
 function renderSettings(){
   const d = getDefaults();
   document.getElementById("s-notes").value = d.notes;
@@ -1436,6 +3441,7 @@ function renderSettings(){
   document.getElementById("s-subject").value = d.subject;
   document.getElementById("s-body").value = d.body;
   renderRcEditor();
+  renderSecEditor();
 }
 
 let toastTimer;
@@ -1456,13 +3462,14 @@ function switchTab(name){
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
 /* ---------- form bindings ---------- */
-function softRefresh(){ autosaveDraft(); renderTotals(); renderClient(); renderPipeline(); }
-function refresh(){ autosaveDraft(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
+function softRefresh(){ autosaveDraft(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); }
+function refresh(){ autosaveDraft(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
 
 const BINDINGS = [
   ["f-contact", "contact"], ["f-org", "org"], ["f-email", "email"], ["f-event", "event"],
   ["f-date-start", "dateStart"], ["f-date-end", "dateEnd"], ["f-guests", "guests"],
   ["f-num", "num"], ["f-prepby", "prepBy"], ["f-prepemail", "prepEmail"], ["f-valid", "validDays"], ["f-disc", "discountPct"],
+  ["f-pricemode", "priceMode"], ["f-bond", "bond"],
   ["f-notes", "notes"], ["f-terms", "terms"]
 ];
 BINDINGS.forEach(pair => {
@@ -1471,12 +3478,50 @@ BINDINGS.forEach(pair => {
     Q[pair[1]] = (el.type === "number") ? (el.value === "" ? "" : Number(el.value)) : el.value;
     if(pair[1] === "prepBy"){ try{ localStorage.setItem(LS_PREPBY, el.value); }catch(e){} }
     if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
+    if(pair[1] === "dateStart" || pair[1] === "dateEnd"){
+      refresh(); // block nights are clamped to the new stay length automatically
+      return;
+    }
     softRefresh();
   });
 });
 function syncForm(){
   BINDINGS.forEach(pair => { document.getElementById(pair[0]).value = Q[pair[1]]; });
+  document.getElementById("f-pricemode").value = Q.priceMode || "full";
+  document.getElementById("f-church").value = String((Q.sel && Q.sel.church) || 0);
+  document.getElementById("f-acnc").checked = !!Q.acnc;
+  document.getElementById("f-church").style.display = Q.acnc ? "" : "none";
+  document.getElementById("f-feat-pp").checked = !!(Q.features && Q.features.perPerson);
+  document.getElementById("f-feat-deposit").checked = !!(Q.features && Q.features.depositDates);
+  document.getElementById("f-feat-kids").checked = !!(Q.features && Q.features.kids);
 }
+[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"]].forEach(pair => {
+  document.getElementById(pair[0]).addEventListener("change", e => {
+    if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true};
+    Q.features[pair[1]] = e.target.checked;
+    refresh();
+  });
+});
+document.getElementById("f-church").addEventListener("change", e => {
+  setChurchTier(e.target.value);
+  showToast(Number(e.target.value) > 0
+    ? e.target.value + "% church discount preset on this quote — it applies to accommodation and venue hire, and the conditions appear on the quote."
+    : "No tier preset — the organiser can pick their own.");
+});
+document.getElementById("f-acnc").addEventListener("change", e => {
+  Q.acnc = e.target.checked;
+  if(!Q.acnc){ Q.sel.church = 0; TIER_MSG = ""; }
+  document.getElementById("f-church").style.display = Q.acnc ? "" : "none";
+  refresh();
+  showToast(Q.acnc
+    ? "Marked as a registered church / ACNC charity — the 20%/50% conditions now appear and the organiser can pick a tier."
+    : "Church/ACNC unticked — church discount content removed from the quote.");
+});
+document.getElementById("tariffBtn").addEventListener("click", () => document.getElementById("tariffFile").click());
+document.getElementById("tariffFile").addEventListener("change", e => {
+  readTariffFiles(e.target.files);
+  e.target.value = "";
+});
 
 document.getElementById("addLine").addEventListener("click", () => {
   Q.lines.push({id:"custom", desc:"", qty:1, price:0});
@@ -1567,6 +3612,39 @@ document.getElementById("appLogo").src = LOGO_DATA;
     lsSet(LS_RATECARD, stored);
   }
   lsSet(LS_ACCOM_FLAG, true);
+})();
+/* one-time: upgrade the sample accommodation items to the real WSLR unit types (only where unedited) */
+(function(){
+  const FLAG = "wslr_accom_v2";
+  const stored = lsGet(LS_RATECARD, null);
+  if(!stored || !stored.length || lsGet(FLAG, false)) return;
+  const OLD = {
+    acc_motel_bud:{name:"Motel Budget", price:120}, acc_motel_std:{name:"Motel Standard", price:140},
+    acc_1br_std:{name:"1 Bedroom Standard", price:160}, acc_1br_ter:{name:"1 Bedroom Terrace", price:180},
+    acc_2br_std:{name:"2 Bedroom Standard", price:190}, acc_2br_bung:{name:"2 Bedroom Bungalow", price:210},
+    acc_2br_ter:{name:"2 Bedroom Terrace", price:230}
+  };
+  const defGroup = DEFAULT_RATE_GROUPS.find(g => g.group === "Accommodation & camping");
+  const defById = {};
+  defGroup.items.forEach(it => { defById[it.id] = it; });
+  let touched = false;
+  stored.forEach(g => {
+    (g.items || []).forEach((it, i) => {
+      const old = OLD[it.id];
+      if(old && it.name === old.name && Number(it.price) === old.price && defById[it.id]){
+        g.items[i] = JSON.parse(JSON.stringify(defById[it.id]));
+        touched = true;
+      }
+    });
+  });
+  const hasHouse = stored.some(g => (g.items || []).some(it => it.id === "acc_4br_house"));
+  if(!hasHouse){
+    const tg = stored.find(g => g.group === "Accommodation & camping") ||
+               stored.find(g => (g.items || []).some(it => /^(acc_|camp_)/.test(String(it.id))));
+    if(tg){ tg.items.unshift(JSON.parse(JSON.stringify(defById.acc_4br_house))); touched = true; }
+  }
+  if(touched) lsSet(LS_RATECARD, stored);
+  lsSet(FLAG, true);
 })();
 buildRate(lsGet(LS_RATECARD, null));
 Q = blankQuote(nextQuoteNum());
