@@ -253,6 +253,8 @@
     display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:.3px; white-space:nowrap;
     color:#0b5394; background:rgba(42,120,214,.13); border-radius:99px; padding:2px 9px; vertical-align:1px;
   }
+  .tourlink{font-size:11.5px; color:var(--accent); text-decoration:none; white-space:nowrap; font-weight:600}
+  .tourlink:hover{text-decoration:underline}
 
   /* ---------- staff prep table (tab 1) ---------- */
   .preprow{
@@ -422,6 +424,14 @@
   }
   .hiddenflag{font-size:12px; color:#9a6700; text-align:right; padding:2px 8px}
 
+  /* ---------- sticky jump-to-submit ---------- */
+  #stickySubmit{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:40;
+    display:none; box-shadow:0 5px 20px rgba(11,11,11,.28);
+    font-size:15px; padding:11px 24px; border-radius:99px;
+  }
+  #stickySubmit.show{display:inline-block}
+
   /* ---------- toast ---------- */
   #toast{
     position:fixed; right:18px; bottom:18px; max-width:400px;
@@ -444,7 +454,7 @@
   .totals .savings span{color:var(--good)}
   @media print{
     body{background:#fff}
-    header.top, nav.tabs, #tab-staff, #tab-pipeline, #tab-settings, .sidecard, #toast{display:none !important}
+    header.top, nav.tabs, #tab-staff, #tab-pipeline, #tab-settings, .sidecard, #toast, #stickySubmit{display:none !important}
     .cb-live, .submitted-box{display:none !important}
     .qp-printonly{display:block}
     .qp-sec{orphans:3; widows:3}
@@ -522,21 +532,21 @@
           </label>
           <label>Security bond ($)<input id="f-bond" type="number" min="0" step="50"></label>
         </div>
-        <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab. "Pricing shown to the client" hides the final total (or every price) on the client quote and PDF only — you always see the full numbers here. The security bond amount appears in the deposit &amp; payment information on the quote. When the client accepts or declines online, the alert email goes to the preparer email above (the functions inbox always gets a copy).</p>
+        <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab. "Pricing shown to the client" hides the final total (or every price) on the client quote and PDF only, you always see the full numbers here. The security bond amount appears in the deposit &amp; payment information on the quote. When the client accepts or declines online, the alert email goes to the preparer email above (the functions inbox always gets a copy).</p>
       </div>
     </div>
 
     <div class="card">
       <div class="cardhead">
         <h2>What the organiser can build from</h2>
-        <span class="hint">tick what's on offer, set this quote's prices and availability, and (optionally) pre-fill a suggested package — the organiser picks their own quantities on their quote page.</span>
+        <span class="hint">tick what's on offer, set this quote's prices and availability, and (optionally) pre-fill a suggested package, the organiser picks their own quantities on their quote page.</span>
       </div>
 
       <div class="pkgsec">
         <div class="pkghead">
           <h3>Accommodation</h3>
           <span style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-            <button class="btn ghost" id="tariffBtn" style="padding:5px 12px; font-size:13px" title="Import an RMS rates report (.xlsx or .csv) and/or an RMS availability chart (.csv) — nightly prices and availability prefill from them">Import tariff &amp; availability</button>
+            <button class="btn ghost" id="tariffBtn" style="padding:5px 12px; font-size:13px" title="Import an RMS rates report (.xlsx or .csv) and/or an RMS availability chart (.csv), nightly prices and availability prefill from them">Import tariff &amp; availability</button>
             <span class="nightschip" id="nightsChip"></span>
           </span>
           <input type="file" id="tariffFile" accept=".csv,.xlsx" multiple style="display:none">
@@ -573,7 +583,7 @@
       <div class="pkgsec">
         <div class="pkghead">
           <h3>Menu shown to the organiser</h3>
-          <span class="hint">from Kate's menu selection form — untick anything not on offer for this event. They can't order from it; it shows what they could get.</span>
+          <span class="hint">from Kate's menu selection form, untick anything not on offer for this event. They can't order from it; it shows what they could get.</span>
         </div>
         <div id="prepMenu"></div>
       </div>
@@ -585,12 +595,12 @@
         <div class="churchrow">
           <label class="secitem" style="padding:0; font-weight:600"><input type="checkbox" id="f-acnc"> <span>This group is a registered church or ACNC charity</span></label>
           <select id="f-church" style="display:none">
-            <option value="0">No tier preset — the organiser picks</option>
-            <option value="20">Preset 20% — self catered / fewer than 3 catered main meals</option>
-            <option value="50">Preset 50% — 3+ group catered main meals, everyone catered for</option>
+            <option value="0">No tier preset, the organiser picks</option>
+            <option value="20">Preset 20%, self catered / fewer than 3 catered main meals</option>
+            <option value="50">Preset 50%, 3+ group catered main meals, everyone catered for</option>
           </select>
         </div>
-        <p class="hint" style="margin-top:6px">Ticked: the 20%/50% concessional conditions appear on the quote and the organiser can pick their tier — choosing 50% without at least 3 group-catered main meals (with everyone staying onsite catered for) explains why it doesn't qualify. The discount applies to accommodation and venue hire only, never catering. Unticked: no church content appears anywhere.</p>
+        <p class="hint" style="margin-top:6px">Ticked: the 20%/50% concessional conditions appear on the quote and the organiser can pick their tier, choosing 50% without at least 3 group-catered main meals (with everyone staying onsite catered for) explains why it doesn't qualify. The discount applies to accommodation and venue hire only, never catering. Unticked: no church content appears anywhere.</p>
       </div>
 
       <div class="pkgsec">
@@ -602,16 +612,16 @@
           <label class="secitem"><input type="checkbox" id="f-feat-deposit"> <span><span class="sectitle">Deposit &amp; key dates</span><span class="secwhy">their deposit, bond and deadline dates worked out from the selection</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-kids"> <span><span class="sectitle">Children's &amp; dietary pricing</span><span class="secwhy">adults / 4–12 (half) / 1–3 ($5) / under 1 (free) + dietary (+$10) priced properly per meal</span></span></label>
         </div>
-        <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission — that part is built in.</p>
+        <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission, that part is built in.</p>
       </div>
 
-      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote — always check RMS first. Prices and unit counts start from the rate card (Settings tab) but only apply to this quote.</p>
+      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote, always check RMS first. Prices and unit counts start from the rate card (Settings tab) but only apply to this quote.</p>
     </div>
 
     <div class="card">
       <div class="cardhead">
         <h2>Fixed extras</h2>
-        <span class="hint">lines the organiser sees but can't change — custom items, or rooms imported from an RMS statement. Type over any price, use Disc % for a line-only discount.</span>
+        <span class="hint">lines the organiser sees but can't change, custom items, or rooms imported from an RMS statement. Type over any price, use Disc % for a line-only discount.</span>
       </div>
       <div class="tablewrap">
         <table class="lines">
@@ -680,7 +690,7 @@
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
-      <p class="hint" style="margin-top:10px">Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span> — the tracker sheet colours its rows the same way. Change a status or date sent and the tracker sheet updates itself. The × removes a quote here and deletes its row from the tracker sheet.</p>
+      <p class="hint" style="margin-top:10px">Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span>, the tracker sheet colours its rows the same way. Change a status or date sent and the tracker sheet updates itself. The × removes a quote here and deletes its row from the tracker sheet.</p>
     </div>
 
   </section>
@@ -733,11 +743,13 @@
       <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit each email before sending. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
     </div>
 
-    <p class="hint">Settings save automatically — to this browser straight away, and to the tracker sheet for everyone else.</p>
+    <p class="hint">Settings save automatically, to this browser straight away, and to the tracker sheet for everyone else.</p>
 
   </section>
 
 </div>
+
+<button id="stickySubmit" class="btn accept" type="button">Review &amp; submit ↓</button>
 
 <div id="toast" role="status"></div>
 
@@ -766,17 +778,17 @@ const DEFAULT_RATE_GROUPS = [
     {id:"din_half",  name:"Dining Room - half day",                     unit:"per half day", price:250}
   ]},
   {group:"Accommodation & camping", items:[
-    {id:"acc_4br_house", name:"4 Bedroom House (air con)",                unit:"per night", price:930, sleeps:10, avail:1,  beds:"4 king beds or 8 king single beds; queen sofa bed in lounge room"},
-    {id:"acc_2br_ter",   name:"2 Bedroom Terrace Apartment (air con)",    unit:"per night", price:465, sleeps:6,  avail:3,  beds:"2 king beds or 4 king single beds; sofa with 2 chaise single beds"},
-    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow Unit (air con)",        unit:"per night", price:378, sleeps:6,  avail:5,  beds:"2 double beds or 4 single beds; queen sofa bed in lounge room"},
+    {id:"acc_4br_house", name:"4 Bedroom House",                          unit:"per night", price:930, sleeps:10, avail:1,  beds:"4 king beds or 8 king single beds; queen sofa bed in lounge room"},
+    {id:"acc_2br_ter",   name:"2 Bedroom Terrace Apartment",              unit:"per night", price:465, sleeps:6,  avail:3,  beds:"2 king beds or 4 king single beds; sofa with 2 chaise single beds"},
+    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow Unit",                  unit:"per night", price:378, sleeps:6,  avail:5,  beds:"2 double beds or 4 single beds; queen sofa bed in lounge room"},
     {id:"acc_2br_std",   name:"2 Bedroom Air Conditioned Unit",           unit:"per night", price:344, sleeps:7,  avail:8,  beds:"1 king bed & 2 single beds; 2 queen sofa beds in lounge room"},
-    {id:"acc_1br_ter",   name:"1 Bedroom Terrace Unit (air con)",         unit:"per night", price:333, sleeps:6,  avail:6,  beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
+    {id:"acc_1br_ter",   name:"1 Bedroom Terrace Unit",                   unit:"per night", price:333, sleeps:6,  avail:6,  beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
     {id:"acc_1br_std",   name:"1 Bedroom Air Conditioned Unit",           unit:"per night", price:277, sleeps:6,  avail:33, beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
     {id:"acc_motel_std", name:"Motel Style Air Conditioned Unit",         unit:"per night", price:212, sleeps:4,  avail:36, beds:"1 king bed or 2 king single beds & bunk bed"},
     {id:"acc_motel_bud", name:"Motel Style Budget Unit (communal parking)",unit:"per night", price:176, sleeps:4,  avail:16, beds:"1 king bed or 2 king single beds & bunk bed"},
-    {id:"camp_unpow",    name:"Unpowered Campsite",                       unit:"per night", price:36},
-    {id:"camp_pow_wf",   name:"Powered Waterfront Campsite",              unit:"per night", price:51},
-    {id:"camp_pow_dt",   name:"Powered Drive Thru Site",                  unit:"per night", price:51}
+    {id:"camp_unpow",    name:"Unpowered Campsite",                       unit:"per night", price:36, sleeps:6},
+    {id:"camp_pow_wf",   name:"Powered Waterfront Campsite",              unit:"per night", price:51, sleeps:6},
+    {id:"camp_pow_dt",   name:"Powered Drive Thru Site",                  unit:"per night", price:51, sleeps:6}
   ]},
   {group:"Catering", items:[
     {id:"bf_hot",     name:"Breakfast - Hot",           unit:"per person", price:30, pp:true, meal:true},
@@ -796,7 +808,14 @@ function buildRate(stored){
   const src = (stored && stored.length) ? stored : JSON.parse(JSON.stringify(DEFAULT_RATE_GROUPS));
   RATE_GROUPS = src.filter(g => g.group !== "Other").concat([{group:"Other", items:[CUSTOM_ITEM]}]);
   RATE = {}; ITEM_GROUP = {};
-  RATE_GROUPS.forEach(g => g.items.forEach(it => { RATE[it.id] = it; ITEM_GROUP[it.id] = g.group; }));
+  RATE_GROUPS.forEach(g => g.items.forEach(it => {
+    /* the cabins keep their original names: any "(air con)" bracket is dropped, wherever the card came from */
+    if(it.name) it.name = String(it.name).replace(/\s*\(air ?con\)/gi, "").replace(/\s{2,}/g, " ").trim();
+    /* campsites sleep a maximum of 6 people */
+    if(/^camp_/.test(String(it.id)) && (it.sleeps === undefined || it.sleeps === null || it.sleeps === "")) it.sleeps = 6;
+    RATE[it.id] = it;
+    ITEM_GROUP[it.id] = g.group;
+  }));
 }
 
 /* ---------- guided package builder config ---------- */
@@ -811,13 +830,35 @@ function caterItems(){
   const g = RATE_GROUPS.find(x => x.group === CATER_GROUP);
   return g ? g.items.filter(it => it.pp) : [];
 }
+/* virtual walk-through links (Radian tour) */
+const TOUR_FULL = "https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ";
+const TOURS = {
+  acc_4br_house: TOUR_FULL + "&scene=r8wk&menu=0",
+  acc_2br_ter:   TOUR_FULL + "&scene=mO3A&menu=0",
+  acc_2br_bung:  TOUR_FULL + "&scene=lx3J&menu=0",
+  acc_2br_std:   TOUR_FULL + "&scene=k83Y&menu=0",
+  acc_1br_ter:   TOUR_FULL + "&scene=jZ3z&menu=0",
+  acc_1br_std:   TOUR_FULL + "&scene=gZ3l&menu=0",
+  acc_motel_std: TOUR_FULL + "&scene=0YxG&menu=0",
+  acc_motel_bud: TOUR_FULL + "&scene=91K4&menu=0",
+  camp_pow_wf:   TOUR_FULL + "&scene=wVBm&menu=0",
+  camp_pow_dt:   TOUR_FULL + "&scene=wVBm&menu=0",
+  camp_unpow:    TOUR_FULL + "&scene=gZgZ&menu=0"
+};
+function tourFor(id){
+  const it = RATE[id];
+  return (it && it.tour) || TOURS[id] || "";
+}
+function tourLink(url, label){
+  return url ? ' <a class="tourlink" href="' + esc(url) + '" target="_blank" rel="noopener">' + (label || 'virtual tour') + ' ↗</a>' : '';
+}
 /* venues are picked in half-day steps; each maps to the full/half day items in the rate card */
 const VENUES = [
-  {key:"fr13", name:"Conference Rooms 1, 2 & 3", cap:"up to 150 people · walls open into one space", fullId:"fr13_full", halfId:"fr13_half"},
-  {key:"fr5",  name:"Conference Room 5",          cap:"up to 45 people · fully separate room",        fullId:"fr5_full",  halfId:"fr5_half"},
-  {key:"aud",  name:"Auditorium",                 cap:"up to 500 people · 30.0m × 15.0m",             fullId:"aud_full",  halfId:"aud_half"},
-  {key:"marq", name:"Marquee",                    cap:"up to 160 people · complimentary if staying onsite (book ahead)", fullId:"marq_full", halfId:"marq_half"},
-  {key:"din",  name:"Dining Room",                cap:"up to 120 people",                             fullId:"din_full",  halfId:"din_half"}
+  {key:"fr13", name:"Conference Rooms 1, 2 & 3", cap:"up to 150 people · walls open into one space", fullId:"fr13_full", halfId:"fr13_half", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
+  {key:"fr5",  name:"Conference Room 5",          cap:"up to 45 people · fully separate room",        fullId:"fr5_full",  halfId:"fr5_half",  tour: TOUR_FULL + "&scene=vlAL&menu=0"},
+  {key:"aud",  name:"Auditorium",                 cap:"up to 500 people · 30.0m × 15.0m",             fullId:"aud_full",  halfId:"aud_half",  tour: TOUR_FULL + "&scene=wVBg&menu=0"},
+  {key:"marq", name:"Marquee",                    cap:"up to 160 people · complimentary if staying onsite (book ahead)", fullId:"marq_full", halfId:"marq_half", tour: TOUR_FULL + "&scene=xnDz&menu=0"},
+  {key:"din",  name:"Dining Room",                cap:"up to 120 people",                             fullId:"din_full",  halfId:"din_half",  tour: TOUR_FULL + "&scene=yoEz&menu=0"}
 ];
 function isAccomLine(l){
   if(ITEM_GROUP[l.id] === ACCOM_GROUP) return true;
@@ -928,21 +969,21 @@ const LOGO_QP = '<img class="qp-logo" src="' + LOGO_DATA + '" alt="Wollongong Su
 /* ---------- standard information sections (wording from the quote template; editable on Settings) ---------- */
 const INFO_SECTIONS = [
   {id:"accom_notes", title:"About your accommodation", why:"auto when accommodation is quoted",
-   text:"All units are fully self contained with kitchen and bathroom facilities. Linen is supplied on all beds; beach towels are not supplied. Guests have free use of the 25m indoor heated pool, spa and steam room during their stay, and complimentary pool towels are available. If extra rooms are added after the initial booking is made, pricing may differ, as we operate on dynamic pricing which changes every day depending on occupancy. For more information on our accommodation visit www.wslr.com.au."},
+   text:"All units are fully self contained with kitchen and bathroom facilities. Linen is supplied on all beds; beach towels are not supplied. Guests have free use of the 25m indoor heated pool, spa and steam room during their stay, and complimentary pool towels are available. If extra rooms are added after the initial booking is made, pricing may differ, as we operate on dynamic pricing which changes every day depending on occupancy. For more information on our accommodation visit www.wslr.com.au, or take a virtual walk-through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
   {id:"church", title:"Church & charitable group discount conditions", why:"auto when a church discount is applied",
    text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and conference room hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of $100 per cabin or conference room are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and conference room hire applies on conditions a) to d) if you choose to self cater or have fewer than 3 group main meals during your stay."},
   {id:"venue_info", title:"Conference rooms & auditorium", why:"auto when venue hire is quoted",
-   text:"Conference Rooms 1, 2 & 3 hold a maximum of 150 persons — rooms 1 & 2 sit next to each other and the walls between them can be opened up to form larger rooms. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds a maximum of 500 persons, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). All conference rooms are equipped with 55 inch flat screen TVs, and Wi-Fi is complimentary for all conference delegates. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee. No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner."},
+   text:"Conference Rooms 1, 2 & 3 hold a maximum of 150 persons; rooms 1 & 2 sit next to each other and the walls between them can be opened up to form larger rooms. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds a maximum of 500 persons, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). All conference rooms are equipped with 55 inch flat screen TVs, and Wi-Fi is complimentary for all conference delegates. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee. No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner."},
   {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
    text:"All meals are served buffet style, and your group chooses one option per meal service with our catering team closer to the date. {menuoptions}"},
   {id:"catering_info", title:"Catering", why:"auto when catering is quoted",
-   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Catering must be booked at least 1 month prior to your arrival date, subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval — otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
+   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Catering must be booked at least 1 month prior to your arrival date, subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
   {id:"children", title:"Children's pricing & dietary requirements", why:"auto when catering is quoted",
    text:"Children's catering is charged as: 12 months and under free; 1–3 years $5.00 per meal; 4–12 years 50% of the full rate; 13 years and over full rate. Medically diagnosed special dietary requirements (e.g. gluten free, intolerances, allergies) incur a surcharge of $10.00 per person per meal; special diet meals are served by our Catering Team Leader on duty, and it is the customer's responsibility to make themselves known to our staff. Any additional persons added after your final details are submitted 14 days prior to arrival incur an additional $10 per person per meal surcharge."},
   {id:"selfcater", title:"Self catering", why:"auto when accommodation is quoted without catering",
    text:"If you are self catering, you are responsible for all cleaning and for supplying all plates, bowls, cutlery, cups, utensils and cleaning equipment to clean up after your meals if using the Marquee or a common area. Our kitchen is not available for customer use or for self catered meals."},
   {id:"coffee", title:"Barista coffee", why:"switch on if the group would like the coffee van",
-   text:"Looking for a real barista coffee whilst staying with us? Contact Andrew from Murphy's Coffee Co, looking after locals with his coffee van — mob. 0413 582 497 · murphyscoffeeco@outlook.com.au."},
+   text:"Looking for a real barista coffee whilst staying with us? Contact Andrew from Murphy's Coffee Co, looking after locals with his coffee van, mob. 0413 582 497 · murphyscoffeeco@outlook.com.au."},
   {id:"booking_info", title:"To proceed with a booking", why:"on for every quote",
    text:"To proceed with a booking we require: your group name, contact person, postal address and mobile number; arrival and departure dates; the number of rooms and each type of room you wish to book; all meals you wish to have included as part of your package; and the dates and times of use of the conference rooms. Once we receive this information we will proceed with a booking and forward an invoice for a deposit. Reservations are unconfirmed until deposits are received."},
   {id:"deposit", title:"Deposit, payment & security bond", why:"on for every quote",
@@ -950,13 +991,13 @@ const INFO_SECTIONS = [
   {id:"cancel", title:"Cancellation conditions", why:"on for every quote",
    text:"There will be no refunds of any payments made if the entire booking is cancelled within 14 days of the scheduled arrival date. If the entire booking is cancelled 14 days or more prior to your arrival, the deposit is refunded less a $50 per room booking fee. Any rooms cancelled within the 14 day period will be charged at the full rate; there are no fees or charges for rooms cancelled 14 days or more prior to your arrival date."},
   {id:"conduct", title:"Code of conduct", why:"auto for group stays",
-   text:"A responsible adult must be nominated as your Group Manager, and agrees to assist with all conduct and security matters concerning your group — this assistance is essential between 9.00pm and 8.00am. The following are breaches of the Code of Conduct: loutish behaviour by any member of your group; noise emanating from a unit after 10.00pm (this breach may result in the eviction of your entire group, with no credit or refund granted); excessive noise after 10.00pm from a room containing more persons than indicated on the rooming list (a double breach); and the excessive use of alcohol or offensive language. The Group Manager is not permitted to depart the WSLR grounds while any member of the group remains on site, and the Group Manager's nominated mobile phone must not be switched off at any time during your stay."},
+   text:"A responsible adult must be nominated as your Group Manager, and agrees to assist with all conduct and security matters concerning your group; this assistance is essential between 9.00pm and 8.00am. The following are breaches of the Code of Conduct: loutish behaviour by any member of your group; noise emanating from a unit after 10.00pm (this breach may result in the eviction of your entire group, with no credit or refund granted); excessive noise after 10.00pm from a room containing more persons than indicated on the rooming list (a double breach); and the excessive use of alcohol or offensive language. The Group Manager is not permitted to depart the WSLR grounds while any member of the group remains on site, and the Group Manager's nominated mobile phone must not be switched off at any time during your stay."},
   {id:"checkin", title:"Check-in, check-out & facilities", why:"auto for group stays",
-   text:"Check in is between 2.00pm and 8.00pm Monday to Saturday, and 2.00pm to 5.00pm Sunday — if your arrival time is likely to be outside these times, please advise reception. Check out is between 8.00am and 10.00am; late check out is available on request, subject to availability. Pool hours are 8.00am to 8.45pm Monday to Saturday and 8.00am to 5.45pm Sunday (the pool is closed 3.30pm to 7.30pm Monday to Friday during NSW school terms for swimming training). Other sporting facilities are available at a discounted hire fee. No pets."},
+   text:"Check in is between 2.00pm and 8.00pm Monday to Saturday, and 2.00pm to 5.00pm Sunday; if your arrival time is likely to be outside these times, please advise reception. Check out is between 8.00am and 10.00am; late check out is available on request, subject to availability. Pool hours are 8.00am to 8.45pm Monday to Saturday and 8.00am to 5.45pm Sunday (the pool is closed 3.30pm to 7.30pm Monday to Friday during NSW school terms for swimming training). Other sporting facilities are available at a discounted hire fee. No pets."},
   {id:"final_conf", title:"Final confirmation details", why:"auto for group stays",
    text:"If you have booked more than 50 accommodation units and/or a peak period, your final details for accommodation are due 28 days prior to your arrival date. Otherwise, final numbers and details are required 14 days prior to your arrival. An email will be sent to you 10 weeks prior to your arrival."},
   {id:"other", title:"Other information", why:"on for every quote",
-   text:"You do not have exclusivity of the resort — there will be other holiday makers and permanent residents on site during your stay. For things to see and do, restaurants and dining, events, maps and itineraries throughout the Wollongong and Illawarra region, see www.visitwollongong.com. For detailed map information on our location: https://goo.gl/maps/oCRniwYWBAiMw4zC9. Would you like to meet with one of our staff to discuss your next function at the resort? A meeting can be arranged at a date, time and venue convenient to you — just let us know."}
+   text:"You do not have exclusivity of the resort; there will be other holiday makers and permanent residents on site during your stay. For things to see and do, restaurants and dining, events, maps and itineraries throughout the Wollongong and Illawarra region, see www.visitwollongong.com. For detailed map information on our location: https://goo.gl/maps/oCRniwYWBAiMw4zC9. Would you like to meet with one of our staff to discuss your next function at the resort? A meeting can be arranged at a date, time and venue convenient to you, just let us know."}
 ];
 const LS_SECTIONS = "wslr_sections_v1";
 function sectionContent(id){
@@ -1043,7 +1084,7 @@ function renderSyncBadge(){
     loading: ['autobadge',   'checking the tracker sheet…'],
     saving:  ['autobadge',   'saving to the tracker sheet…'],
     synced:  ['autobadge',   'shared via the tracker sheet ✓'],
-    offline: ['manualbadge', 'sheet unreachable — saved on this computer, will share next time']
+    offline: ['manualbadge', 'sheet unreachable, saved on this computer, will share next time']
   };
   const m = map[SETTINGS_SYNC_STATE] || map.local;
   el.innerHTML = '<span class="' + m[0] + '">' + m[1] + '</span>';
@@ -1162,7 +1203,7 @@ function blankQuote(num){
     terms: d.terms,
     priceMode: "full",
     bond: Number(d.bond) || 2000,
-    acnc: false,        // registered church / ACNC charity — reveals the 20%/50% concessional rates
+    acnc: false,        // registered church / ACNC charity, reveals the 20%/50% concessional rates
     sections: null,
     catalog: {},        // per-quote menu curation: {itemId: {on, price, avail}}
     rates: {},          // imported nightly tariffs: {itemId: {"2026-08-21": 770, ...}}
@@ -1177,6 +1218,7 @@ function blankQuote(num){
     accepted: false,
     sentAt: null,
     submittedAt: null,
+    submittedSel: null, // snapshot of what was submitted, so we only re-offer Submit when something changed
     token: null
   };
 }
@@ -1223,6 +1265,7 @@ function normalizeQuote(q){
       }
     });
     if(!q.acnc && Number(q.sel.church) > 0) q.acnc = true;
+    if(q.status === "Submitted" && !q.submittedSel) q.submittedSel = JSON.stringify({sel: q.sel, lines: q.lines});
     return q;
   }
   const sel = blankSel();
@@ -1390,9 +1433,9 @@ function displayLines(){
       const b = mealBands(it.id);
       const p = catEntry(it.id).price;
       const dTag = days > 1 ? days : 0;
-      if(b.adults > 0) out.push({name: it.name + " — adults & 13+", qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
-      if(b.k412 > 0) out.push({name: it.name + " — children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
-      if(b.k13 > 0) out.push({name: it.name + " — children 1–3", qty: b.k13, nights: dTag, nightsWord: "days", beds: "", price: 5, disc: 0, unit: "per person", when: "", total: b.k13 * days * 5});
+      if(b.adults > 0) out.push({name: it.name + ", adults & 13+", qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
+      if(b.k412 > 0) out.push({name: it.name + ", children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
+      if(b.k13 > 0) out.push({name: it.name + ", children 1–3", qty: b.k13, nights: dTag, nightsWord: "days", beds: "", price: 5, disc: 0, unit: "per person", when: "", total: b.k13 * days * 5});
       dietMeals += b.diet * days;
     });
     if(dietMeals > 0){
@@ -1738,6 +1781,7 @@ function snapshotQ(){
     features: JSON.parse(JSON.stringify(Q.features || {perPerson: true, depositDates: true, kids: true})),
     sel: JSON.parse(JSON.stringify(Q.sel || blankSel())),
     submittedAt: Q.submittedAt || null,
+    submittedSel: Q.submittedSel || null,
     lines: JSON.parse(JSON.stringify(Q.lines)),
     total: t.total,
     status: Q.status, accepted: Q.accepted,
@@ -1766,7 +1810,7 @@ function itemOptions(selectedId){
 function renderLines(){
   const tb = document.getElementById("linesBody");
   if(!Q.lines.length){
-    tb.innerHTML = '<tr class="emptyrow"><td colspan="6">No fixed extras — most quotes won\'t need any. Use "+ Add a line" for one-off items (e.g. equipment hire), or import an RMS statement above to quote exact rooms already held.</td></tr>';
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="6">No fixed extras, most quotes won\'t need any. Use "+ Add a line" for one-off items (e.g. equipment hire), or import an RMS statement above to quote exact rooms already held.</td></tr>';
   } else {
     tb.innerHTML = Q.lines.map((l, i) => {
       const it = lineItem(l);
@@ -1919,7 +1963,7 @@ function availToast(id){
   const a = availDisplay(id);
   showToast(a === 0
     ? "That cabin type has no availability on one or more of the selected nights."
-    : "Only " + a + " of that cabin type are available across those nights — check the availability chart.");
+    : "Only " + a + " of that cabin type are available across those nights, check the availability chart.");
 }
 function wholeStayBlock(id){
   return (Q.sel.accom || []).find(x => x.id === id && !x.from && !x.to);
@@ -2188,10 +2232,10 @@ function readTariffFiles(files){
         notes.push("Availability: " + availRes.matched + " unit types, " + shortDate(availRes.dates[0]) + " – " + shortDate(availRes.dates[availRes.dates.length - 1]));
         return;
       }
-      notes.push(f.name + ": not recognised — expected an RMS rates report or availability chart");
+      notes.push(f.name + ": not recognised, expected an RMS rates report or availability chart");
     }).catch(e => {
       notes.push(f.name + (String(e && e.message).indexOf("no-sheetjs") >= 0
-        ? ": couldn't load the Excel reader (offline?) — save it as CSV and import that instead"
+        ? ": couldn't load the Excel reader (offline?), save it as CSV and import that instead"
         : ": couldn't be read"));
     });
   });
@@ -2203,7 +2247,7 @@ function readTariffFiles(files){
 function clearTariff(){
   Q.rates = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
   refresh();
-  showToast("Imported tariff & availability cleared — back to base prices and unit counts.");
+  showToast("Imported tariff & availability cleared, back to base prices and unit counts.");
 }
 function renderImpStatus(){
   const host = document.getElementById("impStatus");
@@ -2214,7 +2258,7 @@ function renderImpStatus(){
   let warn = "";
   if(Q.ratesInfo && Q.dateStart){
     const missing = stayNightsList().filter(d => d < Q.ratesInfo.from || d > Q.ratesInfo.to).length;
-    if(missing) warn = '<span class="impwarn">⚠ ' + missing + ' stay night' + (missing === 1 ? '' : 's') + ' outside the imported tariff — base prices used for those</span>';
+    if(missing) warn = '<span class="impwarn">⚠ ' + missing + ' stay night' + (missing === 1 ? '' : 's') + ' outside the imported tariff, base prices used for those</span>';
   }
   host.innerHTML = '<div class="impstatus">' + bits.join(" · ") + warn + '<button class="impclear" id="impClear">clear import</button></div>';
   const ic = document.getElementById("impClear");
@@ -2224,12 +2268,12 @@ function renderImpStatus(){
 /* ---------- menu library (from the WSLR menu selection form; Head of Catering: Kate Hammond) ---------- */
 const MENU_GROUPS = [
   {key:"bf_hot", title:"Hot breakfast", itemIds:["bf_hot"], options:[
-    {k:"bfh_main", name:"Hot buffet", detail:"Scrambled eggs; bacon; sausages; mushrooms; tomatoes; hashbrowns; baked beans — plus the continental selection. Juice, tea & coffee."}
+    {k:"bfh_main", name:"Hot buffet", detail:"Scrambled eggs; bacon; sausages; mushrooms; tomatoes; hashbrowns; baked beans, plus the continental selection. Juice, tea & coffee."}
   ]},
   {key:"bf_cont", title:"Continental breakfast", itemIds:["bf_cont"], options:[
     {k:"bfc_main", name:"Continental buffet", detail:"Selection of breads; cereals; tinned fruit; yogurt; condiments; juice; tea; coffee; water."}
   ]},
-  {key:"lunch_sit", title:"Dine-in lunch — the group picks one", itemIds:["lunch_sit"], options:[
+  {key:"lunch_sit", title:"Dine-in lunch: the group picks one", itemIds:["lunch_sit"], options:[
     {k:"l_pasta", name:"Pasta", detail:"Beef mince or Mediterranean vegetable mix · penne or spiral · Napoletana, Carbonara, Bolognaise or Pesto · garlic bread, parmesan & garden salad"},
     {k:"l_fish", name:"Fish", detail:"Battered fillets or grilled/steamed · choice of potato · salad or seasonal vegetables · sauces"},
     {k:"l_burger", name:"Burger & chips", detail:"Beef & cheese, chicken or vegetable pattie · lettuce, tomato, onion, beetroot · tomato, BBQ or burger sauce · hot chips"},
@@ -2240,19 +2284,19 @@ const MENU_GROUPS = [
     {k:"l_hotdogs", name:"Hot dogs", detail:"Long roll, hot chips, onions, bacon pieces, shredded cheese & sauces"},
     {k:"l_wraps", name:"Platter of wraps", detail:"A variety of cold cuts with salad using fresh in-season ingredients"}
   ]},
-  {key:"lunch_pack", title:"Takeaway lunch — the group picks one", itemIds:["lunch_pack"], options:[
+  {key:"lunch_pack", title:"Takeaway lunch: the group picks one", itemIds:["lunch_pack"], options:[
     {k:"t_sand", name:"Sandwiches", detail:"Cold cuts, cheese & salad · a piece of fruit and a juice box each · packed in a box for your distribution"},
     {k:"t_wraps", name:"Wraps", detail:"Cold cuts, cheese & salad · a piece of fruit and a juice box each · packed in a box for your distribution"},
     {k:"t_rolls", name:"Rolls", detail:"Cold cuts, cheese & salad · a piece of fruit and a juice box each · packed in a box for your distribution"}
   ]},
-  {key:"dinner", title:"Dine-in dinner — the group picks one", itemIds:["din1", "din2"], options:[
+  {key:"dinner", title:"Dine-in dinner: the group picks one", itemIds:["din1", "din2"], options:[
     {k:"d_roast", name:"Roast with vegetables", detail:"Roast chicken, beef or pork · choice of potato · salad or seasonal vegetables · gravy & sauces"},
     {k:"d_stirfry", name:"Stir fry / curry", detail:"Chicken, beef, pork or tofu · green curry, teriyaki, honey soy or sweet & sour · steamed rice or hokkien noodles · seasonal vegetables"},
     {k:"d_cottage", name:"Cottage pie", detail:"Rich beef & vegetable filling topped with cheesy creamy mash · steamed seasonal vegetables"},
     {k:"d_lasagne", name:"Lasagne", detail:"Beef or vegetable · garlic bread, parmesan & garden salad"},
     {k:"d_lunchmenu", name:"Any hot dine-in lunch option", detail:"Any hot dine-in lunch menu can also be selected for the dinner menu"}
   ]},
-  {key:"dessert", title:"Dessert — included with the 2-course dinner", itemIds:["din2"], options:[
+  {key:"dessert", title:"Dessert: included with the 2-course dinner", itemIds:["din2"], options:[
     {k:"ds_mousse", name:"Chocolate mousse"},
     {k:"ds_danish", name:"Apple danish with custard"},
     {k:"ds_cheesecake", name:"Cheesecake slice"},
@@ -2276,7 +2320,7 @@ function menuExtrasText(){
   const parts = MENU_GROUPS.filter(g => !g.itemIds.length)
     .map(g => { const o = enabledOptions(g); return o.length ? g.title.toLowerCase() + " (" + o.map(x => x.name.toLowerCase()).join(", ") + ")" : null; })
     .filter(Boolean);
-  return parts.length ? "Also available for your event — " + parts.join("; ") + ". Just ask our team when finalising catering." : "";
+  return parts.length ? "Also available for your event, " + parts.join("; ") + ". Just ask our team when finalising catering." : "";
 }
 function menuSectionText(){
   const parts = [];
@@ -2285,7 +2329,7 @@ function menuSectionText(){
     if(!linked) return;
     const opts = enabledOptions(g);
     if(!opts.length) return;
-    parts.push(g.title.replace(/ — .*$/, "") + ": " + opts.map(o => o.name).join("; ") + ".");
+    parts.push(g.title.replace(/: .*$/, "") + ": " + opts.map(o => o.name).join("; ") + ".");
   });
   return parts.join(" ");
 }
@@ -2331,7 +2375,7 @@ function fiftyMessage(f){
   let msg = "To qualify for the 50% rate you need at least 3 group-catered main meals during your stay, with everyone staying onsite catered for. ";
   if(f.shortMeals) msg += "You currently have " + f.services + " catered main meal service" + (f.services === 1 ? "" : "s") + " selected. ";
   if(f.underCatered) msg += "Some meals are set for fewer people than your " + f.guests + " guests. ";
-  msg += "You can choose the 20% rate now, or add meals above and try again — our team is happy to help.";
+  msg += "You can choose the 20% rate now, or add meals above and try again, our team is happy to help.";
   return msg;
 }
 let TIER_MSG = "";
@@ -2383,10 +2427,10 @@ function renderPrep(){
     let priceCell;
     if(hasCal && m === null){
       const ph = rr.varies ? Math.round(rr.min) + "–" + Math.round(rr.max) : String(Math.round(rr.min));
-      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="" placeholder="' + esc(ph) + '" title="Nightly rates from the imported tariff — type a price to override every night">' +
+      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="" placeholder="' + esc(ph) + '" title="Nightly rates from the imported tariff, type a price to override every night">' +
         '<span class="pinsub">from tariff' + (rr.missing ? ' · ' + rr.missing + ' night' + (rr.missing === 1 ? '' : 's') + ' missing' : '') + '</span></div>';
     } else if(hasCal){
-      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + m + '" title="Your override — every night at this price">' +
+      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + m + '" title="Your override, every night at this price">' +
         '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="price" title="Go back to the imported nightly rates">typed · use tariff</button></div>';
     } else {
       priceCell = '<input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + c.price + '" title="Per-night price on this quote">';
@@ -2397,13 +2441,13 @@ function renderPrep(){
     let availCell;
     if(hasAvailCal && ma === null){
       const disp = availDisplay(it.id);
-      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="" placeholder="' + (disp === null ? "—" : disp) + '" title="Lowest availability across the stay, from the imported chart — type a number to override every night">' +
+      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="" placeholder="' + (disp === null ? "-" : disp) + '" title="Lowest availability across the stay, from the imported chart, type a number to override every night">' +
         '<span class="pinsub">from chart</span></div>';
     } else if(hasAvailCal){
-      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + ma + '" title="Your override — same cap every night">' +
+      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + ma + '" title="Your override, same cap every night">' +
         '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="avail" title="Go back to the imported availability">typed · use chart</button></div>';
     } else {
-      availCell = '<input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + (c.avail === null ? '' : c.avail) + '" placeholder="—" title="Units the organiser can book, for this quote">';
+      availCell = '<input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + (c.avail === null ? '' : c.avail) + '" placeholder="-" title="Units the organiser can book, for this quote">';
     }
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="accom" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this cabin type on this quote">' +
@@ -2412,7 +2456,7 @@ function renderPrep(){
       priceCell +
       availCell +
       stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canUp, upTitle: canUp ? "" : "No availability left on one or more nights"}) +
-      '<div class="pkgsub">' + (q > 0 ? money(sub) : '<span class="fmuted">—</span>') + '</div>' +
+      '<div class="pkgsub">' + (q > 0 ? money(sub) : '<span class="fmuted">-</span>') + '</div>' +
     '</div>';
   }).join("") || '<p class="hint">No accommodation items in the rate card. Add some on the Settings tab.</p>';
 
@@ -2429,7 +2473,7 @@ function renderPrep(){
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
       stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0}) +
-      '<div class="pkgsub">' + (d > 0 ? money(sub) : '<span class="fmuted">—</span>') + '</div>' +
+      '<div class="pkgsub">' + (d > 0 ? money(sub) : '<span class="fmuted">-</span>') + '</div>' +
     '</div>';
   }).join("");
 
@@ -2450,7 +2494,7 @@ function renderPrep(){
         stepperHTML("cater", it.id, d, {canDown: d > 0}) +
         '<span class="pkgmeta">day' + (d === 1 ? '' : 's') + '</span>' +
       '</div>' +
-      '<div class="pkgsub">' + (d > 0 ? money(sub) : '<span class="fmuted">—</span>') + '</div>' +
+      '<div class="pkgsub">' + (d > 0 ? money(sub) : '<span class="fmuted">-</span>') + '</div>' +
     '</div>';
   }).join("");
 
@@ -2544,7 +2588,7 @@ function renderSecBoxes(){
     autosaveDraft();
     renderSecBoxes();
     renderClient();
-    showToast("Back to automatic — sections now follow what's in the quote.");
+    showToast("Back to automatic, sections now follow what's in the quote.");
   });
   document.querySelectorAll("#secBoxes .secCb").forEach(el => el.addEventListener("change", e => {
     if(!(Q.sections && typeof Q.sections === "object")){
@@ -2569,7 +2613,7 @@ function perPersonHTML(t){
 }
 function cbTotalsHTML(t, pm){
   if(pm === "noprices")
-    return '<div class="qp-pricenote">Pricing for this package is available from our functions team — contact us any time.</div>';
+    return '<div class="qp-pricenote">Pricing for this package is available from our functions team, contact us any time.</div>';
   if(pm === "nototal")
     return '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>';
   return '<div class="cb-total">' +
@@ -2589,16 +2633,16 @@ function keyDatesRows(showPrices){
   const anyCater = caterItems().some(it => { const c = (Q.sel.cater || {})[it.id]; return c && catEntry(it.id).on && (Number(c.days) || 0) > 0; });
   const rows = [];
   if(showPrices && (u + vs) > 0){
-    rows.push(['Deposit', money0(100 * (u + vs)) + ' — $100 × ' + (u + vs) + ' cabin' + (u + vs === 1 ? '' : 's') + (vs ? ' / conference room' + (vs === 1 ? '' : 's') : '') + ', due within 4 weeks of booking to secure your reservation' + (Number(Q.sel.church) > 0 ? ' and discount' : '')]);
+    rows.push(['Deposit', money0(100 * (u + vs)) + ' ($100 × ' + (u + vs) + ' cabin' + (u + vs === 1 ? '' : 's') + (vs ? ' / conference room' + (vs === 1 ? '' : 's') : '') + '), due within 4 weeks of booking to secure your reservation' + (Number(Q.sel.church) > 0 ? ' and discount' : '')]);
   }
   if(showPrices && Number(Q.bond) > 0){
-    rows.push(['Security bond', money0(Q.bond) + ' — paid prior to or on arrival, refunded on departure under the Code of Conduct']);
+    rows.push(['Security bond', money0(Q.bond) + ', paid prior to or on arrival and refunded on departure under the Code of Conduct']);
   }
   if(kd){
     rows.push([fmtDate(kd.email), 'expect our confirmation email (about 10 weeks before arrival)']);
-    if(anyCater) rows.push([fmtDate(kd.catering), 'catering locked in — at least 1 month before arrival']);
-    rows.push([fmtDate(kd.finalNums), 'final numbers & details due (' + kd.finalDays + ' days before arrival' + (kd.finalDays === 28 ? ' — applies to 50+ units / peak periods' : '') + ')']);
-    rows.push([fmtDate(kd.arrive), 'arrival — the balance of your account is due before this date']);
+    if(anyCater) rows.push([fmtDate(kd.catering), 'catering locked in, at least 1 month before arrival']);
+    rows.push([fmtDate(kd.finalNums), 'final numbers & details due (' + kd.finalDays + ' days before arrival' + (kd.finalDays === 28 ? ', applies to 50+ units / peak periods' : '') + ')']);
+    rows.push([fmtDate(kd.arrive), 'arrival, with the balance of your account due before this date']);
   }
   return rows;
 }
@@ -2634,7 +2678,7 @@ function buildDisplayPayload(){
     depositEst: 100 * (unitsSelected() + venuesSelected()),
     menuOn: MENU_GROUPS.map(g => {
       const opts = enabledOptions(g);
-      return opts.length ? (g.title.replace(/ — .*$/, "") + ": " + opts.map(o => o.name).join("; ")) : null;
+      return opts.length ? (g.title.replace(/: .*$/, "") + ": " + opts.map(o => o.name).join("; ")) : null;
     }).filter(Boolean)
   };
 }
@@ -2680,13 +2724,13 @@ function renderClient(){
         '</div>';
       }
       return '<div class="cb-row">' +
-        '<div><span class="pkgname">' + esc(it.name) + '</span>' + sleepsPill(it) +
+        '<div><span class="pkgname">' + esc(it.name) + '</span>' + sleepsPill(it) + tourLink(tourFor(it.id)) +
           (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') +
           (meta ? '<div class="cb-price">' + esc(meta) + '</div>' : '') + '</div>' +
         (split
           ? '<div class="cb-avail" style="text-align:right">' + q + ' selected</div>'
           : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canAddOver(it.id, stayNightsList())})) +
-        '<div class="pkgsub">' + (q > 0 && showPrices ? money(sub) : (q > 0 ? q + ' ✓' : '<span class="fmuted">—</span>')) + '</div>' +
+        '<div class="pkgsub">' + (q > 0 && showPrices ? money(sub) : (q > 0 ? q + ' ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         blockHtml +
       '</div>';
     }).join('');
@@ -2697,16 +2741,16 @@ function renderClient(){
     const capHtml = '<div class="capbar' + (short ? ' short' : '') + '" id="capBar">' +
       (cap > 0
         ? ('Your cabins sleep up to <b>&nbsp;' + cap + '&nbsp;</b> people' +
-           (guests ? '<span class="capsub">· you expect ' + guests + ' guest' + (guests === 1 ? '' : 's') + (short ? ' — you may need more cabins' : ' ✓') + '</span>' : '') +
+           (guests ? '<span class="capsub">· you expect ' + guests + ' guest' + (guests === 1 ? '' : 's') + (short ? ', you may need more cabins' : ' ✓') + '</span>' : '') +
            (split ? '<span class="capsub">· capacity varies on split nights</span>' : ''))
         : 'No cabins selected yet' + (guests ? ' <span class="capsub">· you expect ' + guests + ' guests</span>' : '')) +
       '</div>';
 
     accomHtml = '<div class="cb-sec"><h3>Accommodation</h3>' +
-      '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ' · choose how many of each cabin type you\'d like</p>' +
+      '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ' · choose how many of each cabin type you\'d like ·' + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
       '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
         '<span><b>Some cabins are only needed for part of the stay</b><br>' +
-        '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin — you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>' +
+        '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin, you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>' +
       rows + capHtml + '</div>';
   }
 
@@ -2719,13 +2763,13 @@ function renderClient(){
         const c = catEntry(v.fullId), ch = catEntry(v.halfId);
         const d = Number((Q.sel.venues || {})[v.key]) || 0;
         return '<div class="cb-row">' +
-          '<div><span class="pkgname">' + esc(v.name) + '</span>' +
+          '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
             '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
             (showPrices ? '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>' : '') +
             (d > 0 ? '<input type="text" class="vtimeInp" data-key="' + esc(v.key) + '" placeholder="days & times you plan to use it (e.g. Sat 9am–4pm)" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">' : '') +
           '</div>' +
           stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0}) +
-          '<div class="pkgsub">' + (d > 0 && showPrices ? money(venueDayTotal(v, d)) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">—</span>')) + '</div>' +
+          '<div class="pkgsub">' + (d > 0 && showPrices ? money(venueDayTotal(v, d)) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         '</div>';
       }).join('') + '</div>'
     : '';
@@ -2737,7 +2781,7 @@ function renderClient(){
   const extrasTxt = menuExtrasText();
   const w = kidsMode ? who() : null;
   const whoHtml = kidsMode
-    ? '<div class="whoRow"><span class="whohead">Who\'s eating? <span class="cb-avail" style="font-weight:400">— each meal starts with your whole group; change the eating number on a meal if not everyone\'s joining. Prices adjust automatically.</span></span>' +
+    ? '<div class="whoRow"><span class="whohead">Who\'s eating? <span class="cb-avail" style="font-weight:400">- each meal starts with your whole group; change the eating number on a meal if not everyone\'s joining. Prices adjust automatically.</span></span>' +
       '<label>Adults &amp; 13+<input type="number" class="whoInp" data-w="adults" min="0" value="' + esc(whoAdults() || "") + '"></label>' +
       '<label>Children 4–12 <span class="whonote">half price</span><input type="number" class="whoInp" data-w="k412" min="0" value="' + esc(w.k412) + '"></label>' +
       '<label>Children 1–3 <span class="whonote">$5 per meal</span><input type="number" class="whoInp" data-w="k13" min="0" value="' + esc(w.k13) + '"></label>' +
@@ -2763,7 +2807,7 @@ function renderClient(){
         const menuHtml = (groups.length && open)
           ? '<div class="menulist">' + groups.map(x =>
               (groups.length > 1 ? '<div class="mo"><b>' + esc(x.g.title) + '</b></div>' : '') +
-              x.opts.map(o => '<div class="mo"><b>' + esc(o.name) + '</b>' + (o.detail ? ' — ' + esc(o.detail) : '') + '</div>').join('')
+              x.opts.map(o => '<div class="mo"><b>' + esc(o.name) + '</b>' + (o.detail ? ', ' + esc(o.detail) : '') + '</div>').join('')
             ).join('') + '</div>'
           : '';
         return '<div class="cb-row" data-cid="' + esc(it.id) + '">' +
@@ -2774,12 +2818,12 @@ function renderClient(){
             (kidsMode
               ? (mealsAreSpecific()
                   ? '<span class="ppl"><b class="eatTot">' + mealEaters(it.id) + '</b>&nbsp;eating ×</span>'
-                  : '<span class="ppl"><input type="number" class="cbEat" data-id="' + esc(it.id) + '" min="0" value="' + (mealEaters(it.id) || '') + '"' + (d > 0 ? '' : ' disabled') + ' title="How many are eating this meal — defaults to your whole group"> eating ×</span>')
+                  : '<span class="ppl"><input type="number" class="cbEat" data-id="' + esc(it.id) + '" min="0" value="' + (mealEaters(it.id) || '') + '"' + (d > 0 ? '' : ' disabled') + ' title="How many are eating this meal, defaults to your whole group"> eating ×</span>')
               : '<span class="ppl"><input type="number" class="cbPpl" data-id="' + esc(it.id) + '" min="1" value="' + esc(ppl) + '"' + (d > 0 ? '' : ' disabled') + '> people ×</span>') +
             stepperHTML("cater", it.id, d, {canDown: d > 0}) +
             '<span class="pkgmeta">day' + (d === 1 ? '' : 's') + '</span>' +
           '</div>' +
-          '<div class="pkgsub">' + (d > 0 && showPrices ? money(sub) : (d > 0 ? '✓' : '<span class="fmuted">—</span>')) + '</div>' +
+          '<div class="pkgsub">' + (d > 0 && showPrices ? money(sub) : (d > 0 ? '✓' : '<span class="fmuted">-</span>')) + '</div>' +
           (kidsMode && mealsAreSpecific() && d > 0
             ? (function(){
                 const b = mealBands(it.id);
@@ -2804,15 +2848,15 @@ function renderClient(){
   const f50 = fiftyCheck();
   const churchHtml = Q.acnc
     ? '<div class="cb-sec"><h3>Church &amp; charitable discount</h3>' +
-      '<p class="cb-hint">as a registered church / ACNC charity your group can choose a concessional tier — the full conditions are in the important information below</p>' +
+      '<p class="cb-hint">as a registered church / ACNC charity your group can choose a concessional tier, the full conditions are in the important information below</p>' +
       '<select id="cbChurch">' +
       '<option value="0"' + (churchPct === 0 ? ' selected' : '') + '>Not applicable</option>' +
-      '<option value="20"' + (churchPct === 20 ? ' selected' : '') + '>20% off accommodation &amp; venues — self catered, or fewer than 3 catered main meals</option>' +
-      '<option value="50"' + (churchPct === 50 ? ' selected' : '') + '>50% off accommodation &amp; venues — 3+ group catered main meals, everyone catered for</option>' +
+      '<option value="20"' + (churchPct === 20 ? ' selected' : '') + '>20% off accommodation &amp; venues, self catered, or fewer than 3 catered main meals</option>' +
+      '<option value="50"' + (churchPct === 50 ? ' selected' : '') + '>50% off accommodation &amp; venues, 3+ group catered main meals, everyone catered for</option>' +
       '</select>' +
       (TIER_MSG ? '<div class="tierwarn" id="tierMsg">' + esc(TIER_MSG) + '</div>' : '') +
       (churchPct === 50 && !f50.ok && !TIER_MSG
-        ? '<div class="tierwarn">Heads up — your meal selections no longer meet the 50% conditions (' + f50.services + ' catered main meal service' + (f50.services === 1 ? '' : 's') + ' selected' + (f50.underCatered ? ', and some meals cover fewer than your ' + f50.guests + ' guests' : '') + '). Add meals above, drop to 20%, or our team will confirm with you.</div>'
+        ? '<div class="tierwarn">Heads up: your meal selections no longer meet the 50% conditions (' + f50.services + ' catered main meal service' + (f50.services === 1 ? '' : 's') + ' selected' + (f50.underCatered ? ', and some meals cover fewer than your ' + f50.guests + ' guests' : '') + '). Add meals above, drop to 20%, or our team will confirm with you.</div>'
         : '') +
       (churchPct > 0 && showPrices && t.church > 0 ? '<p class="cb-hint" style="color:var(--good); font-weight:600">You\'re saving ' + money(t.church) + ' on accommodation and venue hire.</p>' : '') +
       '</div>'
@@ -2822,7 +2866,7 @@ function renderClient(){
   const fixedLines = Q.lines.filter(l => (Number(l.qty) || 0) > 0);
   const fixedHtml = fixedLines.length
     ? '<div class="cb-sec"><h3>Also on this quote</h3>' +
-      '<p class="cb-hint">arranged with our functions team — talk to us to change these</p>' +
+      '<p class="cb-hint">arranged with our functions team, talk to us to change these</p>' +
       fixedLines.map(l => {
         const nn = lineNights(l);
         const when = lineItem(l).meal ? fmtWhen(l.when) : '';
@@ -2841,18 +2885,21 @@ function renderClient(){
     : '';
 
   const anySel = hasSel(Q) || fixedLines.length > 0;
+  const askBtn = '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a>';
   let submitBlock;
   if(Q.accepted || Q.status === "Accepted"){
     submitBlock = '<div class="accepted-box">✓ Thanks ' + esc(firstName(Q.contact)) + ', this quote is accepted.<br><span>We\'ll be in touch shortly to lock in the details.</span></div>';
   } else if(Q.status === "Submitted"){
+    const dirty = !!(Q.submittedSel && JSON.stringify({sel: Q.sel, lines: Q.lines}) !== Q.submittedSel);
     submitBlock = '<div class="submitted-box">✓ Selection received, ' + esc(firstName(Q.contact)) + '.' +
-      '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit. You can keep adjusting and resubmit any time.</span></div>' +
-      '<div class="acceptrow"><button class="btn accept" id="submitBtn">Update my selection</button>' +
-      '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a></div>';
+      '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit.</span></div>' +
+      (dirty
+        ? '<div class="tierwarn" style="text-align:center">You\'ve changed your selection since submitting. Please submit again so we quote the right package.</div>' +
+          '<div class="acceptrow"><button class="btn accept" id="submitBtn">Submit updated selection</button>' + askBtn + '</div>'
+        : '<div class="acceptrow">' + askBtn + '</div>');
   } else {
-    submitBlock = '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>Submit my selection for confirmation</button>' +
-      '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a></div>' +
-      '<p class="qp-aud" style="text-align:center; margin-top:6px">Submitting doesn\'t lock anything in — our team confirms availability and final pricing with you first.</p>';
+    submitBlock = '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>Submit my selection for confirmation</button>' + askBtn + '</div>' +
+      '<p class="qp-aud" style="text-align:center; margin-top:6px">Submitting doesn\'t lock anything in. Our team confirms availability and final pricing with you first.</p>';
   }
 
   const printRows = displayLines().map(l =>
@@ -2889,12 +2936,12 @@ function renderClient(){
     '<div class="qp-for">Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : '') + '</div>' +
     '<div class="qp-event">' + esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests</div>' +
     '<div class="cb-live">' +
-      '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">Build your package below — pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.</p>' +
+      '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.</p>' +
       accomHtml + venueHtml + caterHtml + churchHtml + fixedHtml +
       '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
       keyDatesHTML(showPrices) +
       '<div class="cb-sec orgmsg"><h3>Anything we should know?</h3>' +
-        '<p class="cb-hint">questions, arrival plans, dietary details, how you\'ll use the rooms — this comes straight to our team with your submission</p>' +
+        '<p class="cb-hint">questions, arrival plans, dietary details, how you\'ll use the rooms, this comes straight to our team with your submission</p>' +
         '<textarea id="cbMsg" rows="3" placeholder="Type anything you\'d like us to know…">' + esc(Q.sel.message || '') + '</textarea></div>' +
     '</div>' +
     printSummary +
@@ -2943,7 +2990,7 @@ function renderClient(){
       if(eatInp && (!c || c.eatA === "" || c.eatA === undefined) && document.activeElement !== eatInp) eatInp.value = mealEaters(id) || "";
       row.querySelectorAll(".bandInp").forEach(bi => {
         const k = bi.dataset.b;
-        if(c && c[k] !== "" && c[k] !== undefined && c[k] !== null) return; /* their own number — leave it */
+        if(c && c[k] !== "" && c[k] !== undefined && c[k] !== null) return; /* their own number, leave it */
         if(document.activeElement !== bi) bi.value = bandDefault(k);
       });
       const sub = row.querySelector(".pkgsub");
@@ -2960,7 +3007,7 @@ function renderClient(){
       who()[e.target.dataset.w] = e.target.value === "" ? "" : Number(e.target.value);
       refreshCaterRows();
     });
-    /* band inputs appear/disappear with the group make-up — rebuild (after typing) only when that flips */
+    /* band inputs appear/disappear with the group make-up, rebuild (after typing) only when that flips */
     el.addEventListener("change", () => {
       if(caterStructSig() !== CATER_STRUCT) renderClient();
     });
@@ -3008,6 +3055,33 @@ function renderClient(){
   });
   const sb = document.getElementById("submitBtn");
   if(sb) sb.addEventListener("click", doSubmit);
+  updateStickySubmit();
+}
+
+/* ---------- sticky jump-to-submit pill ---------- */
+let STICKY_OBS = null;
+function updateStickySubmit(){
+  const el = document.getElementById("stickySubmit");
+  if(!el) return;
+  if(STICKY_OBS){ STICKY_OBS.disconnect(); STICKY_OBS = null; }
+  const target = document.getElementById("submitBtn");
+  const panel = document.getElementById("tab-client");
+  const clientActive = CLIENT_MODE || (panel && panel.classList.contains("active"));
+  if(!target || !clientActive){
+    el.classList.remove("show");
+    return;
+  }
+  el.textContent = (target.textContent.indexOf("updated") >= 0 ? "Submit updated selection" : "Review & submit") + " ↓";
+  const row = target.closest(".acceptrow") || target;
+  el.onclick = function(){ row.scrollIntoView({behavior: "smooth", block: "center"}); };
+  if(typeof IntersectionObserver === "function"){
+    STICKY_OBS = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ el.classList.toggle("show", !en.isIntersecting); });
+    }, {rootMargin: "0px 0px -20px 0px"});
+    STICKY_OBS.observe(row);
+  } else {
+    el.classList.add("show");
+  }
 }
 
 /* ---------- tab 3: pipeline ---------- */
@@ -3165,7 +3239,7 @@ function readyToSend(){
     caterItems().some(it => catEntry(it.id).on) ||
     Q.lines.some(l => (Number(l.qty)||0) > 0);
   if(!anythingOn){
-    showToast("Everything is switched off — offer at least one item, or add a fixed extra.");
+    showToast("Everything is switched off, offer at least one item, or add a fixed extra.");
     return false;
   }
   return true;
@@ -3217,6 +3291,7 @@ function doSend(){
 function doSubmit(){
   Q.status = "Submitted";
   Q.submittedAt = new Date().toISOString();
+  Q.submittedSel = JSON.stringify({sel: Q.sel, lines: Q.lines});
   if(!Q.sentAt) Q.sentAt = Q.submittedAt;
   if(!Q.token) Q.token = genToken();
   const snap = snapshotQ();
@@ -3232,7 +3307,7 @@ function doSubmit(){
   renderPrevOptions();
   renderPipeline();
   showToast(CLIENT_MODE
-    ? "Selection submitted — thank you! Our functions team has been notified and will confirm availability and final pricing with you."
+    ? "Selection submitted, thank you! Our functions team has been notified and will confirm availability and final pricing with you."
     : "Selection for " + Q.num + " submitted and logged to the tracker sheet. In the live version this also emails the functions team, who confirm availability and final pricing.");
 }
 
@@ -3457,15 +3532,15 @@ function persistRate(){
 function renderRcEditor(){
   const host = document.getElementById("rcEditor");
   const groups = editableGroups();
-  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th class="num" title="How many people the unit sleeps — shown as the Sleeps badge">Sleeps</th><th class="num" title="Default units available — the per-quote number starts from this">Units</th><th title="Priced per person">Per person</th><th title="Shows the day &amp; time control on fixed lines">Day &amp; time</th><th></th></tr></thead><tbody>';
+  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th class="num" title="How many people the unit sleeps, shown as the Sleeps badge">Sleeps</th><th class="num" title="Default units available, the per-quote number starts from this">Units</th><th title="Priced per person">Per person</th><th title="Shows the day &amp; time control on fixed lines">Day &amp; time</th><th></th></tr></thead><tbody>';
   groups.forEach((g, gi) => {
     g.items.forEach((it, ii) => {
       html += '<tr>' +
         '<td><input type="text" class="rc-name" data-gi="' + gi + '" data-ii="' + ii + '" data-k="name" value="' + esc(it.name) + '"></td>' +
         '<td><input type="text" list="rcGroups" data-gi="' + gi + '" data-ii="' + ii + '" data-k="group" value="' + esc(g.group) + '"></td>' +
         '<td class="num"><input type="number" step="0.5" min="0" data-gi="' + gi + '" data-ii="' + ii + '" data-k="price" value="' + it.price + '"></td>' +
-        '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="sleeps" value="' + (it.sleeps || "") + '" placeholder="—"></td>' +
-        '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="avail" value="' + (it.avail || "") + '" placeholder="—"></td>' +
+        '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="sleeps" value="' + (it.sleeps || "") + '" placeholder="-"></td>' +
+        '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="avail" value="' + (it.avail || "") + '" placeholder="-"></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="pp"' + (it.pp ? " checked" : "") + '></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="meal"' + (it.meal ? " checked" : "") + '></td>' +
         '<td><button class="xBtn rc-del" data-gi="' + gi + '" data-ii="' + ii + '" title="Remove this item">×</button></td>' +
@@ -3585,6 +3660,7 @@ function switchTab(name){
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + name));
   window.scrollTo({top:0, behavior:"instant"});
+  updateStickySubmit();
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
@@ -3632,8 +3708,8 @@ function syncForm(){
 document.getElementById("f-church").addEventListener("change", e => {
   setChurchTier(e.target.value);
   showToast(Number(e.target.value) > 0
-    ? e.target.value + "% church discount preset on this quote — it applies to accommodation and venue hire, and the conditions appear on the quote."
-    : "No tier preset — the organiser can pick their own.");
+    ? e.target.value + "% church discount preset on this quote, it applies to accommodation and venue hire, and the conditions appear on the quote."
+    : "No tier preset, the organiser can pick their own.");
 });
 document.getElementById("f-acnc").addEventListener("change", e => {
   Q.acnc = e.target.checked;
@@ -3641,8 +3717,8 @@ document.getElementById("f-acnc").addEventListener("change", e => {
   document.getElementById("f-church").style.display = Q.acnc ? "" : "none";
   refresh();
   showToast(Q.acnc
-    ? "Marked as a registered church / ACNC charity — the 20%/50% conditions now appear and the organiser can pick a tier."
-    : "Church/ACNC unticked — church discount content removed from the quote.");
+    ? "Marked as a registered church / ACNC charity, the 20%/50% conditions now appear and the organiser can pick a tier."
+    : "Church/ACNC unticked, church discount content removed from the quote.");
 });
 document.getElementById("tariffBtn").addEventListener("click", () => document.getElementById("tariffFile").click());
 document.getElementById("tariffFile").addEventListener("change", e => {
@@ -3789,7 +3865,7 @@ if(CLIENT_MODE){
   refresh();
   switchTab("client");
   const sideNote = document.querySelector(".sidecard p");
-  if(sideNote) sideNote.textContent = "Adjust anything below — availability and totals update as you go. Submit when you're ready; nothing is locked in until our team confirms it with you.";
+  if(sideNote) sideNote.textContent = "Adjust anything below, availability and totals update as you go. Submit when you're ready; nothing is locked in until our team confirms it with you.";
 } else {
   Q = blankQuote(nextQuoteNum());
   renderTplOptions();
