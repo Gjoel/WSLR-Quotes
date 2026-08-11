@@ -366,6 +366,10 @@
   .whoRow .whohead{font-size:13px; font-weight:700; color:var(--ink); width:100%}
   .vtimeInp{margin-top:4px; font-size:12.5px; padding:5px 8px}
   .orgmsg textarea{font-size:13.5px}
+  .cd-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin-top:2px}
+  .cd-grid label{display:flex; flex-direction:column; gap:3px; font-size:11.5px; font-weight:600; color:var(--ink2)}
+  .cd-grid input{font-size:13.5px}
+  @media (max-width:640px){.cd-grid{grid-template-columns:1fr}}
   .bandRow{
     grid-column:1 / -1; display:flex; gap:6px 14px; align-items:flex-end; flex-wrap:wrap;
     font-size:11.5px; color:var(--ink2); padding:5px 0 6px 10px;
@@ -513,6 +517,7 @@
           <label>First day<input id="f-date-start" type="date"></label>
           <label>Last day (optional, for multi-day events)<input id="f-date-end" type="date"></label>
           <label>Guests<input id="f-guests" type="number" min="1"></label>
+          <label>Mobile<input id="f-mobile" type="tel"></label>
         </div>
       </div>
       <div class="card">
@@ -1195,7 +1200,7 @@ function blankQuote(num){
   const d = getDefaults();
   return {
     num: num,
-    contact: "", org: "", email: "", event: "",
+    contact: "", org: "", email: "", mobile: "", event: "",
     dateStart: "", dateEnd: "", guests: "",
     validDays: 14, discountPct: 0, prepBy: prep,
     prepEmail: prepEmail || DEFAULT_PREP_EMAIL,
@@ -1228,6 +1233,7 @@ function blankSel(){
 }
 /* upgrade quotes saved by earlier versions into the current model */
 function normalizeQuote(q){
+  if(q.mobile === undefined || q.mobile === null) q.mobile = "";
   if(!q.catalog) q.catalog = {};
   if(!q.rates) q.rates = {};
   if(!q.availCal) q.availCal = {};
@@ -1266,6 +1272,17 @@ function normalizeQuote(q){
     });
     if(!q.acnc && Number(q.sel.church) > 0) q.acnc = true;
     if(q.status === "Submitted" && !q.submittedSel) q.submittedSel = JSON.stringify({sel: q.sel, lines: q.lines});
+    /* quotes submitted before details were editable: fold today's details into the
+       submitted snapshot so future detail edits are noticed, but the upgrade alone
+       never looks like a change */
+    if(q.status === "Submitted" && q.submittedSel && q.submittedSel.indexOf('"details"') < 0){
+      try{
+        const s = JSON.parse(q.submittedSel);
+        s.details = {contact: q.contact || "", org: q.org || "", email: q.email || "",
+                     mobile: q.mobile || "", event: q.event || "", guests: q.guests};
+        q.submittedSel = JSON.stringify(s);
+      }catch(e){}
+    }
     return q;
   }
   const sel = blankSel();
@@ -1763,7 +1780,7 @@ function validUntilISO(){ return isoDate(plusDays(today, Number(Q.validDays)||14
 function snapshotQ(){
   const t = totals();
   return {
-    num: Q.num, contact: Q.contact, org: Q.org, email: Q.email, event: Q.event,
+    num: Q.num, contact: Q.contact, org: Q.org, email: Q.email, mobile: Q.mobile, event: Q.event,
     dateStart: Q.dateStart, dateEnd: Q.dateEnd, guests: Q.guests,
     validDays: Q.validDays, discountPct: Q.discountPct, prepBy: Q.prepBy,
     prepEmail: String(Q.prepEmail || "").trim() || DEFAULT_PREP_EMAIL,
@@ -2611,6 +2628,70 @@ function perPersonHTML(t){
   if(!(Q.features && Q.features.perPerson) || g <= 0 || !(t.total > 0)) return '';
   return '<div class="ppLine">≈ ' + money0(Math.round(t.total / g)) + ' per person across your ' + g + ' guests</div>';
 }
+function capBarHTML(){
+  const cap = selSleeps();
+  const guests = Number(Q.guests) || 0;
+  const split = !!(Q.sel && Q.sel.split);
+  const short = guests > 0 && cap < guests;
+  return '<div class="capbar' + (short ? ' short' : '') + '" id="capBar">' +
+    (cap > 0
+      ? ('Your cabins sleep up to <b>&nbsp;' + cap + '&nbsp;</b> people' +
+         (guests ? '<span class="capsub">· you expect ' + guests + ' guest' + (guests === 1 ? '' : 's') + (short ? ', you may need more cabins' : ' ✓') + '</span>' : '') +
+         (split ? '<span class="capsub">· capacity varies on split nights</span>' : ''))
+      : 'No cabins selected yet' + (guests ? ' <span class="capsub">· you expect ' + guests + ' guests</span>' : '')) +
+    '</div>';
+}
+/* the "Prepared for" and event header lines, refreshed in place as details are edited */
+function qpForHTML(){ return 'Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : ''); }
+function qpEventHTML(){ return esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests'; }
+
+/* ---- what was submitted vs what's on screen (drives the resubmit offer) ---- */
+function submitDetails(){
+  return {contact: Q.contact || "", org: Q.org || "", email: Q.email || "",
+          mobile: Q.mobile || "", event: Q.event || "", guests: Q.guests};
+}
+function submitSig(){ return JSON.stringify({sel: Q.sel, lines: Q.lines, details: submitDetails()}); }
+function submitDirty(){
+  if(Q.status !== "Submitted" || !Q.submittedSel) return false;
+  if(Q.submittedSel.indexOf('"details"') >= 0) return submitSig() !== Q.submittedSel;
+  /* submitted before details were editable: compare the old way so the upgrade alone never looks like a change */
+  return JSON.stringify({sel: Q.sel, lines: Q.lines}) !== Q.submittedSel;
+}
+function submitStateSig(){
+  const anySel = hasSel(Q) || Q.lines.some(l => (Number(l.qty) || 0) > 0);
+  return [Q.status, Q.accepted ? 1 : 0, submitDirty() ? 1 : 0, anySel ? 1 : 0, firstName(Q.contact)].join("|");
+}
+/* the accept/submit area at the foot of the organiser page */
+function submitZoneHTML(){
+  const anySel = hasSel(Q) || Q.lines.some(l => (Number(l.qty) || 0) > 0);
+  const askBtn = '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a>';
+  if(Q.accepted || Q.status === "Accepted"){
+    return '<div class="accepted-box">✓ Thanks ' + esc(firstName(Q.contact)) + ', this quote is accepted.<br><span>We\'ll be in touch shortly to lock in the details.</span></div>';
+  }
+  if(Q.status === "Submitted"){
+    const dirty = submitDirty();
+    return '<div class="submitted-box">✓ Selection received, ' + esc(firstName(Q.contact)) + '.' +
+      '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit.</span></div>' +
+      (dirty
+        ? '<div class="tierwarn" style="text-align:center">You\'ve changed your selection since submitting. Please submit again so we quote the right package.</div>' +
+          '<div class="acceptrow"><button class="btn accept" id="submitBtn">Submit updated selection</button>' + askBtn + '</div>'
+        : '<div class="acceptrow">' + askBtn + '</div>');
+  }
+  return '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>Submit my selection for confirmation</button>' + askBtn + '</div>' +
+    '<p class="qp-aud" style="text-align:center; margin-top:6px">Submitting doesn\'t lock anything in. Our team confirms availability and final pricing with you first.</p>';
+}
+/* refresh just the submit area (typing-safe: never rebuilds the inputs around it) */
+function updateSubmitState(){
+  const z = document.getElementById("submitZone");
+  if(!z) return;
+  const sig = submitStateSig();
+  if(z.dataset.sig === sig) return;
+  z.dataset.sig = sig;
+  z.innerHTML = submitZoneHTML();
+  const sb = document.getElementById("submitBtn");
+  if(sb) sb.addEventListener("click", doSubmit);
+  updateStickySubmit();
+}
 function cbTotalsHTML(t, pm){
   if(pm === "noprices")
     return '<div class="qp-pricenote">Pricing for this package is available from our functions team, contact us any time.</div>';
@@ -2735,16 +2816,7 @@ function renderClient(){
       '</div>';
     }).join('');
 
-    const cap = selSleeps();
-    const guests = Number(Q.guests) || 0;
-    const short = guests > 0 && cap < guests;
-    const capHtml = '<div class="capbar' + (short ? ' short' : '') + '" id="capBar">' +
-      (cap > 0
-        ? ('Your cabins sleep up to <b>&nbsp;' + cap + '&nbsp;</b> people' +
-           (guests ? '<span class="capsub">· you expect ' + guests + ' guest' + (guests === 1 ? '' : 's') + (short ? ', you may need more cabins' : ' ✓') + '</span>' : '') +
-           (split ? '<span class="capsub">· capacity varies on split nights</span>' : ''))
-        : 'No cabins selected yet' + (guests ? ' <span class="capsub">· you expect ' + guests + ' guests</span>' : '')) +
-      '</div>';
+    const capHtml = capBarHTML();
 
     accomHtml = '<div class="cb-sec"><h3>Accommodation</h3>' +
       '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ' · choose how many of each cabin type you\'d like ·' + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
@@ -2884,23 +2956,7 @@ function renderClient(){
       secs.map(s => '<div class="qp-sec"><h4>' + esc(s.title) + '</h4>' + esc(s.text) + '</div>').join('')
     : '';
 
-  const anySel = hasSel(Q) || fixedLines.length > 0;
-  const askBtn = '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a>';
-  let submitBlock;
-  if(Q.accepted || Q.status === "Accepted"){
-    submitBlock = '<div class="accepted-box">✓ Thanks ' + esc(firstName(Q.contact)) + ', this quote is accepted.<br><span>We\'ll be in touch shortly to lock in the details.</span></div>';
-  } else if(Q.status === "Submitted"){
-    const dirty = !!(Q.submittedSel && JSON.stringify({sel: Q.sel, lines: Q.lines}) !== Q.submittedSel);
-    submitBlock = '<div class="submitted-box">✓ Selection received, ' + esc(firstName(Q.contact)) + '.' +
-      '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit.</span></div>' +
-      (dirty
-        ? '<div class="tierwarn" style="text-align:center">You\'ve changed your selection since submitting. Please submit again so we quote the right package.</div>' +
-          '<div class="acceptrow"><button class="btn accept" id="submitBtn">Submit updated selection</button>' + askBtn + '</div>'
-        : '<div class="acceptrow">' + askBtn + '</div>');
-  } else {
-    submitBlock = '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>Submit my selection for confirmation</button>' + askBtn + '</div>' +
-      '<p class="qp-aud" style="text-align:center; margin-top:6px">Submitting doesn\'t lock anything in. Our team confirms availability and final pricing with you first.</p>';
-  }
+  const submitBlock = '<div id="submitZone" data-sig="' + esc(submitStateSig()) + '">' + submitZoneHTML() + '</div>';
 
   const printRows = displayLines().map(l =>
     '<tr><td>' + esc(l.name) +
@@ -2933,13 +2989,25 @@ function renderClient(){
         (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
         '<div class="qp-contactlines">Phone: ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>' + VENUE_WEB + '</div></div>' +
     '</div>' +
-    '<div class="qp-for">Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : '') + '</div>' +
-    '<div class="qp-event">' + esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests</div>' +
+    '<div class="qp-for" id="qpFor">' + qpForHTML() + '</div>' +
+    '<div class="qp-event" id="qpEvent">' + qpEventHTML() + '</div>' +
     '<div class="cb-live">' +
       '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.</p>' +
       accomHtml + venueHtml + caterHtml + churchHtml + fixedHtml +
       '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
       keyDatesHTML(showPrices) +
+      '<div class="cb-sec" id="yourDetails"><h3>Your details</h3>' +
+        '<p class="cb-hint">check these are right and correct anything that isn\'t, they come through to us with your submission</p>' +
+        '<div class="cd-grid">' +
+          '<label>Contact name<input class="cdInp" data-f="contact" type="text" value="' + esc(Q.contact) + '"></label>' +
+          '<label>Organisation / group<input class="cdInp" data-f="org" type="text" value="' + esc(Q.org) + '"></label>' +
+          '<label>Email<input class="cdInp" data-f="email" type="email" value="' + esc(Q.email) + '"></label>' +
+          '<label>Mobile<input class="cdInp" data-f="mobile" type="tel" value="' + esc(Q.mobile) + '"></label>' +
+          '<label>Event<input class="cdInp" data-f="event" type="text" value="' + esc(Q.event) + '"></label>' +
+          '<label>Guests<input class="cdInp" data-f="guests" type="number" min="1" value="' + esc(Q.guests) + '"></label>' +
+        '</div>' +
+        '<p class="cb-hint" style="margin-top:8px">The dates are set with our team. If you need different dates, ask a question below or reply to the quote email and we\'ll sort it out.</p>' +
+      '</div>' +
       '<div class="cb-sec orgmsg"><h3>Anything we should know?</h3>' +
         '<p class="cb-hint">questions, arrival plans, dietary details, how you\'ll use the rooms, this comes straight to our team with your submission</p>' +
         '<textarea id="cbMsg" rows="3" placeholder="Type anything you\'d like us to know…">' + esc(Q.sel.message || '') + '</textarea></div>' +
@@ -2979,6 +3047,7 @@ function renderClient(){
     autosaveDraft();
     renderTotals();
     renderPipeline();
+    updateSubmitState();
   }));
   function refreshCaterRows(){
     page.querySelectorAll(".cb-row[data-cid]").forEach(row => {
@@ -3001,6 +3070,7 @@ function renderClient(){
     autosaveDraft();
     renderTotals();
     renderPipeline();
+    updateSubmitState();
   }
   page.querySelectorAll(".whoInp").forEach(el => {
     el.addEventListener("input", e => {
@@ -3031,12 +3101,35 @@ function renderClient(){
     if(!Q.sel.venueTimes) Q.sel.venueTimes = {};
     Q.sel.venueTimes[e.target.dataset.key] = e.target.value;
     autosaveDraft();
+    updateSubmitState();
   }));
   const msgTa = document.getElementById("cbMsg");
   if(msgTa) msgTa.addEventListener("input", e => {
     Q.sel.message = e.target.value;
     autosaveDraft();
+    updateSubmitState();
   });
+  /* the organiser's own details: contact, organisation, email, mobile, event, guests (dates stay with staff) */
+  page.querySelectorAll(".cdInp").forEach(el => el.addEventListener("input", e => {
+    const f = e.target.dataset.f;
+    Q[f] = (e.target.type === "number") ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value;
+    const sf = document.getElementById("f-" + f);
+    if(sf) sf.value = e.target.value;   /* keep the staff form in step */
+    const qf = document.getElementById("qpFor");
+    if(qf) qf.innerHTML = qpForHTML();
+    const qe = document.getElementById("qpEvent");
+    if(qe) qe.innerHTML = qpEventHTML();
+    if(f === "guests"){
+      const cb = document.getElementById("capBar");
+      if(cb) cb.outerHTML = capBarHTML();
+      const ct = document.getElementById("cbTotals");
+      if(ct) ct.innerHTML = cbTotalsHTML(totals(), Q.priceMode || "full");
+    }
+    autosaveDraft();
+    renderTotals();
+    renderPipeline();
+    updateSubmitState();
+  }));
   const churchSel = document.getElementById("cbChurch");
   if(churchSel) churchSel.addEventListener("change", e => {
     const v = Number(e.target.value) || 0;
@@ -3291,7 +3384,7 @@ function doSend(){
 function doSubmit(){
   Q.status = "Submitted";
   Q.submittedAt = new Date().toISOString();
-  Q.submittedSel = JSON.stringify({sel: Q.sel, lines: Q.lines});
+  Q.submittedSel = submitSig();
   if(!Q.sentAt) Q.sentAt = Q.submittedAt;
   if(!Q.token) Q.token = genToken();
   const snap = snapshotQ();
@@ -3669,7 +3762,7 @@ function softRefresh(){ autosaveDraft(); renderPrep(); renderSecBoxes(); renderT
 function refresh(){ autosaveDraft(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
 
 const BINDINGS = [
-  ["f-contact", "contact"], ["f-org", "org"], ["f-email", "email"], ["f-event", "event"],
+  ["f-contact", "contact"], ["f-org", "org"], ["f-email", "email"], ["f-mobile", "mobile"], ["f-event", "event"],
   ["f-date-start", "dateStart"], ["f-date-end", "dateEnd"], ["f-guests", "guests"],
   ["f-num", "num"], ["f-prepby", "prepBy"], ["f-prepemail", "prepEmail"], ["f-valid", "validDays"], ["f-disc", "discountPct"],
   ["f-pricemode", "priceMode"], ["f-bond", "bond"],
