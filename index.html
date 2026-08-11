@@ -432,6 +432,12 @@
   }
   #toast.show{opacity:1; transform:translateY(0)}
 
+  /* ---------- organiser mode (served from the emailed link) ---------- */
+  body.clientmode header.top, body.clientmode nav.tabs,
+  body.clientmode #tab-staff, body.clientmode #tab-pipeline, body.clientmode #tab-settings{display:none !important}
+  body.clientmode #tab-client{display:block !important}
+  body.clientmode .wrap{padding-top:20px}
+
   /* ---------- print / save-as-PDF ---------- */
   .qp-print-note{display:none}
   .qp-printonly{display:none}
@@ -737,6 +743,13 @@
 
 <script>
 "use strict";
+
+/* ---------- organiser mode: this same file, served from the emailed quote link ----------
+   The Apps Script injects window.WSLR_BOOTSTRAP = {quote, settings} before this script runs.
+   When present, the page locks to the organiser's view: staff tabs hidden, the quote loaded
+   from the server, and Submit posts back for real. One file, one rendering engine. */
+const BOOT = (typeof window !== "undefined" && window.WSLR_BOOTSTRAP && window.WSLR_BOOTSTRAP.quote) ? window.WSLR_BOOTSTRAP : null;
+const CLIENT_MODE = !!BOOT;
 
 /* ---------- rate card (defaults from the Functions Package Guide; editable on the Settings tab) ---------- */
 const DEFAULT_RATE_GROUPS = [
@@ -1257,6 +1270,7 @@ function hasContent(q){
     String(q.event || "").trim() !== "" || String(q.email || "").trim() !== "";
 }
 function autosaveDraft(){
+  if(CLIENT_MODE) return; // the organiser's working copy lives on the server, not in their browser
   if(hasContent(Q)) lsSet(LS_DRAFT, {q: Q, t: new Date().toISOString()});
 }
 
@@ -1714,6 +1728,7 @@ function snapshotQ(){
     priceMode: Q.priceMode || "full",
     bond: Q.bond, acnc: !!Q.acnc,
     sections: Q.sections ? JSON.parse(JSON.stringify(Q.sections)) : null,
+    ratecard: JSON.parse(JSON.stringify(editableGroups())), // so the emailed link prices from the same card
     catalog: JSON.parse(JSON.stringify(Q.catalog || {})),
     rates: JSON.parse(JSON.stringify(Q.rates || {})),
     availCal: JSON.parse(JSON.stringify(Q.availCal || {})),
@@ -2865,7 +2880,9 @@ function renderClient(){
     '<div class="qp-head">' +
       '<div class="qp-brand">' + LOGO_QP + '<div class="qp-tag">FUNCTIONS &amp; EVENTS</div>' +
         '<div class="qp-addr">' + VENUE_ADDR1 + '<br>' + VENUE_ADDR2 + '<br>' + VENUE_ABN + '</div></div>' +
-      '<div class="qp-meta"><div><b>Quote ' + esc(Q.num) + '</b></div><div>Issued ' + fmtDate(today) + '</div><div>Valid until ' + fmtDate(plusDays(today, Number(Q.validDays)||14)) + '</div>' +
+      '<div class="qp-meta"><div><b>Quote ' + esc(Q.num) + '</b></div>' +
+      '<div>Issued ' + ((CLIENT_MODE && BOOT.quote.display && BOOT.quote.display.issued) ? fmtDate(BOOT.quote.display.issued) : fmtDate(today)) + '</div>' +
+      '<div>Valid until ' + ((CLIENT_MODE && Q.validUntil) ? fmtDate(Q.validUntil) : fmtDate(plusDays(today, Number(Q.validDays)||14))) + '</div>' +
         (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
         '<div class="qp-contactlines">Phone: ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>' + VENUE_WEB + '</div></div>' +
     '</div>' +
@@ -3214,7 +3231,9 @@ function doSubmit(){
   renderClient();
   renderPrevOptions();
   renderPipeline();
-  showToast("Selection for " + Q.num + " submitted and logged to the tracker sheet. In the live version this also emails the functions team, who confirm availability and final pricing.");
+  showToast(CLIENT_MODE
+    ? "Selection submitted — thank you! Our functions team has been notified and will confirm availability and final pricing with you."
+    : "Selection for " + Q.num + " submitted and logged to the tracker sheet. In the live version this also emails the functions team, who confirm availability and final pricing.");
 }
 
 /* ---------- new / template / copy controls ---------- */
@@ -3755,15 +3774,33 @@ document.getElementById("appLogo").src = LOGO_DATA;
   lsSet(FLAG, true);
 })();
 buildRate(lsGet(LS_RATECARD, null));
-Q = blankQuote(nextQuoteNum());
-renderTplOptions();
-renderPrevOptions();
-renderSettings();
-syncForm();
-showRestoreBar();
-refresh();
-renderSyncBadge();
-loadSharedSettings();
+if(CLIENT_MODE){
+  /* the emailed quote link: same page, organiser's view only */
+  document.body.classList.add("clientmode");
+  if(BOOT.settings) applySharedSettings(BOOT.settings);
+  if(Array.isArray(BOOT.quote.ratecard) && BOOT.quote.ratecard.length) buildRate(JSON.parse(JSON.stringify(BOOT.quote.ratecard)));
+  Q = Object.assign(blankQuote(String(BOOT.quote.num || "Q")), JSON.parse(JSON.stringify(BOOT.quote)));
+  if(BOOT.quote.sel === undefined) Q.sel = null;
+  normalizeQuote(Q);
+  renderTplOptions();
+  renderPrevOptions();
+  renderSettings();
+  syncForm();
+  refresh();
+  switchTab("client");
+  const sideNote = document.querySelector(".sidecard p");
+  if(sideNote) sideNote.textContent = "Adjust anything below — availability and totals update as you go. Submit when you're ready; nothing is locked in until our team confirms it with you.";
+} else {
+  Q = blankQuote(nextQuoteNum());
+  renderTplOptions();
+  renderPrevOptions();
+  renderSettings();
+  syncForm();
+  showRestoreBar();
+  refresh();
+  renderSyncBadge();
+  loadSharedSettings();
+}
 </script>
 </body>
 </html>
