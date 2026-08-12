@@ -750,6 +750,15 @@
       <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit each email before sending. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
     </div>
 
+    <div class="card">
+      <h2>Email quote button opens, on this computer</h2>
+      <select id="s-emailvia" style="max-width:460px">
+        <option value="web">Outlook on the web — pick this if you use new Outlook</option>
+        <option value="app">Default mail app — pick this if you use classic Outlook</option>
+      </select>
+      <p class="hint" style="margin-top:8px">Unlike the rest of this page, this choice saves to this computer only and does not sync to other staff, so everyone can match it to the Outlook they actually use. Outlook on the web opens the ready-to-write email in a browser tab, signed in to your Microsoft 365 account, and sends straight away. The default mail app option hands the email to Windows; that is right for classic Outlook, but on a computer where you work in new Outlook it can quietly land in classic Outlook's outbox and never send.</p>
+    </div>
+
     <p class="hint">Settings save automatically, to this browser straight away, and to the tracker sheet for everyone else.</p>
 
   </section>
@@ -1168,6 +1177,7 @@ const DEFAULT_PREP_EMAIL = "functions@wslr.com.au";
 const LS_RATECARD = "wslr_ratecard_v1";
 const LS_DEFAULTS = "wslr_defaults_v1";
 const LS_ACCOM_FLAG = "wslr_accom_v1";
+const LS_EMAILVIA = "wslr_emailvia";   /* per computer, never synced to the sheet */
 function lsGet(k, fb){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }catch(e){ return fb; } }
 function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
@@ -1373,6 +1383,11 @@ function saveDefaults(part){
   lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part));
   if(typeof pushSharedSettings === "function") pushSharedSettings();
 }
+/* Which app the Email quote button opens. Saved on this computer only and never
+   synced, so each staff member can match it to the Outlook their computer uses:
+   classic Outlook people pick the default mail app, new Outlook people keep the web. */
+function getEmailVia(){ return lsGet(LS_EMAILVIA, "web") === "app" ? "app" : "web"; }
+function setEmailVia(v){ lsSet(LS_EMAILVIA, v === "app" ? "app" : "web"); }
 
 /* ---------- state: the quote being built ---------- */
 function blankQuote(num){
@@ -3553,11 +3568,35 @@ function doEmail(){
     return;
   }
   sendCore();
-  const href = "mailto:" + String(Q.email).trim() +
-    "?subject=" + encodeURIComponent(emailSubject()) +
-    "&body=" + encodeURIComponent(fillTemplate(getDefaults().body));
-  showToast("Email opened for " + Q.email + " with the acceptance link included. Quote " + Q.num + " logged as sent.");
-  window.location.href = href;
+  const to = String(Q.email).trim();
+  const subject = emailSubject();
+  const body = fillTemplate(getDefaults().body);
+  if(getEmailVia() === "app"){
+    /* Hand the email to the computer's default mail app via mailto:.
+       Reliable with classic Outlook; on machines that run new Outlook this
+       handoff often lands in classic Outlook anyway, where the sent email
+       sits in an outbox that never flushes. Kept as an opt-in for offices
+       standardised on classic Outlook (see Settings). */
+    showToast("Email opened for " + to + " with the acceptance link included. Quote " + Q.num + " logged as sent.");
+    window.location.href = "mailto:" + to +
+      "?subject=" + encodeURIComponent(subject) +
+      "&body=" + encodeURIComponent(body);
+    return;
+  }
+  /* Default: open Outlook on the web's compose window in a new tab, prefilled.
+     This bypasses the Windows mailto handler entirely and sends immediately
+     through the same Microsoft 365 mailbox that new Outlook uses, so it works
+     whether the computer has new Outlook, classic Outlook, or neither. */
+  const url = "https://outlook.office.com/mail/deeplink/compose" +
+    "?to=" + encodeURIComponent(to) +
+    "&subject=" + encodeURIComponent(subject) +
+    "&body=" + encodeURIComponent(body);
+  const win = window.open(url, "_blank");
+  if(win){
+    showToast("Outlook opened in a new tab for " + to + " with the acceptance link included. Quote " + Q.num + " logged as sent.");
+  } else {
+    showToast("The browser blocked the Outlook tab. Allow pop-ups for this site, then press Email quote again. Quote " + Q.num + " is already logged as sent.");
+  }
 }
 function doSend(){
   if(!readyToSend()) return;
@@ -3919,6 +3958,7 @@ function renderSettings(){
   document.getElementById("s-terms").value = d.terms;
   document.getElementById("s-subject").value = d.subject;
   document.getElementById("s-body").value = d.body;
+  document.getElementById("s-emailvia").value = getEmailVia();
   renderRcEditor();
   renderSecEditor();
 }
@@ -4037,6 +4077,12 @@ document.getElementById("s-notes").addEventListener("input", e => saveDefaults({
 document.getElementById("s-terms").addEventListener("input", e => saveDefaults({terms: e.target.value}));
 document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
 document.getElementById("s-body").addEventListener("input", e => saveDefaults({body: e.target.value}));
+document.getElementById("s-emailvia").addEventListener("change", e => {
+  setEmailVia(e.target.value);
+  showToast(e.target.value === "app"
+    ? "On this computer, Email quote now opens the default mail app (for classic Outlook)."
+    : "On this computer, Email quote now opens Outlook on the web (for new Outlook).");
+});
 document.getElementById("rcAdd").addEventListener("click", () => {
   const groups = editableGroups();
   const target = groups[groups.length - 1] || {group: "Catering", items: []};
