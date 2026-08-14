@@ -456,6 +456,23 @@
   .qp-print-note{display:none}
   .qp-printonly{display:none}
   .totals .savings span{color:var(--good)}
+  /* ---------- staff in-place editing on the preview ---------- */
+  body.clientmode .staffedit-ui{display:none !important}
+  .qp-notes, .qp-pay, .qp-sec, .qp-sec .sectext{white-space:pre-line}
+  body:not(.clientmode) .quotepage [contenteditable]{border-radius:4px; padding:0 2px; margin:0 -2px}
+  body:not(.clientmode) .quotepage [contenteditable]:hover{background:rgba(42,120,214,.06); outline:1px dashed rgba(42,120,214,.4); cursor:text}
+  body:not(.clientmode) .quotepage [contenteditable]:focus{background:#fff; outline:2px solid var(--accent); box-shadow:0 1px 6px rgba(0,0,0,.08)}
+  .sprice{display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--muted); margin-top:4px; flex-wrap:wrap}
+  .sprice input{width:78px; text-align:right; padding:3px 7px; font-size:12.5px; border:1px solid var(--grid); border-radius:6px; background:#fff}
+  .sprice input:focus{border-color:var(--accent); outline:none}
+  .spline{display:flex; align-items:center; gap:5px; justify-content:flex-end; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
+  .spline input{width:64px; text-align:right; padding:3px 6px; font-size:12.5px; border:1px solid var(--grid); border-radius:6px; background:#fff}
+  .spline input:focus{border-color:var(--accent); outline:none}
+  .kd-tools{display:inline-flex; gap:6px; margin-left:10px; vertical-align:middle}
+  .kd .kdx{border:none; background:none; color:var(--crit); font-size:14px; cursor:pointer; padding:0 4px; line-height:1}
+  .pinwarn{color:var(--crit)}
+  .secreset{margin-top:3px}
+
   @media print{
     body{background:#fff}
     header.top, nav.tabs, #tab-staff, #tab-pipeline, #tab-settings, .sidecard, #toast, #stickySubmit{display:none !important}
@@ -469,6 +486,7 @@
     .clientwrap{display:block}
     .quotepage{border:none; box-shadow:none; border-radius:0; padding:4px 0}
     .acceptrow{display:none !important}
+    .staffedit-ui{display:none !important}
     .qp-print-note{display:block; margin-top:24px; text-align:center; font-size:13px; color:#52514e}
   }
 </style>
@@ -620,7 +638,7 @@
         <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission, that part is built in.</p>
       </div>
 
-      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote, always check RMS first. Prices and unit counts start from the rate card (Settings tab) but only apply to this quote.</p>
+      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote, always check RMS first. Venue and catering prices start from the rate card (Settings tab); accommodation nightly prices must come from an RMS tariff import or a typed price, the rate card never supplies them. Everything only applies to this quote.</p>
     </div>
 
     <div class="card">
@@ -664,7 +682,7 @@
       <button class="btn" id="sendBtn">Mark as sent (no email)</button>
       <button class="btn ghost" id="pdfBtn2">Download PDF</button>
     </div>
-    <p class="hint">Email quote opens your mail program addressed to the client with the subject and message filled in ready to send (download the PDF if you want to attach it), and logs the quote as sent in the pipeline and the tracker sheet.</p>
+    <p class="hint">Email quote opens Outlook addressed to the client with the subject and message filled in ready to send (download the PDF if you want to attach it), and logs the quote as sent in the pipeline and the tracker sheet. Whether it opens Outlook on the web or the computer's mail app is set per computer on the Settings tab. Tip: the Organiser's page tab now lets you edit wording and prices in place and save or email from there.</p>
 
   </section>
 
@@ -673,7 +691,9 @@
     <div class="clientwrap">
       <div class="quotepage" id="quotePage"></div>
       <aside class="sidecard card">
-        <p>This is the live page the organiser gets: they pick their own cabins, venues and catering from what you switched on, then submit their selection for confirmation.</p>
+        <p>This is the live page the organiser gets: they pick their own cabins, venues and catering from what you switched on, then submit their selection for confirmation. Click any wording on the page (notes, terms, information sections, money &amp; key dates, fixed lines) to edit it for this quote, and use the small $ boxes to change prices, then save or email it from here.</p>
+        <button class="btn primary staffedit-ui" id="saveQuoteBtn" style="width:100%; margin-bottom:8px">Save changes</button>
+        <button class="btn staffedit-ui" id="emailQuoteBtn2" style="width:100%; margin-bottom:8px">Email quote →</button>
         <button class="btn primary" id="pdfBtn" style="width:100%">Download PDF</button>
         <p class="hint" style="margin-top:8px">Opens your browser's print box: choose "Save as PDF". The PDF captures the selection as it stands.</p>
       </aside>
@@ -710,7 +730,7 @@
     <div class="card">
       <div class="cardhead">
         <h2>Rate card</h2>
-        <span class="hint">prices include GST. Changes apply to new lines; existing quotes keep their prices.</span>
+        <span class="hint">prices include GST. Changes apply to new lines; existing quotes keep their prices. Accommodation is the exception: cabin nightly prices always come from an RMS tariff import or a price typed on the quote, never from this card.</span>
       </div>
       <div class="tablewrap" id="rcEditor"></div>
       <div class="actions" style="margin-top:12px">
@@ -1069,7 +1089,14 @@ function resolvedSections(){
   const bondTxt = money0(Number(Q.bond) || 0);
   return activeSectionIds().map(id => {
     const c = sectionContent(id);
-    return {title: c.title, text: String(c.text).split("{bond}").join(bondTxt).split("{menuoptions}").join(menuSectionText())};
+    const po = (Q.secText || {})[id] || {};   /* per-quote wording edits, made on the preview */
+    const baseText = String(c.text).split("{bond}").join(bondTxt).split("{menuoptions}").join(menuSectionText());
+    return {
+      id: id,
+      title: po.title !== undefined ? po.title : c.title,
+      text: po.text !== undefined ? po.text : baseText,
+      edited: po.title !== undefined || po.text !== undefined
+    };
   }).filter(s => String(s.text).trim() !== "");
 }
 
@@ -1408,6 +1435,9 @@ function blankQuote(num){
     bond: Number(d.bond) || 2000,
     acnc: false,        // registered church / ACNC charity, reveals the 20%/50% concessional rates
     sections: null,
+    secText: {},        // per-quote wording overrides for info sections: {sectionId: {title, text}}
+    kdOver: null,       // per-quote "Money & key dates" rows: null = automatic, else [{d, t}]
+    accomPriced: true,  // made under the import-your-prices rule (see normalizeQuote for older quotes)
     catalog: {},        // per-quote menu curation: {itemId: {on, price, avail}}
     rates: {},          // imported nightly tariffs: {itemId: {"2026-08-21": 770, ...}}
     availCal: {},       // imported per-date availability: {itemId: {"2026-08-21": 0, ...}}
@@ -1436,6 +1466,29 @@ function normalizeQuote(q){
   if(!q.rates) q.rates = {};
   if(!q.availCal) q.availCal = {};
   if(!q.menu) q.menu = {};
+  if(!q.secText || typeof q.secText !== "object") q.secText = {};
+  if(q.kdOver === undefined || (q.kdOver !== null && !Array.isArray(q.kdOver))) q.kdOver = null;
+  /* quotes made before accommodation required an imported/typed price were silently
+     priced from the rate card; freeze that card price into the quote so those older
+     quotes (and their live client links) keep the numbers they were sent with.
+     "raw" is the stored object before it was merged over a blank quote, the only
+     place a missing accomPriced key (= a legacy quote) is still visible. */
+  const rawFlag = arguments.length > 1 && arguments[1] ? arguments[1].accomPriced : q.accomPriced;
+  if(rawFlag === undefined){
+    if(!q.catalog) q.catalog = {};
+    Object.keys(RATE).forEach(id => {
+      if(!/^(acc_|camp_)/.test(String(id))) return;
+      const cp = (q.catalog[id] || {}).price;
+      const typed = cp !== undefined && cp !== null && cp !== "";
+      const imported = q.rates && q.rates[id] && Object.keys(q.rates[id]).length > 0;
+      const cardPrice = Number(RATE[id] && RATE[id].price) || 0;
+      if(!typed && !imported && cardPrice > 0){
+        if(!q.catalog[id]) q.catalog[id] = {};
+        q.catalog[id].price = cardPrice;
+      }
+    });
+    q.accomPriced = true;
+  }
   if(!q.features) q.features = {perPerson: true, depositDates: true, kids: true};
   if(q.sel){
     if(q.sel.who === undefined) q.sel.who = null;
@@ -1761,14 +1814,16 @@ function blockNights(b){
   const len = blockNightsList(b).length;
   return len || 1;
 }
-/* nightly price: staff-typed override > imported tariff > rate card */
+/* nightly price: staff-typed override > imported tariff > nothing.
+   Accommodation is priced from an RMS tariff import (or a typed price) on every
+   quote; the rate card deliberately never supplies a cabin's nightly price, so a
+   quote can't go out silently priced from stale card numbers. */
 function nightlyRate(id, iso){
   const m = manualPrice(id);
   if(m !== null) return m;
   const r = Q.rates && Q.rates[id];
   if(r && iso && r[iso] !== undefined) return Number(r[iso]) || 0;
-  const it = RATE[id];
-  return Number(it && it.price) || 0;
+  return 0;
 }
 /* min/max nightly rate across the stay (or across the whole import if no dates) */
 function rateRange(id){
@@ -1922,7 +1977,8 @@ function selCaterSub(){
     return s + caterRowCost(it.id);
   }, 0);
 }
-/* deposit & key dates, worked out from the selection and the template's rules */
+/* deposit & key dates, worked out from the selection and the template's rules,
+   unless staff have edited the rows for this quote (Q.kdOver) on the preview */
 function unitsSelected(){
   return (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + (Number(b.qty) || 0) : s, 0);
 }
@@ -1986,6 +2042,9 @@ function snapshotQ(){
     priceMode: Q.priceMode || "full",
     bond: Q.bond, acnc: !!Q.acnc,
     sections: Q.sections ? JSON.parse(JSON.stringify(Q.sections)) : null,
+    secText: JSON.parse(JSON.stringify(Q.secText || {})),
+    kdOver: Array.isArray(Q.kdOver) ? JSON.parse(JSON.stringify(Q.kdOver)) : null,
+    accomPriced: Q.accomPriced !== undefined ? Q.accomPriced : true,
     ratecard: JSON.parse(JSON.stringify(editableGroups())), // so the emailed link prices from the same card
     catalog: JSON.parse(JSON.stringify(Q.catalog || {})),
     rates: JSON.parse(JSON.stringify(Q.rates || {})),
@@ -2647,8 +2706,11 @@ function renderPrep(){
     } else if(hasCal){
       priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + m + '" title="Your override, every night at this price">' +
         '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="price" title="Go back to the imported nightly rates">typed · use tariff</button></div>';
+    } else if(m !== null){
+      priceCell = '<input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + m + '" title="Per-night price typed for this quote">';
     } else {
-      priceCell = '<input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + c.price + '" title="Per-night price on this quote">';
+      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="" placeholder="0" title="No nightly price yet, import the RMS tariff or type a price for this quote">' +
+        '<span class="pinsub pinwarn">no price yet · import or type</span></div>';
     }
     /* availability cell: staff-typed override > imported chart > rate card default */
     const ma = manualAvail(it.id);
@@ -2905,7 +2967,7 @@ function cbTotalsHTML(t, pm){
     perPersonHTML(t) +
     '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>';
 }
-function keyDatesRows(showPrices){
+function keyDatesAutoRows(showPrices){
   const u = unitsSelected(), vs = venuesSelected();
   const kd = keyDates();
   if(!kd && !(u + vs)) return [];
@@ -2925,12 +2987,33 @@ function keyDatesRows(showPrices){
   }
   return rows;
 }
-function keyDatesHTML(showPrices){
+/* staff-edited rows for this quote win over the automatic calculation */
+function keyDatesRows(showPrices){
+  if(Array.isArray(Q.kdOver)){
+    return Q.kdOver.map(r => [String(r.d || ""), String(r.t || "")]).filter(r => r[0] !== "" || r[1] !== "");
+  }
+  return keyDatesAutoRows(showPrices);
+}
+function keyDatesHTML(showPrices, editable){
   if(!(Q.features && Q.features.depositDates)) return '';
+  const edit = !!editable && !CLIENT_MODE;
   const rows = keyDatesRows(showPrices);
-  if(!rows.length) return '';
-  return '<div class="keydates"><b>Money &amp; key dates for your event</b>' +
-    rows.map(r => '<div class="kd"><span class="kdate">' + r[0] + '</span><span>' + r[1] + '</span></div>').join('') +
+  if(!rows.length && !edit) return '';
+  const over = Array.isArray(Q.kdOver);
+  return '<div class="keydates"' + (edit ? ' id="kdBlock"' : '') + '><b>Money &amp; key dates for your event</b>' +
+    (edit
+      ? '<span class="kd-tools staffedit-ui">' +
+          (over
+            ? '<button class="pinreset" id="kdAuto" title="Drop the edits and go back to the automatically calculated rows">edited · back to automatic</button>'
+            : '<span class="pinsub" style="padding:0">click any line to edit it for this quote</span>') +
+          '<button class="pinreset" id="kdAdd">+ add a line</button>' +
+        '</span>'
+      : '') +
+    rows.map((r, i) => '<div class="kd">' +
+      '<span class="kdate"' + (edit ? ' contenteditable data-kd="' + i + '" data-part="0"' : '') + '>' + esc(r[0]) + '</span>' +
+      '<span' + (edit ? ' contenteditable data-kd="' + i + '" data-part="1"' : '') + '>' + esc(r[1]) + '</span>' +
+      (edit ? '<button class="kdx staffedit-ui" data-kd="' + i + '" title="Remove this line from this quote">×</button>' : '') +
+    '</div>').join('') +
     '</div>';
 }
 /* everything the tracker sheet / emailed quote page needs, in one payload */
@@ -2960,6 +3043,21 @@ function buildDisplayPayload(){
       return opts.length ? (g.title.replace(/: .*$/, "") + ": " + opts.map(o => o.name).join("; ")) : null;
     }).filter(Boolean)
   };
+}
+/* the small staff-only nightly price editor shown on the preview's accommodation rows */
+function staffAccomPrice(id, showPrices){
+  if(CLIENT_MODE || !showPrices) return '';
+  const m = manualPrice(id);
+  const hasCal = Q.rates && Q.rates[id] && Object.keys(Q.rates[id]).length > 0;
+  const rr = rateRange(id);
+  const ph = hasCal ? (rr.varies ? Math.round(rr.min) + "–" + Math.round(rr.max) : String(Math.round(rr.min))) : "0";
+  return '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(id) + '" step="0.5" min="0" value="' + (m !== null ? m : '') + '" placeholder="' + esc(ph) + '" title="Nightly price for this quote; leave empty to use the imported tariff"> / night' +
+    (m !== null && hasCal
+      ? ' <button class="pinreset spReset" data-id="' + esc(id) + '" title="Go back to the imported nightly rates">typed · use tariff</button>'
+      : (hasCal
+          ? ' <span class="pinsub" style="padding:0">from tariff</span>'
+          : ' <span class="pinsub pinwarn" style="padding:0">no price yet · import or type</span>')) +
+  '</div>';
 }
 function renderClient(){
   const t = totals();
@@ -3005,7 +3103,8 @@ function renderClient(){
       return '<div class="cb-row">' +
         '<div><span class="pkgname">' + esc(it.name) + '</span>' + sleepsPill(it) + tourLink(tourFor(it.id)) +
           (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') +
-          (meta ? '<div class="cb-price">' + esc(meta) + '</div>' : '') + '</div>' +
+          (meta ? '<div class="cb-price">' + esc(meta) + '</div>' : '') +
+          staffAccomPrice(it.id, showPrices) + '</div>' +
         (split
           ? '<div class="cb-avail" style="text-align:right">' + q + ' selected</div>'
           : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canAddOver(it.id, stayNightsList())})) +
@@ -3035,7 +3134,8 @@ function renderClient(){
         return '<div class="cb-row">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
             '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
-            (showPrices ? '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>' : '') +
+            (showPrices ? '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>' +
+              (CLIENT_MODE ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price for this quote"> full · $<input type="number" class="spNum" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price for this quote"> half</div>') : '') +
             (d > 0 ? '<input type="text" class="vtimeInp" data-key="' + esc(v.key) + '" placeholder="days & times you plan to use it (e.g. Sat 9am–4pm)" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">' : '') +
           '</div>' +
           stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0}) +
@@ -3082,7 +3182,8 @@ function renderClient(){
           : '';
         return '<div class="cb-row" data-cid="' + esc(it.id) + '">' +
           '<div><span class="pkgname">' + esc(it.name) + '</span>' +
-            (showPrices ? '<div class="cb-price">' + money(c.price) + ' per person</div>' : '') +
+            (showPrices ? '<div class="cb-price">' + money(c.price) + ' per person</div>' +
+              (CLIENT_MODE ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + c.price + '" title="Per-person price for this quote"> per person</div>') : '') +
             menuBtn + '</div>' +
           '<div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; flex-wrap:wrap">' +
             (kidsMode
@@ -3133,16 +3234,21 @@ function renderClient(){
     : '';
 
   /* --- fixed extras --- */
-  const fixedLines = Q.lines.filter(l => (Number(l.qty) || 0) > 0);
+  const fixedLines = [];
+  Q.lines.forEach((l, i) => { if((Number(l.qty) || 0) > 0) fixedLines.push({l: l, i: i}); });
   const fixedHtml = fixedLines.length
     ? '<div class="cb-sec"><h3>Also on this quote</h3>' +
       '<p class="cb-hint">arranged with our functions team, talk to us to change these</p>' +
-      fixedLines.map(l => {
+      fixedLines.map(x => {
+        const l = x.l;
         const nn = lineNights(l);
         const when = lineItem(l).meal ? fmtWhen(l.when) : '';
-        return '<div class="cb-row"><div><span class="pkgname">' + esc(lineName(l)) + '</span><span class="fixedtag">fixed</span>' +
+        const mid = CLIENT_MODE
+          ? '<div class="cb-avail" style="text-align:right">' + l.qty + (nn > 1 ? ' × ' + nn + ' nights' : '') + (lineDiscPct(l) > 0 ? ' · −' + lineDiscPct(l) + '%' : '') + '</div>'
+          : '<div class="spline staffedit-ui"><input type="number" class="spLine" data-i="' + x.i + '" data-k="qty" min="0" value="' + (Number(l.qty) || 0) + '" title="Quantity"> ×' + (nn > 1 ? ' ' + nn + ' nights ×' : '') + ' $<input type="number" class="spLine" data-i="' + x.i + '" data-k="price" step="0.5" min="0" value="' + (Number(l.price) || 0) + '" title="Unit price"> − <input type="number" class="spLine" data-i="' + x.i + '" data-k="disc" min="0" max="100" value="' + lineDiscPct(l) + '" title="Line-only discount %">%</div>';
+        return '<div class="cb-row"><div><span class="pkgname"' + (CLIENT_MODE ? '' : ' contenteditable data-li="' + x.i + '" title="Click to rename this line"') + '>' + esc(lineName(l)) + '</span><span class="fixedtag">fixed</span>' +
           (when ? '<div class="pkgmeta">' + when + '</div>' : '') + '</div>' +
-          '<div class="cb-avail" style="text-align:right">' + l.qty + (nn > 1 ? ' × ' + nn + ' nights' : '') + (lineDiscPct(l) > 0 ? ' · −' + lineDiscPct(l) + '%' : '') + '</div>' +
+          mid +
           '<div class="pkgsub">' + (showPrices ? money(lineTotal(l)) : '') + '</div></div>';
       }).join('') + '</div>'
     : '';
@@ -3151,7 +3257,12 @@ function renderClient(){
   const secs = resolvedSections();
   const secHtml = secs.length
     ? '<div class="qp-sechead">Important information</div>' +
-      secs.map(s => '<div class="qp-sec"><h4>' + esc(s.title) + '</h4>' + esc(s.text) + '</div>').join('')
+      secs.map(s => CLIENT_MODE
+        ? '<div class="qp-sec"><h4>' + esc(s.title) + '</h4>' + esc(s.text) + '</div>'
+        : '<div class="qp-sec" data-sec="' + esc(s.id) + '"><h4 contenteditable data-sece="title" title="Click to edit this heading for this quote">' + esc(s.title) + '</h4>' +
+          '<div class="sectext" contenteditable data-sece="text" title="Click to edit this wording for this quote">' + esc(s.text) + '</div>' +
+          (s.edited ? '<button class="pinreset secreset staffedit-ui" data-sec="' + esc(s.id) + '">edited for this quote · back to standard</button>' : '') +
+          '</div>').join('')
     : '';
 
   const submitBlock = '<div id="submitZone" data-sig="' + esc(submitStateSig()) + '">' + submitZoneHTML() + '</div>';
@@ -3193,7 +3304,7 @@ function renderClient(){
       '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.</p>' +
       accomHtml + venueHtml + caterHtml + churchHtml + fixedHtml +
       '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
-      keyDatesHTML(showPrices) +
+      keyDatesHTML(showPrices, true) +
       '<div class="cb-sec" id="yourDetails"><h3>Your details</h3>' +
         '<p class="cb-hint">check these are right and correct anything that isn\'t, they come through to us with your submission</p>' +
         '<div class="cd-grid">' +
@@ -3211,8 +3322,8 @@ function renderClient(){
         '<textarea id="cbMsg" rows="3" placeholder="Type anything you\'d like us to know…">' + esc(Q.sel.message || '') + '</textarea></div>' +
     '</div>' +
     printSummary +
-    '<div class="qp-notes">' + esc(Q.notes) + '</div>' +
-    '<div class="qp-pay"><b>Payment &amp; terms</b><br>' + esc(Q.terms) +
+    '<div class="qp-notes"' + (CLIENT_MODE ? '' : ' contenteditable id="qpNotesBlk" title="Notes shown on the quote, click to edit for this quote"') + '>' + esc(Q.notes) + '</div>' +
+    '<div class="qp-pay"><b>Payment &amp; terms</b><br><span' + (CLIENT_MODE ? '' : ' contenteditable id="qpTermsBlk" title="Click to edit for this quote"') + '>' + esc(Q.terms) + '</span>' +
       '<div class="qp-bank">' + BANK_LINES.join('<br>') + '</div></div>' +
     secHtml +
     submitBlock +
@@ -3346,6 +3457,113 @@ function renderClient(){
   });
   const sb = document.getElementById("submitBtn");
   if(sb) sb.addEventListener("click", doSubmit);
+
+  /* ---------- staff-only in-place editing (never active on the organiser's page) ---------- */
+  if(!CLIENT_MODE){
+    /* prices: accommodation nightly, venue full/half day, catering per person */
+    page.querySelectorAll(".spNum").forEach(el => el.addEventListener("change", e => {
+      setCat(e.target.dataset.id, "price", e.target.value === "" ? "" : Number(e.target.value));
+      refresh();
+    }));
+    page.querySelectorAll(".spReset").forEach(el => el.addEventListener("click", e => {
+      setCat(e.currentTarget.dataset.id, "price", "");
+      refresh();
+    }));
+    /* fixed extras: qty, unit price, line discount, and the line's name */
+    page.querySelectorAll(".spLine").forEach(el => el.addEventListener("change", e => {
+      const l = Q.lines[Number(e.target.dataset.i)];
+      if(!l) return;
+      l[e.target.dataset.k] = e.target.value === "" ? 0 : Number(e.target.value);
+      refresh();
+    }));
+    page.querySelectorAll(".pkgname[data-li]").forEach(el => el.addEventListener("blur", e => {
+      const l = Q.lines[Number(e.target.dataset.li)];
+      if(!l) return;
+      const v = e.target.innerText.replace(/\n+/g, " ").trim();
+      if(v) l.desc = v;
+      autosaveDraft();
+      renderLines();
+      renderPipeline();
+    }));
+    /* notes and payment & terms, kept in step with the fields on the Prepare tab */
+    const nb = document.getElementById("qpNotesBlk");
+    if(nb) nb.addEventListener("blur", () => {
+      Q.notes = nb.innerText.replace(/\n{3,}/g, "\n\n").trim();
+      const f = document.getElementById("f-notes");
+      if(f) f.value = Q.notes;
+      autosaveDraft();
+    });
+    const tb2 = document.getElementById("qpTermsBlk");
+    if(tb2) tb2.addEventListener("blur", () => {
+      Q.terms = tb2.innerText.replace(/\n{3,}/g, "\n\n").trim();
+      const f = document.getElementById("f-terms");
+      if(f) f.value = Q.terms;
+      autosaveDraft();
+    });
+    /* info sections: a per-quote wording override, cleared if typed back to standard */
+    page.querySelectorAll("[data-sece]").forEach(el => el.addEventListener("blur", e => {
+      const wrap = e.target.closest(".qp-sec");
+      if(!wrap) return;
+      const id = wrap.dataset.sec, key = e.target.dataset.sece;
+      const c = sectionContent(id);
+      if(!c) return;
+      const v = e.target.innerText.replace(/\n{3,}/g, "\n\n").trim();
+      const bondTxt = money0(Number(Q.bond) || 0);
+      const baseVal = key === "title" ? c.title
+        : String(c.text).split("{bond}").join(bondTxt).split("{menuoptions}").join(menuSectionText());
+      if(!Q.secText) Q.secText = {};
+      const cur = Q.secText[id] || {};
+      const wasEdited = cur.title !== undefined || cur.text !== undefined;
+      if(v === String(baseVal).trim()) delete cur[key]; else cur[key] = v;
+      if(cur.title === undefined && cur.text === undefined) delete Q.secText[id]; else Q.secText[id] = cur;
+      autosaveDraft();
+      if(wasEdited !== !!Q.secText[id]) renderClient();
+    }));
+    page.querySelectorAll(".secreset").forEach(el => el.addEventListener("click", e => {
+      if(Q.secText) delete Q.secText[e.currentTarget.dataset.sec];
+      autosaveDraft();
+      renderClient();
+    }));
+    /* money & key dates: edit any line, add or remove lines, or go back to automatic */
+    const kdRowsFromDom = () => {
+      const out = [];
+      page.querySelectorAll("#kdBlock .kd").forEach(row => {
+        const a = row.querySelector('[data-part="0"]'), b = row.querySelector('[data-part="1"]');
+        out.push({d: a ? a.innerText.replace(/\n+/g, " ").trim() : "", t: b ? b.innerText.replace(/\n+/g, " ").trim() : ""});
+      });
+      return out;
+    };
+    const kdSet = rows => {
+      const auto = keyDatesAutoRows(showPrices).map(r => ({d: r[0], t: r[1]}));
+      Q.kdOver = (JSON.stringify(rows) === JSON.stringify(auto)) ? null : rows;
+      autosaveDraft();
+    };
+    page.querySelectorAll("#kdBlock [data-part]").forEach(el => el.addEventListener("blur", () => {
+      const was = Array.isArray(Q.kdOver);
+      kdSet(kdRowsFromDom());
+      if(was !== Array.isArray(Q.kdOver)) renderClient();
+    }));
+    page.querySelectorAll("#kdBlock .kdx").forEach(el => el.addEventListener("click", e => {
+      const rows = kdRowsFromDom();
+      rows.splice(Number(e.currentTarget.dataset.kd), 1);
+      kdSet(rows);
+      renderClient();
+    }));
+    const kdAddBtn = document.getElementById("kdAdd");
+    if(kdAddBtn) kdAddBtn.addEventListener("click", () => {
+      const rows = kdRowsFromDom();
+      rows.push({d: "Date or label", t: "What happens then"});
+      Q.kdOver = rows;
+      autosaveDraft();
+      renderClient();
+    });
+    const kdAutoBtn = document.getElementById("kdAuto");
+    if(kdAutoBtn) kdAutoBtn.addEventListener("click", () => {
+      Q.kdOver = null;
+      autosaveDraft();
+      renderClient();
+    });
+  }
   updateStickySubmit();
 }
 
@@ -3533,6 +3751,27 @@ function readyToSend(){
     showToast("Everything is switched off, offer at least one item, or add a fixed extra.");
     return false;
   }
+  /* accommodation must be priced from an import or a typed price, never silently from the rate card */
+  const unpriced = [];
+  let needDates = false;
+  accomItems().forEach(it => {
+    if(!catEntry(it.id).on) return;
+    const m = manualPrice(it.id);
+    const hasCal = Q.rates && Q.rates[it.id] && Object.keys(Q.rates[it.id]).length > 0;
+    if(m !== null) return;
+    if(!hasCal){ unpriced.push(it.name); return; }
+    if(!Q.dateStart){ needDates = true; return; }
+    const rr = rateRange(it.id);
+    if(rr.missing > 0) unpriced.push(it.name + " (" + rr.missing + " night" + (rr.missing === 1 ? "" : "s") + " not in the import)");
+  });
+  if(needDates){
+    showToast("Set the event dates first, nightly accommodation prices come from the imported tariff for those exact dates.");
+    return false;
+  }
+  if(unpriced.length){
+    showToast("No nightly price yet for: " + unpriced.join(", ") + ". Import the RMS tariff, type a price, or untick those cabins.");
+    return false;
+  }
   return true;
 }
 function sendCore(){
@@ -3603,6 +3842,26 @@ function doSend(){
   sendCore();
   showToast("Quote " + Q.num + " marked as sent, saved here, and logged to the tracker sheet.");
 }
+/* save the quote as it stands, without marking it sent or opening an email.
+   For an already-sent quote this also refreshes what the client's link shows. */
+function doSaveQuote(){
+  if(!Q.token) Q.token = genToken();
+  const snap = snapshotQ();
+  upsertSnapshot(snap);
+  postToSheet({action: "sent", quote: Object.assign({}, snap, {
+    link: linkForToken(Q.token),
+    meals: mealsSummary(),
+    rooms: roomsSummary(),
+    display: buildDisplayPayload()
+  })});
+  /* the sheet row write stamps status "Sent"; put the real status back if it differs */
+  if(Q.status && Q.status !== "Sent") postToSheet({action: "status", num: Q.num, status: Q.status});
+  renderPrevOptions();
+  renderPipeline();
+  showToast(Q.sentAt
+    ? "Changes to " + Q.num + " saved. The client's link now shows the updated quote."
+    : "Quote " + Q.num + " saved to the pipeline and the tracker sheet.");
+}
 function doSubmit(){
   Q.status = "Submitted";
   Q.submittedAt = new Date().toISOString();
@@ -3654,6 +3913,8 @@ function copyFromQuote(num){
     acnc: s.acnc,
     churchDisc: s.churchDisc,
     sections: s.sections || null,
+    secText: s.secText || {},
+    kdOver: Array.isArray(s.kdOver) ? s.kdOver : null,
     catalog: s.catalog || {},
     rates: s.rates || {},
     availCal: s.availCal || {},
@@ -3699,7 +3960,7 @@ function showRestoreBar(){
   document.getElementById("restoreYes").addEventListener("click", () => {
     Q = Object.assign(blankQuote(dq.num), JSON.parse(JSON.stringify(dq)));
     if(dq.sel === undefined) Q.sel = null; // legacy draft: convert its line items
-    normalizeQuote(Q);
+    normalizeQuote(Q, dq);
     bar.style.display = "none";
     syncForm();
     refresh();
@@ -4051,6 +4312,8 @@ document.getElementById("addLine").addEventListener("click", () => {
 document.getElementById("previewBtn").addEventListener("click", () => switchTab("client"));
 document.getElementById("sendBtn").addEventListener("click", doSend);
 document.getElementById("emailBtn").addEventListener("click", doEmail);
+document.getElementById("emailQuoteBtn2").addEventListener("click", doEmail);
+document.getElementById("saveQuoteBtn").addEventListener("click", doSaveQuote);
 document.getElementById("newQuoteBtn").addEventListener("click", startNewQuote);
 document.getElementById("tplSel").addEventListener("change", e => {
   if(e.target.value !== "") applyTemplate(Number(e.target.value));
@@ -4181,7 +4444,7 @@ if(CLIENT_MODE){
   if(Array.isArray(BOOT.quote.ratecard) && BOOT.quote.ratecard.length) buildRate(JSON.parse(JSON.stringify(BOOT.quote.ratecard)));
   Q = Object.assign(blankQuote(String(BOOT.quote.num || "Q")), JSON.parse(JSON.stringify(BOOT.quote)));
   if(BOOT.quote.sel === undefined) Q.sel = null;
-  normalizeQuote(Q);
+  normalizeQuote(Q, BOOT.quote);
   renderTplOptions();
   renderPrevOptions();
   renderSettings();
