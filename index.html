@@ -300,6 +300,59 @@
   }
   .capbar.short{background:rgba(236,131,90,.14); color:#a34c14}
   .capbar .capsub{font-weight:400; font-size:12px}
+
+  /* ---------- site inspection invite, your dates panel, weekend finder ---------- */
+  .siteinv{
+    margin:12px 0 4px; padding:11px 14px; border-radius:9px; font-size:13px; line-height:1.5;
+    background:rgba(42,120,214,.08); border:1px solid rgba(42,120,214,.28); color:var(--ink2);
+  }
+  .siteinv b{color:var(--ink)}
+  .datesec .daterow{display:flex; flex-wrap:wrap; gap:10px 22px; align-items:flex-end}
+  .datesec .dlab{
+    display:flex; flex-direction:column; gap:4px;
+    font-size:11.5px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--muted);
+  }
+  .datesec .dlab input[type=date]{
+    font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--grid);
+    border-radius:8px; background:#fff; color:var(--ink);
+  }
+  .datesec .dpout{font-size:14px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--ink); padding:7px 2px}
+  .holbar{margin-top:10px; padding:8px 12px; border-radius:8px; font-size:12.5px; background:var(--page); color:var(--muted)}
+  .holbar.on{background:rgba(236,131,90,.14); color:#a34c14; font-weight:600}
+  .reqbar{
+    margin-top:10px; padding:9px 12px; border-radius:8px; font-size:12.5px; font-weight:600;
+    background:rgba(208,59,59,.09); color:#a32828;
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .reqbtn{
+    appearance:none; border:none; border-radius:7px; background:var(--crit); color:#fff;
+    font:inherit; font-size:12.5px; font-weight:700; padding:7px 12px; cursor:pointer;
+  }
+  .reqbtn:hover{filter:brightness(.93)}
+  .wkline{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px}
+  .wkline .cb-hint{margin:0}
+  .wkbtn{
+    appearance:none; border:1px solid var(--accent); border-radius:8px; background:#fff;
+    color:var(--accent-dn); font:inherit; font-size:13.5px; font-weight:700; padding:9px 14px; cursor:pointer;
+  }
+  .wkbtn:hover:not(:disabled){background:rgba(42,120,214,.08)}
+  .wkbtn:disabled{opacity:.5; cursor:default; border-color:var(--grid); color:var(--muted)}
+  .wkbox{margin-top:12px; padding:12px 14px; background:var(--page); border-radius:9px; font-size:13px; color:var(--ink2)}
+  .wkhead{font-size:11.5px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); margin-bottom:6px}
+  .wkrow{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:8px 0; border-bottom:1px dashed var(--grid)}
+  .wkrow:last-of-type{border-bottom:none}
+  .wkwhen{flex:1 1 190px; display:flex; flex-direction:column}
+  .wkcost{min-width:120px; text-align:right; font-variant-numeric:tabular-nums; font-weight:700; color:var(--ink); display:flex; flex-direction:column}
+  .wksub{font-size:11.5px; font-weight:400; color:var(--muted)}
+  .wkuse{
+    appearance:none; border:none; border-radius:7px; background:var(--accent); color:#fff;
+    font:inherit; font-size:12.5px; font-weight:700; padding:7px 12px; cursor:pointer;
+  }
+  .wkuse:hover{background:var(--accent-dn)}
+  .holpill{display:inline-block; padding:1px 7px; border-radius:999px; font-size:11px; font-weight:700; background:rgba(236,131,90,.18); color:#a34c14}
+  .cb-free{font-size:12.5px; font-weight:700; color:var(--good-dn)}
+  .cb-note{font-size:11.5px; color:var(--muted)}
+  .freetag{font-weight:700; color:var(--good-dn)}
   .cb-total{margin:16px 0 0 auto; max-width:320px; font-variant-numeric:tabular-nums}
   .cb-total > div{display:flex; justify-content:space-between; padding:3px 8px; font-size:14px; color:var(--ink2)}
   .cb-total > div span:last-child{color:var(--ink)}
@@ -346,9 +399,10 @@
 
   /* ---------- organiser extras ---------- */
   .ppLine{
-    margin:8px 0 0 auto; max-width:320px; text-align:right; font-size:13px;
-    color:var(--ink2); padding:0 8px; font-weight:600;
+    margin:8px 0 0 auto; max-width:560px; text-align:right; font-size:13px;
+    color:var(--ink2); padding:0 8px; font-weight:500;
   }
+  .ppLine b{font-weight:700; color:var(--ink)}
   .keydates{
     margin-top:16px; padding:12px 14px; background:var(--page); border-radius:8px;
     font-size:13px; color:var(--ink2);
@@ -473,6 +527,17 @@
   .pinwarn{color:var(--crit)}
   .secreset{margin-top:3px}
 
+  /* page numbers on the saved PDF. Chrome and Edge print these margin boxes;
+     the quote number is added to the bottom left at print time by setPrintFooter(). */
+  @page{
+    size:A4;
+    margin:14mm 12mm 16mm;
+    @bottom-right{
+      content:"Page " counter(page) " of " counter(pages);
+      font-size:8.5pt;
+      color:#52514e;
+    }
+  }
   @media print{
     body{background:#fff}
     header.top, nav.tabs, #tab-staff, #tab-pipeline, #tab-settings, .sidecard, #toast, #stickySubmit{display:none !important}
@@ -984,6 +1049,65 @@ function esc(s){
   return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 function firstName(s){ return String(s||"").trim().split(" ")[0] || "there"; }
+function shortDateY(x){
+  const d = (x instanceof Date) ? x : new Date(x + "T12:00:00");
+  if(isNaN(d)) return "-";
+  return d.toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"}).replace("Sept", "Sep");
+}
+function dayName(iso){
+  const d = new Date(iso + "T12:00:00");
+  return isNaN(d) ? "" : d.toLocaleDateString("en-GB", {weekday:"short"});
+}
+
+/* ---------- NSW public school holidays ----------------------------------
+   Official student vacation dates, Eastern division, published by the NSW
+   Department of Education. CHECK THESE ONCE A YEAR and add the next year to
+   the bottom of the list, nothing else needs changing.
+   For the quote we widen each break to the weekend either side, because that
+   is when families actually travel.
+   ----------------------------------------------------------------------- */
+const NSW_HOLIDAYS = [
+  {name:"Summer holidays", from:"2025-12-22", to:"2026-01-26"},
+  {name:"Autumn holidays", from:"2026-04-07", to:"2026-04-17"},
+  {name:"Winter holidays", from:"2026-07-06", to:"2026-07-17"},
+  {name:"Spring holidays", from:"2026-09-28", to:"2026-10-09"},
+  {name:"Summer holidays", from:"2026-12-18", to:"2027-01-27"},
+  {name:"Autumn holidays", from:"2027-04-12", to:"2027-04-23"},
+  {name:"Winter holidays", from:"2027-07-05", to:"2027-07-16"},
+  {name:"Spring holidays", from:"2027-09-27", to:"2027-10-08"},
+  {name:"Summer holidays", from:"2027-12-21", to:"2028-01-28"},
+  {name:"Autumn holidays", from:"2028-04-10", to:"2028-04-21"},
+  {name:"Winter holidays", from:"2028-07-10", to:"2028-07-21"},
+  {name:"Spring holidays", from:"2028-10-03", to:"2028-10-13"},
+  {name:"Summer holidays", from:"2028-12-22", to:"2029-01-25"}
+];
+let HOLIDAY_WINDOWS = null;
+function holidayWindows(){
+  if(HOLIDAY_WINDOWS) return HOLIDAY_WINDOWS;
+  HOLIDAY_WINDOWS = NSW_HOLIDAYS.map(h => {
+    const a = new Date(h.from + "T12:00:00"), b = new Date(h.to + "T12:00:00");
+    const back = isNaN(a) ? 0 : (a.getDay() + 1) % 7;   /* back to the Saturday before */
+    const fwd = isNaN(b) ? 0 : (7 - b.getDay()) % 7;    /* on to the Sunday after */
+    return {name: h.name, from: isoAddDays(h.from, -back), to: isoAddDays(h.to, fwd), official: h};
+  });
+  return HOLIDAY_WINDOWS;
+}
+function holidayOn(iso){
+  if(!iso) return null;
+  return holidayWindows().find(h => iso >= h.from && iso <= h.to) || null;
+}
+/* every school holiday period a run of nights touches */
+function holidaysAcross(nights){
+  const out = [];
+  (nights || []).forEach(d => {
+    const h = holidayOn(d);
+    if(h && !out.some(x => x.from === h.from)) out.push(h);
+  });
+  return out;
+}
+function holidayLabel(h){
+  return h ? (h.name + ", " + shortDateY(h.official.from) + " to " + shortDateY(h.official.to)) : "";
+}
 
 /* ---------- venue constants ---------- */
 const VENUE = "Wollongong Surf Leisure Resort";
@@ -991,11 +1115,11 @@ const VENUE_ADDR1 = "201 Pioneer Road";
 const VENUE_ADDR2 = "Fairy Meadow NSW 2519";
 const VENUE_ABN = "ABN: 48 155 637 442";
 const VENUE_PHONE = "02 4283 6999";
-const VENUE_EMAIL = "enquiries@wslr.com.au";
+const VENUE_EMAIL = "functions@wslr.com.au";
 const VENUE_WEB = "www.wslr.com.au";
 const BANK_LINES = [
   "Account name: Wollongong Surf Leisure Resort",
-  "Bank: Westpac Banking Corporation, Corrimal Branch",
+  "Bank: Westpac Banking Corporation, Wollongong Branch",
   "BSB: 032 685 &nbsp; Account: 300044"
 ];
 const GST_PCT = 10; // fixed, never varies per quote
@@ -1032,6 +1156,8 @@ const INFO_SECTIONS = [
    text:"Check in is between 2.00pm and 8.00pm Monday to Saturday, and 2.00pm to 5.00pm Sunday; if your arrival time is likely to be outside these times, please advise reception. Check out is between 8.00am and 10.00am; late check out is available on request, subject to availability. Pool hours are 8.00am to 8.45pm Monday to Saturday and 8.00am to 5.45pm Sunday (the pool is closed 3.30pm to 7.30pm Monday to Friday during NSW school terms for swimming training). Other sporting facilities are available at a discounted hire fee. No pets."},
   {id:"final_conf", title:"Final confirmation details", why:"auto for group stays",
    text:"If you have booked more than 50 accommodation units and/or a peak period, your final details for accommodation are due 28 days prior to your arrival date. Otherwise, final numbers and details are required 14 days prior to your arrival. An email will be sent to you 10 weeks prior to your arrival."},
+  {id:"site_visit", title:"Come and see the resort", why:"on for every quote",
+   text:"Organisers are always welcome to visit us before booking, and we would love to show you around. A site inspection takes about half an hour and covers the conference rooms, the auditorium, the marquee lawn, the private dining room and a sample of the accommodation, so you can picture exactly how your event will run. We can also walk through catering, room set ups and arrival times while you are here. Site inspections are by appointment at a date and time that suits you, including outside office hours by arrangement. To book one, call 02 4283 6999, email functions@wslr.com.au, or just say so in your reply to this quote and we will organise it. If you cannot get to us before booking, there is a full virtual walk through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
   {id:"other", title:"Other information", why:"on for every quote",
    text:"You do not have exclusivity of the resort; there will be other holiday makers and permanent residents on site during your stay. For things to see and do, restaurants and dining, events, maps and itineraries throughout the Wollongong and Illawarra region, see www.visitwollongong.com. For detailed map information on our location: https://goo.gl/maps/oCRniwYWBAiMw4zC9. Would you like to meet with one of our staff to discuss your next function at the resort? A meeting can be arranged at a date, time and venue convenient to you, just let us know."}
 ];
@@ -1075,6 +1201,7 @@ function autoSectionIds(){
     conduct: accom,
     checkin: accom,
     final_conf: accom,
+    site_visit: true,
     other: true
   };
   return INFO_SECTIONS.filter(s => on[s.id]).map(s => s.id);
@@ -1688,8 +1815,9 @@ function displayLines(){
     if(d <= 0 || !catEntry(v.fullId).on) return;
     const full = Math.floor(d), half = (d % 1) ? 1 : 0;
     const vt = (Q.sel.venueTimes || {})[v.key] || "";
-    if(full > 0) out.push({name: (RATE[v.fullId] || {name: v.name + " - full day"}).name, qty: full, nights: 0, beds: "", price: catEntry(v.fullId).price, disc: 0, unit: "per day", when: vt, total: full * catEntry(v.fullId).price});
-    if(half > 0) out.push({name: (RATE[v.halfId] || {name: v.name + " - half day"}).name, qty: half, nights: 0, beds: "", price: catEntry(v.halfId).price, disc: 0, unit: "per half day", when: (full > 0 ? "" : vt), total: half * catEntry(v.halfId).price});
+    const freeTag = venueIsFree(v) ? " (included free with " + mealServiceWords() + ")" : "";
+    if(full > 0) out.push({name: (RATE[v.fullId] || {name: v.name + " - full day"}).name + freeTag, qty: full, nights: 0, beds: "", price: venueRate(v, false), disc: 0, unit: "per day", when: vt, total: full * venueRate(v, false)});
+    if(half > 0) out.push({name: (RATE[v.halfId] || {name: v.name + " - half day"}).name + freeTag, qty: half, nights: 0, beds: "", price: venueRate(v, true), disc: 0, unit: "per half day", when: (full > 0 ? "" : vt), total: half * venueRate(v, true)});
   });
   if(kidsOn()){
     let dietMeals = 0;
@@ -1895,7 +2023,34 @@ function accomQtyTotal(id){
 function selAccomSub(){
   return (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + blockTotal(b) : s, 0);
 }
+/* ---------- the Dining Room is free while a meal service is running ----------
+   If the group takes catering, the Private Dining Room comes with it at no charge.
+   Everything (totals, the organiser's page, the PDF and the sheet summary) reads
+   its price through venueRate/venueDayTotal, so this one rule covers the lot. */
+const DINING_KEY = "din";
+function caterServicesOn(){
+  return caterItems().filter(it => {
+    if(it.id === "diet" || !catEntry(it.id).on) return false;
+    const c = (Q.sel.cater || {})[it.id];
+    return !!c && (Number(c.days) || 0) > 0;
+  });
+}
+function diningIsFree(){ return caterServicesOn().length > 0; }
+/* plain English list of the meals that make it free, e.g. "your breakfast and dinner service" */
+function mealServiceWords(){
+  const words = [];
+  caterServicesOn().forEach(it => {
+    const w = String(it.name).split(" - ")[0].trim().toLowerCase();
+    if(w && words.indexOf(w) < 0) words.push(w);
+  });
+  if(!words.length) return "your meal service";
+  if(words.length === 1) return "your " + words[0] + " service";
+  return "your " + words.slice(0, -1).join(", ") + " and " + words[words.length - 1] + " service";
+}
+function venueIsFree(v){ return !!v && v.key === DINING_KEY && diningIsFree(); }
+function venueRate(v, half){ return venueIsFree(v) ? 0 : catEntry(half ? v.halfId : v.fullId).price; }
 function venueDayTotal(v, d){
+  if(venueIsFree(v)) return 0;
   const full = Math.floor(d), half = (d % 1) ? 1 : 0;
   return full * catEntry(v.fullId).price + half * catEntry(v.halfId).price;
 }
@@ -1983,7 +2138,8 @@ function unitsSelected(){
   return (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + (Number(b.qty) || 0) : s, 0);
 }
 function venuesSelected(){
-  return VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on).length;
+  /* a room that comes free with catering does not attract a room deposit */
+  return VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on && !venueIsFree(v)).length;
 }
 function keyDates(){
   if(!Q.dateStart) return null;
@@ -2838,6 +2994,7 @@ function wireSelSteppers(host){
       else if(kind === "venue") stepVenue(id, dir);
       else if(kind === "cater") stepCaterDays(id, dir);
       else if(kind === "blockqty") stepBlockQty(Number(id), dir);
+      else if(kind === "nights") stepNights(dir);
     };
     if(up) up.addEventListener("click", () => go(1));
     if(dn) dn.addEventListener("click", () => go(-1));
@@ -2879,6 +3036,187 @@ function renderSecBoxes(){
   }));
 }
 
+/* ---------- trying other dates ------------------------------------------
+   The organiser can slide the arrival date and the number of nights around on
+   their own page. Accommodation is priced from the RMS tariff imported onto the
+   quote, so any night we do not hold a price for says "request prices" instead
+   of guessing. The weekend finder walks every Friday in the imported tariff and
+   prices the cabins they have chosen over the Friday and Saturday night.
+   ------------------------------------------------------------------------ */
+let WEEKENDS = null;          /* null = not run, "notariff" = nothing loaded, array = results */
+let WK_SIG = "";              /* the cabin mix the results were worked out for */
+function accomMixSig(){
+  return JSON.stringify((Q.sel.accom || []).map(b => [b.id, Number(b.qty) || 0]).filter(x => x[1] > 0).sort());
+}
+function selectedAccomIds(){
+  const ids = [];
+  (Q.sel.accom || []).forEach(b => {
+    if((Number(b.qty) || 0) > 0 && catEntry(b.id).on && ids.indexOf(b.id) < 0) ids.push(b.id);
+  });
+  return ids;
+}
+function hasRateOn(id, iso){
+  if(manualPrice(id) !== null) return true;
+  const r = Q.rates && Q.rates[id];
+  return !!(r && iso && r[iso] !== undefined && Number(r[iso]) > 0);
+}
+/* nights in the current stay we hold no price for, for the cabins chosen */
+function unpricedNights(){
+  const ids = selectedAccomIds();
+  if(!ids.length || !Q.dateStart) return [];
+  return stayNightsList().filter(d => ids.some(id => !hasRateOn(id, d)));
+}
+/* the span of dates the imported tariff covers */
+function tariffSpan(){
+  let min = null, max = null;
+  Object.keys(Q.rates || {}).forEach(id => {
+    Object.keys(Q.rates[id] || {}).forEach(d => {
+      if(min === null || d < min) min = d;
+      if(max === null || d > max) max = d;
+    });
+  });
+  return (min && max) ? {from: min, to: max} : null;
+}
+/* what the chosen cabin mix costs over `nights` nights starting at `from`,
+   or null if any night is unpriced or short on availability */
+function mixCostFrom(from, nights){
+  const mix = {};
+  (Q.sel.accom || []).forEach(b => {
+    const q = Number(b.qty) || 0;
+    if(q > 0 && catEntry(b.id).on) mix[b.id] = (mix[b.id] || 0) + q;
+  });
+  const ids = Object.keys(mix);
+  if(!ids.length) return null;
+  let total = 0;
+  for(let i = 0; i < nights; i++){
+    const d = isoAddDays(from, i);
+    for(let k = 0; k < ids.length; k++){
+      const id = ids[k];
+      if(!hasRateOn(id, d)) return null;
+      const a = availOn(id, d);
+      if(a !== null && mix[id] > a) return null;
+      total += mix[id] * nightlyRate(id, d);
+    }
+  }
+  return total;
+}
+function cheapestWeekends(limit){
+  const span = tariffSpan();
+  if(!span) return null;
+  const out = [];
+  let d = span.from, guard = 0;
+  while(d <= span.to && guard < 800){
+    const dow = new Date(d + "T12:00:00").getDay();
+    if(dow === 5){                                   /* Friday */
+      const cost = mixCostFrom(d, 2);
+      if(cost !== null && cost > 0){
+        out.push({from: d, to: isoAddDays(d, 2), total: cost, holiday: holidayOn(d) || holidayOn(isoAddDays(d, 1))});
+      }
+    }
+    d = isoAddDays(d, 1); guard++;
+  }
+  out.sort((a, b) => a.total - b.total);
+  return out.slice(0, limit || 5);
+}
+function findWeekends(){
+  const res = cheapestWeekends(5);
+  WEEKENDS = (res === null) ? "notariff" : res;
+  WK_SIG = accomMixSig();
+  renderClient();
+  const el = document.getElementById("wkResults");
+  if(el) el.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+/* move the whole event, keeping any per-cabin dates in step with the new arrival */
+function setEventDates(from, nights){
+  if(!from) return;
+  const n = Math.max(1, Number(nights) || 1);
+  const shift = (Q.dateStart && from) ? isoDiffDays(Q.dateStart, from) : 0;
+  Q.dateStart = from;
+  Q.dateEnd = isoAddDays(from, n);
+  if(shift){
+    (Q.sel.accom || []).forEach(b => {
+      if(b.from) b.from = isoAddDays(b.from, shift);
+      if(b.to) b.to = isoAddDays(b.to, shift);
+    });
+  }
+  const a = document.getElementById("f-date-start"), b = document.getElementById("f-date-end");
+  if(a) a.value = Q.dateStart;
+  if(b) b.value = Q.dateEnd;
+  refresh();
+}
+function stepNights(dir){
+  if(!Q.dateStart) return;
+  setEventDates(Q.dateStart, Math.max(1, nightsCount() + dir));
+}
+/* drop a plain request into the organiser's message so it comes back to us on submit */
+function requestPrices(){
+  const from = Q.dateStart, n = Math.max(1, nightsCount());
+  const line = from
+    ? ("Please send prices for " + fmtDate(from) + " to " + fmtDate(isoAddDays(from, n)) + " (" + n + " night" + (n === 1 ? "" : "s") + ").")
+    : "Please send prices for the dates we have in mind.";
+  const cur = String(Q.sel.message || "").trim();
+  if(cur.indexOf(line) < 0) Q.sel.message = cur ? (cur + "\n" + line) : line;
+  refresh();
+  showToast("Added to your message. Press Review & submit at the bottom and we will send prices straight back.");
+  const el = document.getElementById("cbMsg");
+  if(el){ el.scrollIntoView({behavior:"smooth", block:"center"}); el.focus(); }
+}
+function weekendHTML(){
+  if(WEEKENDS === null || WK_SIG !== accomMixSig()) return '';
+  if(WEEKENDS === "notariff")
+    return '<div class="wkbox" id="wkResults">We do not have a price calendar loaded on this quote yet, so we cannot compare weekends here. Use <b>Request prices</b> above and we will send them straight back.</div>';
+  if(!WEEKENDS.length)
+    return '<div class="wkbox" id="wkResults">No weekend in our loaded calendar fits that many cabins. Ask us below and we will look across the wider calendar for you.</div>';
+  return '<div class="wkbox" id="wkResults">' +
+    '<div class="wkhead">Cheapest Friday and Saturday for the cabins you have chosen</div>' +
+    WEEKENDS.map((w, i) =>
+      '<div class="wkrow' + (i === 0 ? ' best' : '') + '">' +
+        '<div class="wkwhen"><b>' + esc(fmtDate(w.from)) + '</b><span class="wksub">to ' + esc(fmtDate(w.to)) + (w.holiday ? ' · <span class="holpill">' + esc(w.holiday.name) + '</span>' : '') + '</span></div>' +
+        '<div class="wkcost">' + money(w.total) + '<span class="wksub">2 nights, cabins only</span></div>' +
+        '<button class="wkuse" data-from="' + esc(w.from) + '">Use these dates</button>' +
+      '</div>').join('') +
+    '<p class="cb-hint">Cabins only, room hire and catering sit on top. Everything is confirmed by our team before it is held.</p></div>';
+}
+function datesPanelHTML(){
+  const n = Math.max(1, nightsCount());
+  const from = Q.dateStart || '';
+  const to = from ? isoAddDays(from, n) : '';
+  const hols = from ? holidaysAcross(stayNightsList()) : [];
+  const unp = unpricedNights();
+  const haveCabins = selectedAccomIds().length > 0;
+  return '<div class="cb-sec datesec">' +
+    '<h3>Your dates</h3>' +
+    '<p class="cb-hint">move the arrival date or the number of nights to see what other dates would cost, nothing is held until our team confirms it</p>' +
+    '<div class="daterow">' +
+      '<label class="dlab">Arrive<input type="date" id="dpFrom" value="' + esc(from) + '"></label>' +
+      '<div class="dlab">Nights' + stepperHTML("nights", "n", n, {canDown: n > 1}) + '</div>' +
+      '<div class="dlab">Leave<span class="dpout">' + (to ? esc(fmtDate(to)) : '-') + '</span></div>' +
+    '</div>' +
+    (from
+      ? (hols.length
+          ? '<div class="holbar on">NSW school holidays: ' + hols.map(h => esc(holidayLabel(h))).join(' &nbsp;·&nbsp; ') + '</div>'
+          : '<div class="holbar">These dates sit outside the NSW school holidays</div>')
+      : '') +
+    (unp.length
+      ? '<div class="reqbar">We do not hold prices for ' + unp.length + ' of your night' + (unp.length === 1 ? '' : 's') +
+        ' (' + esc(unp.slice(0, 4).map(d => shortDate(d)).join(', ')) + (unp.length > 4 ? ' and more' : '') + ').' +
+        '<button class="reqbtn" id="dpRequest">Request prices</button></div>'
+      : '') +
+    '<div class="wkline">' +
+      '<button class="wkbtn" id="dpFindWk"' + (haveCabins ? '' : ' disabled title="Choose your cabins below first"') + '>Find my cheapest weekend</button>' +
+      '<span class="cb-hint">' + (haveCabins
+        ? 'prices the cabins you have chosen across every Friday and Saturday we have loaded'
+        : 'choose your cabins below, then we will find the cheapest weekend for that mix') + '</span>' +
+    '</div>' +
+    weekendHTML() +
+  '</div>';
+}
+function siteInviteHTML(){
+  return '<div class="siteinv"><b>Organisers are welcome to come and see the resort.</b> ' +
+    'We will walk you through the rooms, the dining room and a sample cabin at a time that suits, including outside office hours. ' +
+    'Call 02 4283 6999, email ' + VENUE_EMAIL + ', or just ask below and we will book a site inspection in.</div>';
+}
+
 /* ---------- tab 2: the organiser's interactive quote page ---------- */
 function anyLineDisc(){
   return Q.lines.some(l => (Number(l.qty)||0) > 0 && lineDiscPct(l) > 0);
@@ -2886,7 +3224,11 @@ function anyLineDisc(){
 function perPersonHTML(t){
   const g = Number(Q.guests) || 0;
   if(!(Q.features && Q.features.perPerson) || g <= 0 || !(t.total > 0)) return '';
-  return '<div class="ppLine">≈ ' + money0(Math.round(t.total / g)) + ' per person across your ' + g + ' guests</div>';
+  const n = Q.dateStart ? Math.max(1, nightsCount()) : 0;
+  const pp = t.total / g;
+  let out = '≈ <b>' + money0(pp) + '</b> per person across your ' + g + ' guest' + (g === 1 ? '' : 's');
+  if(n > 0) out += ' &nbsp;·&nbsp; <b>' + money0(pp / n) + '</b> per person per night over ' + n + ' night' + (n === 1 ? '' : 's');
+  return '<div class="ppLine">' + out + '</div>';
 }
 function capBarHTML(){
   const cap = selSleeps();
@@ -2910,11 +3252,14 @@ function submitDetails(){
   return {contact: Q.contact || "", org: Q.org || "", email: Q.email || "",
           mobile: Q.mobile || "", event: Q.event || "", guests: Q.guests};
 }
-function submitSig(){ return JSON.stringify({sel: Q.sel, lines: Q.lines, details: submitDetails()}); }
+function submitSig(){ return JSON.stringify({sel: Q.sel, lines: Q.lines, details: submitDetails(), dates: [Q.dateStart || "", Q.dateEnd || ""]}); }
 function submitDirty(){
   if(Q.status !== "Submitted" || !Q.submittedSel) return false;
-  if(Q.submittedSel.indexOf('"details"') >= 0) return submitSig() !== Q.submittedSel;
-  /* submitted before details were editable: compare the old way so the upgrade alone never looks like a change */
+  /* moving the dates now counts as a change, so a date the organiser shifted comes back to us */
+  if(Q.submittedSel.indexOf('"dates"') >= 0) return submitSig() !== Q.submittedSel;
+  /* submitted before dates were editable: compare the old way so the upgrade alone never looks like a change */
+  if(Q.submittedSel.indexOf('"details"') >= 0) return JSON.stringify({sel: Q.sel, lines: Q.lines, details: submitDetails()}) !== Q.submittedSel;
+  /* submitted before details were editable either */
   return JSON.stringify({sel: Q.sel, lines: Q.lines}) !== Q.submittedSel;
 }
 function submitStateSig(){
@@ -3029,7 +3374,9 @@ function buildDisplayPayload(){
     priceMode: pm,
     sections: resolvedSections(),
     perPerson: (Q.features && Q.features.perPerson && pm === "full" && g > 0 && t.total > 0)
-      ? ("≈ " + money0(Math.round(t.total / g)) + " per person across " + g + " guests") : "",
+      ? ("≈ " + money0(t.total / g) + " per person across " + g + " guest" + (g === 1 ? "" : "s") +
+         (Q.dateStart ? (" · " + money0(t.total / g / Math.max(1, nightsCount())) + " per person per night over " +
+            Math.max(1, nightsCount()) + " night" + (Math.max(1, nightsCount()) === 1 ? "" : "s")) : "")) : "",
     keyDates: (Q.features && Q.features.depositDates) ? keyDatesRows(pm !== "noprices") : [],
     message: String(Q.sel.message || ""),
     who: w ? {adults: whoAdults(), k412: Number(w.k412) || 0, k13: Number(w.k13) || 0, babies: Number(w.babies) || 0, diet: Number(w.diet) || 0} : null,
@@ -3131,15 +3478,21 @@ function renderClient(){
       venuesOn.map(v => {
         const c = catEntry(v.fullId), ch = catEntry(v.halfId);
         const d = Number((Q.sel.venues || {})[v.key]) || 0;
+        const isFree = venueIsFree(v);
+        const freeHint = v.key === DINING_KEY
+          ? (isFree
+              ? '<div class="cb-free">Included free with ' + esc(mealServiceWords()) + '</div>'
+              : '<div class="cb-note">(free during the meal service if you add catering)</div>')
+          : '';
         return '<div class="cb-row">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
-            '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
-            (showPrices ? '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>' +
+            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + freeHint +
+            (showPrices ? (isFree ? '<div class="cb-price"><s>' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</s></div>' : '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>') +
               (CLIENT_MODE ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price for this quote"> full · $<input type="number" class="spNum" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price for this quote"> half</div>') : '') +
             (d > 0 ? '<input type="text" class="vtimeInp" data-key="' + esc(v.key) + '" placeholder="days & times you plan to use it (e.g. Sat 9am–4pm)" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">' : '') +
           '</div>' +
           stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0}) +
-          '<div class="pkgsub">' + (d > 0 && showPrices ? money(venueDayTotal(v, d)) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
+          '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : money(venueDayTotal(v, d))) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         '</div>';
       }).join('') + '</div>'
     : '';
@@ -3302,6 +3655,8 @@ function renderClient(){
     '<div class="qp-event" id="qpEvent">' + qpEventHTML() + '</div>' +
     '<div class="cb-live">' +
       '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.</p>' +
+      siteInviteHTML() +
+      datesPanelHTML() +
       accomHtml + venueHtml + caterHtml + churchHtml + fixedHtml +
       '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
       keyDatesHTML(showPrices, true) +
@@ -3315,7 +3670,7 @@ function renderClient(){
           '<label>Event<input class="cdInp" data-f="event" type="text" value="' + esc(Q.event) + '"></label>' +
           '<label>Guests<input class="cdInp" data-f="guests" type="number" min="1" value="' + esc(Q.guests) + '"></label>' +
         '</div>' +
-        '<p class="cb-hint" style="margin-top:8px">The dates are set with our team. If you need different dates, ask a question below or reply to the quote email and we\'ll sort it out.</p>' +
+        '<p class="cb-hint" style="margin-top:8px">Your dates are at the top of this page and you are welcome to move them. If a date has no price against it, press Request prices and we will send them back to you.</p>' +
       '</div>' +
       '<div class="cb-sec orgmsg"><h3>Anything we should know?</h3>' +
         '<p class="cb-hint">questions, arrival plans, dietary details, how you\'ll use the rooms, this comes straight to our team with your submission</p>' +
@@ -3335,6 +3690,15 @@ function renderClient(){
   wireSelSteppers(page);
   const splitCb = document.getElementById("cbSplit");
   if(splitCb) splitCb.addEventListener("change", e => setSplit(e.target.checked));
+  /* the "your dates" panel */
+  const dpF = document.getElementById("dpFrom");
+  if(dpF) dpF.addEventListener("change", e => { if(e.target.value) setEventDates(e.target.value, nightsCount()); });
+  const dpR = document.getElementById("dpRequest");
+  if(dpR) dpR.addEventListener("click", requestPrices);
+  const dpW = document.getElementById("dpFindWk");
+  if(dpW) dpW.addEventListener("click", findWeekends);
+  page.querySelectorAll(".wkuse").forEach(el =>
+    el.addEventListener("click", e => setEventDates(e.currentTarget.dataset.from, 2)));
   page.querySelectorAll(".addblock").forEach(el => el.addEventListener("click", e => addAccomBlock(e.currentTarget.dataset.id)));
   page.querySelectorAll(".blkx").forEach(el => el.addEventListener("click", e => removeAccomBlock(Number(e.currentTarget.dataset.i))));
   page.querySelectorAll(".blkFrom").forEach(el => el.addEventListener("change", e => setBlockDates(Number(e.target.dataset.i), e.target.value, null)));
@@ -4370,9 +4734,23 @@ document.getElementById("rcReset").addEventListener("click", e => {
   showToast("Rate card reset to the Functions Package Guide prices.");
 });
 
-/* ---------- downloadable PDF (via the browser's save-as-PDF) ---------- */
+/* ---------- downloadable PDF (via the browser's save-as-PDF) ----------
+   "Page 1 of 4" comes from the @page rule in the stylesheet. The quote number
+   sits beside it in the bottom left and has to be written at print time. */
+function setPrintFooter(){
+  let st = document.getElementById("printFooterCSS");
+  if(!st){
+    st = document.createElement("style");
+    st.id = "printFooterCSS";
+    document.head.appendChild(st);
+  }
+  const label = (VENUE + " · Quote " + (Q.num || "")).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  st.textContent = '@page{ @bottom-left{ content:"' + label + '"; font-size:8pt; color:#898781; } }';
+}
+window.addEventListener("beforeprint", setPrintFooter);
 function downloadPDF(){
   switchTab("client");
+  setPrintFooter();
   const prevTitle = document.title;
   document.title = "WSLR Quote " + Q.num + (Q.org ? " - " + Q.org : (Q.contact ? " - " + Q.contact : ""));
   const restore = () => { document.title = prevTitle; window.removeEventListener("afterprint", restore); };
