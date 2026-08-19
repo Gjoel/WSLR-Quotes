@@ -419,6 +419,12 @@
   .impstatus .impclear{appearance:none; border:none; background:none; color:var(--crit); font-size:12px; cursor:pointer; padding:0; font-weight:600}
   .impstatus .impclear:hover{text-decoration:underline}
   .impwarn{color:#a34c14; font-size:12px}
+  .impredo{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:6px 0 10px;
+    font-size:12.5px; line-height:1.5; color:#a34c14; background:rgba(236,131,90,.13);
+    border:1px solid rgba(236,131,90,.45); border-radius:8px; padding:9px 12px;
+  }
+  .impredo b{color:#8a3d10}
   .pinreset{
     display:block; appearance:none; border:none; background:none; color:#9a6700;
     font-size:10.5px; cursor:pointer; padding:1px 0 0; text-align:right; width:100%;
@@ -871,6 +877,11 @@
       </div>
     </div>
 
+    <div class="card">
+      <h2>Cheapest dates search on new quotes</h2>
+      <label class="secitem" style="padding:0"><input type="checkbox" id="s-cheapest"> <span><span class="sectitle">Offer the cheapest dates search</span><span class="secwhy">the panel at the foot of the organiser's page that prices their cabins across other dates</span></span></label>
+      <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Any single quote can still be changed on the Prepare tab, under "Extras on the organiser's page". Switch it off here if you would rather organisers came back to you about other dates instead of comparing them themselves.</p>
+    </div>
     <div class="card">
       <h2>Email subject line</h2>
       <input type="text" id="s-subject">
@@ -1577,6 +1588,7 @@ function getDefaults(){
     notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date. All accommodation is subject to availability at the time of booking.",
     terms: "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
     bond: 2000,
+    cheapest: true,
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
     body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999"
   }, lsGet(LS_DEFAULTS, {}));
@@ -1619,7 +1631,7 @@ function blankQuote(num){
     ratesInfo: null,    // {from, to, items, file}
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
-    features: {perPerson: true, depositDates: true, kids: true, cheapest: true}, // toggleable organiser-page extras
+    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false}, // toggleable organiser-page extras
     sel: blankSel(),    // the organiser's (or staff-suggested) selections
     lines: [],          // fixed extras the organiser can't change
     status: "Draft",
@@ -2753,6 +2765,17 @@ function clearTariff(){
 }
 function renderImpStatus(){
   const host = document.getElementById("impStatus");
+  /* copied from an older quote: its tariff was deliberately left behind */
+  if(Q.needsTariff && !Q.ratesInfo){
+    host.innerHTML = '<div class="impredo">⚠ <b>Import the tariff &amp; availability for these dates.</b> ' +
+      'This quote was copied from an earlier one, so its accommodation prices and unit counts were not carried over, ' +
+      'they change every day. Use <b>Import tariff &amp; availability</b> above (or type a nightly price on each cabin) before sending.' +
+      '<button class="impclear" id="impRedoX" title="Hide this reminder">dismiss</button></div>' +
+      (Q.availInfo ? '' : '');
+    const x = document.getElementById("impRedoX");
+    if(x) x.addEventListener("click", () => { Q.needsTariff = false; renderImpStatus(); });
+    return;
+  }
   if(!Q.ratesInfo && !Q.availInfo){ host.innerHTML = ""; return; }
   const bits = [];
   if(Q.ratesInfo) bits.push("<span>Tariff <b>" + esc(shortDate(Q.ratesInfo.from)) + " – " + esc(shortDate(Q.ratesInfo.to)) + "</b> · " + Q.ratesInfo.items + " unit types" + (Q.ratesInfo.skipped ? " <span class='fmuted'>(" + Q.ratesInfo.skipped + " rows skipped)</span>" : "") + "</span>");
@@ -4547,20 +4570,28 @@ function copyFromQuote(num){
     secText: s.secText || {},
     kdOver: Array.isArray(s.kdOver) ? s.kdOver : null,
     catalog: s.catalog || {},
-    rates: s.rates || {},
-    availCal: s.availCal || {},
-    ratesInfo: s.ratesInfo || null,
-    availInfo: s.availInfo || null,
     menu: s.menu || {},
     features: s.features,
     sel: s.sel || null,
     lines: s.lines || []
   })));
+  /* Accommodation prices and availability are never carried across from an older
+     quote: dynamic pricing moves every day and the units held will have changed.
+     The copy starts with no tariff at all, so a fresh RMS import (or a typed
+     price) is the only way this quote can be sent. */
+  Q.rates = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
+  Object.keys(Q.catalog || {}).forEach(id => {
+    if(/^(acc_|camp_)/.test(String(id))){
+      delete Q.catalog[id].price;
+      delete Q.catalog[id].avail;
+    }
+  });
+  Q.needsTariff = true;
   if(!Q.sel) Q.sel = null; // force legacy conversion below
   normalizeQuote(Q);
   syncForm();
   refresh();
-  showToast("Copied " + num + " into new quote " + Q.num + ". The original is unchanged.");
+  showToast("Copied " + num + " into new quote " + Q.num + ". Import the RMS tariff and availability for these dates, prices from the old quote are not carried over.");
 }
 function renderPrevOptions(){
   const sel = document.getElementById("prevSel");
@@ -4851,6 +4882,7 @@ function renderSettings(){
   document.getElementById("s-subject").value = d.subject;
   document.getElementById("s-body").value = d.body;
   document.getElementById("s-emailvia").value = getEmailVia();
+  document.getElementById("s-cheapest").checked = d.cheapest !== false;
   renderRcEditor();
   renderSecEditor();
 }
@@ -4975,6 +5007,12 @@ document.getElementById("s-notes").addEventListener("input", e => saveDefaults({
 document.getElementById("s-terms").addEventListener("input", e => saveDefaults({terms: e.target.value}));
 document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
 document.getElementById("s-body").addEventListener("input", e => saveDefaults({body: e.target.value}));
+document.getElementById("s-cheapest").addEventListener("change", e => {
+  saveDefaults({cheapest: e.target.checked});
+  showToast(e.target.checked
+    ? "New quotes will offer the cheapest dates search."
+    : "New quotes will not offer the cheapest dates search. Quotes already made keep their own setting.");
+});
 document.getElementById("s-emailvia").addEventListener("change", e => {
   setEmailVia(e.target.value);
   showToast(e.target.value === "app"
