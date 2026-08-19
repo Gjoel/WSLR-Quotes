@@ -331,6 +331,23 @@
   .reqbtn:hover{filter:brightness(.93)}
   .wkline{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px}
   .wkline .cb-hint{margin:0}
+  .wkrange{display:flex; flex-wrap:wrap; gap:10px 20px; align-items:flex-end; margin:4px 0 10px}
+  .wkrange .dlab{
+    display:flex; flex-direction:column; gap:4px;
+    font-size:11.5px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--muted);
+  }
+  .wkrange input[type=date]{
+    font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--grid);
+    border-radius:8px; background:#fff; color:var(--ink);
+  }
+  .wkclear{appearance:none; border:none; background:none; color:var(--accent); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; padding:0 0 9px}
+  .wkclear:hover{text-decoration:underline}
+  .loadnote{
+    margin:0 0 12px; padding:10px 13px; border-radius:8px; font-size:12.5px; line-height:1.55;
+    background:rgba(42,120,214,.07); border:1px solid rgba(42,120,214,.25); color:var(--ink2);
+  }
+  .loadnote b{color:var(--ink)}
+  .loadnote .reqbtn{background:var(--accent); margin-top:6px}
   .wkopts{display:flex; flex-direction:column; gap:5px; margin:4px 0 12px}
   .wkopts label{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink2); cursor:pointer}
   .wkopts input{width:auto; margin:0}
@@ -3088,7 +3105,7 @@ let WK_SIG = "";              /* the cabin mix and stay length the results were 
 function accomMixSig(){
   return JSON.stringify((Q.sel.accom || []).map(b => [b.id, Number(b.qty) || 0]).filter(x => x[1] > 0).sort());
 }
-function searchSig(){ return accomMixSig() + "|" + nightsCount(); }
+function searchSig(){ return accomMixSig() + "|" + nightsCount() + "|" + WK_RANGE.from + "|" + WK_RANGE.to; }
 function selectedAccomIds(){
   const ids = [];
   (Q.sel.accom || []).forEach(b => {
@@ -3156,15 +3173,27 @@ function stayMatchesOpts(from, nights){
   if(WK_OPTS.noHols && holNights > 0) return false;
   return true;
 }
-/* the cheapest runs of the same length the organiser has asked for */
-function cheapestStays(limit){
+/* the window the organiser wants to look in, narrowed to what we actually hold
+   prices for: for each end we keep whichever of the two dates is the tighter */
+let WK_RANGE = {from: "", to: ""};
+function searchWindow(){
   const span = tariffSpan();
   if(!span) return null;
+  let from = span.from, to = span.to;
+  if(WK_RANGE.from && WK_RANGE.from > from) from = WK_RANGE.from;
+  if(WK_RANGE.to && WK_RANGE.to < to) to = WK_RANGE.to;
+  return {from: from, to: to, span: span, clipped: (from !== span.from || to !== span.to), empty: from > to};
+}
+/* the cheapest runs of the same length the organiser has asked for */
+function cheapestStays(limit){
+  const w = searchWindow();
+  if(!w) return null;
+  if(w.empty) return [];
   const nights = Math.max(1, nightsCount());
   const found = [];
-  let d = span.from, guard = 0;
-  while(d <= span.to && guard < 800){
-    if(isoAddDays(d, nights - 1) <= span.to && stayMatchesOpts(d, nights)){
+  let d = w.from, guard = 0;
+  while(d <= w.to && guard < 800){
+    if(isoAddDays(d, nights - 1) <= w.to && stayMatchesOpts(d, nights)){
       const cost = mixCostFrom(d, nights);
       if(cost !== null && cost > 0){
         found.push({from: d, to: isoAddDays(d, nights), nights: nights, total: cost,
@@ -3214,11 +3243,7 @@ function stepNights(dir){
   setEventDates(Q.dateStart, Math.max(1, nightsCount() + dir));
 }
 /* drop a plain request into the organiser's message so it comes back to us on submit */
-function requestPrices(){
-  const from = Q.dateStart, n = Math.max(1, nightsCount());
-  const line = from
-    ? ("Please send prices for " + fmtDate(from) + " to " + fmtDate(isoAddDays(from, n)) + " (" + n + " night" + (n === 1 ? "" : "s") + ").")
-    : "Please send prices for the dates we have in mind.";
+function addToMessage(line){
   const cur = String(Q.sel.message || "").trim();
   if(cur.indexOf(line) < 0) Q.sel.message = cur ? (cur + "\n" + line) : line;
   refresh();
@@ -3226,12 +3251,35 @@ function requestPrices(){
   const el = document.getElementById("cbMsg");
   if(el){ el.scrollIntoView({behavior:"smooth", block:"center"}); el.focus(); }
 }
+function requestPrices(){
+  const from = Q.dateStart, n = Math.max(1, nightsCount());
+  addToMessage(from
+    ? ("Please send prices for " + fmtDate(from) + " to " + fmtDate(isoAddDays(from, n)) + " (" + n + " night" + (n === 1 ? "" : "s") + ").")
+    : "Please send prices for the dates we have in mind.");
+}
+/* "load up my dates" from the cheapest-dates search */
+function requestSearchRange(){
+  const n = Math.max(1, nightsCount());
+  const a = WK_RANGE.from, b = WK_RANGE.to;
+  const when = (a && b) ? ("between " + fmtDate(a) + " and " + fmtDate(b))
+    : a ? ("from " + fmtDate(a) + " onwards")
+    : b ? ("any time up to " + fmtDate(b))
+    : "for the dates we have in mind";
+  addToMessage("We are looking for " + n + " night" + (n === 1 ? "" : "s") + " " + when +
+    ". Please load prices and availability for that period so we can compare.");
+}
 function cheapestResultsHTML(){
   if(WEEKENDS === null || WK_SIG !== searchSig()) return '';
   if(WEEKENDS === "notariff")
     return '<div class="wkbox" id="wkResults">We do not have a price calendar loaded on this quote yet, so we cannot compare dates here. Use <b>Request prices</b> at the top of this page and we will send them straight back.</div>';
-  if(!WEEKENDS.length)
-    return '<div class="wkbox" id="wkResults">Nothing in our loaded calendar matches that. Try unticking one of the boxes above, or ask us below and we will look across the wider calendar for you.</div>';
+  if(!WEEKENDS.length){
+    const w = searchWindow();
+    return '<div class="wkbox" id="wkResults">' +
+      (w && w.empty
+        ? 'The dates you have asked for sit outside the period we have loaded, so there is nothing here to compare yet.'
+        : 'Nothing in the period we have loaded matches that. Try widening your dates or unticking one of the boxes above.') +
+      ' <button class="reqbtn" id="wkAskB">Ask us to load these dates</button></div>';
+  }
   const n = WEEKENDS[0].nights;
   return '<div class="wkbox" id="wkResults">' +
     '<div class="wkhead">Cheapest ' + n + ' night' + (n === 1 ? '' : 's') + ' for the cabins you have chosen</div>' +
@@ -3247,9 +3295,29 @@ function cheapestResultsHTML(){
 function cheapestPanelHTML(){
   const haveCabins = selectedAccomIds().length > 0;
   const n = Math.max(1, nightsCount());
+  const span = tariffSpan();
+  const w = searchWindow();
+  const rangeHtml = span
+    ? '<div class="wkrange">' +
+        '<div class="dlab">Looking between<input type="date" class="wkDate" data-r="from" value="' + esc(WK_RANGE.from || span.from) + '"></div>' +
+        '<div class="dlab">and<input type="date" class="wkDate" data-r="to" value="' + esc(WK_RANGE.to || span.to) + '"></div>' +
+        (WK_RANGE.from || WK_RANGE.to ? '<button class="wkclear" id="wkClear">use the whole period</button>' : '') +
+      '</div>'
+    : '';
+  const loadNote = span
+    ? '<div class="loadnote">We have prices and availability loaded for <b>' + esc(shortDateY(span.from)) + ' to ' + esc(shortDateY(span.to)) + '</b>' +
+        (w && w.empty
+          ? ', and the dates you have asked for fall outside that.'
+          : (w && w.clipped ? ', so the search is limited to ' + esc(shortDateY(w.from)) + ' to ' + esc(shortDateY(w.to)) + '.' : '.')) +
+        ' If you are looking at another time of year, just say so and we will load those dates and prices up for you. ' +
+        '<div><button class="reqbtn" id="wkAsk">Ask us to load your dates</button></div></div>'
+    : '<div class="loadnote">We have not loaded a price calendar on this quote yet. Tell us roughly when you are looking and we will load those dates and prices up for you. ' +
+        '<div><button class="reqbtn" id="wkAsk">Ask us to load your dates</button></div></div>';
   return '<div class="cb-sec cheapsec"><h3>Looking for the cheapest time to visit?</h3>' +
     '<p class="cb-hint">we will take the cabins you have chosen above and find the cheapest <b>' + n + ' night' + (n === 1 ? '' : 's') +
-      '</b> for them across the dates we have loaded. Change the number of nights at the top of this page and search again.</p>' +
+      '</b> for them. Change the number of nights at the top of this page and search again.</p>' +
+    rangeHtml +
+    loadNote +
     '<div class="wkopts">' +
       '<label><input type="checkbox" class="wkOpt" data-o="weekend"' + (WK_OPTS.weekend ? ' checked' : '') + '> Must include a Friday or Saturday night</label>' +
       '<label><input type="checkbox" class="wkOpt" data-o="inHols"' + (WK_OPTS.inHols ? ' checked' : '') + '> Must be inside the NSW school holidays</label>' +
@@ -3773,14 +3841,37 @@ function renderClient(){
   if(dpR) dpR.addEventListener("click", requestPrices);
   const dpW = document.getElementById("dpFindWk");
   if(dpW) dpW.addEventListener("click", findCheapest);
+  const rerunSearch = () => {
+    if(WEEKENDS !== null && selectedAccomIds().length) findCheapest();
+    else renderClient();
+  };
+  page.querySelectorAll(".wkDate").forEach(el => el.addEventListener("change", e => {
+    const key = e.target.dataset.r;
+    const sp = tariffSpan();
+    const oldFrom = WK_RANGE.from || (sp ? sp.from : "");
+    const oldTo = WK_RANGE.to || (sp ? sp.to : "");
+    const len = (oldFrom && oldTo) ? Math.max(1, isoDiffDays(oldFrom, oldTo)) : 1;
+    WK_RANGE[key] = e.target.value || "";
+    /* moving one end past the other slides the window instead of collapsing it */
+    if(WK_RANGE.from && WK_RANGE.to && WK_RANGE.to < WK_RANGE.from){
+      if(key === "from") WK_RANGE.to = isoAddDays(WK_RANGE.from, len);
+      else WK_RANGE.from = isoAddDays(WK_RANGE.to, -len);
+    }
+    rerunSearch();
+  }));
+  const wkClr = document.getElementById("wkClear");
+  if(wkClr) wkClr.addEventListener("click", () => { WK_RANGE = {from: "", to: ""}; rerunSearch(); });
+  ["wkAsk", "wkAskB"].forEach(id => {
+    const b = document.getElementById(id);
+    if(b) b.addEventListener("click", requestSearchRange);
+  });
   page.querySelectorAll(".wkOpt").forEach(el => el.addEventListener("change", e => {
     const o = e.target.dataset.o;
     WK_OPTS[o] = e.target.checked;
     /* "inside the holidays" and "avoid the holidays" cancel each other out */
     if(o === "inHols" && e.target.checked) WK_OPTS.noHols = false;
     if(o === "noHols" && e.target.checked) WK_OPTS.inHols = false;
-    if(WEEKENDS !== null && selectedAccomIds().length) findCheapest();
-    else renderClient();
+    rerunSearch();
   }));
   page.querySelectorAll(".wkuse").forEach(el =>
     el.addEventListener("click", e => setEventDates(e.currentTarget.dataset.from, Number(e.currentTarget.dataset.n) || 2)));
