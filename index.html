@@ -331,6 +331,20 @@
   .reqbtn:hover{filter:brightness(.93)}
   .wkline{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:12px}
   .wkline .cb-hint{margin:0}
+  .wkopts{display:flex; flex-direction:column; gap:5px; margin:4px 0 12px}
+  .wkopts label{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink2); cursor:pointer}
+  .wkopts input{width:auto; margin:0}
+  .bestpill{
+    display:inline-block; padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:700;
+    letter-spacing:.5px; text-transform:uppercase; background:rgba(12,163,12,.13); color:var(--good-dn);
+  }
+  /* tick all / untick all on the prepare tab */
+  .bulkpick{display:inline-flex; gap:4px; align-items:center}
+  .bulkbtn{
+    appearance:none; border:1px solid var(--grid); background:var(--surface); color:var(--ink2);
+    font:inherit; font-size:11.5px; font-weight:600; border-radius:7px; padding:3px 9px; cursor:pointer;
+  }
+  .bulkbtn:hover{background:#f1f0ec; color:var(--ink)}
   .wkbtn{
     appearance:none; border:1px solid var(--accent); border-radius:8px; background:#fff;
     color:var(--accent-dn); font:inherit; font-size:13.5px; font-weight:700; padding:9px 14px; cursor:pointer;
@@ -634,6 +648,7 @@
         <div class="pkghead">
           <h3>Accommodation</h3>
           <span style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <span class="bulkpick"><button type="button" class="bulkbtn" data-kind="accom" data-on="1">tick all</button><button type="button" class="bulkbtn" data-kind="accom" data-on="0">untick all</button></span>
             <button class="btn ghost" id="tariffBtn" style="padding:5px 12px; font-size:13px" title="Import an RMS rates report (.xlsx or .csv) and/or an RMS availability chart (.csv), nightly prices and availability prefill from them">Import tariff &amp; availability</button>
             <span class="nightschip" id="nightsChip"></span>
           </span>
@@ -649,6 +664,7 @@
       <div class="pkgsec">
         <div class="pkghead">
           <h3>Conference rooms &amp; venues</h3>
+          <span class="bulkpick"><button type="button" class="bulkbtn" data-kind="venue" data-on="1">tick all</button><button type="button" class="bulkbtn" data-kind="venue" data-on="0">untick all</button></span>
           <span class="hint">picked in half-day steps · half day = 6 continuous hours or less</span>
         </div>
         <div class="preprow prephead">
@@ -660,6 +676,7 @@
       <div class="pkgsec">
         <div class="pkghead">
           <h3>Catering</h3>
+          <span class="bulkpick"><button type="button" class="bulkbtn" data-kind="cater" data-on="1">tick all</button><button type="button" class="bulkbtn" data-kind="cater" data-on="0">untick all</button></span>
           <span class="hint">the organiser picks meals × people × days · minimum group size 20</span>
         </div>
         <div class="preprow prephead">
@@ -2482,6 +2499,29 @@ function setChurchTier(v){
   Q.sel.church = Number(v) || 0;
   refresh();
 }
+/* tick or untick a whole section on the prepare tab in one go.
+   Unticking also drops that section's suggested quantities, since nothing in it
+   is on offer any more. */
+function setGroupOn(kind, on){
+  let label = "";
+  if(kind === "accom"){
+    label = "Accommodation";
+    accomItems().forEach(it => setCat(it.id, "on", on));
+    if(!on) Q.sel.accom = [];
+  } else if(kind === "venue"){
+    label = "Conference rooms & venues";
+    VENUES.forEach(v => { setCat(v.fullId, "on", on); setCat(v.halfId, "on", on); });
+    if(!on) Q.sel.venues = {};
+  } else if(kind === "cater"){
+    label = "Catering";
+    caterItems().forEach(it => setCat(it.id, "on", on));
+    if(!on) Q.sel.cater = {};
+  } else return;
+  refresh();
+  showToast(on
+    ? label + ": everything is now on offer for this quote."
+    : label + ": everything unticked and removed from this quote.");
+}
 /* ---------- RMS tariff & availability import ---------- */
 const RMS_ALIASES = [
   ["4 BEDROOM EXECUTIVE", "acc_4br_house"], ["4 BEDROOM HOUSE", "acc_4br_house"],
@@ -3044,10 +3084,11 @@ function renderSecBoxes(){
    prices the cabins they have chosen over the Friday and Saturday night.
    ------------------------------------------------------------------------ */
 let WEEKENDS = null;          /* null = not run, "notariff" = nothing loaded, array = results */
-let WK_SIG = "";              /* the cabin mix the results were worked out for */
+let WK_SIG = "";              /* the cabin mix and stay length the results were worked out for */
 function accomMixSig(){
   return JSON.stringify((Q.sel.accom || []).map(b => [b.id, Number(b.qty) || 0]).filter(x => x[1] > 0).sort());
 }
+function searchSig(){ return accomMixSig() + "|" + nightsCount(); }
 function selectedAccomIds(){
   const ids = [];
   (Q.sel.accom || []).forEach(b => {
@@ -3100,28 +3141,52 @@ function mixCostFrom(from, nights){
   }
   return total;
 }
-function cheapestWeekends(limit){
+/* what the organiser has asked the search to respect */
+let WK_OPTS = {weekend: false, inHols: false, noHols: false};
+function stayMatchesOpts(from, nights){
+  let weekendNight = false, holNights = 0;
+  for(let i = 0; i < nights; i++){
+    const d = isoAddDays(from, i);
+    const dow = new Date(d + "T12:00:00").getDay();
+    if(dow === 5 || dow === 6) weekendNight = true;   /* Friday or Saturday night */
+    if(holidayOn(d)) holNights++;
+  }
+  if(WK_OPTS.weekend && !weekendNight) return false;
+  if(WK_OPTS.inHols && holNights < nights) return false;
+  if(WK_OPTS.noHols && holNights > 0) return false;
+  return true;
+}
+/* the cheapest runs of the same length the organiser has asked for */
+function cheapestStays(limit){
   const span = tariffSpan();
   if(!span) return null;
-  const out = [];
+  const nights = Math.max(1, nightsCount());
+  const found = [];
   let d = span.from, guard = 0;
   while(d <= span.to && guard < 800){
-    const dow = new Date(d + "T12:00:00").getDay();
-    if(dow === 5){                                   /* Friday */
-      const cost = mixCostFrom(d, 2);
+    if(isoAddDays(d, nights - 1) <= span.to && stayMatchesOpts(d, nights)){
+      const cost = mixCostFrom(d, nights);
       if(cost !== null && cost > 0){
-        out.push({from: d, to: isoAddDays(d, 2), total: cost, holiday: holidayOn(d) || holidayOn(isoAddDays(d, 1))});
+        found.push({from: d, to: isoAddDays(d, nights), nights: nights, total: cost,
+                    holiday: holidayOn(d) || holidayOn(isoAddDays(d, nights - 1))});
       }
     }
     d = isoAddDays(d, 1); guard++;
   }
-  out.sort((a, b) => a.total - b.total);
-  return out.slice(0, limit || 5);
+  found.sort((a, b) => (a.total - b.total) || (a.from < b.from ? -1 : 1));
+  /* keep the list varied: drop anything that overlaps a cheaper result already picked */
+  const out = [];
+  found.forEach(f => {
+    if(out.length >= (limit || 5)) return;
+    if(out.some(o => f.from < o.to && o.from < f.to)) return;
+    out.push(f);
+  });
+  return out;
 }
-function findWeekends(){
-  const res = cheapestWeekends(5);
+function findCheapest(){
+  const res = cheapestStays(5);
   WEEKENDS = (res === null) ? "notariff" : res;
-  WK_SIG = accomMixSig();
+  WK_SIG = searchSig();
   renderClient();
   const el = document.getElementById("wkResults");
   if(el) el.scrollIntoView({behavior:"smooth", block:"nearest"});
@@ -3161,21 +3226,39 @@ function requestPrices(){
   const el = document.getElementById("cbMsg");
   if(el){ el.scrollIntoView({behavior:"smooth", block:"center"}); el.focus(); }
 }
-function weekendHTML(){
-  if(WEEKENDS === null || WK_SIG !== accomMixSig()) return '';
+function cheapestResultsHTML(){
+  if(WEEKENDS === null || WK_SIG !== searchSig()) return '';
   if(WEEKENDS === "notariff")
-    return '<div class="wkbox" id="wkResults">We do not have a price calendar loaded on this quote yet, so we cannot compare weekends here. Use <b>Request prices</b> above and we will send them straight back.</div>';
+    return '<div class="wkbox" id="wkResults">We do not have a price calendar loaded on this quote yet, so we cannot compare dates here. Use <b>Request prices</b> at the top of this page and we will send them straight back.</div>';
   if(!WEEKENDS.length)
-    return '<div class="wkbox" id="wkResults">No weekend in our loaded calendar fits that many cabins. Ask us below and we will look across the wider calendar for you.</div>';
+    return '<div class="wkbox" id="wkResults">Nothing in our loaded calendar matches that. Try unticking one of the boxes above, or ask us below and we will look across the wider calendar for you.</div>';
+  const n = WEEKENDS[0].nights;
   return '<div class="wkbox" id="wkResults">' +
-    '<div class="wkhead">Cheapest Friday and Saturday for the cabins you have chosen</div>' +
+    '<div class="wkhead">Cheapest ' + n + ' night' + (n === 1 ? '' : 's') + ' for the cabins you have chosen</div>' +
     WEEKENDS.map((w, i) =>
-      '<div class="wkrow' + (i === 0 ? ' best' : '') + '">' +
-        '<div class="wkwhen"><b>' + esc(fmtDate(w.from)) + '</b><span class="wksub">to ' + esc(fmtDate(w.to)) + (w.holiday ? ' · <span class="holpill">' + esc(w.holiday.name) + '</span>' : '') + '</span></div>' +
-        '<div class="wkcost">' + money(w.total) + '<span class="wksub">2 nights, cabins only</span></div>' +
-        '<button class="wkuse" data-from="' + esc(w.from) + '">Use these dates</button>' +
+      '<div class="wkrow">' +
+        '<div class="wkwhen"><b>' + esc(fmtDate(w.from)) + (i === 0 ? ' <span class="bestpill">cheapest</span>' : '') + '</b>' +
+          '<span class="wksub">to ' + esc(fmtDate(w.to)) + (w.holiday ? ' · <span class="holpill">' + esc(w.holiday.name) + '</span>' : '') + '</span></div>' +
+        '<div class="wkcost">' + money(w.total) + '<span class="wksub">' + w.nights + ' night' + (w.nights === 1 ? '' : 's') + ', cabins only</span></div>' +
+        '<button class="wkuse" data-from="' + esc(w.from) + '" data-n="' + w.nights + '">Use these dates</button>' +
       '</div>').join('') +
     '<p class="cb-hint">Cabins only, room hire and catering sit on top. Everything is confirmed by our team before it is held.</p></div>';
+}
+function cheapestPanelHTML(){
+  const haveCabins = selectedAccomIds().length > 0;
+  const n = Math.max(1, nightsCount());
+  return '<div class="cb-sec cheapsec"><h3>Looking for the cheapest time to visit?</h3>' +
+    '<p class="cb-hint">we will take the cabins you have chosen above and find the cheapest <b>' + n + ' night' + (n === 1 ? '' : 's') +
+      '</b> for them across the dates we have loaded. Change the number of nights at the top of this page and search again.</p>' +
+    '<div class="wkopts">' +
+      '<label><input type="checkbox" class="wkOpt" data-o="weekend"' + (WK_OPTS.weekend ? ' checked' : '') + '> Must include a Friday or Saturday night</label>' +
+      '<label><input type="checkbox" class="wkOpt" data-o="inHols"' + (WK_OPTS.inHols ? ' checked' : '') + '> Must be inside the NSW school holidays</label>' +
+      '<label><input type="checkbox" class="wkOpt" data-o="noHols"' + (WK_OPTS.noHols ? ' checked' : '') + '> Avoid the NSW school holidays</label>' +
+    '</div>' +
+    '<button class="wkbtn" id="dpFindWk"' + (haveCabins ? '' : ' disabled title="Choose your cabins above first"') + '>Find the cheapest dates ↓</button>' +
+    (haveCabins ? '' : '<p class="cb-hint" style="margin-top:8px">Choose your cabins above first and we will price that exact mix.</p>') +
+    cheapestResultsHTML() +
+  '</div>';
 }
 function datesPanelHTML(){
   const n = Math.max(1, nightsCount());
@@ -3183,7 +3266,6 @@ function datesPanelHTML(){
   const to = from ? isoAddDays(from, n) : '';
   const hols = from ? holidaysAcross(stayNightsList()) : [];
   const unp = unpricedNights();
-  const haveCabins = selectedAccomIds().length > 0;
   return '<div class="cb-sec datesec">' +
     '<h3>Your dates</h3>' +
     '<p class="cb-hint">move the arrival date or the number of nights to see what other dates would cost, nothing is held until our team confirms it</p>' +
@@ -3202,13 +3284,6 @@ function datesPanelHTML(){
         ' (' + esc(unp.slice(0, 4).map(d => shortDate(d)).join(', ')) + (unp.length > 4 ? ' and more' : '') + ').' +
         '<button class="reqbtn" id="dpRequest">Request prices</button></div>'
       : '') +
-    '<div class="wkline">' +
-      '<button class="wkbtn" id="dpFindWk"' + (haveCabins ? '' : ' disabled title="Choose your cabins below first"') + '>Find my cheapest weekend</button>' +
-      '<span class="cb-hint">' + (haveCabins
-        ? 'prices the cabins you have chosen across every Friday and Saturday we have loaded'
-        : 'choose your cabins below, then we will find the cheapest weekend for that mix') + '</span>' +
-    '</div>' +
-    weekendHTML() +
   '</div>';
 }
 function siteInviteHTML(){
@@ -3675,6 +3750,7 @@ function renderClient(){
       '<div class="cb-sec orgmsg"><h3>Anything we should know?</h3>' +
         '<p class="cb-hint">questions, arrival plans, dietary details, how you\'ll use the rooms, this comes straight to our team with your submission</p>' +
         '<textarea id="cbMsg" rows="3" placeholder="Type anything you\'d like us to know…">' + esc(Q.sel.message || '') + '</textarea></div>' +
+      cheapestPanelHTML() +
     '</div>' +
     printSummary +
     '<div class="qp-notes"' + (CLIENT_MODE ? '' : ' contenteditable id="qpNotesBlk" title="Notes shown on the quote, click to edit for this quote"') + '>' + esc(Q.notes) + '</div>' +
@@ -3696,9 +3772,18 @@ function renderClient(){
   const dpR = document.getElementById("dpRequest");
   if(dpR) dpR.addEventListener("click", requestPrices);
   const dpW = document.getElementById("dpFindWk");
-  if(dpW) dpW.addEventListener("click", findWeekends);
+  if(dpW) dpW.addEventListener("click", findCheapest);
+  page.querySelectorAll(".wkOpt").forEach(el => el.addEventListener("change", e => {
+    const o = e.target.dataset.o;
+    WK_OPTS[o] = e.target.checked;
+    /* "inside the holidays" and "avoid the holidays" cancel each other out */
+    if(o === "inHols" && e.target.checked) WK_OPTS.noHols = false;
+    if(o === "noHols" && e.target.checked) WK_OPTS.inHols = false;
+    if(WEEKENDS !== null && selectedAccomIds().length) findCheapest();
+    else renderClient();
+  }));
   page.querySelectorAll(".wkuse").forEach(el =>
-    el.addEventListener("click", e => setEventDates(e.currentTarget.dataset.from, 2)));
+    el.addEventListener("click", e => setEventDates(e.currentTarget.dataset.from, Number(e.currentTarget.dataset.n) || 2)));
   page.querySelectorAll(".addblock").forEach(el => el.addEventListener("click", e => addAccomBlock(e.currentTarget.dataset.id)));
   page.querySelectorAll(".blkx").forEach(el => el.addEventListener("click", e => removeAccomBlock(Number(e.currentTarget.dataset.i))));
   page.querySelectorAll(".blkFrom").forEach(el => el.addEventListener("change", e => setBlockDates(Number(e.target.dataset.i), e.target.value, null)));
@@ -4663,6 +4748,9 @@ document.getElementById("f-acnc").addEventListener("change", e => {
     ? "Marked as a registered church / ACNC charity, the 20%/50% conditions now appear and the organiser can pick a tier."
     : "Church/ACNC unticked, church discount content removed from the quote.");
 });
+document.querySelectorAll(".bulkbtn").forEach(el => el.addEventListener("click", e => {
+  setGroupOn(e.currentTarget.dataset.kind, e.currentTarget.dataset.on === "1");
+}));
 document.getElementById("tariffBtn").addEventListener("click", () => document.getElementById("tariffFile").click());
 document.getElementById("tariffFile").addEventListener("change", e => {
   readTariffFiles(e.target.files);
