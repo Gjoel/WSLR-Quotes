@@ -342,12 +342,23 @@
   }
   .wkclear{appearance:none; border:none; background:none; color:var(--accent); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; padding:0 0 9px}
   .wkclear:hover{text-decoration:underline}
-  .loadnote{
-    margin:0 0 12px; padding:10px 13px; border-radius:8px; font-size:12.5px; line-height:1.55;
-    background:rgba(42,120,214,.07); border:1px solid rgba(42,120,214,.25); color:var(--ink2);
+  .wkloaded{font-size:11.5px; color:var(--muted); margin:-4px 0 12px}
+  .wkloaded b{color:var(--ink2); font-weight:600}
+  .wkopts .optnote{font-size:11.5px; color:var(--muted); font-weight:400}
+  /* pop up shown when the dates asked for are not loaded */
+  .modalback{
+    position:fixed; inset:0; z-index:60; background:rgba(11,11,11,.45);
+    display:flex; align-items:center; justify-content:center; padding:20px;
   }
-  .loadnote b{color:var(--ink)}
-  .loadnote .reqbtn{background:var(--accent); margin-top:6px}
+  .modalbox{
+    background:#fff; border-radius:12px; max-width:440px; width:100%;
+    padding:22px 24px; box-shadow:0 12px 40px rgba(11,11,11,.3);
+  }
+  .modalbox h4{margin:0 0 8px; font-size:16px}
+  .modalbox p{margin:0 0 10px; font-size:13.5px; color:var(--ink2); line-height:1.55}
+  .modalbox b{color:var(--ink)}
+  .modalrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px}
+  .modalrow .btn{flex:1 1 auto; font-size:14px; padding:10px 14px}
   .wkopts{display:flex; flex-direction:column; gap:5px; margin:4px 0 12px}
   .wkopts label{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink2); cursor:pointer}
   .wkopts input{width:auto; margin:0}
@@ -375,6 +386,8 @@
   .wkwhen{flex:1 1 190px; display:flex; flex-direction:column}
   .wkcost{min-width:120px; text-align:right; font-variant-numeric:tabular-nums; font-weight:700; color:var(--ink); display:flex; flex-direction:column}
   .wksub{font-size:11.5px; font-weight:400; color:var(--muted)}
+  .wksave{font-size:11.5px; font-weight:700; color:var(--good-dn)}
+  .wkskip{font-size:12px; color:#a34c14; background:rgba(236,131,90,.12); border-radius:7px; padding:7px 11px; margin:10px 0 0}
   .wkuse{
     appearance:none; border:none; border-radius:7px; background:var(--accent); color:#fff;
     font:inherit; font-size:12.5px; font-weight:700; padding:7px 12px; cursor:pointer;
@@ -571,7 +584,7 @@
   }
   @media print{
     body{background:#fff}
-    header.top, nav.tabs, #tab-staff, #tab-pipeline, #tab-settings, .sidecard, #toast, #stickySubmit{display:none !important}
+    header.top, nav.tabs, #tab-staff, #tab-pipeline, #tab-settings, .sidecard, #toast, #stickySubmit, #wslrModal{display:none !important}
     .cb-live, .submitted-box{display:none !important}
     .qp-printonly{display:block}
     .qp-sec{orphans:3; widows:3}
@@ -733,6 +746,7 @@
           <label class="secitem"><input type="checkbox" id="f-feat-pp"> <span><span class="sectitle">Cost per person</span><span class="secwhy">a "≈ $X per person" line under their total</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-deposit"> <span><span class="sectitle">Deposit &amp; key dates</span><span class="secwhy">their deposit, bond and deadline dates worked out from the selection</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-kids"> <span><span class="sectitle">Children's &amp; dietary pricing</span><span class="secwhy">adults / 4–12 (half) / 1–3 ($5) / under 1 (free) + dietary (+$10) priced properly per meal</span></span></label>
+          <label class="secitem"><input type="checkbox" id="f-feat-cheap"> <span><span class="sectitle">Cheapest dates search</span><span class="secwhy">lets them price their cabins across other dates, untick when the dates are already held</span></span></label>
         </div>
         <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission, that part is built in.</p>
       </div>
@@ -1605,7 +1619,7 @@ function blankQuote(num){
     ratesInfo: null,    // {from, to, items, file}
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
-    features: {perPerson: true, depositDates: true, kids: true}, // toggleable organiser-page extras
+    features: {perPerson: true, depositDates: true, kids: true, cheapest: true}, // toggleable organiser-page extras
     sel: blankSel(),    // the organiser's (or staff-suggested) selections
     lines: [],          // fixed extras the organiser can't change
     status: "Draft",
@@ -1650,7 +1664,8 @@ function normalizeQuote(q){
     });
     q.accomPriced = true;
   }
-  if(!q.features) q.features = {perPerson: true, depositDates: true, kids: true};
+  if(!q.features) q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
+  if(q.features.cheapest === undefined) q.features.cheapest = true;
   if(q.sel){
     if(q.sel.who === undefined) q.sel.who = null;
     if(!q.sel.venueTimes) q.sel.venueTimes = {};
@@ -2242,7 +2257,7 @@ function snapshotQ(){
     ratesInfo: Q.ratesInfo ? JSON.parse(JSON.stringify(Q.ratesInfo)) : null,
     availInfo: Q.availInfo ? JSON.parse(JSON.stringify(Q.availInfo)) : null,
     menu: JSON.parse(JSON.stringify(Q.menu || {})),
-    features: JSON.parse(JSON.stringify(Q.features || {perPerson: true, depositDates: true, kids: true})),
+    features: JSON.parse(JSON.stringify(Q.features || {perPerson: true, depositDates: true, kids: true, cheapest: true})),
     sel: JSON.parse(JSON.stringify(Q.sel || blankSel())),
     submittedAt: Q.submittedAt || null,
     submittedSel: Q.submittedSel || null,
@@ -3137,27 +3152,28 @@ function tariffSpan(){
 }
 /* what the chosen cabin mix costs over `nights` nights starting at `from`,
    or null if any night is unpriced or short on availability */
-function mixCostFrom(from, nights){
+function mixCostDetail(from, nights){
   const mix = {};
   (Q.sel.accom || []).forEach(b => {
     const q = Number(b.qty) || 0;
     if(q > 0 && catEntry(b.id).on) mix[b.id] = (mix[b.id] || 0) + q;
   });
   const ids = Object.keys(mix);
-  if(!ids.length) return null;
+  if(!ids.length) return {cost: null, why: "nocabins"};
   let total = 0;
   for(let i = 0; i < nights; i++){
     const d = isoAddDays(from, i);
     for(let k = 0; k < ids.length; k++){
       const id = ids[k];
-      if(!hasRateOn(id, d)) return null;
+      if(!hasRateOn(id, d)) return {cost: null, why: "noprice"};
       const a = availOn(id, d);
-      if(a !== null && mix[id] > a) return null;
+      if(a !== null && mix[id] > a) return {cost: null, why: "full"};
       total += mix[id] * nightlyRate(id, d);
     }
   }
-  return total;
+  return {cost: total, why: ""};
 }
+function mixCostFrom(from, nights){ return mixCostDetail(from, nights).cost; }
 /* what the organiser has asked the search to respect */
 let WK_OPTS = {weekend: false, inHols: false, noHols: false};
 function stayMatchesOpts(from, nights){
@@ -3176,6 +3192,12 @@ function stayMatchesOpts(from, nights){
 /* the window the organiser wants to look in, narrowed to what we actually hold
    prices for: for each end we keep whichever of the two dates is the tighter */
 let WK_RANGE = {from: "", to: ""};
+let WK_SKIPPED = 0;           /* dates dropped from the last search: cabins booked out */
+/* what the cabins on the quote cost over the dates already quoted, for comparison */
+function currentStayCost(){
+  if(!Q.dateStart) return null;
+  return mixCostFrom(Q.dateStart, Math.max(1, nightsCount()));
+}
 function searchWindow(){
   const span = tariffSpan();
   if(!span) return null;
@@ -3191,10 +3213,13 @@ function cheapestStays(limit){
   if(w.empty) return [];
   const nights = Math.max(1, nightsCount());
   const found = [];
+  WK_SKIPPED = 0;
   let d = w.from, guard = 0;
   while(d <= w.to && guard < 800){
     if(isoAddDays(d, nights - 1) <= w.to && stayMatchesOpts(d, nights)){
-      const cost = mixCostFrom(d, nights);
+      const det = mixCostDetail(d, nights);
+      const cost = det.cost;
+      if(det.why === "full") WK_SKIPPED++;
       if(cost !== null && cost > 0){
         found.push({from: d, to: isoAddDays(d, nights), nights: nights, total: cost,
                     holiday: holidayOn(d) || holidayOn(isoAddDays(d, nights - 1))});
@@ -3257,6 +3282,64 @@ function requestPrices(){
     ? ("Please send prices for " + fmtDate(from) + " to " + fmtDate(isoAddDays(from, n)) + " (" + n + " night" + (n === 1 ? "" : "s") + ").")
     : "Please send prices for the dates we have in mind.");
 }
+/* ---------- a small modal, used when the dates asked for are not loaded ---------- */
+function closeWslrModal(){
+  const m = document.getElementById("wslrModal");
+  if(m) m.remove();
+  document.removeEventListener("keydown", wslrModalEsc);
+}
+function wslrModalEsc(e){ if(e.key === "Escape") closeWslrModal(); }
+function openWslrModal(html){
+  closeWslrModal();
+  const back = document.createElement("div");
+  back.id = "wslrModal";
+  back.className = "modalback";
+  back.innerHTML = '<div class="modalbox" role="dialog" aria-modal="true">' + html + '</div>';
+  document.body.appendChild(back);
+  back.addEventListener("click", e => { if(e.target === back) closeWslrModal(); });
+  document.addEventListener("keydown", wslrModalEsc);
+  return back;
+}
+/* does the range they asked for reach outside the dates we hold prices for? */
+function outsideLoaded(){
+  const span = tariffSpan();
+  const f = WK_RANGE.from, t = WK_RANGE.to;
+  if(!f && !t) return null;
+  if(!span) return {span: null, from: f, to: t, none: true};
+  const none = (f && f > span.to) || (t && t < span.from);
+  const partly = (f && f < span.from) || (t && t > span.to);
+  if(!none && !partly) return null;
+  return {span: span, from: f, to: t, none: !!none};
+}
+function loadDatesModal(){
+  const o = outsideLoaded();
+  const n = Math.max(1, nightsCount());
+  const asked = (o && (o.from || o.to))
+    ? ((o.from ? shortDateY(o.from) : "any time") + " to " + (o.to ? shortDateY(o.to) : "any time"))
+    : "";
+  openWslrModal(
+    '<h4>We have not loaded those dates yet</h4>' +
+    (o && o.span
+      ? '<p>Prices and availability on this quote are loaded for <b>' + esc(shortDateY(o.span.from)) + ' to ' + esc(shortDateY(o.span.to)) + '</b>. ' +
+        'You have asked about <b>' + esc(asked) + '</b>, which sits ' + (o.none ? 'outside' : 'partly outside') + ' that period.</p>'
+      : '<p>There is no price calendar loaded on this quote yet, so we cannot compare dates here.</p>') +
+    '<p>Just tell us when you are thinking and our team will load those dates and prices in, then send them back to you.</p>' +
+    '<div class="modalrow">' +
+      '<button class="btn accept" id="mdAsk">Ask us to load these dates</button>' +
+      (o && o.span ? '<button class="btn ghost" id="mdBack">Search the loaded dates instead</button>' : '<button class="btn ghost" id="mdClose">Close</button>') +
+    '</div>'
+  );
+  const ask = document.getElementById("mdAsk");
+  if(ask) ask.addEventListener("click", () => { closeWslrModal(); requestSearchRange(); });
+  const back = document.getElementById("mdBack");
+  if(back) back.addEventListener("click", () => {
+    closeWslrModal();
+    WK_RANGE = {from: "", to: ""};
+    if(WEEKENDS !== null && selectedAccomIds().length) findCheapest(); else renderClient();
+  });
+  const cl = document.getElementById("mdClose");
+  if(cl) cl.addEventListener("click", closeWslrModal);
+}
 /* "load up my dates" from the cheapest-dates search */
 function requestSearchRange(){
   const n = Math.max(1, nightsCount());
@@ -3271,7 +3354,8 @@ function requestSearchRange(){
 function cheapestResultsHTML(){
   if(WEEKENDS === null || WK_SIG !== searchSig()) return '';
   if(WEEKENDS === "notariff")
-    return '<div class="wkbox" id="wkResults">We do not have a price calendar loaded on this quote yet, so we cannot compare dates here. Use <b>Request prices</b> at the top of this page and we will send them straight back.</div>';
+    return '<div class="wkbox" id="wkResults">We do not have a price calendar loaded on this quote yet, so there is nothing to compare here. Tell us roughly when you are looking and we will load those dates and prices up for you. ' +
+      '<div><button class="reqbtn" id="wkAskB">Ask us to load these dates</button></div></div>';
   if(!WEEKENDS.length){
     const w = searchWindow();
     return '<div class="wkbox" id="wkResults">' +
@@ -3281,18 +3365,30 @@ function cheapestResultsHTML(){
       ' <button class="reqbtn" id="wkAskB">Ask us to load these dates</button></div>';
   }
   const n = WEEKENDS[0].nights;
+  const now = currentStayCost();
+  const best = (now !== null) ? (now - WEEKENDS[0].total) : 0;
   return '<div class="wkbox" id="wkResults">' +
-    '<div class="wkhead">Cheapest ' + n + ' night' + (n === 1 ? '' : 's') + ' for the cabins you have chosen</div>' +
-    WEEKENDS.map((w, i) =>
-      '<div class="wkrow">' +
+    '<div class="wkhead">Cheapest ' + n + ' night' + (n === 1 ? '' : 's') + ' for the cabins you have chosen' +
+      (best > 0 ? ' · saves ' + money0(best) + ' on your quoted dates' : '') + '</div>' +
+    WEEKENDS.map((w, i) => {
+      const save = (now !== null) ? (now - w.total) : 0;
+      return '<div class="wkrow">' +
         '<div class="wkwhen"><b>' + esc(fmtDate(w.from)) + (i === 0 ? ' <span class="bestpill">cheapest</span>' : '') + '</b>' +
           '<span class="wksub">to ' + esc(fmtDate(w.to)) + (w.holiday ? ' · <span class="holpill">' + esc(w.holiday.name) + '</span>' : '') + '</span></div>' +
-        '<div class="wkcost">' + money(w.total) + '<span class="wksub">' + w.nights + ' night' + (w.nights === 1 ? '' : 's') + ', cabins only</span></div>' +
+        '<div class="wkcost">' + money(w.total) +
+          (save > 0 ? '<span class="wksave">' + money0(save) + ' less than your dates</span>'
+                    : '<span class="wksub">' + w.nights + ' night' + (w.nights === 1 ? '' : 's') + ', cabins only</span>') + '</div>' +
         '<button class="wkuse" data-from="' + esc(w.from) + '" data-n="' + w.nights + '">Use these dates</button>' +
-      '</div>').join('') +
+      '</div>';
+    }).join('') +
+    (WK_SKIPPED > 0
+      ? '<p class="wkskip">' + WK_SKIPPED + ' other date' + (WK_SKIPPED === 1 ? ' was' : 's were') +
+        ' left out because your cabins are already booked out on them. Ask us and we will see what we can move around.</p>'
+      : '') +
     '<p class="cb-hint">Cabins only, room hire and catering sit on top. Everything is confirmed by our team before it is held.</p></div>';
 }
 function cheapestPanelHTML(){
+  if(!(Q.features && Q.features.cheapest)) return '';
   const haveCabins = selectedAccomIds().length > 0;
   const n = Math.max(1, nightsCount());
   const span = tariffSpan();
@@ -3305,21 +3401,16 @@ function cheapestPanelHTML(){
       '</div>'
     : '';
   const loadNote = span
-    ? '<div class="loadnote">We have prices and availability loaded for <b>' + esc(shortDateY(span.from)) + ' to ' + esc(shortDateY(span.to)) + '</b>' +
-        (w && w.empty
-          ? ', and the dates you have asked for fall outside that.'
-          : (w && w.clipped ? ', so the search is limited to ' + esc(shortDateY(w.from)) + ' to ' + esc(shortDateY(w.to)) + '.' : '.')) +
-        ' If you are looking at another time of year, just say so and we will load those dates and prices up for you. ' +
-        '<div><button class="reqbtn" id="wkAsk">Ask us to load your dates</button></div></div>'
-    : '<div class="loadnote">We have not loaded a price calendar on this quote yet. Tell us roughly when you are looking and we will load those dates and prices up for you. ' +
-        '<div><button class="reqbtn" id="wkAsk">Ask us to load your dates</button></div></div>';
+    ? '<div class="wkloaded">prices and availability loaded for <b>' + esc(shortDateY(span.from)) + ' to ' + esc(shortDateY(span.to)) + '</b>' +
+        (w && w.clipped && !w.empty ? ' · searching ' + esc(shortDateY(w.from)) + ' to ' + esc(shortDateY(w.to)) : '') + '</div>'
+    : '';
   return '<div class="cb-sec cheapsec"><h3>Looking for the cheapest time to visit?</h3>' +
     '<p class="cb-hint">we will take the cabins you have chosen above and find the cheapest <b>' + n + ' night' + (n === 1 ? '' : 's') +
       '</b> for them. Change the number of nights at the top of this page and search again.</p>' +
     rangeHtml +
     loadNote +
     '<div class="wkopts">' +
-      '<label><input type="checkbox" class="wkOpt" data-o="weekend"' + (WK_OPTS.weekend ? ' checked' : '') + '> Must include a Friday or Saturday night</label>' +
+      '<label><input type="checkbox" class="wkOpt" data-o="weekend"' + (WK_OPTS.weekend ? ' checked' : '') + '> Must be a weekend <span class="optnote">includes a Friday or Saturday night</span></label>' +
       '<label><input type="checkbox" class="wkOpt" data-o="inHols"' + (WK_OPTS.inHols ? ' checked' : '') + '> Must be inside the NSW school holidays</label>' +
       '<label><input type="checkbox" class="wkOpt" data-o="noHols"' + (WK_OPTS.noHols ? ' checked' : '') + '> Avoid the NSW school holidays</label>' +
     '</div>' +
@@ -3858,13 +3949,13 @@ function renderClient(){
       else WK_RANGE.from = isoAddDays(WK_RANGE.to, -len);
     }
     rerunSearch();
+    /* they have reached past what we hold prices for: say so, once, in a pop up */
+    if(outsideLoaded()) loadDatesModal();
   }));
   const wkClr = document.getElementById("wkClear");
   if(wkClr) wkClr.addEventListener("click", () => { WK_RANGE = {from: "", to: ""}; rerunSearch(); });
-  ["wkAsk", "wkAskB"].forEach(id => {
-    const b = document.getElementById(id);
-    if(b) b.addEventListener("click", requestSearchRange);
-  });
+  const wkAskB = document.getElementById("wkAskB");
+  if(wkAskB) wkAskB.addEventListener("click", requestSearchRange);
   page.querySelectorAll(".wkOpt").forEach(el => el.addEventListener("change", e => {
     const o = e.target.dataset.o;
     WK_OPTS[o] = e.target.checked;
@@ -4816,10 +4907,11 @@ function syncForm(){
   document.getElementById("f-feat-pp").checked = !!(Q.features && Q.features.perPerson);
   document.getElementById("f-feat-deposit").checked = !!(Q.features && Q.features.depositDates);
   document.getElementById("f-feat-kids").checked = !!(Q.features && Q.features.kids);
+  document.getElementById("f-feat-cheap").checked = !!(Q.features && Q.features.cheapest);
 }
-[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"]].forEach(pair => {
+[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"]].forEach(pair => {
   document.getElementById(pair[0]).addEventListener("change", e => {
-    if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true};
+    if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
     Q.features[pair[1]] = e.target.checked;
     refresh();
   });
