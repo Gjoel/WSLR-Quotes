@@ -2268,6 +2268,40 @@ function lineName(l){
 function validUntilISO(){ return isoDate(plusDays(today, Number(Q.validDays)||14)); }
 
 /* ---------- snapshots (saved quotes) ---------- */
+/* The tracker sheet stores each quote's JSON in one cell, and Google Sheets caps
+   a cell at 50,000 characters. A season of rebuilt nightly rates is ~60,000 on
+   its own, so the copy that travels keeps the widest window around the stay that
+   fits, and the organiser's date search works within that window (with the
+   "ask us to load these dates" path covering anything beyond it). */
+const SHEET_CELL_LIMIT = 50000;
+const SHEET_SAFE_SIZE = 45000;
+function stayWindow(pad){
+  if(!Q.dateStart) return null;
+  const p = pad || 0;
+  return {from: isoAddDays(Q.dateStart, -p), to: isoAddDays(Q.dateStart, nightsCount() + p)};
+}
+function pruneDated(map, win, cap){
+  const out = {};
+  Object.keys(map || {}).forEach(id => {
+    const inner = map[id] || {};
+    const keep = {};
+    Object.keys(inner).sort().forEach(d => {
+      if(win){ if(d < win.from || d > win.to) return; }
+      else if(Object.keys(keep).length >= (cap || 62)) return;
+      keep[d] = inner[d];
+    });
+    if(Object.keys(keep).length) out[id] = keep;
+  });
+  return out;
+}
+function datedSpan(map){
+  let from = null, to = null;
+  Object.keys(map || {}).forEach(id => Object.keys(map[id] || {}).forEach(d => {
+    if(!from || d < from) from = d;
+    if(!to || d > to) to = d;
+  }));
+  return (from && to) ? {from: from, to: to} : null;
+}
 function snapshotQ(){
   const t = totals();
   return {
@@ -2737,15 +2771,15 @@ function parseDMonY(s){
 function parseModified(s){
   const m = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?/i.exec(String(s || "").trim());
   if(!m) return 0;
-  let h = Number(m[4]) % 12;
-  if(/PM/i.test(m[7] || "")) h += 12;
+  let h = Number(m[4]);
+  if(m[7]){                    // 12-hour clock: normalise; otherwise the time is already 24-hour
+    h = h % 12;
+    if(/PM/i.test(m[7])) h += 12;
+  }
   return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), h, Number(m[5]), Number(m[6]));
 }
-function isoAddDays(iso, n){
-  const d = new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)), 12);
-  d.setDate(d.getDate() + n);
-  return isoDate(d);
-}
+/* isoAddDays lives with the other date helpers near the top; a second copy here
+   used to shadow it and lost its bad-input guard */
 function isoDow(iso){ // 0 = Monday ... 6 = Sunday, matching the Nightly_1st..7th columns
   const d = new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)), 12);
   return (d.getDay() + 6) % 7;
@@ -3012,7 +3046,7 @@ function renderImpStatus(){
       'This quote was copied from an earlier one, so its accommodation prices and unit counts were not carried over, ' +
       'they change every day. Use <b>Import tariff &amp; availability</b> above (or type a nightly price on each cabin) before sending.' +
       '<button class="impclear" id="impRedoX" title="Hide this reminder">dismiss</button></div>' +
-      (Q.availInfo ? '' : '');
+      (Q.availInfo ? '<div class="impstatus"><span>Availability <b>' + esc(shortDate(Q.availInfo.from)) + ' – ' + esc(shortDate(Q.availInfo.to)) + '</b> · ' + Q.availInfo.items + ' unit types</span></div>' : '');
     const x = document.getElementById("impRedoX");
     if(x) x.addEventListener("click", () => { Q.needsTariff = false; renderImpStatus(); });
     return;
@@ -4679,14 +4713,56 @@ function sendCore(){
   const snap = snapshotQ();
   upsertSnapshot(snap);
   lsDel(LS_DRAFT);
-  postToSheet({action: "sent", quote: Object.assign({}, snap, {
+  postToSheet({action: "sent", quote: sheetQuotePayload(snap)});
+  renderPrevOptions();
+  renderPipeline();
+}
+/* the quote as the tracker sheet receives it, kept under the cell cap. The
+   nightly-rate calendar is shrunk to the widest window around the stay that
+   fits; only if a quote is still oversized are the parts the quote page can
+   rebuild for itself dropped, with a toast saying so, rather than the write
+   dying at the sheet with "more than the maximum of 50000 characters". */
+function sheetQuotePayload(snap){
+  const payload = Object.assign({}, snap, {
     link: linkForToken(Q.token),
     meals: mealsSummary(),
     rooms: roomsSummary(),
     display: buildDisplayPayload()
-  })});
-  renderPrevOptions();
-  renderPipeline();
+  });
+  const size = () => JSON.stringify(payload).length;
+  let trimmedRates = false;
+  if(size() > SHEET_SAFE_SIZE){
+    const pads = [180, 120, 90, 60, 30, 14, 7, 0];
+    for(let i = 0; i < pads.length && size() > SHEET_SAFE_SIZE; i++){
+      payload.rates = pruneDated(snap.rates, stayWindow(pads[i]), 62);
+      payload.availCal = pruneDated(snap.availCal, stayWindow(pads[i]), 62);
+      trimmedRates = true;
+    }
+  }
+  const dropped = [];
+  if(size() > SHEET_SAFE_SIZE && payload.display && payload.display.sections && payload.display.sections.length){
+    payload.display.sections = [];            // the quote page rebuilds these from the settings wording
+    payload.display.sectionsOmitted = true;
+    dropped.push("the standard information wording");
+  }
+  if(size() > SHEET_SAFE_SIZE && payload.ratecard){
+    delete payload.ratecard;                  // the emailed page falls back to the shared rate card
+    dropped.push("the rate card copy");
+  }
+  if(trimmedRates){
+    const sp = datedSpan(payload.rates);
+    if(sp) showToast("The full price calendar was too big to travel with the quote, so the organiser's page holds prices for " +
+      shortDate(sp.from) + " – " + shortDate(sp.to) + ". Beyond that their date search offers to ask us, as usual." +
+      (dropped.length ? " Also left out of the sheet copy: " + dropped.join(", ") + "." : ""));
+  } else if(dropped.length){
+    showToast("This quote was too big for the tracker sheet, so " + dropped.join(", ") +
+      " was left out of the copy sent there. The quote itself is unchanged. Shorter notes and terms will avoid this.");
+  }
+  if(size() > SHEET_CELL_LIMIT){
+    showToast("Warning: quote " + Q.num + " is still over the tracker sheet's size limit (" +
+      Math.round(size() / 1000) + "k characters). Shorten the notes, terms or information wording, then save again.");
+  }
+  return payload;
 }
 function fillTemplate(s){
   return String(s || "")
@@ -4746,12 +4822,7 @@ function doSaveQuote(){
   if(!Q.token) Q.token = genToken();
   const snap = snapshotQ();
   upsertSnapshot(snap);
-  postToSheet({action: "sent", quote: Object.assign({}, snap, {
-    link: linkForToken(Q.token),
-    meals: mealsSummary(),
-    rooms: roomsSummary(),
-    display: buildDisplayPayload()
-  })});
+  postToSheet({action: "sent", quote: sheetQuotePayload(snap)});
   /* the sheet row write stamps status "Sent"; put the real status back if it differs */
   if(Q.status && Q.status !== "Sent") postToSheet({action: "status", num: Q.num, status: Q.status});
   renderPrevOptions();
@@ -4769,12 +4840,7 @@ function doSubmit(){
   const snap = snapshotQ();
   upsertSnapshot(snap);
   /* the full selection travels to the tracker sheet: who's eating, message, venue times, totals */
-  postToSheet({action: "submitted", quote: Object.assign({}, snap, {
-    link: linkForToken(Q.token),
-    meals: mealsSummary(),
-    rooms: roomsSummary(),
-    display: buildDisplayPayload()
-  })});
+  postToSheet({action: "submitted", quote: sheetQuotePayload(snap)});
   renderClient();
   renderPrevOptions();
   renderPipeline();
