@@ -119,6 +119,13 @@
   .btn.ghost{background:none}
   .btn.accept{background:var(--good); border-color:var(--good); color:#fff; font-size:16.5px; padding:12px 26px}
   .btn.accept:hover{background:var(--good-dn)}
+  .imp3wrap{display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap}
+  .imp3col{display:flex; flex-direction:column; align-items:center; gap:2px}
+  .btn.imp3{background:none; padding:5px 12px; font-size:13px}
+  .btn.imp3.on{background:var(--good); border-color:var(--good); color:#fff}
+  .btn.imp3.on:hover{background:var(--good-dn)}
+  .imp3until{font-size:10.5px; color:var(--muted); line-height:1.2; text-align:center; white-space:nowrap}
+  .imp3until b{color:var(--ink2); font-weight:600}
   .actions{display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 6px}
   #addLine{margin-top:10px}
 
@@ -685,7 +692,20 @@
           <h3>Accommodation</h3>
           <span style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
             <span class="bulkpick"><button type="button" class="bulkbtn" data-kind="accom" data-on="1">tick all</button><button type="button" class="bulkbtn" data-kind="accom" data-on="0">untick all</button></span>
-            <button class="btn ghost" id="tariffBtn" style="padding:5px 12px; font-size:13px" title="Import an RMS rates report (.xlsx or .csv) and/or an RMS availability chart (.csv), nightly prices and availability prefill from them">Import tariff &amp; availability</button>
+            <span class="imp3wrap">
+              <span class="imp3col">
+                <button class="btn imp3" id="impAvailBtn" title="Import the RMS availability chart CSV, unit counts per date prefill from it. Any RMS file is recognised automatically, whichever button you use.">Availability</button>
+                <span class="imp3until" id="impAvailUntil"></span>
+              </span>
+              <span class="imp3col">
+                <button class="btn imp3" id="impBaseBtn" title="Import the RMS Tariff Export CSV (Tariff Manager, export icon, Export to CSV): the base rates per night of the week. Any RMS file is recognised automatically, whichever button you use.">General rates</button>
+                <span class="imp3until" id="impBaseUntil"></span>
+              </span>
+              <span class="imp3col">
+                <button class="btn imp3" id="impOverBtn" title="Import the Control Panel restrictions export CSV: the dynamic (red) nightly prices set by Room Price Genie. Any RMS file is recognised automatically, whichever button you use.">Tariff overwrites</button>
+                <span class="imp3until" id="impOverUntil"></span>
+              </span>
+            </span>
             <span class="nightschip" id="nightsChip"></span>
           </span>
           <input type="file" id="tariffFile" accept=".csv,.xlsx" multiple style="display:none">
@@ -2688,6 +2708,178 @@ function parseAvailGrid(rows){
   const dates = isoCols.map(d => d.iso).sort();
   return {avail: avail, totals: totals, dates: dates, matched: matched, skippedCount: skippedCount};
 }
+/* ---------- RMS two-file rate rebuild (Tariff Export + Control Panel restrictions) ----------
+   RMS removed the old chart print that produced the results grid. The same numbers can be
+   rebuilt from two exports:
+     1. Tariff Manager > export icon > "Export to CSV"  -> base rates per night of week
+        (TariffExport...csv, one row per tariff type x category x season period)
+     2. Tariff Manager > Control Panel > export of restrictions -> dynamic overrides
+        (RestrictionsAuditTrail...csv, one "Tariff Override" row per category per date,
+        written by Room Price Genie; these are the red numbers on the chart)
+   Effective nightly price = override for that exact date if one exists, else the base
+   rate for that day of the week. Verified against the chart: 140/140 cells matched. */
+const RMS_TARIFF_TYPE = "Resort Guest Rate";
+
+function headerIndex(row){
+  const ix = {};
+  (row || []).forEach((c, i) => { ix[String(c || "").trim().toLowerCase()] = i; });
+  return ix;
+}
+/* "04 Sep 2026" / "27 Jan 2026" -> "2026-09-04" (null if blank/unparseable) */
+function parseDMonY(s){
+  const m = /^(\d{1,2})\s+([A-Za-z]{3})[A-Za-z]*\s+(\d{4})$/.exec(String(s || "").trim());
+  if(!m) return null;
+  const mo = MONTHS3[m[2].toUpperCase()];
+  if(mo === undefined) return null;
+  return m[3] + "-" + String(mo + 1).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
+}
+/* "2026-09-01 2:58:12 AM" -> ms since epoch (0 if unparseable), for newest-wins */
+function parseModified(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?/i.exec(String(s || "").trim());
+  if(!m) return 0;
+  let h = Number(m[4]) % 12;
+  if(/PM/i.test(m[7] || "")) h += 12;
+  return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), h, Number(m[5]), Number(m[6]));
+}
+function isoAddDays(iso, n){
+  const d = new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)), 12);
+  d.setDate(d.getDate() + n);
+  return isoDate(d);
+}
+function isoDow(iso){ // 0 = Monday ... 6 = Sunday, matching the Nightly_1st..7th columns
+  const d = new Date(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)), 12);
+  return (d.getDay() + 6) % 7;
+}
+
+/* RMS "Tariff Export" CSV: base night-of-week tables. Returns {periods:{id:[{from,to,dow[7]}]}, matched, skipped[]} */
+function parseTariffExport(rows){
+  if(!rows || !rows.length) return null;
+  const ix = headerIndex(rows[0]);
+  if(ix["tarifftype_description"] === undefined || ix["tarifftable_nightly_1st"] === undefined || ix["category"] === undefined) return null;
+  const nightlyIx = ["1st","2nd","3rd","4th","5th","6th","7th"].map(k => ix["tarifftable_nightly_" + k]);
+  const periods = {}, skipped = [], seen = {};
+  for(let r = 1; r < rows.length; r++){
+    const row = rows[r] || [];
+    const tt = String(row[ix["tarifftype_description"]] || "").trim();
+    if(tt.toUpperCase() !== RMS_TARIFF_TYPE.toUpperCase()) continue;
+    const name = String(row[ix["category"]] || "").trim();
+    if(!name) continue;
+    const id = rmsMatch(name);
+    if(!id){ if(skipped.indexOf(name) < 0) skipped.push(name); continue; }
+    const dow = nightlyIx.map(i => parseMoney(row[i]));
+    if(!dow.some(v => v > 0)) continue;
+    const from = parseDMonY(row[ix["tariffperiod_fromdate"]]);
+    const to = parseDMonY(row[ix["tariffperiod_todate"]]);
+    const key = id + "|" + (from || "") + "|" + (to || "");
+    if(seen[key]) continue;
+    seen[key] = true;
+    (periods[id] = periods[id] || []).push({from: from, to: to, dow: dow});
+  }
+  const matched = Object.keys(periods).length;
+  return matched ? {periods: periods, matched: matched, skipped: skipped} : null;
+}
+
+/* RMS Control Panel restrictions CSV: dynamic "Tariff Override" rows.
+   Returns {overrides:{id:{iso:price}}, matched, from, to, skipped[]} */
+function parseRestrictionsExport(rows){
+  if(!rows || !rows.length) return null;
+  const ix = headerIndex(rows[0]);
+  if(ix["restriction type"] === undefined || ix["value"] === undefined || ix["category"] === undefined) return null;
+  const best = {}, clears = {}, skipped = [];
+  let applied = 0;
+  for(let r = 1; r < rows.length; r++){
+    const row = rows[r] || [];
+    const type = String(row[ix["restriction type"]] || "").trim();
+    const isOv = /^tariff override$/i.test(type), isClear = /^clear tariff override$/i.test(type);
+    if(!isOv && !isClear) continue;
+    if(ix["inactive"] !== undefined && /^yes$/i.test(String(row[ix["inactive"]] || "").trim())) continue;
+    if(ix["tariff"] !== undefined){
+      const trf = String(row[ix["tariff"]] || "").trim();
+      if(trf && trf.toUpperCase() !== RMS_TARIFF_TYPE.toUpperCase()) continue;
+    }
+    const name = String(row[ix["category"]] || "").trim();
+    const id = rmsMatch(name);
+    if(!id){ if(name && skipped.indexOf(name) < 0) skipped.push(name); continue; }
+    const from = parseDMonY(row[ix["from"]]), to = parseDMonY(row[ix["to"]]) || from;
+    if(!from) continue;
+    const mod = ix["date modified"] !== undefined ? parseModified(row[ix["date modified"]]) : 0;
+    const val = parseMoney(row[ix["value"]]);
+    for(let iso = from; iso <= to; iso = isoAddDays(iso, 1)){
+      const key = id + "|" + iso;
+      if(isOv){
+        if(val > 0 && (!best[key] || mod >= best[key].mod)){ best[key] = {val: val, mod: mod}; }
+      } else {
+        if(!clears[key] || mod > clears[key]) clears[key] = mod;
+      }
+    }
+    applied++;
+  }
+  const overrides = {};
+  let from = null, to = null;
+  Object.keys(best).forEach(key => {
+    if(clears[key] && clears[key] > best[key].mod) return; // cleared after it was set
+    const p = key.split("|"), id = p[0], iso = p[1];
+    (overrides[id] = overrides[id] || {})[iso] = best[key].val;
+    if(!from || iso < from) from = iso;
+    if(!to || iso > to) to = iso;
+  });
+  return Object.keys(overrides).length ? {overrides: overrides, matched: applied, from: from, to: to, skipped: skipped} : null;
+}
+
+/* Merge whatever RMS sources have been imported into Q.rates (override > base day-of-week). */
+function rebuildRatesFromRms(){
+  const baseP = (Q.rmsBase && Q.rmsBase.periods) || null;
+  const over = (Q.rmsOver && Q.rmsOver.overrides) || null;
+  if(!baseP && !over) return false;
+  /* date span: everything the base periods cover plus every override date, capped for safety */
+  let from = null, to = null;
+  if(over){ from = Q.rmsOver.from; to = Q.rmsOver.to; }
+  if(baseP){
+    Object.keys(baseP).forEach(id => baseP[id].forEach(p => {
+      if(p.from && (!from || p.from < from)) from = p.from;
+      if(p.to && (!to || p.to > to)) to = p.to;
+    }));
+  }
+  if(!from || !to) return false;
+  const cap = isoAddDays(from, 600);
+  if(to > cap) to = cap;
+  const ids = {};
+  if(baseP) Object.keys(baseP).forEach(id => ids[id] = true);
+  if(over) Object.keys(over).forEach(id => ids[id] = true);
+  const rates = {};
+  Object.keys(ids).forEach(id => {
+    const out = {};
+    for(let iso = from; iso <= to; iso = isoAddDays(iso, 1)){
+      let v;
+      if(over && over[id] && over[id][iso] !== undefined) v = over[id][iso];
+      else if(baseP && baseP[id]){
+        /* pick the covering period; a shorter (more specific) season beats a broad one */
+        let bestP = null, bestLen = Infinity;
+        baseP[id].forEach(p => {
+          if(p.from && iso < p.from) return;
+          if(p.to && iso > p.to) return;
+          const len = (p.from && p.to) ? (Date.parse(p.to) - Date.parse(p.from)) : Infinity;
+          if(len < bestLen){ bestLen = len; bestP = p; }
+        });
+        if(bestP) v = bestP.dow[isoDow(iso)];
+      }
+      if(v !== undefined && v > 0) out[iso] = v;
+    }
+    if(Object.keys(out).length) rates[id] = out;
+  });
+  if(!Object.keys(rates).length) return false;
+  Q.rates = rates;
+  const skipped = []
+    .concat((Q.rmsBase && Q.rmsBase.skipped) || [], (Q.rmsOver && Q.rmsOver.skipped) || [])
+    .filter((n, i, a) => a.indexOf(n) === i);
+  const files = [];
+  if(Q.rmsBase && Q.rmsBase.file) files.push(Q.rmsBase.file);
+  if(Q.rmsOver && Q.rmsOver.file) files.push(Q.rmsOver.file);
+  Q.ratesInfo = {from: from, to: to, items: Object.keys(rates).length, file: files.join(" + "), skipped: skipped.length,
+    partial: !baseP ? "overrides" : (!over ? "base" : null)};
+  return true;
+}
+
 let SHEETJS_P = null;
 function loadSheetJS(){
   if(window.XLSX) return Promise.resolve();
@@ -2729,10 +2921,27 @@ function readTariffFiles(files){
   if(!list.length) return;
   const notes = [];
   let chain = Promise.resolve();
+  let rmsTouched = false;
   list.forEach(f => {
     chain = chain.then(() => fileToRows(f)).then(rows => {
+      /* new RMS exports first: rate setup (base) and Control Panel restrictions (dynamic) */
+      const baseRes = parseTariffExport(rows);
+      if(baseRes){
+        Q.rmsBase = {periods: baseRes.periods, skipped: baseRes.skipped, file: f.name};
+        rmsTouched = true;
+        notes.push("Base rates: " + baseRes.matched + " unit types (" + RMS_TARIFF_TYPE + ")");
+        return;
+      }
+      const ovRes = parseRestrictionsExport(rows);
+      if(ovRes){
+        Q.rmsOver = {overrides: ovRes.overrides, from: ovRes.from, to: ovRes.to, skipped: ovRes.skipped, file: f.name};
+        rmsTouched = true;
+        notes.push("Dynamic rates: " + Object.keys(ovRes.overrides).length + " unit types, " + shortDate(ovRes.from) + " – " + shortDate(ovRes.to));
+        return;
+      }
       const ratesRes = parseRatesGrid(rows);
       if(ratesRes){
+        Q.rmsBase = null; Q.rmsOver = null; /* an old-style grid import replaces the two-file sources */
         Q.rates = ratesRes.rates;
         Q.ratesInfo = {from: ratesRes.dates[0], to: ratesRes.dates[ratesRes.dates.length - 1], items: ratesRes.matched, file: f.name, skipped: ratesRes.skipped.length};
         notes.push("Tariff: " + ratesRes.matched + " unit types, " + shortDate(ratesRes.dates[0]) + " – " + shortDate(ratesRes.dates[ratesRes.dates.length - 1]));
@@ -2746,7 +2955,7 @@ function readTariffFiles(files){
         notes.push("Availability: " + availRes.matched + " unit types, " + shortDate(availRes.dates[0]) + " – " + shortDate(availRes.dates[availRes.dates.length - 1]));
         return;
       }
-      notes.push(f.name + ": not recognised, expected an RMS rates report or availability chart");
+      notes.push(f.name + ": not recognised, expected an RMS Tariff Export, a Control Panel restrictions export, a rates report or an availability chart");
     }).catch(e => {
       notes.push(f.name + (String(e && e.message).indexOf("no-sheetjs") >= 0
         ? ": couldn't load the Excel reader (offline?), save it as CSV and import that instead"
@@ -2754,16 +2963,48 @@ function readTariffFiles(files){
     });
   });
   chain.then(() => {
+    if(rmsTouched && rebuildRatesFromRms()){
+      const inf = Q.ratesInfo;
+      notes.push("Nightly prices built " + shortDate(inf.from) + " – " + shortDate(inf.to) +
+        (inf.partial === "base" ? " ⚠ base rates only, also import the Control Panel restrictions export for the dynamic prices"
+        : inf.partial === "overrides" ? " ⚠ dynamic overrides only, also import the Tariff Export CSV so base-rate days get a price"
+        : ""));
+    }
     refresh();
     showToast(notes.join(" · "));
   });
 }
 function clearTariff(){
   Q.rates = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
+  Q.rmsBase = null; Q.rmsOver = null;
   refresh();
   showToast("Imported tariff & availability cleared, back to base prices and unit counts.");
 }
+/* the three import buttons: grey until their file has been imported, then green
+   with a "done until" date underneath */
+function renderImp3(){
+  const set = (btnId, capId, on, iso, openTxt) => {
+    const b = document.getElementById(btnId), c = document.getElementById(capId);
+    if(b) b.classList.toggle("on", !!on);
+    if(c) c.innerHTML = on ? (iso ? "until <b>" + esc(shortDateY(iso)) + "</b>" : (openTxt || "loaded")) : "not imported";
+  };
+  set("impAvailBtn", "impAvailUntil", !!Q.availInfo, Q.availInfo && Q.availInfo.to);
+  /* General rates: the Tariff Export's base periods. An old-style results-grid
+     import carries the finished prices (base + dynamic), so it lights both. */
+  const legacy = !!(Q.ratesInfo && !Q.rmsBase && !Q.rmsOver);
+  let baseTo = null, baseOpen = false;
+  if(Q.rmsBase && Q.rmsBase.periods){
+    Object.keys(Q.rmsBase.periods).forEach(id => Q.rmsBase.periods[id].forEach(p => {
+      if(!p.to) baseOpen = true;
+      else if(!baseTo || p.to > baseTo) baseTo = p.to;
+    }));
+  } else if(legacy) baseTo = Q.ratesInfo.to;
+  set("impBaseBtn", "impBaseUntil", !!(baseTo || baseOpen), baseOpen ? null : baseTo, "no end date");
+  const overTo = Q.rmsOver ? Q.rmsOver.to : (legacy ? Q.ratesInfo.to : null);
+  set("impOverBtn", "impOverUntil", !!overTo, overTo);
+}
 function renderImpStatus(){
+  renderImp3();
   const host = document.getElementById("impStatus");
   /* copied from an older quote: its tariff was deliberately left behind */
   if(Q.needsTariff && !Q.ratesInfo){
@@ -2779,6 +3020,9 @@ function renderImpStatus(){
   if(!Q.ratesInfo && !Q.availInfo){ host.innerHTML = ""; return; }
   const bits = [];
   if(Q.ratesInfo) bits.push("<span>Tariff <b>" + esc(shortDate(Q.ratesInfo.from)) + " – " + esc(shortDate(Q.ratesInfo.to)) + "</b> · " + Q.ratesInfo.items + " unit types" + (Q.ratesInfo.skipped ? " <span class='fmuted'>(" + Q.ratesInfo.skipped + " rows skipped)</span>" : "") + "</span>");
+  if(Q.ratesInfo && Q.ratesInfo.partial) bits.push('<span class="impwarn">⚠ ' + (Q.ratesInfo.partial === "base"
+    ? "base rates only, import the Control Panel restrictions export too for the dynamic (red) prices"
+    : "dynamic overrides only, import the Tariff Export CSV too so base-rate days get a price") + "</span>");
   if(Q.availInfo) bits.push("<span>Availability <b>" + esc(shortDate(Q.availInfo.from)) + " – " + esc(shortDate(Q.availInfo.to)) + "</b> · " + Q.availInfo.items + " unit types</span>");
   let warn = "";
   if(Q.ratesInfo && Q.dateStart){
@@ -4580,6 +4824,7 @@ function copyFromQuote(num){
      The copy starts with no tariff at all, so a fresh RMS import (or a typed
      price) is the only way this quote can be sent. */
   Q.rates = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
+  Q.rmsBase = null; Q.rmsOver = null;
   Object.keys(Q.catalog || {}).forEach(id => {
     if(/^(acc_|camp_)/.test(String(id))){
       delete Q.catalog[id].price;
@@ -4966,7 +5211,9 @@ document.getElementById("f-acnc").addEventListener("change", e => {
 document.querySelectorAll(".bulkbtn").forEach(el => el.addEventListener("click", e => {
   setGroupOn(e.currentTarget.dataset.kind, e.currentTarget.dataset.on === "1");
 }));
-document.getElementById("tariffBtn").addEventListener("click", () => document.getElementById("tariffFile").click());
+["impAvailBtn", "impBaseBtn", "impOverBtn"].forEach(id => {
+  document.getElementById(id).addEventListener("click", () => document.getElementById("tariffFile").click());
+});
 document.getElementById("tariffFile").addEventListener("change", e => {
   readTariffFiles(e.target.files);
   e.target.value = "";
