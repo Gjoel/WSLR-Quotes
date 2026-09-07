@@ -439,6 +439,9 @@
     border:1px solid rgba(236,131,90,.45); border-radius:8px; padding:9px 12px;
   }
   .impredo b{color:#8a3d10}
+  .impredo.imperr{color:#8f1d1d; background:rgba(210,60,60,.12); border-color:rgba(210,60,60,.5)}
+  .impredo.imperr b{color:#7a1414}
+  #toast.err{background:#8f1d1d}
   .pinreset{
     display:block; appearance:none; border:none; background:none; color:#9a6700;
     font-size:10.5px; cursor:pointer; padding:1px 0 0; text-align:right; width:100%;
@@ -735,12 +738,8 @@
                 <span class="imp3until" id="impAvailUntil"></span>
               </span>
               <span class="imp3col">
-                <button class="btn imp3" id="impBaseBtn" title="Import the RMS Tariff Export CSV (Tariff Manager, export icon, Export to CSV): the base rates per night of the week. Any RMS file is recognised automatically, whichever button you use.">General rates</button>
-                <span class="imp3until" id="impBaseUntil"></span>
-              </span>
-              <span class="imp3col">
-                <button class="btn imp3" id="impOverBtn" title="Import the Control Panel restrictions export CSV: the dynamic (red) nightly prices set by Room Price Genie. Any RMS file is recognised automatically, whichever button you use.">Tariff overwrites</button>
-                <span class="imp3until" id="impOverUntil"></span>
+                <button class="btn imp3" id="impRatesBtn" title="Import the RMS rates results grid (Tariff Manager chart, Print, the results CSV or Excel file): categories down the side, one column per date, the nightly $ shown on the chart. Any RMS file is recognised automatically, whichever button you use.">Rates</button>
+                <span class="imp3until" id="impRatesUntil"></span>
               </span>
             </span>
             <span class="nightschip" id="nightsChip"></span>
@@ -980,7 +979,7 @@
   <div class="dropbox">
     <b>Drop your RMS reports here</b>
     <span>Each file is recognised by what is inside it, so drop as many as you like at once.</span>
-    <span class="dropkinds">Tariff Export · Control Panel restrictions · availability chart · accommodation statement &nbsp;·&nbsp; CSV or Excel</span>
+    <span class="dropkinds">Rates results grid · availability chart · accommodation statement &nbsp;·&nbsp; CSV or Excel</span>
   </div>
 </div>
 <button id="stickySubmit" class="btn accept" type="button">Review &amp; submit ↓</button>
@@ -3205,48 +3204,95 @@ function fileToRows(f){
     reader.readAsText(f);
   });
 }
-/* Every RMS report goes through here: the three tariff / availability exports, and
-   the accommodation statement. Each file is recognised by its own contents, so the
-   import buttons, the file pickers and a drag and drop all land in one place. */
+/* how an imported date span sits against the event's stay nights (null until the
+   event dates are set) */
+function coverageCheck(from, to){
+  const nights = stayNightsList();
+  if(!nights.length || !from || !to) return null;
+  const missing = nights.filter(d => d < from || d > to);
+  return {nights: nights.length, missing: missing.length, none: missing.length === nights.length};
+}
+function accomMissingFrom(map){
+  return accomItems().filter(it => !map || !map[it.id]).map(it => it.name);
+}
+/* Every RMS report goes through here: the rates results grid, the availability
+   chart, and the accommodation statement (the older Tariff Export + Control Panel
+   pair still works if someone drops those in). Each file is recognised by its own
+   contents, so the import buttons, the file pickers and a drag and drop all land
+   in one place. A file that isn't recognised, or a report that doesn't cover the
+   event dates, is called out in red rather than quietly half-imported. */
 function readTariffFiles(files){
   const list = Array.from(files || []);
   if(!list.length) return;
-  const notes = [];
+  const notes = [], errs = [];
   let chain = Promise.resolve();
   let rmsTouched = false;
   let pendingStatement = null;
+  const evWords = () => fmtRange(Q.dateStart, Q.dateEnd);
   list.forEach(f => {
     chain = chain.then(() => fileToRows(f)).then(rows => {
-      /* new RMS exports first: rate setup (base) and Control Panel restrictions (dynamic) */
+      /* the results grid from the Tariff Manager chart print: the finished nightly prices */
+      const ratesRes = parseRatesGrid(rows);
+      if(ratesRes){
+        const from = ratesRes.dates[0], to = ratesRes.dates[ratesRes.dates.length - 1];
+        const span = shortDateY(from) + " – " + shortDateY(to);
+        const cov = coverageCheck(from, to);
+        if(cov && cov.none){
+          errs.push("Rates report NOT imported (" + f.name + "): it covers " + span + " but the event is " + evWords() +
+            ", so none of the stay nights are in it. Print the Tariff Manager chart for the event dates and import that instead.");
+          return;
+        }
+        Q.rmsBase = null; Q.rmsOver = null; /* the grid replaces the older two-file sources */
+        Q.rates = ratesRes.rates;
+        Q.ratesInfo = {from: from, to: to, items: ratesRes.matched, file: f.name, skipped: ratesRes.skipped.length};
+        notes.push("Rates: " + ratesRes.matched + " unit types, " + span);
+        if(cov && cov.missing){
+          errs.push("Rates report only covers " + span + ", but the event is " + evWords() + ": " + cov.missing + " of the " + cov.nights +
+            " stay night" + (cov.nights === 1 ? "" : "s") + " have no price. Print the chart for the whole stay and import again, or type a nightly price on the affected cabins.");
+        } else if(!cov){
+          if(to < isoDate(today)) errs.push("Rates report (" + f.name + ") ends " + shortDateY(to) + ", which has already passed. Print the chart for the event dates and import that.");
+          else notes.push("set the event dates and the tool will check the report covers the whole stay");
+        }
+        const miss = accomMissingFrom(ratesRes.rates).filter(n => !/campsite|site$/i.test(n));
+        if(miss.length) notes.push("⚠ no prices in the report for " + miss.join(", "));
+        return;
+      }
+      const availRes = parseAvailGrid(rows);
+      if(availRes){
+        const from = availRes.dates[0], to = availRes.dates[availRes.dates.length - 1];
+        const span = shortDateY(from) + " – " + shortDateY(to);
+        const cov = coverageCheck(from, to);
+        if(cov && cov.none){
+          errs.push("Availability chart NOT imported (" + f.name + "): it covers " + span + " but the event is " + evWords() +
+            ", so none of the stay nights are in it. Run the availability chart for the event dates and import that instead.");
+          return;
+        }
+        Q.availCal = availRes.avail;
+        Q.availInfo = {from: from, to: to, items: availRes.matched, file: f.name};
+        /* per-date unit counts: the chart's total-units column is read but not used,
+           the per-date numbers are what the organiser is capped by */
+        notes.push("Availability: " + availRes.matched + " unit types, " + span);
+        if(cov && cov.missing){
+          errs.push("Availability chart only covers " + span + ", but the event is " + evWords() + ": " + cov.missing + " of the " + cov.nights +
+            " stay night" + (cov.nights === 1 ? "" : "s") + " have no unit counts. Run the chart for the whole stay and import again.");
+        } else if(!cov && to < isoDate(today)){
+          errs.push("Availability chart (" + f.name + ") ends " + shortDateY(to) + ", which has already passed.");
+        }
+        return;
+      }
+      /* the older exports still work: rate setup (base) and Control Panel restrictions (dynamic) */
       const baseRes = parseTariffExport(rows);
       if(baseRes){
         Q.rmsBase = {periods: baseRes.periods, skipped: baseRes.skipped, file: f.name};
         rmsTouched = true;
-        notes.push("Base rates: " + baseRes.matched + " unit types (" + RMS_TARIFF_TYPE + ")");
+        notes.push("Base rates (Tariff Export): " + baseRes.matched + " unit types (" + RMS_TARIFF_TYPE + ")");
         return;
       }
       const ovRes = parseRestrictionsExport(rows);
       if(ovRes){
         Q.rmsOver = {overrides: ovRes.overrides, from: ovRes.from, to: ovRes.to, skipped: ovRes.skipped, file: f.name};
         rmsTouched = true;
-        notes.push("Dynamic rates: " + Object.keys(ovRes.overrides).length + " unit types, " + shortDate(ovRes.from) + " – " + shortDate(ovRes.to));
-        return;
-      }
-      const ratesRes = parseRatesGrid(rows);
-      if(ratesRes){
-        Q.rmsBase = null; Q.rmsOver = null; /* an old-style grid import replaces the two-file sources */
-        Q.rates = ratesRes.rates;
-        Q.ratesInfo = {from: ratesRes.dates[0], to: ratesRes.dates[ratesRes.dates.length - 1], items: ratesRes.matched, file: f.name, skipped: ratesRes.skipped.length};
-        notes.push("Tariff: " + ratesRes.matched + " unit types, " + shortDate(ratesRes.dates[0]) + " – " + shortDate(ratesRes.dates[ratesRes.dates.length - 1]));
-        return;
-      }
-      const availRes = parseAvailGrid(rows);
-      if(availRes){
-        Q.availCal = availRes.avail;
-        Q.availInfo = {from: availRes.dates[0], to: availRes.dates[availRes.dates.length - 1], items: availRes.matched, file: f.name};
-        /* per-date unit counts: the chart's total-units column is read but not used,
-           the per-date numbers are what the organiser is capped by */
-        notes.push("Availability: " + availRes.matched + " unit types, " + shortDate(availRes.dates[0]) + " – " + shortDate(availRes.dates[availRes.dates.length - 1]));
+        notes.push("Dynamic rates (Control Panel export): " + Object.keys(ovRes.overrides).length + " unit types, " + shortDate(ovRes.from) + " – " + shortDate(ovRes.to));
         return;
       }
       const stRes = parseStatementRows(rows);
@@ -3255,9 +3301,9 @@ function readTariffFiles(files){
         notes.push("Statement: " + stRes.length + " room" + (stRes.length === 1 ? "" : "s") + ", " + shortRange(stRes[0].from, stRes[0].to));
         return;
       }
-      notes.push(f.name + ": not recognised, expected an RMS Tariff Export, a Control Panel restrictions export, a rates report, an availability chart or an accommodation statement");
+      errs.push("Wrong report: " + f.name + " is not one this tool recognises, so nothing was imported from it. It expects the rates results grid from the Tariff Manager chart (Print, then the results file), the availability chart, or an accommodation statement.");
     }).catch(e => {
-      notes.push(f.name + (String(e && e.message).indexOf("no-sheetjs") >= 0
+      errs.push(f.name + (String(e && e.message).indexOf("no-sheetjs") >= 0
         ? ": couldn't load the Excel reader (offline?), save it as CSV and import that instead"
         : ": couldn't be read"));
     });
@@ -3269,15 +3315,19 @@ function readTariffFiles(files){
         (inf.partial === "base" ? " ⚠ base rates only, also import the Control Panel restrictions export for the dynamic prices"
         : inf.partial === "overrides" ? " ⚠ dynamic overrides only, also import the Tariff Export CSV so base-rate days get a price"
         : ""));
+      const cov = coverageCheck(inf.from, inf.to);
+      if(cov && cov.missing) errs.push("The rebuilt prices cover " + shortDateY(inf.from) + " – " + shortDateY(inf.to) + " but the event is " + evWords() + ": " + cov.missing + " of the " + cov.nights + " stay nights have no price.");
     }
+    Q.impError = errs.length ? errs.slice() : null;
     refresh();
-    showToast(notes.join(" · "));
+    if(errs.length) showToast(errs.concat(notes).join(" · "), true);
+    else showToast(notes.join(" · "));
     if(pendingStatement) showImportBar(pendingStatement);   // asks how the rooms should be added
   });
 }
 function clearTariff(){
   Q.rates = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
-  Q.rmsBase = null; Q.rmsOver = null;
+  Q.rmsBase = null; Q.rmsOver = null; Q.impError = null;
   refresh();
   showToast("Imported tariff & availability cleared, back to base prices and unit counts.");
 }
@@ -3290,35 +3340,34 @@ function renderImp3(){
     if(c) c.innerHTML = on ? (iso ? "until <b>" + esc(shortDateY(iso)) + "</b>" : (openTxt || "loaded")) : "not imported";
   };
   set("impAvailBtn", "impAvailUntil", !!Q.availInfo, Q.availInfo && Q.availInfo.to);
-  /* General rates: the Tariff Export's base periods. An old-style results-grid
-     import carries the finished prices (base + dynamic), so it lights both. */
-  const legacy = !!(Q.ratesInfo && !Q.rmsBase && !Q.rmsOver);
-  let baseTo = null, baseOpen = false;
-  if(Q.rmsBase && Q.rmsBase.periods){
-    Object.keys(Q.rmsBase.periods).forEach(id => Q.rmsBase.periods[id].forEach(p => {
-      if(!p.to) baseOpen = true;
-      else if(!baseTo || p.to > baseTo) baseTo = p.to;
-    }));
-  } else if(legacy) baseTo = Q.ratesInfo.to;
-  set("impBaseBtn", "impBaseUntil", !!(baseTo || baseOpen), baseOpen ? null : baseTo, "no end date");
-  const overTo = Q.rmsOver ? Q.rmsOver.to : (legacy ? Q.ratesInfo.to : null);
-  set("impOverBtn", "impOverUntil", !!overTo, overTo);
+  /* Rates: the results grid (or, for older quotes, the two-file rebuild) */
+  set("impRatesBtn", "impRatesUntil", !!Q.ratesInfo, Q.ratesInfo && Q.ratesInfo.to);
 }
 function renderImpStatus(){
   renderImp3();
   const host = document.getElementById("impStatus");
+  /* the last import's problems stay on screen until dismissed or a clean import */
+  const errBox = (Q.impError && Q.impError.length)
+    ? '<div class="impredo imperr">⚠ <b>Check the RMS report.</b> <span>' + Q.impError.map(esc).join(" ") + '</span>' +
+      '<button class="impclear" id="impErrX" title="Hide this">dismiss</button></div>'
+    : '';
+  const wireErr = () => {
+    const x = document.getElementById("impErrX");
+    if(x) x.addEventListener("click", () => { Q.impError = null; renderImpStatus(); });
+  };
   /* copied from an older quote: its tariff was deliberately left behind */
   if(Q.needsTariff && !Q.ratesInfo){
-    host.innerHTML = '<div class="impredo">⚠ <b>Import the tariff &amp; availability for these dates.</b> ' +
+    host.innerHTML = errBox + '<div class="impredo">⚠ <b>Import the tariff &amp; availability for these dates.</b> ' +
       'This quote was copied from an earlier one (or reopened while the tracker sheet was unreachable), so its accommodation prices and unit counts are not here, ' +
       'they change every day. Use <b>Import tariff &amp; availability</b> above (or type a nightly price on each cabin) before sending.' +
       '<button class="impclear" id="impRedoX" title="Hide this reminder">dismiss</button></div>' +
       (Q.availInfo ? '<div class="impstatus"><span>Availability <b>' + esc(shortDate(Q.availInfo.from)) + ' – ' + esc(shortDate(Q.availInfo.to)) + '</b> · ' + Q.availInfo.items + ' unit types</span></div>' : '');
     const x = document.getElementById("impRedoX");
     if(x) x.addEventListener("click", () => { Q.needsTariff = false; renderImpStatus(); });
+    wireErr();
     return;
   }
-  if(!Q.ratesInfo && !Q.availInfo){ host.innerHTML = ""; return; }
+  if(!Q.ratesInfo && !Q.availInfo){ host.innerHTML = errBox; wireErr(); return; }
   const bits = [];
   if(Q.ratesInfo) bits.push("<span>Tariff <b>" + esc(shortDate(Q.ratesInfo.from)) + " – " + esc(shortDate(Q.ratesInfo.to)) + "</b> · " + Q.ratesInfo.items + " unit types" + (Q.ratesInfo.skipped ? " <span class='fmuted'>(" + Q.ratesInfo.skipped + " rows skipped)</span>" : "") + "</span>");
   if(Q.ratesInfo && Q.ratesInfo.partial) bits.push('<span class="impwarn">⚠ ' + (Q.ratesInfo.partial === "base"
@@ -3330,7 +3379,8 @@ function renderImpStatus(){
     const missing = stayNightsList().filter(d => d < Q.ratesInfo.from || d > Q.ratesInfo.to).length;
     if(missing) warn = '<span class="impwarn">⚠ ' + missing + ' stay night' + (missing === 1 ? '' : 's') + ' outside the imported tariff, those nights have no price at all until you import them or type a nightly price</span>';
   }
-  host.innerHTML = '<div class="impstatus">' + bits.join(" · ") + warn + '<button class="impclear" id="impClear">clear import</button></div>';
+  host.innerHTML = errBox + '<div class="impstatus">' + bits.join(" · ") + warn + '<button class="impclear" id="impClear">clear import</button></div>';
+  wireErr();
   const ic = document.getElementById("impClear");
   if(ic) ic.addEventListener("click", clearTariff);
 }
@@ -5891,12 +5941,13 @@ function laterRenderClient(){
   }, 200);
 }
 let toastTimer;
-function showToast(msg){
+function showToast(msg, isErr){
   const t = document.getElementById("toast");
   t.textContent = msg;
+  t.classList.toggle("err", !!isErr);
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 4600);
+  toastTimer = setTimeout(() => t.classList.remove("show"), isErr ? 9000 : 4600);
 }
 
 /* ---------- tabs ---------- */
@@ -5976,7 +6027,7 @@ document.getElementById("f-acnc").addEventListener("change", e => {
 document.querySelectorAll(".bulkbtn").forEach(el => el.addEventListener("click", e => {
   setGroupOn(e.currentTarget.dataset.kind, e.currentTarget.dataset.on === "1");
 }));
-["impAvailBtn", "impBaseBtn", "impOverBtn"].forEach(id => {
+["impAvailBtn", "impRatesBtn"].forEach(id => {
   document.getElementById(id).addEventListener("click", () => document.getElementById("tariffFile").click());
 });
 document.getElementById("tariffFile").addEventListener("change", e => {
