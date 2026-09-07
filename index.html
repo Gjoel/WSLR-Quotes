@@ -92,6 +92,12 @@
     cursor:pointer; padding:8px 4px; line-height:1;
   }
   .xBtn:hover{color:var(--crit)}
+  .editQ{
+    appearance:none; border:1px solid rgba(42,120,214,.4); background:none; color:var(--accent); font:inherit;
+    font-size:12px; font-weight:600; border-radius:6px; cursor:pointer; padding:3px 8px; white-space:nowrap;
+  }
+  .editQ:hover{background:rgba(42,120,214,.08)}
+  .pipe td:last-child{white-space:nowrap}
 
   .whenrow{display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap}
   .whenrow input[type="date"]{width:132px; padding:4px 6px; font-size:12.5px}
@@ -260,6 +266,7 @@
     display:inline-block; font-size:11.5px; font-weight:700; letter-spacing:.3px; white-space:nowrap;
     color:#0b5394; background:rgba(42,120,214,.13); border-radius:99px; padding:2px 9px; vertical-align:1px;
   }
+  .sleeps.bedsp{color:#5a3e00; background:rgba(191,144,0,.16)}
   .tourlink{font-size:11.5px; color:var(--accent); text-decoration:none; white-space:nowrap; font-weight:600}
   .tourlink:hover{text-decoration:underline}
 
@@ -465,8 +472,10 @@
     font-size:13px; color:var(--ink2);
   }
   .keydates b{color:var(--ink)}
-  .keydates .kd{display:flex; gap:10px; padding:3px 0; align-items:baseline}
-  .keydates .kd .kdate{font-weight:600; color:var(--ink); white-space:nowrap; min-width:110px}
+  .keydates .kd{display:flex; gap:10px; padding:3px 0; align-items:baseline; flex-wrap:wrap}
+  /* flex:none, or a long date runs under the text beside it in a narrow column */
+  .keydates .kd .kdate{font-weight:600; color:var(--ink); white-space:nowrap; min-width:110px; flex:none}
+  .keydates .kd > span:not(.kdate){flex:1 1 190px}
   .whoRow{
     display:flex; gap:8px 16px; flex-wrap:wrap; align-items:flex-end;
     padding:10px 12px; background:var(--page); border-radius:8px; margin-bottom:8px;
@@ -547,6 +556,30 @@
   }
   #stickySubmit.show{display:inline-block}
 
+  /* ---------- deposit & deadline rules ---------- */
+  .kdcfg{display:grid; grid-template-columns:repeat(auto-fill, minmax(185px,1fr)); gap:10px 16px; margin:8px 0 2px}
+  .kdcfg label{display:flex; flex-direction:column; gap:3px}
+  .kdcfg .kdlab{font-size:11.5px; font-weight:600; color:var(--ink2)}
+  .kdcfg .kdrow{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+  .kdcfg input{width:58px; text-align:right; padding:4px 6px; font-size:13px}
+  .kdcfg .kdu{font-weight:400; font-size:11.5px; color:var(--muted)}
+  .kdcfghead{font-size:11.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); margin-top:14px}
+  /* ---------- drag & drop for the RMS reports ---------- */
+  .dropzone{
+    position:fixed; inset:0; z-index:55; display:none;
+    background:rgba(42,120,214,.12); backdrop-filter:blur(1px);
+    align-items:center; justify-content:center; padding:30px; pointer-events:none;
+  }
+  .dropzone.on{display:flex}
+  .dropbox{
+    background:#fff; border:2.5px dashed var(--accent); border-radius:16px;
+    padding:28px 34px; text-align:center; max-width:520px;
+    box-shadow:0 14px 44px rgba(11,11,11,.22);
+  }
+  .dropbox b{display:block; font-size:19px; letter-spacing:-.2px; margin-bottom:6px}
+  .dropbox span{display:block; font-size:13px; color:var(--ink2); line-height:1.5}
+  .dropbox .dropkinds{margin-top:10px; font-size:12.5px; color:var(--muted)}
+  .drophint{font-size:12.5px; color:var(--muted); align-self:center}
   /* ---------- toast ---------- */
   #toast{
     position:fixed; right:18px; bottom:18px; max-width:400px;
@@ -579,7 +612,8 @@
   .spline{display:flex; align-items:center; gap:5px; justify-content:flex-end; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
   .spline input{width:64px; text-align:right; padding:3px 6px; font-size:12.5px; border:1px solid var(--grid); border-radius:6px; background:#fff}
   .spline input:focus{border-color:var(--accent); outline:none}
-  .kd-tools{display:inline-flex; gap:6px; margin-left:10px; vertical-align:middle}
+  .kd-tools{display:inline-flex; gap:6px; margin-left:10px; vertical-align:middle; flex-wrap:wrap}
+  .kd-tools .pinsub{white-space:nowrap}
   .kd .kdx{border:none; background:none; color:var(--crit); font-size:14px; cursor:pointer; padding:0 4px; line-height:1}
   .pinwarn{color:var(--crit)}
   .secreset{margin-top:3px}
@@ -641,9 +675,11 @@
       <select id="tplSel" title="Start from a template"></select>
       <select id="prevSel" title="Copy a previous quote"></select>
       <button class="btn ghost" id="importBtn" title="Import an RMS accommodation statement CSV">Import RMS statement</button>
-      <input type="file" id="importFile" accept=".csv,.txt" style="display:none">
+      <input type="file" id="importFile" accept=".csv,.txt,.xlsx,.xls" style="display:none">
+      <span class="drophint">or drag any RMS report straight onto this page</span>
     </div>
     <div id="restoreBar" class="restorebar" style="display:none"></div>
+    <div id="editBar" class="restorebar" style="display:none"></div>
     <div id="importBar" class="restorebar" style="display:none"></div>
 
     <div class="grid2">
@@ -655,7 +691,7 @@
           <label>Email<input id="f-email" type="email"></label>
           <label>Event<input id="f-event" type="text"></label>
           <label>First day<input id="f-date-start" type="date"></label>
-          <label>Last day (optional, for multi-day events)<input id="f-date-end" type="date"></label>
+          <label>Last day (departure, for multi-day events)<input id="f-date-end" type="date"></label>
           <label>Guests<input id="f-guests" type="number" min="1"></label>
           <label>Mobile<input id="f-mobile" type="tel"></label>
         </div>
@@ -677,6 +713,7 @@
           </label>
           <label>Security bond ($)<input id="f-bond" type="number" min="0" step="50"></label>
         </div>
+        <div id="prepKeyDates"></div>
         <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab. "Pricing shown to the client" hides the final total (or every price) on the client quote and PDF only, you always see the full numbers here. The security bond amount appears in the deposit &amp; payment information on the quote. When the client accepts or declines online, the alert email goes to the preparer email above (the functions inbox always gets a copy).</p>
       </div>
     </div>
@@ -708,7 +745,7 @@
             </span>
             <span class="nightschip" id="nightsChip"></span>
           </span>
-          <input type="file" id="tariffFile" accept=".csv,.xlsx" multiple style="display:none">
+          <input type="file" id="tariffFile" accept=".csv,.txt,.xlsx,.xls" multiple style="display:none">
         </div>
         <div id="impStatus"></div>
         <div class="preprow prephead">
@@ -812,7 +849,7 @@
     <div class="card">
       <h2>Payment &amp; terms shown on the quote</h2>
       <textarea id="f-terms" rows="3"></textarea>
-      <p class="hint" style="margin-top:8px">Our EFT details are added underneath this automatically.</p>
+      <p class="hint" style="margin-top:8px">Our EFT details are added underneath this automatically. You can use {deposit}, {depositdue}, {depositwhen}, {bond}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig} and {bigunits} here and in the notes above, so the wording follows the deposit &amp; deadline fields rather than naming a figure that can go stale.</p>
     </div>
 
     <div class="actions">
@@ -856,7 +893,7 @@
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
-      <p class="hint" style="margin-top:10px">This pipeline is shared: quotes made on any computer appear here for everyone, pulled from the tracker sheet whenever the tool opens, this tab is shown, or you press Sync now. Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span>, the tracker sheet colours its rows the same way. Change a status or date sent (here, on another computer, or by hand in the sheet) and everywhere else follows. The × removes a quote for everyone, including its row in the tracker sheet.</p>
+      <p class="hint" style="margin-top:10px">This pipeline is shared: quotes made on any computer appear here for everyone, pulled from the tracker sheet whenever the tool opens, this tab is shown, or you press Sync now. Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span>, the tracker sheet colours its rows the same way. Change a status or date sent (here, on another computer, or by hand in the sheet) and everywhere else follows. <b>Edit</b> reopens a quote that is still a draft, sent or viewed (not yet submitted or accepted) on tab 1 under its own number; press Save changes or Email quote when you are done and the organiser's link shows the new version. The × removes a quote for everyone, including its row in the tracker sheet.</p>
     </div>
 
   </section>
@@ -881,7 +918,7 @@
     <div class="card">
       <div class="cardhead">
         <h2>Standard information sections</h2>
-        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond amount; {menuoptions} becomes the menu options ticked for the quote.</span>
+        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond; {menuoptions} the menu options ticked for the quote; and {deposit}, {depositdue}, {depositwhen}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig} and {bigunits} follow the deposit &amp; deadline rules further down this page.</span>
       </div>
       <div id="secEditor"></div>
     </div>
@@ -898,6 +935,14 @@
     </div>
 
     <div class="card">
+      <div class="cardhead">
+        <h2>Deposit &amp; deadline rules on new quotes</h2>
+        <span class="hint">the house rules behind the money &amp; key dates timeline and the standard wording. Any single quote can still be changed on the Prepare tab.</span>
+      </div>
+      <div id="kdDefaults"></div>
+      <p class="hint" style="margin-top:8px">Changes here apply to new quotes and to any quote that has not been given its own numbers; quotes already sent keep what they were sent with. The information sections can use {deposit}, {depositdue}, {depositwhen}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig} and {bigunits} so their wording follows these numbers too.</p>
+    </div>
+    <div class="card">
       <h2>Cheapest dates search on new quotes</h2>
       <label class="secitem" style="padding:0"><input type="checkbox" id="s-cheapest"> <span><span class="sectitle">Offer the cheapest dates search</span><span class="secwhy">the panel at the foot of the organiser's page that prices their cabins across other dates</span></span></label>
       <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Any single quote can still be changed on the Prepare tab, under "Extras on the organiser's page". Switch it off here if you would rather organisers came back to you about other dates instead of comparing them themselves.</p>
@@ -911,7 +956,9 @@
     <div class="card">
       <h2>Email message</h2>
       <textarea id="s-body" rows="8"></textarea>
-      <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit each email before sending. {link} becomes the client's acceptance link. Also available: {number}, {event}, {org}, {contact}, {prepBy}.</p>
+      <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit every email before sending. {link} becomes the client's quote link, and {number}, {event}, {org}, {contact} and {prepBy} fill themselves in.<br>
+        Whole sentences that write themselves from the quote, and disappear when they don't apply: <b>{stayline}</b> the dates, nights and guests · <b>{roomsline}</b> how many rooms you prefilled and how to change them · <b>{cateringline}</b> the meals included · <b>{venueline}</b> the rooms booked · <b>{churchline}</b> the 20% / 50% concessional rates, only for a group ticked as a church or ACNC charity.<br>
+        Bare values, if you would rather write the sentence yourself: {dates}, {nights}, {guests}, {rooms}, {total}.</p>
     </div>
 
     <div class="card">
@@ -929,6 +976,13 @@
 
 </div>
 
+<div id="dropZone" class="dropzone" aria-hidden="true">
+  <div class="dropbox">
+    <b>Drop your RMS reports here</b>
+    <span>Each file is recognised by what is inside it, so drop as many as you like at once.</span>
+    <span class="dropkinds">Tariff Export · Control Panel restrictions · availability chart · accommodation statement &nbsp;·&nbsp; CSV or Excel</span>
+  </div>
+</div>
 <button id="stickySubmit" class="btn accept" type="button">Review &amp; submit ↓</button>
 
 <div id="toast" role="status"></div>
@@ -958,14 +1012,14 @@ const DEFAULT_RATE_GROUPS = [
     {id:"din_half",  name:"Dining Room - half day",                     unit:"per half day", price:250}
   ]},
   {group:"Accommodation & camping", items:[
-    {id:"acc_4br_house", name:"4 Bedroom House",                          unit:"per night", price:930, sleeps:10, avail:1,  beds:"4 king beds or 8 king single beds; queen sofa bed in lounge room"},
-    {id:"acc_2br_ter",   name:"2 Bedroom Terrace Apartment",              unit:"per night", price:465, sleeps:6,  avail:3,  beds:"2 king beds or 4 king single beds; sofa with 2 chaise single beds"},
-    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow Unit",                  unit:"per night", price:378, sleeps:6,  avail:5,  beds:"2 double beds or 4 single beds; queen sofa bed in lounge room"},
-    {id:"acc_2br_std",   name:"2 Bedroom Air Conditioned Unit",           unit:"per night", price:344, sleeps:7,  avail:8,  beds:"1 king bed & 2 single beds; 2 queen sofa beds in lounge room"},
-    {id:"acc_1br_ter",   name:"1 Bedroom Terrace Unit",                   unit:"per night", price:333, sleeps:6,  avail:6,  beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
-    {id:"acc_1br_std",   name:"1 Bedroom Air Conditioned Unit",           unit:"per night", price:277, sleeps:6,  avail:33, beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
-    {id:"acc_motel_std", name:"Motel Style Air Conditioned Unit",         unit:"per night", price:212, sleeps:4,  avail:36, beds:"1 king bed or 2 king single beds & bunk bed"},
-    {id:"acc_motel_bud", name:"Motel Style Budget Unit (communal parking)",unit:"per night", price:176, sleeps:4,  avail:16, beds:"1 king bed or 2 king single beds & bunk bed"},
+    {id:"acc_4br_house", name:"4 Bedroom House",                          unit:"per night", price:930, sleeps:10, bedsMax:9, avail:1,  beds:"4 king beds or 8 king single beds; queen sofa bed in lounge room"},
+    {id:"acc_2br_ter",   name:"2 Bedroom Terrace Apartment",              unit:"per night", price:465, sleeps:6, bedsMax:6,  avail:3,  beds:"2 king beds or 4 king single beds; sofa with 2 chaise single beds"},
+    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow Unit",                  unit:"per night", price:378, sleeps:6, bedsMax:5,  avail:5,  beds:"2 double beds or 4 single beds; queen sofa bed in lounge room"},
+    {id:"acc_2br_std",   name:"2 Bedroom Air Conditioned Unit",           unit:"per night", price:344, sleeps:7, bedsMax:5,  avail:8,  beds:"1 king bed & 2 single beds; 2 queen sofa beds in lounge room"},
+    {id:"acc_1br_ter",   name:"1 Bedroom Terrace Unit",                   unit:"per night", price:333, sleeps:6, bedsMax:5,  avail:6,  beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
+    {id:"acc_1br_std",   name:"1 Bedroom Air Conditioned Unit",           unit:"per night", price:277, sleeps:6, bedsMax:5,  avail:33, beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
+    {id:"acc_motel_std", name:"Motel Style Air Conditioned Unit",         unit:"per night", price:212, sleeps:4, bedsMax:4,  avail:36, beds:"1 king bed or 2 king single beds & bunk bed"},
+    {id:"acc_motel_bud", name:"Motel Style Budget Unit (communal parking)",unit:"per night", price:176, sleeps:4, bedsMax:4,  avail:16, beds:"1 king bed or 2 king single beds & bunk bed"},
     {id:"camp_unpow",    name:"Unpowered Campsite",                       unit:"per night", price:36, sleeps:6},
     {id:"camp_pow_wf",   name:"Powered Waterfront Campsite",              unit:"per night", price:51, sleeps:6},
     {id:"camp_pow_dt",   name:"Powered Drive Thru Site",                  unit:"per night", price:51, sleeps:6}
@@ -980,6 +1034,8 @@ const DEFAULT_RATE_GROUPS = [
     {id:"diet",       name:"Special dietary surcharge", unit:"per person", price:10, pp:true, meal:true}
   ]}
 ];
+const DEFAULT_ITEM_BY_ID = {};
+DEFAULT_RATE_GROUPS.forEach(g => g.items.forEach(it => { DEFAULT_ITEM_BY_ID[it.id] = it; }));
 const CUSTOM_ITEM = {id:"custom", name:"Custom item (type your own)", unit:"flat", price:0, custom:true, meal:true};
 let RATE_GROUPS = [];
 let RATE = {};
@@ -993,6 +1049,11 @@ function buildRate(stored){
     if(it.name) it.name = String(it.name).replace(/\s*\(air ?con\)/gi, "").replace(/\s{2,}/g, " ").trim();
     /* campsites sleep a maximum of 6 people */
     if(/^camp_/.test(String(it.id)) && (it.sleeps === undefined || it.sleeps === null || it.sleeps === "")) it.sleeps = 6;
+    /* separate-bed counts arrived after most rate cards were saved: fill them from the defaults */
+    if(it.bedsMax === undefined || it.bedsMax === null){
+      const d = DEFAULT_ITEM_BY_ID[it.id];
+      if(d && d.bedsMax !== undefined) it.bedsMax = d.bedsMax;
+    }
     RATE[it.id] = it;
     ITEM_GROUP[it.id] = g.group;
   }));
@@ -1044,7 +1105,8 @@ function isAccomLine(l){
   if(ITEM_GROUP[l.id] === ACCOM_GROUP) return true;
   const it = RATE[l.id];
   if(it && it.pp) return false;
-  return !it && lineUnit(l) === "per room"; // RMS-imported room lines
+  if(l && l.room) return true;                            // rooms imported from an RMS statement
+  return (!it || it.custom) && lineUnit(l) === "per room"; // older imported room lines
 }
 function isVenueLine(l){ return ITEM_GROUP[l.id] === VENUE_GROUP; }
 function isCaterLine(l){
@@ -1054,10 +1116,22 @@ function isCaterLine(l){
 }
 
 /* ---------- helpers ---------- */
-const today = new Date();
+let today = new Date();
 function plusDays(base, n){ const d = new Date(base); d.setDate(d.getDate() + n); return d; }
 function isoDate(d){
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+/* The tool is usually left open, often overnight, and "today" drives the issue
+   date, valid until, the follow-up column and the money & key dates timeline, so
+   it has to roll over with the clock rather than stick at the date the page was
+   opened. Wired to a timer and to window focus at the foot of this file. */
+function dayRollover(){
+  const now = new Date();
+  if(isoDate(now) === isoDate(today)) return;
+  today = now;
+  const qp = document.getElementById("quotePage");
+  if(qp && qp.contains(document.activeElement)) return;   /* never yank a field being typed in */
+  refresh();
 }
 function isoAddDays(iso, n){
   const d = new Date(iso + "T12:00:00");
@@ -1165,8 +1239,12 @@ function holidayWindows(){
   if(HOLIDAY_WINDOWS) return HOLIDAY_WINDOWS;
   HOLIDAY_WINDOWS = NSW_HOLIDAYS.map(h => {
     const a = new Date(h.from + "T12:00:00"), b = new Date(h.to + "T12:00:00");
-    const back = isNaN(a) ? 0 : (a.getDay() + 1) % 7;   /* back to the Saturday before */
-    const fwd = isNaN(b) ? 0 : (7 - b.getDay()) % 7;    /* on to the Sunday after */
+    let back = isNaN(a) ? 0 : (a.getDay() + 1) % 7;   /* back to the Saturday before */
+    let fwd = isNaN(b) ? 0 : (7 - b.getDay()) % 7;    /* on to the Sunday after */
+    /* only the weekend actually touching the break: a break that starts on a Friday
+       must not pull the ordinary school week before it into the holidays */
+    if(back > 2) back = 0;
+    if(fwd > 2) fwd = 0;
     return {name: h.name, from: isoAddDays(h.from, -back), to: isoAddDays(h.to, fwd), official: h};
   });
   return HOLIDAY_WINDOWS;
@@ -1216,9 +1294,9 @@ const INFO_SECTIONS = [
   {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
    text:"All meals are served buffet style, and your group chooses one option per meal service with our catering team closer to the date. {menuoptions}"},
   {id:"catering_info", title:"Catering", why:"auto when catering is quoted",
-   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Catering must be booked at least 1 month prior to your arrival date, subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
+   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Catering must be booked at least {cateringlead} prior to your arrival date, subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
   {id:"children", title:"Children's pricing & dietary requirements", why:"auto when catering is quoted",
-   text:"Children's catering is charged as: 12 months and under free; 1–3 years $5.00 per meal; 4–12 years 50% of the full rate; 13 years and over full rate. Medically diagnosed special dietary requirements (e.g. gluten free, intolerances, allergies) incur a surcharge of $10.00 per person per meal; special diet meals are served by our Catering Team Leader on duty, and it is the customer's responsibility to make themselves known to our staff. Any additional persons added after your final details are submitted 14 days prior to arrival incur an additional $10 per person per meal surcharge."},
+   text:"Children's catering is charged as: 12 months and under free; 1–3 years $5.00 per meal; 4–12 years 50% of the full rate; 13 years and over full rate. Medically diagnosed special dietary requirements (e.g. gluten free, intolerances, allergies) incur a surcharge of $10.00 per person per meal; special diet meals are served by our Catering Team Leader on duty, and it is the customer's responsibility to make themselves known to our staff. Any additional persons added after your final details are submitted {finallead} prior to arrival incur an additional $10 per person per meal surcharge."},
   {id:"selfcater", title:"Self catering", why:"auto when accommodation is quoted without catering",
    text:"If you are self catering, you are responsible for all cleaning and for supplying all plates, bowls, cutlery, cups, utensils and cleaning equipment to clean up after your meals if using the Marquee or a common area. Our kitchen is not available for customer use or for self catered meals."},
   {id:"coffee", title:"Barista coffee", why:"switch on if the group would like the coffee van",
@@ -1226,7 +1304,7 @@ const INFO_SECTIONS = [
   {id:"booking_info", title:"To proceed with a booking", why:"on for every quote",
    text:"To proceed with a booking we require: your group name, contact person, postal address and mobile number; arrival and departure dates; the number of rooms and each type of room you wish to book; all meals you wish to have included as part of your package; and the dates and times of use of the conference rooms. Once we receive this information we will proceed with a booking and forward an invoice for a deposit. Reservations are unconfirmed until deposits are received."},
   {id:"deposit", title:"Deposit, payment & security bond", why:"on for every quote",
-   text:"A $100 deposit per unit booked is required within 4 weeks from the date of booking to secure your reservation and any church discount. The balance of your account must be received prior to the arrival date, and is payable by cash, EFTPOS, Mastercard or Visa (personal cheques are welcome if received 21 days prior to arrival). A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
+   text:"A {deposit} deposit per unit booked is due {depositwhen}, to secure your reservation and any church discount. The balance of your account must be received prior to the arrival date, and is payable by cash, EFTPOS, Mastercard or Visa (personal cheques are welcome if received 21 days prior to arrival). A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
   {id:"cancel", title:"Cancellation conditions", why:"on for every quote",
    text:"There will be no refunds of any payments made if the entire booking is cancelled within 14 days of the scheduled arrival date. If the entire booking is cancelled 14 days or more prior to your arrival, the deposit is refunded less a $50 per room booking fee. Any rooms cancelled within the 14 day period will be charged at the full rate; there are no fees or charges for rooms cancelled 14 days or more prior to your arrival date."},
   {id:"conduct", title:"Code of conduct", why:"auto for group stays",
@@ -1234,7 +1312,7 @@ const INFO_SECTIONS = [
   {id:"checkin", title:"Check-in, check-out & facilities", why:"auto for group stays",
    text:"Check in is between 2.00pm and 8.00pm Monday to Saturday, and 2.00pm to 5.00pm Sunday; if your arrival time is likely to be outside these times, please advise reception. Check out is between 8.00am and 10.00am; late check out is available on request, subject to availability. Pool hours are 8.00am to 8.45pm Monday to Saturday and 8.00am to 5.45pm Sunday (the pool is closed 3.30pm to 7.30pm Monday to Friday during NSW school terms for swimming training). Other sporting facilities are available at a discounted hire fee. No pets."},
   {id:"final_conf", title:"Final confirmation details", why:"auto for group stays",
-   text:"If you have booked more than 50 accommodation units and/or a peak period, your final details for accommodation are due 28 days prior to your arrival date. Otherwise, final numbers and details are required 14 days prior to your arrival. An email will be sent to you 10 weeks prior to your arrival."},
+   text:"If you have booked more than {bigunits} accommodation units and/or a peak period, your final details for accommodation are due {finalleadbig} prior to your arrival date. Otherwise, final numbers and details are required {finallead} prior to your arrival. An email will be sent to you {emaillead} prior to your arrival."},
   {id:"site_visit", title:"Come and see the resort", why:"on for every quote",
    text:"Organisers are always welcome to visit us before booking, and we would love to show you around. A site inspection takes about half an hour and covers the conference rooms, the auditorium, the marquee lawn, the private dining room and a sample of the accommodation, so you can picture exactly how your event will run. We can also walk through catering, room set ups and arrival times while you are here. Site inspections are by appointment at a date and time that suits you, including outside office hours by arrangement. To book one, call 02 4283 6999, email functions@wslr.com.au, or just say so in your reply to this quote and we will organise it. If you cannot get to us before booking, there is a full virtual walk through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
   {id:"other", title:"Other information", why:"on for every quote",
@@ -1291,12 +1369,34 @@ function activeSectionIds(){
   }
   return autoSectionIds();
 }
+/* {bond} and the deposit & deadline rules, filled into any wording on the quote */
+function fillQuoteText(t){
+  const k = kdCfg();
+  return String(t === null || t === undefined ? "" : t)
+    .split("{bond}").join(money0(Number(Q.bond) || 0))
+    .split("{deposit}").join(money0(k.depositPer))
+    .split("{depositdue}").join(leadPhrase(k.depositWeeks * 7))
+    .split("{depositwhen}").join(depositWhenPhrase(k))
+    .split("{depositlead}").join(leadPhrase(k.depositLeadWeeks * 7))
+    .split("{emaillead}").join(k.emailWeeks + " weeks")
+    .split("{cateringlead}").join(leadPhrase(k.cateringDays))
+    .split("{finallead}").join(k.finalDays + " days")
+    .split("{finalleadbig}").join(k.finalDaysBig + " days")
+    .split("{bigunits}").join(String(k.bigUnits));
+}
+/* the standard wording with this quote's numbers filled in. Used both to print the
+   section and to tell whether staff have actually changed it. */
+function sectionBaseText(id, c){
+  let t = fillQuoteText(String(c.text).split("{menuoptions}").join(menuSectionText()));
+  /* a booking made inside 10 weeks cannot get a 10 week email, so say what will happen instead */
+  if(id === "final_conf" && shortNotice()) t += " Your event is inside that 10 week window, so we will send this confirmation as soon as your booking is confirmed.";
+  return t;
+}
 function resolvedSections(){
-  const bondTxt = money0(Number(Q.bond) || 0);
   return activeSectionIds().map(id => {
     const c = sectionContent(id);
     const po = (Q.secText || {})[id] || {};   /* per-quote wording edits, made on the preview */
-    const baseText = String(c.text).split("{bond}").join(bondTxt).split("{menuoptions}").join(menuSectionText());
+    const baseText = sectionBaseText(id, c);
     return {
       id: id,
       title: po.title !== undefined ? po.title : c.title,
@@ -1314,14 +1414,16 @@ function sheetEndpoint(){
   try{ v = (localStorage.getItem("wslr_sheet_url") || "").trim(); }catch(e){}
   return v || DEFAULT_SHEET_ENDPOINT;
 }
-function postToSheet(payload){
+function postToSheet(payload, onFail){
   const url = sheetEndpoint();
-  if(!url) return false;
+  if(!url){ if(onFail) onFail(); return false; }
   if(CLIENT_MODE){
-    /* the organiser's page: fire and forget, exactly as before */
+    /* the organiser's page: the response is opaque, so an HTTP error still can't be
+       seen, but a phone that drops out mid-submit rejects and must not be told the
+       selection arrived */
     try{
-      fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, payload))}).catch(function(){});
-    }catch(e){}
+      fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, payload))}).catch(function(){ if(onFail) onFail(); });
+    }catch(e){ if(onFail) onFail(); }
     return true;
   }
   /* staff: queue it so it retries until the sheet confirms (see the sync module below) */
@@ -1357,7 +1459,7 @@ function applySharedSettings(s){
   let touched = false;
   if(Array.isArray(s.ratecard) && s.ratecard.length){ lsSet(LS_RATECARD, s.ratecard); touched = true; }
   if(s.sections && typeof s.sections === "object"){ lsSet(LS_SECTIONS, s.sections); touched = true; }
-  if(s.defaults && typeof s.defaults === "object"){ lsSet(LS_DEFAULTS, s.defaults); touched = true; }
+  if(s.defaults && typeof s.defaults === "object"){ lsSet(LS_DEFAULTS, dropStaleDefaults(s.defaults)); touched = true; }
   if(touched) buildRate(lsGet(LS_RATECARD, null));
   return touched;
 }
@@ -1371,8 +1473,11 @@ function loadSharedSettings(){
     .then(data => {
       if(data && data.settings && applySharedSettings(data.settings)){
         renderTplOptions();
-        renderSettings();
-        refresh();
+        /* this response can land seconds after the page opens: don't rebuild the
+           screen under someone who has already started typing */
+        const a = document.activeElement;
+        const busy = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable);
+        if(!busy){ renderSettings(); refresh(); }
       }
       SETTINGS_SYNC_STATE = "synced";
       renderSyncBadge();
@@ -1412,7 +1517,20 @@ const LS_DEFAULTS = "wslr_defaults_v1";
 const LS_ACCOM_FLAG = "wslr_accom_v1";
 const LS_EMAILVIA = "wslr_emailvia";   /* per computer, never synced to the sheet */
 function lsGet(k, fb){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }catch(e){ return fb; } }
-function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+let LS_WARNED = false;
+function lsSet(k, v){
+  try{ localStorage.setItem(k, JSON.stringify(v)); return true; }
+  catch(e){
+    /* a full (or blocked) localStorage used to fail silently, and saves, drafts and
+       the outbox all quietly stopped working with nothing on screen to say so */
+    if(!LS_WARNED){
+      LS_WARNED = true;
+      try{ showToast("This computer's storage is full, so quotes are no longer being saved here. Delete some old quotes on the Pipeline tab, the tracker sheet still has them."); }catch(e2){}
+    }
+    return false;
+  }
+}
+let DRAFT_OFFERED = null;   /* an unfinished quote the restore bar is still offering */
 function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
 
 let SAVED = lsGet(LS_QUOTES, []);
@@ -1440,6 +1558,7 @@ const LS_OUTBOX = "wslr_outbox_v1";
 let OUTBOX = lsGet(LS_OUTBOX, []);
 let FLUSH_BUSY = false;
 let PIPE_STATE = "idle";     // idle | loading | ok | offline
+let SHEET_REACHABLE = true;  // as at the last write or sync, drives the warning on Email quote
 let PIPE_LAST_OK = 0;        // when the last successful pull finished
 let PULL_BUSY = false;
 
@@ -1469,11 +1588,12 @@ function flushOutbox(done){
     })
       .then(r => r.text())
       .then(() => {
+        SHEET_REACHABLE = true;
         OUTBOX.shift();
         lsSet(LS_OUTBOX, OUTBOX);
         step();
       })
-      .catch(() => { FLUSH_BUSY = false; renderPipeSync(); if(done) done(); }); // still offline; try again next sync
+      .catch(() => { SHEET_REACHABLE = false; FLUSH_BUSY = false; renderPipeSync(); if(done) done(); }); // still offline; try again next sync
   };
   step();
 }
@@ -1496,12 +1616,14 @@ function pullPipeline(force){
         PULL_BUSY = false;
         if(!data || !data.ok || !Array.isArray(data.quotes)) throw new Error("bad response");
         mergeServerQuotes(data.quotes);
+        SHEET_REACHABLE = true;
         PIPE_STATE = "ok";
         PIPE_LAST_OK = Date.now();
         renderPipeSync();
       })
       .catch(() => {
         PULL_BUSY = false;
+        SHEET_REACHABLE = false;
         PIPE_STATE = "offline";
         renderPipeSync();
       });
@@ -1512,6 +1634,7 @@ function pullPipeline(force){
 function serverSnap(sq){
   const s = JSON.parse(JSON.stringify(sq));
   delete s.display; delete s.meals; delete s.rooms; delete s.link;
+  delete s.ratecard; delete s.rates; delete s.availCal;   /* the sheet keeps these, this computer doesn't need them */
   s.status = STATUSES.includes(s.status) ? s.status : (s.status || "Sent");
   s.accepted = s.status === "Accepted";
   s._synced = true;
@@ -1525,6 +1648,7 @@ function mergeServerQuotes(list){
     serverNums[sq.num] = true;
     const i = SAVED.findIndex(s => s.num === sq.num);
     if(i < 0){
+      if(outboxTouches(sq.num)) return;  // we have a delete or an edit queued for this one
       SAVED.push(serverSnap(sq));      // a quote from another computer (or a hand-typed row)
       changed = true;
       return;
@@ -1553,6 +1677,9 @@ function mergeServerQuotes(list){
   });
   /* quotes deleted on another computer: gone from the sheet after having been seen there */
   for(let i = SAVED.length - 1; i >= 0; i--){
+    /* an empty list means a bad deploy or the wrong sheet, not that every quote
+       everywhere has been deleted */
+    if(!list.length) break;
     const s = SAVED[i];
     if(!serverNums[s.num] && s._synced && !outboxTouches(s.num)){
       if(Q.num === s.num){ s._synced = false; continue; }  // never yank the quote being edited
@@ -1565,10 +1692,15 @@ function mergeServerQuotes(list){
     const mine = SAVED.find(s => s.num === Q.num);
     if(mine && !hasContent(Q) ){
       Q.num = nextQuoteNum();          // this blank page was about to reuse a number another computer took
+      const nf0 = document.getElementById("f-num");
+      if(nf0) nf0.value = Q.num;
       changed = true;
     } else if(mine && Q.status === "Draft" && mine.token && mine.token !== Q.token){
       const old = Q.num;
       Q.num = nextQuoteNum();          // same number, different quote: this draft moves to a free number
+      const nf1 = document.getElementById("f-num");
+      if(nf1) nf1.value = Q.num;       // otherwise one keystroke in that field puts the clash back
+      autosaveDraft();
       changed = true;
       showToast("Another computer is already using " + old + ", so this draft is now " + Q.num + ".");
     } else if(mine && !outboxTouches(Q.num) && (mine.token === Q.token || !Q.token)){
@@ -1580,7 +1712,9 @@ function mergeServerQuotes(list){
     saveQuotes();
     renderPrevOptions();
     renderPipeline();
-    renderClient();
+    /* never rebuild the preview under someone who is typing in it */
+    const qp = document.getElementById("quotePage");
+    if(!qp || !qp.contains(document.activeElement)) renderClient();
   }
 }
 
@@ -1603,15 +1737,33 @@ function renderPipeSync(){
 }
 
 /* ---------- editable defaults (Settings tab) ---------- */
+/* The email body has been rewritten as the tool changed. A stored copy that is
+   only an older default (nobody has written their own words over it) steps aside
+   for the current one, wherever it arrives from. */
+const OLD_EMAIL_BODIES = [
+  "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is attached as a PDF. You can also view and accept it online here:\n\n{link}\n\nIf anything needs adjusting, just reply to this email and we will update it for you.",
+  "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999"
+];
+const OLD_TERMS = [
+  "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
+  "A {deposit} deposit per cabin or conference room confirms your booking, due within {depositdue}; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference."
+];
+function dropStaleDefaults(d){
+  if(d && typeof d === "object"){
+    if(OLD_EMAIL_BODIES.indexOf(d.body) >= 0) delete d.body;
+    if(OLD_TERMS.indexOf(d.terms) >= 0) delete d.terms;   /* it named $100 in words while the rules moved on */
+  }
+  return d;
+}
 function getDefaults(){
   return Object.assign({
     notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date. All accommodation is subject to availability at the time of booking.",
-    terms: "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
+    terms: "A {deposit} deposit per cabin or conference room is due {depositwhen}, to secure your reservation; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
     bond: 2000,
     cheapest: true,
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
-    body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999"
-  }, lsGet(LS_DEFAULTS, {}));
+    body: "Hi {contact},\n\nThank you for your enquiry. I have put a quote together for {event} that you can price up yourself here:\n\n{link}\n\n{stayline}\n{roomsline}\n{cateringline}\n{venueline}\n{churchline}\n\nAnything you change on that page comes straight back to us when you submit it, and there is a PDF copy to download for your records. If something needs adjusting, or you would rather talk it through, just reply to this email or call us on 02 4283 6999.\n\nWe look forward to working with you.\n\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999\n\nQuote {number} - Wollongong Surf Leisure Resort\n{link}"
+  }, dropStaleDefaults(lsGet(LS_DEFAULTS, {})));
 }
 function saveDefaults(part){
   lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part));
@@ -1644,6 +1796,7 @@ function blankQuote(num){
     sections: null,
     secText: {},        // per-quote wording overrides for info sections: {sectionId: {title, text}}
     kdOver: null,       // per-quote "Money & key dates" rows: null = automatic, else [{d, t}]
+    kdCfg: null,        // per-quote deadline rules; null = the house rules from Settings
     accomPriced: true,  // made under the import-your-prices rule (see normalizeQuote for older quotes)
     catalog: {},        // per-quote menu curation: {itemId: {on, price, avail}}
     rates: {},          // imported nightly tariffs: {itemId: {"2026-08-21": 770, ...}}
@@ -1675,6 +1828,7 @@ function normalizeQuote(q){
   if(!q.menu) q.menu = {};
   if(!q.secText || typeof q.secText !== "object") q.secText = {};
   if(q.kdOver === undefined || (q.kdOver !== null && !Array.isArray(q.kdOver))) q.kdOver = null;
+  if(q.kdCfg === undefined || (q.kdCfg !== null && typeof q.kdCfg !== "object")) q.kdCfg = null;
   /* quotes made before accommodation required an imported/typed price were silently
      priced from the rate card; freeze that card price into the quote so those older
      quotes (and their live client links) keep the numbers they were sent with.
@@ -1790,7 +1944,23 @@ function hasContent(q){
 }
 function autosaveDraft(){
   if(CLIENT_MODE) return; // the organiser's working copy lives on the server, not in their browser
-  if(hasContent(Q)) lsSet(LS_DRAFT, {q: Q, t: new Date().toISOString()});
+  if(!hasContent(Q)) return;
+  /* the restore bar is still offering an earlier unfinished quote and this one is
+     about to take over the single draft slot: keep the old one first */
+  if(DRAFT_OFFERED && DRAFT_OFFERED.num !== Q.num && hasContent(DRAFT_OFFERED)){
+    const dq = DRAFT_OFFERED;
+    DRAFT_OFFERED = null;
+    if(!SAVED.some(x => x.num === dq.num)){
+      SAVED.push(leanSnap(Object.assign({}, dq, {total: null, status: dq.status || "Draft", savedAt: new Date().toISOString()})));
+      saveQuotes();
+      const bar = document.getElementById("restoreBar");
+      if(bar) bar.style.display = "none";
+      renderPrevOptions();
+      renderPipeline();
+      showToast("Your earlier unfinished quote " + dq.num + " was kept in the pipeline so it isn't lost.");
+    }
+  }
+  lsSet(LS_DRAFT, {q: Q, t: new Date().toISOString()});
 }
 
 /* ---------- templates ---------- */
@@ -1884,7 +2054,7 @@ function displayLines(){
     out.push({
       name: it.name, qty: b.qty,
       nights: 0, nightsWord: "nights", part: partial,
-      beds: it.beds || "", sleeps: it.sleeps || 0,
+      beds: bedsLine(it), sleeps: it.sleeps || 0,
       price: qty > 0 ? Math.round(tot / qty * 100) / 100 : 0, disc: 0,
       unit: "per unit for " + bn + " night" + (bn === 1 ? "" : "s"),
       when: (partial && r) ? ("arrive " + shortDate(r.from) + " · leave " + shortDate(r.to)) : "",
@@ -2151,7 +2321,13 @@ function who(){
 /* adults defaults to the guest count until the organiser types their own split */
 function whoAdults(){
   const w = who();
-  if(w.adults === "" || w.adults === null || w.adults === undefined) return Number(Q.guests) || 0;
+  if(w.adults === "" || w.adults === null || w.adults === undefined){
+    /* left blank: everyone who isn't counted in another band. Returning the whole
+       guest count used to double up, so a group of 40 with 10 children priced 50 */
+    const g = Number(Q.guests) || 0;
+    const others = (Number(w.k412) || 0) + (Number(w.k13) || 0) + (Number(w.babies) || 0);
+    return Math.max(0, g - others);
+  }
   return Number(w.adults) || 0;
 }
 function whoMeals(){ const w = who(); return whoAdults() + (Number(w.k412) || 0) + (Number(w.k13) || 0); }
@@ -2213,10 +2389,51 @@ function selCaterSub(){
     return s + caterRowCost(it.id);
   }, 0);
 }
+/* The deadlines behind the timeline and the standard wording. House defaults live
+   on the Settings tab and are shared with every computer; any quote can override
+   them in Quote settings on the Prepare tab. */
+const KD_DEFAULTS = {depositPer: 100, depositWeeks: 4, depositLeadWeeks: 10, emailWeeks: 10, cateringDays: 30, finalDays: 14, finalDaysBig: 28, bigUnits: 50};
+/* "the earlier of within 4 weeks of booking, or 10 weeks prior to arrival" */
+function depositWhenPhrase(c){
+  c = c || kdCfg();
+  const within = "within " + leadPhrase(c.depositWeeks * 7) + " of booking";
+  if(!(c.depositLeadWeeks > 0)) return within;
+  return "the earlier of " + within + ", or " + leadPhrase(c.depositLeadWeeks * 7) + " prior to arrival";
+}
+function kdCfg(){
+  const house = getDefaults().keydates || {};
+  const mine = Q.kdCfg || {};
+  const out = {};
+  Object.keys(KD_DEFAULTS).forEach(k => {
+    const raw = (mine[k] !== undefined && mine[k] !== null && mine[k] !== "") ? mine[k]
+      : ((house[k] !== undefined && house[k] !== null && house[k] !== "") ? house[k] : KD_DEFAULTS[k]);
+    const n = Number(raw);
+    out[k] = isNaN(n) ? KD_DEFAULTS[k] : n;
+  });
+  return out;
+}
+function kdCfgEdited(){
+  const mine = Q.kdCfg || {};
+  return Object.keys(KD_DEFAULTS).some(k => mine[k] !== undefined && mine[k] !== null && mine[k] !== "");
+}
+/* 28 -> "4 weeks", 30 -> "1 month", 5 -> "5 days" */
+function leadPhrase(days){
+  const n = Math.max(0, Math.round(Number(days) || 0));
+  if(n === 0) return "0 days";
+  if(n === 30 || n === 31) return "1 month";
+  if(n === 60 || n === 61) return "2 months";
+  if(n === 90) return "3 months";
+  if(n % 7 === 0) return (n / 7) + " week" + (n === 7 ? "" : "s");
+  return n + " day" + (n === 1 ? "" : "s");
+}
 /* deposit & key dates, worked out from the selection and the template's rules,
    unless staff have edited the rows for this quote (Q.kdOver) on the preview */
 function unitsSelected(){
-  return (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + (Number(b.qty) || 0) : s, 0);
+  const picked = (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + (Number(b.qty) || 0) : s, 0);
+  /* rooms imported from an RMS statement sit in the fixed extras, they are still
+     rooms, so they count towards the deposit and the final-details rule */
+  const imported = Q.lines.reduce((s, l) => isAccomLine(l) ? s + (Number(l.qty) || 0) : s, 0);
+  return picked + imported;
 }
 function venuesSelected(){
   /* a room that comes free with catering does not attract a room deposit */
@@ -2224,14 +2441,26 @@ function venuesSelected(){
 }
 function keyDates(){
   if(!Q.dateStart) return null;
-  const finalDays = unitsSelected() > 50 ? 28 : 14;
+  const c = kdCfg();
+  const finalDays = unitsSelected() > c.bigUnits ? c.finalDaysBig : c.finalDays;
   return {
     arrive: Q.dateStart,
-    catering: isoAddDays(Q.dateStart, -30),
+    catering: isoAddDays(Q.dateStart, -c.cateringDays),
     finalNums: isoAddDays(Q.dateStart, -finalDays),
     finalDays: finalDays,
-    email: isoAddDays(Q.dateStart, -70)
+    email: isoAddDays(Q.dateStart, -c.emailWeeks * 7)
   };
+}
+/* Groups often book inside these windows (a conference 5 weeks out is already
+   past the "10 weeks before arrival" mark), which used to print a due date
+   earlier than the quote itself. Anything already gone reads "As soon as
+   possible" instead, and the wording beside it changes to match. */
+function kdPassed(iso){ return !!iso && iso < isoDate(today); }
+function kdWhen(iso){ return kdPassed(iso) ? "As soon as possible" : fmtDate(iso); }
+/* true when the event is inside the usual 10 week lead time */
+function shortNotice(){
+  const kd = keyDates();
+  return !!kd && kdPassed(kd.email);
 }
 function fixedSub(){
   return Q.lines.reduce((s, l) => s + lineTotal(l), 0);
@@ -2315,6 +2544,7 @@ function snapshotQ(){
     sections: Q.sections ? JSON.parse(JSON.stringify(Q.sections)) : null,
     secText: JSON.parse(JSON.stringify(Q.secText || {})),
     kdOver: Array.isArray(Q.kdOver) ? JSON.parse(JSON.stringify(Q.kdOver)) : null,
+    kdCfg: Q.kdCfg ? JSON.parse(JSON.stringify(Q.kdCfg)) : null,
     accomPriced: Q.accomPriced !== undefined ? Q.accomPriced : true,
     ratecard: JSON.parse(JSON.stringify(editableGroups())), // so the emailed link prices from the same card
     catalog: JSON.parse(JSON.stringify(Q.catalog || {})),
@@ -2335,9 +2565,18 @@ function snapshotQ(){
     savedAt: new Date().toISOString()
   };
 }
+/* the nightly rate calendar, the availability calendar and the rate card copy are
+   only needed by the copy that travels to the sheet. Kept per quote in
+   localStorage they filled it after a few dozen quotes, and then nothing saved. */
+function leanSnap(snap){
+  const lean = Object.assign({}, snap);
+  delete lean.ratecard; delete lean.rates; delete lean.availCal;
+  return lean;
+}
 function upsertSnapshot(snap){
+  const lean = leanSnap(snap);
   const i = SAVED.findIndex(s => s.num === snap.num);
-  if(i >= 0) SAVED[i] = snap; else SAVED.push(snap);
+  if(i >= 0) SAVED[i] = lean; else SAVED.push(lean);
   saveQuotes();
 }
 
@@ -2430,7 +2669,7 @@ function renderLines(){
       Q.lines[Number(e.target.dataset.i)].price = e.target.value;
       lightUpdate(e.target);
     });
-    el.addEventListener("change", refresh); // rebuild on blur so the "adjusted" tag appears
+    el.addEventListener("change", () => refreshWhenDone("#linesBody")); // rebuild once they leave the table, so the "adjusted" tag appears without stealing focus
   });
   tb.querySelectorAll(".descInp").forEach(el => {
     el.addEventListener("input", e => {
@@ -2575,6 +2814,10 @@ function setSplit(v){
     const byId = {};
     (Q.sel.accom || []).forEach(b => { byId[b.id] = (byId[b.id] || 0) + (Number(b.qty) || 0); });
     Q.sel.accom = Object.keys(byId).filter(id => byId[id] > 0).map(id => ({id: id, qty: byId[id], from: null, to: null}));
+    /* the parts were legal on their own dates, the whole may not be */
+    const over = Q.sel.accom.filter(b => { const a = availDisplay(b.id); return a !== null && (Number(b.qty) || 0) > a; })
+      .map(b => (RATE[b.id] || {}).name || b.id);
+    if(over.length) showToast("Merged back to whole-stay bookings: " + over.join(", ") + " now exceed what is available on every night. Check the numbers before sending.");
   }
   refresh();
 }
@@ -2651,7 +2894,9 @@ function cellToISO(v){
   if(v === null || v === undefined || v === "") return null;
   if(v instanceof Date && !isNaN(v)) return isoDate(v);
   if(typeof v === "number" && v > 20000 && v < 80000){ // Excel serial date
-    return isoDate(new Date(Date.UTC(1899, 11, 30) + v * 86400000));
+    /* read back in UTC too, otherwise the whole grid slides a day west of Greenwich */
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
+    return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0") + "-" + String(d.getUTCDate()).padStart(2, "0");
   }
   return parseDMY(v);
 }
@@ -2728,10 +2973,14 @@ function parseAvailGrid(rows){
     if(!name) continue;
     const id = rmsMatch(name);
     if(!id){ skippedCount++; continue; }
-    const tot = Number(row[1]);
+    /* a blank cell means "not stated", not "none left": Number("") is 0, which used
+       to take that date off sale for that cabin type */
+    const blank = x => x === "" || x === null || x === undefined;
+    const tot = blank(row[1]) ? NaN : Number(row[1]);
     if(!isNaN(tot)) totals[id] = tot;
     const vals = {};
     isoCols.forEach(dc => {
+      if(blank(row[dc.i])) return;
       const v = Number(row[dc.i]);
       if(!isNaN(v)) vals[dc.iso] = v;
     });
@@ -2841,9 +3090,12 @@ function parseRestrictionsExport(rows){
     for(let iso = from; iso <= to; iso = isoAddDays(iso, 1)){
       const key = id + "|" + iso;
       if(isOv){
-        if(val > 0 && (!best[key] || mod >= best[key].mod)){ best[key] = {val: val, mod: mod}; }
+        if(val > 0 && (!best[key] || mod > best[key].mod || (mod === best[key].mod && r >= best[key].r))){ best[key] = {val: val, mod: mod, r: r}; }
       } else {
-        if(!clears[key] || mod > clears[key]) clears[key] = mod;
+        /* an export without a "date modified" column gives every row mod 0, and 0 is
+           falsy: the clear used to be dropped and the withdrawn price kept. Compare on
+           the row order as well so a clear can win. */
+        if(!clears[key] || mod > clears[key].mod || (mod === clears[key].mod && r >= clears[key].r)) clears[key] = {mod: mod, r: r};
       }
     }
     applied++;
@@ -2851,7 +3103,7 @@ function parseRestrictionsExport(rows){
   const overrides = {};
   let from = null, to = null;
   Object.keys(best).forEach(key => {
-    if(clears[key] && clears[key] > best[key].mod) return; // cleared after it was set
+    if(clears[key] && (clears[key].mod > best[key].mod || (clears[key].mod === best[key].mod && clears[key].r > best[key].r))) return; // cleared after it was set
     const p = key.split("|"), id = p[0], iso = p[1];
     (overrides[id] = overrides[id] || {})[iso] = best[key].val;
     if(!from || iso < from) from = iso;
@@ -2874,9 +3126,12 @@ function rebuildRatesFromRms(){
       if(p.to && (!to || p.to > to)) to = p.to;
     }));
   }
-  if(!from || !to) return false;
+  /* a standing tariff period with no end date is normal in RMS (the import button
+     even captions it "no end date"), so run it out to the cap instead of treating
+     the whole import as unusable */
+  if(!from) from = isoDate(today);
   const cap = isoAddDays(from, 600);
-  if(to > cap) to = cap;
+  if(!to || to > cap) to = cap;
   const ids = {};
   if(baseP) Object.keys(baseP).forEach(id => ids[id] = true);
   if(over) Object.keys(over).forEach(id => ids[id] = true);
@@ -2893,7 +3148,7 @@ function rebuildRatesFromRms(){
           if(p.from && iso < p.from) return;
           if(p.to && iso > p.to) return;
           const len = (p.from && p.to) ? (Date.parse(p.to) - Date.parse(p.from)) : Infinity;
-          if(len < bestLen){ bestLen = len; bestP = p; }
+          if(bestP === null || len < bestLen){ bestLen = len; bestP = p; }  /* Infinity < Infinity is false, so an open-ended period would never win */
         });
         if(bestP) v = bestP.dow[isoDow(iso)];
       }
@@ -2929,7 +3184,7 @@ function loadSheetJS(){
 }
 function fileToRows(f){
   return new Promise((res, rej) => {
-    if(/\.xlsx$/i.test(f.name)){
+    if(/\.xlsx?$/i.test(f.name)){
       loadSheetJS().then(() => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -2950,12 +3205,16 @@ function fileToRows(f){
     reader.readAsText(f);
   });
 }
+/* Every RMS report goes through here: the three tariff / availability exports, and
+   the accommodation statement. Each file is recognised by its own contents, so the
+   import buttons, the file pickers and a drag and drop all land in one place. */
 function readTariffFiles(files){
   const list = Array.from(files || []);
   if(!list.length) return;
   const notes = [];
   let chain = Promise.resolve();
   let rmsTouched = false;
+  let pendingStatement = null;
   list.forEach(f => {
     chain = chain.then(() => fileToRows(f)).then(rows => {
       /* new RMS exports first: rate setup (base) and Control Panel restrictions (dynamic) */
@@ -2985,11 +3244,18 @@ function readTariffFiles(files){
       if(availRes){
         Q.availCal = availRes.avail;
         Q.availInfo = {from: availRes.dates[0], to: availRes.dates[availRes.dates.length - 1], items: availRes.matched, file: f.name};
-        /* the chart's total-units column prefias the sleeps/units defaults where the rate card has none */
+        /* per-date unit counts: the chart's total-units column is read but not used,
+           the per-date numbers are what the organiser is capped by */
         notes.push("Availability: " + availRes.matched + " unit types, " + shortDate(availRes.dates[0]) + " – " + shortDate(availRes.dates[availRes.dates.length - 1]));
         return;
       }
-      notes.push(f.name + ": not recognised, expected an RMS Tariff Export, a Control Panel restrictions export, a rates report or an availability chart");
+      const stRes = parseStatementRows(rows);
+      if(stRes && stRes.length){
+        pendingStatement = stRes;
+        notes.push("Statement: " + stRes.length + " room" + (stRes.length === 1 ? "" : "s") + ", " + shortRange(stRes[0].from, stRes[0].to));
+        return;
+      }
+      notes.push(f.name + ": not recognised, expected an RMS Tariff Export, a Control Panel restrictions export, a rates report, an availability chart or an accommodation statement");
     }).catch(e => {
       notes.push(f.name + (String(e && e.message).indexOf("no-sheetjs") >= 0
         ? ": couldn't load the Excel reader (offline?), save it as CSV and import that instead"
@@ -3006,6 +3272,7 @@ function readTariffFiles(files){
     }
     refresh();
     showToast(notes.join(" · "));
+    if(pendingStatement) showImportBar(pendingStatement);   // asks how the rooms should be added
   });
 }
 function clearTariff(){
@@ -3043,7 +3310,7 @@ function renderImpStatus(){
   /* copied from an older quote: its tariff was deliberately left behind */
   if(Q.needsTariff && !Q.ratesInfo){
     host.innerHTML = '<div class="impredo">⚠ <b>Import the tariff &amp; availability for these dates.</b> ' +
-      'This quote was copied from an earlier one, so its accommodation prices and unit counts were not carried over, ' +
+      'This quote was copied from an earlier one (or reopened while the tracker sheet was unreachable), so its accommodation prices and unit counts are not here, ' +
       'they change every day. Use <b>Import tariff &amp; availability</b> above (or type a nightly price on each cabin) before sending.' +
       '<button class="impclear" id="impRedoX" title="Hide this reminder">dismiss</button></div>' +
       (Q.availInfo ? '<div class="impstatus"><span>Availability <b>' + esc(shortDate(Q.availInfo.from)) + ' – ' + esc(shortDate(Q.availInfo.to)) + '</b> · ' + Q.availInfo.items + ' unit types</span></div>' : '');
@@ -3061,7 +3328,7 @@ function renderImpStatus(){
   let warn = "";
   if(Q.ratesInfo && Q.dateStart){
     const missing = stayNightsList().filter(d => d < Q.ratesInfo.from || d > Q.ratesInfo.to).length;
-    if(missing) warn = '<span class="impwarn">⚠ ' + missing + ' stay night' + (missing === 1 ? '' : 's') + ' outside the imported tariff, base prices used for those</span>';
+    if(missing) warn = '<span class="impwarn">⚠ ' + missing + ' stay night' + (missing === 1 ? '' : 's') + ' outside the imported tariff, those nights have no price at all until you import them or type a nightly price</span>';
   }
   host.innerHTML = '<div class="impstatus">' + bits.join(" · ") + warn + '<button class="impclear" id="impClear">clear import</button></div>';
   const ic = document.getElementById("impClear");
@@ -3206,7 +3473,15 @@ function stepperHTML(kind, id, val, opts){
   '</div>';
 }
 function sleepsPill(it){
-  return it.sleeps ? ' <span class="sleeps">Sleeps up to ' + it.sleeps + '</span>' : '';
+  return (it.sleeps ? ' <span class="sleeps">Sleeps up to ' + it.sleeps + '</span>' : '') +
+    (Number(it.bedsMax) > 0 ? ' <span class="sleeps bedsp" title="The most separate beds this unit can be made up with">Up to ' + Number(it.bedsMax) + ' separate bed' + (Number(it.bedsMax) === 1 ? '' : 's') + '</span>' : '');
+}
+/* the bed configuration line, with the separate-bed count on the end */
+function bedsLine(it){
+  const n = Number(it.bedsMax) || 0;
+  const cfg = String(it.beds || "").trim();
+  if(!n) return cfg;
+  return (cfg ? cfg + " (up to " : "Up to ") + n + " separate bed" + (n === 1 ? "" : "s") + (cfg ? ")" : "");
 }
 function renderPrep(){
   const n = nightsCount();
@@ -3289,7 +3564,8 @@ function renderPrep(){
     const selc = (Q.sel.cater || {})[it.id];
     const d = selc ? (Number(selc.days) || 0) : 0;
     const ppl = selc ? selc.ppl : (Number(Q.guests) || "");
-    const sub = (selc && d > 0) ? (Number(selc.ppl) || 0) * d * c.price : 0;
+    /* same maths as the organiser's page, so the two screens can't disagree */
+    const sub = (selc && d > 0) ? (kidsOn() ? d * bandCost(mealBands(it.id), c.price) : (Number(selc.ppl) || 0) * d * c.price) : 0;
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="cater" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this meal on this quote">' +
       '<div><span class="pkgname">' + esc(it.name) + '</span></div>' +
@@ -3321,7 +3597,7 @@ function renderPrep(){
       setCat(e.target.dataset.id, "price", e.target.value === "" ? "" : Number(e.target.value));
       prepLight();
     });
-    el.addEventListener("change", refresh);
+    el.addEventListener("change", () => refreshWhenDone("#prepAccom, #prepVenues, #prepCater"));
   });
   host.querySelectorAll(".prepAvail").forEach(el => el.addEventListener("change", e => {
     setCat(e.target.dataset.id, "avail", e.target.value === "" ? "" : Number(e.target.value));
@@ -3340,6 +3616,134 @@ function renderPrep(){
   }));
 
   renderPrepMenu();
+  renderPrepKeyDates();
+  /* the last day is the departure date, so the picker greys out anything before
+     the first day, whichever way the dates were set */
+  const endEl = document.getElementById("f-date-end");
+  if(endEl) endEl.min = Q.dateStart || "";
+  if(Q.dateStart && Q.dateEnd && Q.dateEnd > Q.dateStart) LAST_DATES = {start: Q.dateStart, end: Q.dateEnd};
+}
+/* typed dates get past the picker's min, so they are corrected on the way out of
+   the field: moving the first day carries the length of the stay with it. */
+let LAST_DATES = {start: "", end: ""};
+function clampEventDates(changed){
+  const a = document.getElementById("f-date-start"), b = document.getElementById("f-date-end");
+  if(Q.dateStart && Q.dateEnd && Q.dateEnd < Q.dateStart){
+    if(changed === "start"){
+      const nights = (LAST_DATES.start && LAST_DATES.end && LAST_DATES.end > LAST_DATES.start)
+        ? Math.max(1, isoDiffDays(LAST_DATES.start, LAST_DATES.end)) : 1;
+      Q.dateEnd = isoAddDays(Q.dateStart, nights);
+      showToast("The last day moved to " + fmtDate(Q.dateEnd) + ", it cannot be before the first day.");
+    } else {
+      Q.dateEnd = Q.dateStart;
+      showToast("The last day cannot be before the first day.");
+    }
+  }
+  if(a) a.value = Q.dateStart || "";
+  if(b){ b.value = Q.dateEnd || ""; b.min = Q.dateStart || ""; }
+  refresh();
+}
+/* tells staff when the event is inside the usual lead times, so they know why the
+   timeline reads "As soon as possible" rather than a deadline that has already
+   been and gone */
+function shortNoticeHTML(){
+  const kd = keyDates();
+  if(!kd || !shortNotice()) return '';
+  const away = daysUntil(kd.arrive);
+  const passed = [];
+  if(kdPassed(kd.email)) passed.push("the 10 week confirmation email");
+  if(kdPassed(kd.catering)) passed.push("the 1 month catering cut-off");
+  if(kdPassed(kd.finalNums)) passed.push("final numbers at " + kd.finalDays + " days");
+  return '<p class="hint" id="kdShortNote" style="margin:0 0 8px">⚠ <b>Short notice:</b> this event is ' +
+    (away === null ? 'close' : (away < 0 ? 'in the past' : away + ' day' + (away === 1 ? '' : 's') + ' away')) +
+    ', so ' + (passed.length ? passed.join(", ") : "some of the standard deadlines") +
+    ' would fall before the quote date. Those lines read “As soon as possible” below instead of a date that has already gone.</p>';
+}
+/* the deadline fields, used both per quote (Prepare tab) and as house defaults (Settings) */
+function kdFieldsHTML(c, cls){
+  const f = (k, step) => '<input type="number" class="' + cls + '" data-k="' + k + '" value="' + c[k] + '" min="0" step="' + (step || 1) + '">';
+  const row = (lab, inner) => '<label><span class="kdlab">' + lab + '</span><span class="kdrow">' + inner + '</span></label>';
+  return '<div class="kdcfg">' +
+    row("Deposit per cabin or room", '<span class="kdu">$</span>' + f("depositPer", 10)) +
+    row("Deposit due within", f("depositWeeks") + '<span class="kdu">weeks of booking, or</span>' + f("depositLeadWeeks") + '<span class="kdu">weeks before arrival, whichever is earlier</span>') +
+    row("Confirmation email", f("emailWeeks") + '<span class="kdu">weeks before arrival</span>') +
+    row("Catering locked in", f("cateringDays") + '<span class="kdu">days before arrival</span>') +
+    row("Final numbers", f("finalDays") + '<span class="kdu">days before arrival</span>') +
+    row("Bigger groups", f("finalDaysBig") + '<span class="kdu">days, over</span>' + f("bigUnits") + '<span class="kdu">units</span>') +
+  '</div>';
+}
+/* the same timeline the organiser gets, with the rules behind it, on the Prepare tab */
+function renderPrepKeyDates(){
+  const host = document.getElementById("prepKeyDates");
+  if(!host) return;
+  const a = document.activeElement;
+  /* keep the field they are working in, and refresh the timeline underneath it */
+  if(a && host.contains(a) && (a.isContentEditable || a.tagName === "INPUT")){ renderKdRows(); return; }
+  host.innerHTML = '<div class="kdcfghead">Deposit &amp; deadlines' +
+      ' <button type="button" class="pinreset kdcfgReset" style="display:' + (kdCfgEdited() ? 'inline' : 'none') + '; width:auto; padding:0 0 0 6px">changed for this quote · back to the house rules</button>' +
+    '</div>' +
+    kdFieldsHTML(kdCfg(), "kdcfgInp") +
+    '<div id="kdRowsBox"></div>';
+  host.querySelectorAll(".kdcfgInp").forEach(el => el.addEventListener("input", e => {
+    if(!Q.kdCfg) Q.kdCfg = {};
+    const v = e.target.value;
+    Q.kdCfg[e.target.dataset.k] = (v === "" ? "" : Number(v));
+    autosaveDraft();
+    renderKdRows();
+    renderClient();
+    const rb = host.querySelector(".kdcfgReset");
+    if(rb) rb.style.display = "inline";
+  }));
+  const reset = host.querySelector(".kdcfgReset");
+  if(reset) reset.addEventListener("click", () => {
+    Q.kdCfg = null;
+    refresh();
+    showToast("Back to the house rules set on the Settings tab.");
+  });
+  renderKdRows();
+}
+function renderKdRows(){
+  const box = document.getElementById("kdRowsBox");
+  if(!box) return;
+  const a = document.activeElement;
+  if(a && a.isContentEditable && box.contains(a)) return;   /* a line is being typed in */
+  const showPrices = (Q.priceMode || "full") !== "noprices";
+  const on = !!(Q.features && Q.features.depositDates);
+  box.innerHTML = shortNoticeHTML() +
+    keyDatesHTML(showPrices, true, true) +
+    '<p class="hint" style="margin-top:6px">' +
+      (on
+        ? 'What the organiser sees on their quote and the PDF. It follows the rules above plus the dates, cabins and bond, and you can click any line to word it yourself for this quote.'
+        : '<span class="pinwarn">Not shown on the quote at the moment.</span> Tick “Deposit &amp; key dates” under “Extras on the organiser’s page”, or <button type="button" class="secauto" id="kdTurnOn">switch it on now</button>.') +
+    '</p>';
+  wireKeyDates(box, showPrices);
+  const turnOn = document.getElementById("kdTurnOn");
+  if(turnOn) turnOn.addEventListener("click", () => {
+    if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
+    Q.features.depositDates = true;
+    const cb = document.getElementById("f-feat-deposit");
+    if(cb) cb.checked = true;
+    refresh();
+    showToast("Money & key dates will now appear on the organiser's page and the PDF.");
+  });
+}
+/* the house rules, shared with every computer through the tracker sheet */
+function renderKdDefaults(){
+  const host = document.getElementById("kdDefaults");
+  if(!host) return;
+  const a = document.activeElement;
+  if(a && host.contains(a)) return;
+  const house = Object.assign({}, KD_DEFAULTS, getDefaults().keydates || {});
+  Object.keys(house).forEach(k => { if(house[k] === "" || house[k] === null || isNaN(Number(house[k]))) house[k] = KD_DEFAULTS[k]; });
+  host.innerHTML = kdFieldsHTML(house, "kdDefInp");
+  host.querySelectorAll(".kdDefInp").forEach(el => el.addEventListener("change", e => {
+    const cur = Object.assign({}, getDefaults().keydates || {});
+    const v = e.target.value;
+    cur[e.target.dataset.k] = (v === "" ? KD_DEFAULTS[e.target.dataset.k] : Number(v));
+    saveDefaults({keydates: cur});
+    refresh();
+    showToast("House rule saved. Quotes already made keep their own numbers.");
+  }));
 }
 function renderPrepMenu(){
   const host = document.getElementById("prepMenu");
@@ -3853,16 +4257,34 @@ function keyDatesAutoRows(showPrices){
   if(!kd && !(u + vs)) return [];
   const anyCater = caterItems().some(it => { const c = (Q.sel.cater || {})[it.id]; return c && catEntry(it.id).on && (Number(c.days) || 0) > 0; });
   const rows = [];
-  if(showPrices && (u + vs) > 0){
-    rows.push(['Deposit', money0(100 * (u + vs)) + ' ($100 × ' + (u + vs) + ' cabin' + (u + vs === 1 ? '' : 's') + (vs ? ' / conference room' + (vs === 1 ? '' : 's') : '') + '), due within 4 weeks of booking to secure your reservation' + (Number(Q.sel.church) > 0 ? ' and discount' : '')]);
+  const c = kdCfg();
+  if(showPrices && (u + vs) > 0 && c.depositPer > 0){
+    const alsoDisc = Number(Q.sel.church) > 0 ? ' and discount' : '';
+    /* due the earlier of N weeks from booking or M weeks before arrival. The
+       "before arrival" mark is a real date once the event dates are set; when it
+       has already gone (or the window from booking lands after arrival) the
+       deposit is simply due now */
+    const leadDays = (c.depositLeadWeeks > 0 ? c.depositLeadWeeks : c.depositWeeks) * 7;
+    const leadDate = kd ? isoAddDays(kd.arrive, -leadDays) : null;
+    const depositNow = !!leadDate && kdPassed(leadDate);
+    rows.push(['Deposit', money0(c.depositPer * (u + vs)) + ' (' + money0(c.depositPer) + ' × ' + (u + vs) + ' cabin' + (u + vs === 1 ? '' : 's') + (vs ? ' / conference room' + (vs === 1 ? '' : 's') : '') + '), ' +
+      (depositNow
+        ? 'due as soon as possible to secure your reservation' + alsoDisc + ', your event is inside ' + leadPhrase(leadDays)
+        : 'due ' + depositWhenPhrase(c) + (leadDate && c.depositLeadWeeks > 0 ? ' (' + fmtDate(leadDate) + ')' : '') + ', to secure your reservation' + alsoDisc)]);
   }
   if(showPrices && Number(Q.bond) > 0){
     rows.push(['Security bond', money0(Q.bond) + ', paid prior to or on arrival and refunded on departure under the Code of Conduct']);
   }
   if(kd){
-    rows.push([fmtDate(kd.email), 'expect our confirmation email (about 10 weeks before arrival)']);
-    if(anyCater) rows.push([fmtDate(kd.catering), 'catering locked in, at least 1 month before arrival']);
-    rows.push([fmtDate(kd.finalNums), 'final numbers & details due (' + kd.finalDays + ' days before arrival' + (kd.finalDays === 28 ? ', applies to 50+ units / peak periods' : '') + ')']);
+    if(c.emailWeeks > 0) rows.push([kdWhen(kd.email), kdPassed(kd.email)
+      ? 'our confirmation email, sent as soon as your booking is confirmed (it normally goes out about ' + c.emailWeeks + ' weeks before arrival, and your event is inside that)'
+      : 'expect our confirmation email (about ' + c.emailWeeks + ' weeks before arrival)']);
+    if(anyCater && c.cateringDays > 0) rows.push([kdWhen(kd.catering), kdPassed(kd.catering)
+      ? 'catering to be locked in as soon as possible (normally at least ' + leadPhrase(c.cateringDays) + ' before arrival, so it is subject to availability at this notice)'
+      : 'catering locked in, at least ' + leadPhrase(c.cateringDays) + ' before arrival']);
+    rows.push([kdWhen(kd.finalNums), kdPassed(kd.finalNums)
+      ? 'final numbers & details due as soon as possible (normally ' + kd.finalDays + ' days before arrival)'
+      : 'final numbers & details due (' + kd.finalDays + ' days before arrival' + (kd.finalDays !== c.finalDays ? ', applies to more than ' + c.bigUnits + ' units / peak periods' : '') + ')']);
     rows.push([fmtDate(kd.arrive), 'arrival, with the balance of your account due before this date']);
   }
   return rows;
@@ -3874,19 +4296,20 @@ function keyDatesRows(showPrices){
   }
   return keyDatesAutoRows(showPrices);
 }
-function keyDatesHTML(showPrices, editable){
-  if(!(Q.features && Q.features.depositDates)) return '';
+/* `force` renders it for staff even when it is switched off for the organiser */
+function keyDatesHTML(showPrices, editable, force){
+  if(!(Q.features && Q.features.depositDates) && !force) return '';
   const edit = !!editable && !CLIENT_MODE;
   const rows = keyDatesRows(showPrices);
   if(!rows.length && !edit) return '';
   const over = Array.isArray(Q.kdOver);
-  return '<div class="keydates"' + (edit ? ' id="kdBlock"' : '') + '><b>Money &amp; key dates for your event</b>' +
+  return '<div class="keydates' + (edit ? ' kdblock' : '') + '"><b>Money &amp; key dates for your event</b>' +
     (edit
       ? '<span class="kd-tools staffedit-ui">' +
           (over
-            ? '<button class="pinreset" id="kdAuto" title="Drop the edits and go back to the automatically calculated rows">edited · back to automatic</button>'
-            : '<span class="pinsub" style="padding:0">click any line to edit it for this quote</span>') +
-          '<button class="pinreset" id="kdAdd">+ add a line</button>' +
+            ? '<button class="pinreset kdAuto" title="Drop the edits and go back to the automatically calculated rows">edited · back to automatic</button>'
+            : '<span class="pinsub" style="padding:0">click any line to edit it</span>') +
+          '<button class="pinreset kdAdd">+ add a line</button>' +
         '</span>'
       : '') +
     rows.map((r, i) => '<div class="kd">' +
@@ -3895,6 +4318,66 @@ function keyDatesHTML(showPrices, editable){
       (edit ? '<button class="kdx staffedit-ui" data-kd="' + i + '" title="Remove this line from this quote">×</button>' : '') +
     '</div>').join('') +
     '</div>';
+}
+/* The rows are editable in place, and the same block now appears twice: in Quote
+   settings on the Prepare tab and on the organiser's page. One wiring function
+   serves both, and an edit in either copy refreshes the other. */
+function wireKeyDates(root, showPrices){
+  if(CLIENT_MODE || !root) return;
+  const block = root.querySelector(".kdblock");
+  if(!block) return;
+  const rowsFromDom = () => {
+    const out = [];
+    block.querySelectorAll(".kd").forEach(row => {
+      const a = row.querySelector('[data-part="0"]'), b = row.querySelector('[data-part="1"]');
+      out.push({d: a ? a.innerText.replace(/\n+/g, " ").trim() : "", t: b ? b.innerText.replace(/\n+/g, " ").trim() : ""});
+    });
+    return out;
+  };
+  const set = rows => {
+    const auto = keyDatesAutoRows(showPrices).map(r => ({d: r[0], t: r[1]}));
+    Q.kdOver = (JSON.stringify(rows) === JSON.stringify(auto)) ? null : rows;   /* back to automatic if typed back to the standard wording */
+    autosaveDraft();
+  };
+  block.querySelectorAll("[data-part]").forEach(el => el.addEventListener("blur", () => {
+    set(rowsFromDom());
+    laterRenderKeyDates();
+  }));
+  block.querySelectorAll(".kdx").forEach(el => el.addEventListener("click", e => {
+    const rows = rowsFromDom();
+    rows.splice(Number(e.currentTarget.dataset.kd), 1);
+    set(rows);
+    renderKeyDatesNow();
+  }));
+  const add = block.querySelector(".kdAdd");
+  if(add) add.addEventListener("click", () => {
+    const rows = rowsFromDom();
+    rows.push({d: "Date or label", t: "What happens then"});
+    Q.kdOver = rows;
+    autosaveDraft();
+    renderKeyDatesNow();
+  });
+  const auto = block.querySelector(".kdAuto");
+  if(auto) auto.addEventListener("click", () => {
+    Q.kdOver = null;
+    autosaveDraft();
+    renderKeyDatesNow();
+  });
+}
+function renderKeyDatesNow(){
+  renderPrepKeyDates();
+  const qp = document.getElementById("quotePage");
+  const a = document.activeElement;
+  if(!qp || !(a && a.isContentEditable && qp.contains(a))) renderClient();
+}
+function laterRenderKeyDates(){
+  /* let the click that caused the blur finish, and leave it alone if they have
+     simply moved to another line */
+  setTimeout(function(){
+    const a = document.activeElement;
+    if(a && a.isContentEditable && a.closest && a.closest(".kdblock")) return;   /* they have simply moved to another line */
+    renderKeyDatesNow();
+  }, 200);
 }
 /* everything the tracker sheet / emailed quote page needs, in one payload */
 function buildDisplayPayload(){
@@ -3919,7 +4402,7 @@ function buildDisplayPayload(){
     nights: nightsCount(),
     units: unitsSelected(),
     venuesCount: venuesSelected(),
-    depositEst: 100 * (unitsSelected() + venuesSelected()),
+    depositEst: kdCfg().depositPer * (unitsSelected() + venuesSelected()),
     menuOn: MENU_GROUPS.map(g => {
       const opts = enabledOptions(g);
       return opts.length ? (g.title.replace(/: .*$/, "") + ": " + opts.map(o => o.name).join("; ")) : null;
@@ -4159,7 +4642,7 @@ function renderClient(){
     '<tr><td>' + esc(l.name) +
       (l.unit && l.unit !== 'flat' ? '<span class="cwhen"> · ' + esc(l.unit) + '</span>' : '') +
       (l.beds ? '<div class="cwhen">' + esc(l.beds) + '</div>' : '') +
-      (l.when ? '<div class="cwhen">' + l.when + '</div>' : '') + '</td>' +
+      (l.when ? '<div class="cwhen">' + esc(l.when) + '</div>' : '') + '</td>' +   /* the venue times box is the organiser's own free text */
     '<td class="num">' + l.qty + (l.nights > 1 ? '<div class="cwhen">× ' + l.nights + ' ' + String(l.nightsWord || 'nights').replace(/s$/, '') + (l.nights === 1 ? '' : 's') + '</div>' : '') + '</td>' +
     (showPrices ? '<td class="num">' + money(l.price) + '</td>' : '') +
     (showPrices ? '<td class="num">' + money(l.total) + '</td>' : '') + '</tr>'
@@ -4213,12 +4696,13 @@ function renderClient(){
       cheapestPanelHTML() +
     '</div>' +
     printSummary +
-    '<div class="qp-notes"' + (CLIENT_MODE ? '' : ' contenteditable id="qpNotesBlk" title="Notes shown on the quote, click to edit for this quote"') + '>' + esc(Q.notes) + '</div>' +
-    '<div class="qp-pay"><b>Payment &amp; terms</b><br><span' + (CLIENT_MODE ? '' : ' contenteditable id="qpTermsBlk" title="Click to edit for this quote"') + '>' + esc(Q.terms) + '</span>' +
+    '<div class="qp-notes"' + (CLIENT_MODE ? '' : ' contenteditable id="qpNotesBlk" title="Notes shown on the quote, click to edit for this quote"') + '>' + esc(fillQuoteText(Q.notes)) + '</div>' +
+    '<div class="qp-pay"><b>Payment &amp; terms</b><br><span' + (CLIENT_MODE ? '' : ' contenteditable id="qpTermsBlk" title="Click to edit for this quote"') + '>' + esc(fillQuoteText(Q.terms)) + '</span>' +
       '<div class="qp-bank">' + BANK_LINES.join('<br>') + '</div></div>' +
     secHtml +
     submitBlock +
-    '<div class="qp-print-note">To confirm this quote, simply reply to the email it came with and we\'ll take care of the rest.</div>' +
+    '<div class="qp-print-note">' + esc(VENUE + ' \u00b7 Quote ' + (Q.num || '')) +
+      '<br>To confirm this quote, simply reply to the email it came with and we\'ll take care of the rest.</div>' +
     '<div class="qp-foot">' + esc(VENUE) + ' · ' + VENUE_ADDR1 + ', ' + VENUE_ADDR2 + ' · ' + VENUE_ABN + ' · Phone: ' + VENUE_PHONE + ' · ' + VENUE_EMAIL + ' · ' + VENUE_WEB + '</div>';
 
   /* wire the organiser's controls */
@@ -4418,16 +4902,18 @@ function renderClient(){
       renderPipeline();
     }));
     /* notes and payment & terms, kept in step with the fields on the Prepare tab */
+    /* typed back unchanged? keep the placeholders rather than freezing the numbers */
+    const keepText = (typed, current) => (typed === fillQuoteText(current).trim() ? current : typed);
     const nb = document.getElementById("qpNotesBlk");
     if(nb) nb.addEventListener("blur", () => {
-      Q.notes = nb.innerText.replace(/\n{3,}/g, "\n\n").trim();
+      Q.notes = keepText(nb.innerText.replace(/\n{3,}/g, "\n\n").trim(), Q.notes);
       const f = document.getElementById("f-notes");
       if(f) f.value = Q.notes;
       autosaveDraft();
     });
     const tb2 = document.getElementById("qpTermsBlk");
     if(tb2) tb2.addEventListener("blur", () => {
-      Q.terms = tb2.innerText.replace(/\n{3,}/g, "\n\n").trim();
+      Q.terms = keepText(tb2.innerText.replace(/\n{3,}/g, "\n\n").trim(), Q.terms);
       const f = document.getElementById("f-terms");
       if(f) f.value = Q.terms;
       autosaveDraft();
@@ -4440,16 +4926,14 @@ function renderClient(){
       const c = sectionContent(id);
       if(!c) return;
       const v = e.target.innerText.replace(/\n{3,}/g, "\n\n").trim();
-      const bondTxt = money0(Number(Q.bond) || 0);
-      const baseVal = key === "title" ? c.title
-        : String(c.text).split("{bond}").join(bondTxt).split("{menuoptions}").join(menuSectionText());
+      const baseVal = key === "title" ? c.title : sectionBaseText(id, c);
       if(!Q.secText) Q.secText = {};
       const cur = Q.secText[id] || {};
       const wasEdited = cur.title !== undefined || cur.text !== undefined;
       if(v === String(baseVal).trim()) delete cur[key]; else cur[key] = v;
       if(cur.title === undefined && cur.text === undefined) delete Q.secText[id]; else Q.secText[id] = cur;
       autosaveDraft();
-      if(wasEdited !== !!Q.secText[id]) renderClient();
+      if(wasEdited !== !!Q.secText[id]) laterRenderClient();
     }));
     page.querySelectorAll(".secreset").forEach(el => el.addEventListener("click", e => {
       if(Q.secText) delete Q.secText[e.currentTarget.dataset.sec];
@@ -4457,44 +4941,7 @@ function renderClient(){
       renderClient();
     }));
     /* money & key dates: edit any line, add or remove lines, or go back to automatic */
-    const kdRowsFromDom = () => {
-      const out = [];
-      page.querySelectorAll("#kdBlock .kd").forEach(row => {
-        const a = row.querySelector('[data-part="0"]'), b = row.querySelector('[data-part="1"]');
-        out.push({d: a ? a.innerText.replace(/\n+/g, " ").trim() : "", t: b ? b.innerText.replace(/\n+/g, " ").trim() : ""});
-      });
-      return out;
-    };
-    const kdSet = rows => {
-      const auto = keyDatesAutoRows(showPrices).map(r => ({d: r[0], t: r[1]}));
-      Q.kdOver = (JSON.stringify(rows) === JSON.stringify(auto)) ? null : rows;
-      autosaveDraft();
-    };
-    page.querySelectorAll("#kdBlock [data-part]").forEach(el => el.addEventListener("blur", () => {
-      const was = Array.isArray(Q.kdOver);
-      kdSet(kdRowsFromDom());
-      if(was !== Array.isArray(Q.kdOver)) renderClient();
-    }));
-    page.querySelectorAll("#kdBlock .kdx").forEach(el => el.addEventListener("click", e => {
-      const rows = kdRowsFromDom();
-      rows.splice(Number(e.currentTarget.dataset.kd), 1);
-      kdSet(rows);
-      renderClient();
-    }));
-    const kdAddBtn = document.getElementById("kdAdd");
-    if(kdAddBtn) kdAddBtn.addEventListener("click", () => {
-      const rows = kdRowsFromDom();
-      rows.push({d: "Date or label", t: "What happens then"});
-      Q.kdOver = rows;
-      autosaveDraft();
-      renderClient();
-    });
-    const kdAutoBtn = document.getElementById("kdAuto");
-    if(kdAutoBtn) kdAutoBtn.addEventListener("click", () => {
-      Q.kdOver = null;
-      autosaveDraft();
-      renderClient();
-    });
+    wireKeyDates(page, showPrices);
   }
   updateStickySubmit();
 }
@@ -4616,7 +5063,136 @@ function deleteQuote(num){
   renderPipeline();
   showToast("Quote " + num + " deleted here and removed from the tracker sheet.");
 }
+/* ---------- reopen a sent quote for editing ----------
+   A quote that is still with the organiser (Draft, Sent or Viewed) can be brought
+   back onto tab 1 under its own number and quote link. Save changes (or Email
+   quote) then rewrites its row in the tracker sheet, so the organiser's link
+   shows the new version. Submitted and accepted quotes keep what the organiser
+   submitted; copy those into a new quote instead. */
+const EDITABLE_STATUSES = ["Draft", "Sent", "Viewed"];
+function editBlockReason(s){
+  if(!s) return "it is not on this computer yet, press Sync now first";
+  if(s.rowOnly) return "it was typed straight into the tracker sheet, so there is no quote stored to edit";
+  if(EDITABLE_STATUSES.indexOf(s.status) < 0) return "it is already " + String(s.status).toLowerCase() + ", copy it into a new quote instead";
+  return "";
+}
+function editCell(r){
+  if(r.unsaved || r.rowOnly || r.mine) return "";
+  if(editBlockReason(r)) return "";
+  return '<button class="editQ" data-num="' + esc(r.num) + '" title="Reopen this quote on tab 1 to change it">Edit</button> ';
+}
+/* the full copy of one quote from the tracker sheet: the copy kept on this
+   computer leaves the nightly rates and availability calendar behind to keep
+   localStorage small, and the sheet still has them */
+function fetchSheetQuote(num, done){
+  const url = sheetEndpoint();
+  if(!url){ done(null); return; }
+  flushOutbox(() => {                  // our own saves land first, then we read
+    fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "list=1&token=" + encodeURIComponent(SHEET_TOKEN))
+      .then(r => r.json())
+      .then(data => {
+        if(!data || !data.ok || !Array.isArray(data.quotes)) throw new Error("bad response");
+        SHEET_REACHABLE = true;
+        done(data.quotes.find(q => q && q.num === num && !q.rowOnly) || null);
+      })
+      .catch(() => { SHEET_REACHABLE = false; done(null); });
+  });
+}
+/* whatever is on tab 1 right now is kept before another quote takes its place */
+function keepCurrentQuote(){
+  if(!hasContent(Q)) return "";
+  const known = SAVED.some(s => s.num === Q.num);
+  upsertSnapshot(snapshotQ());
+  return known
+    ? " Your edits to " + Q.num + " were kept on this computer, press Save changes on its preview if the client should see them too."
+    : " Your previous quote " + Q.num + " was kept as a draft (see the copy list or the pipeline).";
+}
+function openQuoteForEdit(num){
+  const s = SAVED.find(x => x.num === num);
+  const why = editBlockReason(s);
+  if(why){ showToast("Quote " + num + " can't be edited: " + why + "."); return; }
+  if(Q.num === num){ switchTab("staff"); showToast(num + " is already open on tab 1."); return; }
+  const note = keepCurrentQuote();
+  const local = JSON.parse(JSON.stringify(s));
+  const bar = document.getElementById("editBar");
+  if(bar){ bar.innerHTML = 'Opening <b>' + esc(num) + '</b> from the tracker sheet…'; bar.style.display = "flex"; }
+  switchTab("staff");
+  fetchSheetQuote(num, full => {
+    let src = local, haveRates = false;
+    if(full){
+      const sT = Date.parse(full.savedAt || "") || 0;
+      const lT = Date.parse(local.savedAt || "") || 0;
+      if(sT > lT){
+        /* changed on another computer since this one last synced: that copy wins */
+        const i = SAVED.findIndex(x => x.num === num);
+        if(i >= 0){ SAVED[i] = serverSnap(full); saveQuotes(); }
+        const why2 = editBlockReason(i >= 0 ? SAVED[i] : serverSnap(full));
+        if(why2){
+          renderPrevOptions(); renderPipeline(); switchTab("pipeline");
+          showToast("Quote " + num + " changed on another computer and can't be edited now: " + why2 + ".");
+          return;
+        }
+        src = full;
+      } else {
+        src.rates = full.rates || {};
+        src.availCal = full.availCal || {};
+        if(!src.ratesInfo && full.ratesInfo) src.ratesInfo = full.ratesInfo;
+        if(!src.availInfo && full.availInfo) src.availInfo = full.availInfo;
+      }
+      haveRates = true;
+    }
+    loadQuoteForEdit(src, haveRates, note);
+  });
+}
+function loadQuoteForEdit(src, haveRates, note){
+  Q = Object.assign(blankQuote(src.num), JSON.parse(JSON.stringify(src)));
+  /* sheet-only and pipeline-only extras never belong on the live quote */
+  ["_synced", "display", "meals", "rooms", "link", "ratecard", "total", "validUntil", "savedAt", "rowOnly"].forEach(k => { delete Q[k]; });
+  if(src.sel === undefined) Q.sel = null;   // legacy quote: convert its line items
+  normalizeQuote(Q, src);
+  Q.rmsBase = null; Q.rmsOver = null;
+  Q.needsTariff = false;
+  /* cabins priced from an imported tariff need that tariff back; if the sheet
+     couldn't be reached the quote opens without it and asks for a fresh import */
+  const importedCabins = accomItems().some(it => catEntry(it.id).on && manualPrice(it.id) === null);
+  const noRates = !Q.rates || !Object.keys(Q.rates).length;
+  if(importedCabins && noRates){ Q.needsTariff = true; Q.ratesInfo = null; Q.availInfo = null; }
+  lsDel(LS_DRAFT);
+  syncForm();
+  refresh();
+  switchTab("staff");
+  showToast("Editing " + Q.num + " under its own number." +
+    (haveRates ? "" : " The tracker sheet could not be reached, so its imported nightly prices are missing: import the tariff again or type a price on each cabin before saving.") +
+    " Press Save changes (or Email quote) when you're done and the organiser's link shows the new version." + note);
+}
+function renderEditBar(){
+  const bar = document.getElementById("editBar");
+  if(!bar || CLIENT_MODE) return;
+  const known = SAVED.find(s => s.num === Q.num);
+  if(!known || !Q.sentAt || !hasContent(Q)){ bar.style.display = "none"; return; }
+  const who = Q.org || Q.contact || "no name";
+  const editable = EDITABLE_STATUSES.indexOf(Q.status) >= 0;
+  bar.innerHTML = (editable
+    ? '<b>' + esc(Q.num) + '</b> (' + esc(who) + ') was sent ' + esc(fmtDate(String(Q.sentAt).slice(0, 10))) + '. Changes you make here reach the organiser\'s link when you press Save changes. '
+    : '<b>' + esc(Q.num) + '</b> (' + esc(who) + ') is ' + esc(String(Q.status).toLowerCase()) + '. Saving here overwrites what the organiser submitted, so only change it after agreeing it with them. ') +
+    '<button id="editBarSave">Save changes</button>' +
+    '<button id="editBarEmail">Email quote again</button>' +
+    '<button id="editBarClose" class="dis" title="Leave the quote as last saved and start a fresh one">Close without saving</button>';
+  bar.style.display = "flex";
+  document.getElementById("editBarSave").addEventListener("click", doSaveQuote);
+  document.getElementById("editBarEmail").addEventListener("click", doEmail);
+  document.getElementById("editBarClose").addEventListener("click", () => {
+    const old = Q.num;
+    Q = blankQuote(nextQuoteNum());
+    lsDel(LS_DRAFT);
+    syncForm();
+    renderPrevOptions();
+    refresh();
+    showToast("Closed " + old + " without saving; it stays as last saved. Started " + Q.num + ".");
+  });
+}
 function renderPipeline(){
+  renderEditBar();   // tab 1's "editing a sent quote" bar follows the same events the pipeline does
   const rows = pipelineRows();
   const monthName = today.toLocaleDateString("en-GB", {month: "long"});
   const open    = rows.filter(r => r.status === "Draft" || r.status === "Sent" || r.status === "Viewed");
@@ -4647,9 +5223,13 @@ function renderPipeline(){
       '<td class="num">' + (r.total === null || r.total === undefined ? '<span class="fmuted" title="A row typed straight into the tracker sheet, no value stored">-</span>' : money0(r.total)) + '</td>' +
       '<td>' + chip(r.status) + (r.unsaved ? '' : statusSel(r.num, r.status)) + '</td>' +
       '<td>' + followCell(followFor(r)) + '</td>' +
-      '<td>' + (r.unsaved ? '' : '<button class="xBtn delQ" data-num="' + esc(r.num) + '" title="Delete this quote here and in the tracker sheet">×</button>') + '</td>' +
+      '<td>' + editCell(r) + (r.unsaved ? '' : '<button class="xBtn delQ" data-num="' + esc(r.num) + '" title="Delete this quote here and in the tracker sheet">×</button>') + '</td>' +
     '</tr>'
   ).join("");
+
+  tb.querySelectorAll(".editQ").forEach(el => el.addEventListener("click", e => {
+    openQuoteForEdit(e.currentTarget.dataset.num);
+  }));
 
   tb.querySelectorAll(".stSel").forEach(el => el.addEventListener("change", e => {
     setStatus(e.target.dataset.num, e.target.value);
@@ -4708,6 +5288,16 @@ function readyToSend(){
 }
 function sendCore(){
   if(!Q.token) Q.token = genToken();
+  /* two computers can both mint Q-1006 while neither has sent yet: sending would
+     overwrite the other quote's row in the tracker sheet and kill its client link */
+  const taken = SAVED.find(s => s.num === Q.num && s.token && s.token !== Q.token);
+  if(taken){
+    const old = Q.num;
+    Q.num = nextQuoteNum();
+    const nf = document.getElementById("f-num");
+    if(nf) nf.value = Q.num;
+    showToast(old + " is already in use by another computer, so this quote is now " + Q.num + ".");
+  }
   if(!Q.accepted) Q.status = "Sent";
   if(!Q.sentAt) Q.sentAt = new Date().toISOString();
   const snap = snapshotQ();
@@ -4727,7 +5317,11 @@ function sheetQuotePayload(snap){
     link: linkForToken(Q.token),
     meals: mealsSummary(),
     rooms: roomsSummary(),
-    display: buildDisplayPayload()
+    display: buildDisplayPayload(),
+    /* the quote server prints these as they arrive, so the copy that travels has
+       its numbers filled in while this computer keeps the placeholders */
+    notes: fillQuoteText(snap.notes),
+    terms: fillQuoteText(snap.terms)
   });
   const size = () => JSON.stringify(payload).length;
   let trimmedRates = false;
@@ -4756,7 +5350,7 @@ function sheetQuotePayload(snap){
       (dropped.length ? " Also left out of the sheet copy: " + dropped.join(", ") + "." : ""));
   } else if(dropped.length){
     showToast("This quote was too big for the tracker sheet, so " + dropped.join(", ") +
-      " was left out of the copy sent there. The quote itself is unchanged. Shorter notes and terms will avoid this.");
+      " was left out of the copy sent there. Your own copy is unchanged, but the organiser's page falls back to the current shared wording and rate card for whatever is missing, so later rate card edits could move their venue and catering prices. Shorter notes and terms will avoid this.");
   }
   if(size() > SHEET_CELL_LIMIT){
     showToast("Warning: quote " + Q.num + " is still over the tracker sheet's size limit (" +
@@ -4764,14 +5358,87 @@ function sheetQuotePayload(snap){
   }
   return payload;
 }
+/* "a, b and c" */
+function listWords(a){
+  if(!a.length) return "";
+  if(a.length === 1) return a[0];
+  return a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+}
+/* "continental breakfast and 2 course dinner" */
+function selectedMealWords(){
+  const out = [];
+  caterItems().forEach(it => {
+    if(it.id === "diet" || !catEntry(it.id).on) return;
+    const c = (Q.sel.cater || {})[it.id];
+    if(!c || !((Number(c.days) || 0) > 0)) return;
+    const parts = String(it.name).split(" - ");
+    const w = (parts[1] ? parts[1] + " " + parts[0] : parts[0]).toLowerCase();
+    if(out.indexOf(w) < 0) out.push(w);
+  });
+  return listWords(out);
+}
+function selectedVenueWords(){
+  const out = [];
+  VENUES.forEach(v => {
+    if((Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on) out.push(v.name);
+  });
+  return listWords(out);
+}
+/* The parts of the quote an email might want to name, worked out from the
+   selection, so the template can stay short and still read as though it was
+   written by hand. A line that does not apply comes out empty and its blank line
+   is tidied away when the template is filled. */
+function emailBits(){
+  const rooms = unitsSelected();
+  const nights = Q.dateStart ? Math.max(1, nightsCount()) : 0;
+  const guests = Number(Q.guests) || 0;
+  const meals = selectedMealWords();
+  const venues = selectedVenueWords();
+  const dates = Q.dateStart ? fmtRange(Q.dateStart, Q.dateEnd) : "";
+  const nightsW = nights ? (nights + " night" + (nights === 1 ? "" : "s")) : "";
+  return {
+    dates: dates,
+    nights: nightsW,
+    guests: guests ? String(guests) : "",
+    rooms: rooms ? (rooms + " room" + (rooms === 1 ? "" : "s")) : "",
+    total: (Q.priceMode || "full") === "full" ? money0(totals().total) : "",
+    stayline: dates
+      ? ("It is priced for " + dates + (nightsW ? ", " + nightsW : "") + (guests ? " for " + guests + " guests" : "") + ".")
+      : "",
+    roomsline: rooms
+      ? ("I have prefilled it with " + rooms + " room" + (rooms === 1 ? "" : "s") + ", so if you need more or fewer just change it on the quote and submit it back to us.")
+      : "",
+    cateringline: meals
+      ? ("Catering is in there as " + meals + ", and your group picks the actual dishes with our catering team closer to the date.")
+      : "",
+    venueline: venues ? ("It also includes " + venues + ".") : "",
+    churchline: Q.acnc
+      ? "As a church or registered charity you can pick your concessional rate inside the quote as well: 20% off accommodation and room hire, or 50% if you have three or more group catered main meals with everyone staying onsite catered for."
+      : ""
+  };
+}
 function fillTemplate(s){
+  const b = emailBits();
   return String(s || "")
     .split("{number}").join(Q.num)
     .split("{event}").join(Q.event || "your event")
     .split("{org}").join(Q.org || "")
     .split("{contact}").join(firstName(Q.contact))
     .split("{link}").join(linkForToken(Q.token))
-    .split("{prepBy}").join(Q.prepBy || "The Functions Team");
+    .split("{prepBy}").join(Q.prepBy || "The Functions Team")
+    .split("{dates}").join(b.dates)
+    .split("{nights}").join(b.nights)
+    .split("{guests}").join(b.guests)
+    .split("{rooms}").join(b.rooms)
+    .split("{total}").join(b.total)
+    .split("{stayline}").join(b.stayline)
+    .split("{roomsline}").join(b.roomsline)
+    .split("{cateringline}").join(b.cateringline)
+    .split("{venueline}").join(b.venueline)
+    .split("{churchline}").join(b.churchline)
+    .replace(/[ \t]+\n/g, "\n")     /* tidy up after the lines that came out empty */
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 function emailSubject(){ return fillTemplate(getDefaults().subject); }
 function doEmail(){
@@ -4784,13 +5451,15 @@ function doEmail(){
   const to = String(Q.email).trim();
   const subject = emailSubject();
   const body = fillTemplate(getDefaults().body);
+  /* the client's link only works once the quote reaches the tracker sheet */
+  const linkWarn = SHEET_REACHABLE ? "" : " \u26a0 The tracker sheet could not be reached, so the link in this email will not work until this computer is back online with the tool open.";
   if(getEmailVia() === "app"){
     /* Hand the email to the computer's default mail app via mailto:.
        Reliable with classic Outlook; on machines that run new Outlook this
        handoff often lands in classic Outlook anyway, where the sent email
        sits in an outbox that never flushes. Kept as an opt-in for offices
        standardised on classic Outlook (see Settings). */
-    showToast("Email opened for " + to + " with the acceptance link included. Quote " + Q.num + " logged as sent.");
+    showToast("Email opened for " + to + " with the acceptance link included. Quote " + Q.num + " logged as sent." + linkWarn);
     window.location.href = "mailto:" + to +
       "?subject=" + encodeURIComponent(subject) +
       "&body=" + encodeURIComponent(body);
@@ -4806,7 +5475,7 @@ function doEmail(){
     "&body=" + encodeURIComponent(body);
   const win = window.open(url, "_blank");
   if(win){
-    showToast("Outlook opened in a new tab for " + to + " with the acceptance link included. Quote " + Q.num + " logged as sent.");
+    showToast("Outlook opened in a new tab for " + to + " with the acceptance link included. Quote " + Q.num + " logged as sent." + linkWarn);
   } else {
     showToast("The browser blocked the Outlook tab. Allow pop-ups for this site, then press Email quote again. Quote " + Q.num + " is already logged as sent.");
   }
@@ -4814,11 +5483,15 @@ function doEmail(){
 function doSend(){
   if(!readyToSend()) return;
   sendCore();
-  showToast("Quote " + Q.num + " marked as sent, saved here, and logged to the tracker sheet.");
+  showToast("Quote " + Q.num + " marked as sent and saved here." +
+    (SHEET_REACHABLE ? " Logged to the tracker sheet." : " \u26a0 The tracker sheet could not be reached, so the client's link will not work until this computer is back online with the tool open."));
 }
 /* save the quote as it stands, without marking it sent or opening an email.
    For an already-sent quote this also refreshes what the client's link shows. */
 function doSaveQuote(){
+  /* this updates what the client's link shows, so a sent quote gets the same
+     accommodation pricing check as Email quote and Mark as sent */
+  if(Q.sentAt && !readyToSend()) return;
   if(!Q.token) Q.token = genToken();
   const snap = snapshotQ();
   upsertSnapshot(snap);
@@ -4832,6 +5505,7 @@ function doSaveQuote(){
     : "Quote " + Q.num + " saved to the pipeline and the tracker sheet.");
 }
 function doSubmit(){
+  const wasStatus = Q.status, wasSel = Q.submittedSel, wasAt = Q.submittedAt;
   Q.status = "Submitted";
   Q.submittedAt = new Date().toISOString();
   Q.submittedSel = submitSig();
@@ -4840,7 +5514,11 @@ function doSubmit(){
   const snap = snapshotQ();
   upsertSnapshot(snap);
   /* the full selection travels to the tracker sheet: who's eating, message, venue times, totals */
-  postToSheet({action: "submitted", quote: sheetQuotePayload(snap)});
+  postToSheet({action: "submitted", quote: sheetQuotePayload(snap)}, CLIENT_MODE ? function(){
+    Q.status = wasStatus; Q.submittedSel = wasSel; Q.submittedAt = wasAt;
+    renderClient();
+    showToast("That did not reach us, please check your connection and press Submit again. If it keeps failing, call 02 4283 6999 or email " + VENUE_EMAIL + ".");
+  } : null);
   renderClient();
   renderPrevOptions();
   renderPipeline();
@@ -4851,11 +5529,7 @@ function doSubmit(){
 
 /* ---------- new / template / copy controls ---------- */
 function startNewQuote(){
-  let note = "";
-  if(hasContent(Q) && !SAVED.some(s => s.num === Q.num)){
-    upsertSnapshot(snapshotQ());
-    note = " Your previous quote " + Q.num + " was kept as a draft (see the copy list or the pipeline).";
-  }
+  const note = keepCurrentQuote();
   Q = blankQuote(nextQuoteNum());
   lsDel(LS_DRAFT);
   syncForm();
@@ -4879,6 +5553,7 @@ function copyFromQuote(num){
     sections: s.sections || null,
     secText: s.secText || {},
     kdOver: Array.isArray(s.kdOver) ? s.kdOver : null,
+    kdCfg: s.kdCfg || null,
     catalog: s.catalog || {},
     menu: s.menu || {},
     features: s.features,
@@ -4926,11 +5601,13 @@ function showRestoreBar(){
   const bar = document.getElementById("restoreBar");
   if(!PENDING_DRAFT || !PENDING_DRAFT.q || !hasContent(PENDING_DRAFT.q)){ bar.style.display = "none"; return; }
   const dq = PENDING_DRAFT.q;
+  DRAFT_OFFERED = dq;
   const who = dq.org || dq.contact || "no name yet";
   bar.innerHTML = 'You have an unfinished quote: <b>' + esc(dq.num) + '</b> (' + esc(who) + '). ' +
     '<button id="restoreYes">Restore it</button> <button id="restoreNo" class="dis">Discard</button>';
   bar.style.display = "flex";
   document.getElementById("restoreYes").addEventListener("click", () => {
+    DRAFT_OFFERED = null;
     Q = Object.assign(blankQuote(dq.num), JSON.parse(JSON.stringify(dq)));
     if(dq.sel === undefined) Q.sel = null; // legacy draft: convert its line items
     normalizeQuote(Q, dq);
@@ -4940,6 +5617,7 @@ function showRestoreBar(){
     showToast("Restored " + Q.num + ". Carry on where you left off.");
   });
   document.getElementById("restoreNo").addEventListener("click", () => {
+    DRAFT_OFFERED = null;
     lsDel(LS_DRAFT);
     bar.style.display = "none";
     showToast("Draft discarded.");
@@ -4983,8 +5661,8 @@ function parseRmsDate(s){
   if(y < 100) y += 2000;
   return y + "-" + String(mo).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
 }
-function parseStatement(text){
-  const rows = parseCSVText(text);
+function parseStatement(text){ return parseStatementRows(parseCSVText(text)); }
+function parseStatementRows(rows){
   const charges = [];
   rows.forEach(r => {
     const det = String(r[2] || "");
@@ -5015,14 +5693,14 @@ function groupedImportLines(charges){
   return Object.values(map).map(g => ({
     id: "custom",
     desc: g.rate + ", " + fmtRange(g.from, g.to),
-    qty: g.qty, price: g.price, disc: g.disc || 0, unit: "per room"
+    qty: g.qty, price: g.price, disc: g.disc || 0, unit: "per room", room: true
   }));
 }
 function perRoomImportLines(charges){
   return charges.map(c => ({
     id: "custom",
     desc: c.rate + " - room " + c.room + ", " + fmtRange(c.from, c.to),
-    qty: 1, price: c.price, disc: c.disc || 0, unit: "flat"
+    qty: 1, price: c.price, disc: c.disc || 0, unit: "flat", room: true
   }));
 }
 function showImportBar(charges){
@@ -5056,19 +5734,9 @@ function applyImport(mode){
   refresh();
   showToast("Added " + lines.length + " line" + (lines.length === 1 ? "" : "s") + " covering " + n + " rooms from the statement. Event dates set from the stay.");
 }
-function readStatementFile(f){
-  if(!f) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const charges = parseStatement(String(reader.result || ""));
-    if(!charges.length){
-      showToast("No room charges found in that file. It should be an RMS statement CSV with charge and discount rows.");
-      return;
-    }
-    showImportBar(charges);
-  };
-  reader.readAsText(f);
-}
+/* kept for anything that still asks for a statement by name: the shared reader
+   recognises a statement along with the tariff and availability exports */
+function readStatementFile(f){ if(f) readTariffFiles([f]); }
 
 /* ---------- settings tab ---------- */
 function editableGroups(){ return RATE_GROUPS.filter(g => g.group !== "Other"); }
@@ -5082,7 +5750,7 @@ function persistRate(){
 function renderRcEditor(){
   const host = document.getElementById("rcEditor");
   const groups = editableGroups();
-  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th class="num" title="How many people the unit sleeps, shown as the Sleeps badge">Sleeps</th><th class="num" title="Default units available, the per-quote number starts from this">Units</th><th title="Priced per person">Per person</th><th title="Shows the day &amp; time control on fixed lines">Day &amp; time</th><th></th></tr></thead><tbody>';
+  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th class="num" title="How many people the unit sleeps, shown as the Sleeps badge">Sleeps</th><th class="num" title="The most separate beds the unit can be made up with (king beds split, bunks count as two, a sofa bed as one); shown as the beds badge and on the quote">Separate beds</th><th class="num" title="Default units available, the per-quote number starts from this">Units</th><th title="Priced per person">Per person</th><th title="Shows the day &amp; time control on fixed lines">Day &amp; time</th><th></th></tr></thead><tbody>';
   groups.forEach((g, gi) => {
     g.items.forEach((it, ii) => {
       html += '<tr>' +
@@ -5090,6 +5758,7 @@ function renderRcEditor(){
         '<td><input type="text" list="rcGroups" data-gi="' + gi + '" data-ii="' + ii + '" data-k="group" value="' + esc(g.group) + '"></td>' +
         '<td class="num"><input type="number" step="0.5" min="0" data-gi="' + gi + '" data-ii="' + ii + '" data-k="price" value="' + it.price + '"></td>' +
         '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="sleeps" value="' + (it.sleeps || "") + '" placeholder="-"></td>' +
+        '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="bedsMax" value="' + (it.bedsMax || "") + '" placeholder="-"></td>' +
         '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="avail" value="' + (it.avail || "") + '" placeholder="-"></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="pp"' + (it.pp ? " checked" : "") + '></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="meal"' + (it.meal ? " checked" : "") + '></td>' +
@@ -5120,13 +5789,16 @@ function renderRcEditor(){
     } else if(k === "sleeps" || k === "avail"){
       const v = Number(e.target.value);
       if(e.target.value === "" || !v) delete item[k]; else item[k] = v;
+    } else if(k === "bedsMax"){
+      /* blank means "don't show a bed count", kept as 0 so the default doesn't creep back */
+      item.bedsMax = Number(e.target.value) || 0;
     } else if(k === "pp" || k === "meal"){
       item[k] = e.target.checked;
     } else {
       item[k] = e.target.value;
     }
     persistRate();
-    renderRcEditor();
+    refreshWhenDone("#rcEditor", renderRcEditor);
   }));
   host.querySelectorAll(".rc-del").forEach(el => el.addEventListener("click", e => {
     const b = e.currentTarget;
@@ -5196,8 +5868,28 @@ function renderSettings(){
   document.getElementById("s-cheapest").checked = d.cheapest !== false;
   renderRcEditor();
   renderSecEditor();
+  renderKdDefaults();
 }
 
+/* Re-rendering straight from a change (blur) event pulls the table out from under
+   the user: Tab lands on an element that no longer exists, and the first click
+   after typing is swallowed because the node is replaced between mousedown and
+   mouseup. Wait a tick, and leave the block alone while they are still in it. */
+function refreshWhenDone(sel, fn){
+  setTimeout(function(){
+    const a = document.activeElement;
+    if(a && a !== document.body && a.closest && a.closest(sel)) return;
+    (fn || refresh)();
+  }, 0);
+}
+/* the same idea on the preview: let the click that caused the blur finish first */
+function laterRenderClient(){
+  setTimeout(function(){
+    const qp = document.getElementById("quotePage");
+    if(qp && qp.contains(document.activeElement)) return;
+    renderClient();
+  }, 200);
+}
 let toastTimer;
 function showToast(msg){
   const t = document.getElementById("toast");
@@ -5243,6 +5935,9 @@ BINDINGS.forEach(pair => {
 });
 function syncForm(){
   BINDINGS.forEach(pair => { document.getElementById(pair[0]).value = Q[pair[1]]; });
+  const endEl = document.getElementById("f-date-end");
+  if(endEl) endEl.min = Q.dateStart || "";
+  if(Q.dateStart && Q.dateEnd && Q.dateEnd > Q.dateStart) LAST_DATES = {start: Q.dateStart, end: Q.dateEnd};
   document.getElementById("f-pricemode").value = Q.priceMode || "full";
   document.getElementById("f-church").value = String((Q.sel && Q.sel.church) || 0);
   document.getElementById("f-acnc").checked = !!Q.acnc;
@@ -5258,6 +5953,10 @@ function syncForm(){
     Q.features[pair[1]] = e.target.checked;
     refresh();
   });
+});
+["start", "end"].forEach(which => {
+  const el = document.getElementById(which === "start" ? "f-date-start" : "f-date-end");
+  if(el) el.addEventListener("change", () => clampEventDates(which));
 });
 document.getElementById("f-church").addEventListener("change", e => {
   setChurchTier(e.target.value);
@@ -5305,15 +6004,52 @@ document.getElementById("prevSel").addEventListener("change", e => {
 });
 document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
 document.getElementById("importFile").addEventListener("change", e => {
-  readStatementFile(e.target.files[0]);
+  readTariffFiles(e.target.files);   // a statement, or whatever else was picked by mistake
   e.target.value = "";
 });
-const staffPanel = document.getElementById("tab-staff");
-staffPanel.addEventListener("dragover", e => e.preventDefault());
-staffPanel.addEventListener("drop", e => {
-  e.preventDefault();
-  if(e.dataTransfer.files && e.dataTransfer.files[0]) readStatementFile(e.dataTransfer.files[0]);
-});
+/* Drag and drop, anywhere on the staff tool and on any tab: one file or a whole
+   set of them, each recognised by its contents. It also stops a stray drop from
+   navigating the browser away from a half-built quote, which used to lose it. */
+(function(){
+  if(CLIENT_MODE) return;
+  const zone = document.getElementById("dropZone");
+  let depth = 0;
+  const hasFiles = e => {
+    const dt = e.dataTransfer;
+    if(!dt || !dt.types) return false;
+    for(let i = 0; i < dt.types.length; i++) if(dt.types[i] === "Files") return true;
+    return false;
+  };
+  const show = on => { if(zone) zone.classList.toggle("on", !!on); };
+  window.addEventListener("dragenter", e => {
+    if(!hasFiles(e)) return;
+    e.preventDefault();
+    depth++;
+    show(true);
+  });
+  window.addEventListener("dragover", e => {
+    if(!hasFiles(e)) return;
+    e.preventDefault();
+    if(e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    show(true);
+  });
+  window.addEventListener("dragleave", e => {
+    if(!hasFiles(e)) return;
+    depth = Math.max(0, depth - 1);
+    if(!depth) show(false);
+  });
+  window.addEventListener("drop", e => {
+    e.preventDefault();
+    depth = 0;
+    show(false);
+    if(!hasFiles(e)) return;
+    const fs = e.dataTransfer.files;
+    if(!fs || !fs.length) return;
+    const staff = document.getElementById("tab-staff");
+    if(staff && !staff.classList.contains("active")) switchTab("staff");
+    readTariffFiles(fs);
+  });
+})();
 
 /* settings bindings */
 document.getElementById("s-notes").addEventListener("input", e => saveDefaults({notes: e.target.value}));
@@ -5369,8 +6105,18 @@ function setPrintFooter(){
   const label = (VENUE + " · Quote " + (Q.num || "")).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   st.textContent = '@page{ @bottom-left{ content:"' + label + '"; font-size:8pt; color:#898781; } }';
 }
-window.addEventListener("beforeprint", setPrintFooter);
+window.addEventListener("beforeprint", function(){
+  commitEdits();
+  setPrintFooter();
+});
+/* the printed summary is built at render time, so any in-place edit has to be
+   committed and the page rebuilt before the print box opens */
+function commitEdits(){
+  if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  renderClient();
+}
 function downloadPDF(){
+  commitEdits();
   switchTab("client");
   setPrintFooter();
   const prevTitle = document.title;
@@ -5384,11 +6130,10 @@ document.getElementById("pdfBtn2").addEventListener("click", downloadPDF);
 
 /* ---------- go ---------- */
 document.getElementById("appLogo").src = LOGO_DATA;
-/* one-time: drop the auto-send era email body (it said a PDF was attached) from saved settings */
+/* one-time: an email body that is only an older default steps aside for the current one */
 (function(){
-  const AUTOSEND_BODY = "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is attached as a PDF. You can also view and accept it online here:\n\n{link}\n\nIf anything needs adjusting, just reply to this email and we will update it for you.";
   const st = lsGet(LS_DEFAULTS, null);
-  if(st && st.body === AUTOSEND_BODY){ delete st.body; lsSet(LS_DEFAULTS, st); }
+  if(st && OLD_EMAIL_BODIES.indexOf(st.body) >= 0){ delete st.body; lsSet(LS_DEFAULTS, st); }
 })();
 /* one-time: add the Accommodation & camping group to rate cards saved before it existed */
 (function(){
@@ -5472,6 +6217,8 @@ if(CLIENT_MODE){
   window.addEventListener("online", () => flushOutbox());
   setInterval(() => { if(!document.hidden) pullPipeline(false); }, 5 * 60 * 1000);
 }
+setInterval(dayRollover, 60 * 1000);
+window.addEventListener("focus", dayRollover);
 </script>
 </body>
 </html>
