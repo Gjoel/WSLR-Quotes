@@ -980,8 +980,10 @@
       <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px">
         <label style="flex:1; min-width:220px">Property<select id="rms-property"><option value="">(load from RMS first)</option></select></label>
         <label style="flex:1; min-width:220px">Rate type for nightly prices<select id="rms-rate"><option value="">(load from RMS first)</option></select></label>
+        <label style="flex:0 0 150px">Priced for (adults per unit)<input type="number" id="rms-adults" min="1" max="12" step="1"></label>
       </div>
-      <div class="tablewrap" id="rmsMap"><p class="hint">Press <b>Load from RMS</b> to list the categories, then match each cabin, campsite and venue type to its RMS category. Types left as "not in RMS" keep their rate card price and are never pencilled.</p></div>
+      <div class="tablewrap" id="rmsMap"><p class="hint">Press <b>Load from RMS</b> to list the categories and rooms, then match each cabin and campsite type to its RMS category, and each venue to its specific room. Types left as "not in RMS" keep their rate card price and are never pencilled.</p></div>
+      <p class="hint" style="margin-top:8px">Cabins and sites take their nightly price and unit counts from RMS. A venue mapped to a specific room keeps its full-day and half-day price from the rate card (the RMS rate is per category, so every room in "Conference Room" would otherwise price the same); RMS is only asked whether that room is free, and that room is what gets pencilled.</p>
       <div id="rmsTestOut" class="hint" style="margin-top:8px"></div>
       <p class="hint" style="margin-top:8px">Guard rails: prices already on a sent quote never change on their own (only the Live from RMS button, on the Prepare tab, replaces them). Availability changes warn and cap the organiser's steppers; they never rewrite a quote. A pencil is written once per submission, only if every unit is still free, and only ever cancelled by this tool while it is still a pencil in RMS. Everything it does is emailed to enquiries@.</p>
     </div>
@@ -6011,7 +6013,7 @@ function showToast(msg, isErr){
    Settings live in the shared settings under "rms":
      {enabled, pencils, propertyId, rateId, rateName, map: {itemId: categoryId}} */
 function getRmsSettings(){
-  const d = {enabled: false, pencils: false, propertyId: 0, rateId: 0, rateName: "", map: {}};
+  const d = {enabled: false, pencils: false, propertyId: 0, rateId: 0, rateName: "", adults: 2, map: {}};
   const s = lsGet(LS_RMS, null);
   if(!s || typeof s !== "object") return d;
   return Object.assign(d, s, {map: (s.map && typeof s.map === "object") ? s.map : {}});
@@ -6066,7 +6068,7 @@ function rmsMappableItems(){
   return out;
 }
 /* a best guess at the RMS category for an item: the CSV aliases first, then the name */
-function rmsSuggest(row, cats){
+function rmsSuggest(row, cats, areas){
   const norm = x => String(x || "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
   const byAlias = cats.filter(c => rmsMatch(c.name) === row.id);
   if(byAlias.length === 1) return byAlias[0].id;
@@ -6075,15 +6077,23 @@ function rmsSuggest(row, cats){
   if(exact.length === 1) return exact[0].id;
   const v = VENUES.find(x => x.fullId === row.id);
   if(v){
-    const want = v.key === "fr13" ? /conference room[s]? ?(1|one)/ : v.key === "fr5" ? /conference room ?5|room 5/ : v.key === "aud" ? /auditorium/ : v.key === "marq" ? /marquee/ : /dining/;
+    const want = v.key === "fr13" ? /conference room[s]? ?(1|one)\b|rooms? 1 ?[-,&]/ : v.key === "fr5" ? /conference room ?5\b|room 5\b/ : v.key === "aud" ? /auditorium/ : v.key === "marq" ? /marquee/ : /dining/;
+    /* a venue is one specific room in RMS, so look at the rooms before the categories */
+    const roomHits = (areas || []).filter(a => !a.inactive && want.test(norm(a.name)));
+    if(roomHits.length === 1) return "area:" + roomHits[0].id;
     const hits = cats.filter(c => want.test(norm(c.name)));
     if(hits.length === 1) return hits[0].id;
+    return 0;
   }
-  const words = n.split(" ").filter(w => w.length > 2 && !/^(unit|units|the|and|per|night|site|sites)$/.test(w));
+  const words = n.split(" ").filter(w => (w.length > 2 || /^\d+$/.test(w)) && !/^(unit|units|the|and|per|night|site|sites)$/.test(w));
+  const nums = words.filter(w => /^\d+$/.test(w));
   let best = null, bestScore = 0;
   cats.forEach(c => {
     const cn = norm(c.name);
-    const score = words.reduce((s, w) => s + (cn.indexOf(w) >= 0 ? 1 : 0), 0);
+    const cwords = cn.split(" ");
+    if(nums.some(x => cwords.indexOf(x) < 0)) return;        // "2 bedroom" never matches "1 bedroom"
+    if(cwords.some(w => /^\d+$/.test(w) && nums.indexOf(w) < 0)) return;
+    const score = words.reduce((s, w) => s + (cwords.indexOf(w) >= 0 ? 1 : 0), 0);
     if(score > bestScore && score >= Math.max(2, Math.ceil(words.length * 0.6))){ best = c; bestScore = score; }
   });
   return best ? best.id : 0;
@@ -6094,6 +6104,7 @@ function renderRmsSettings(){
   const cfg = getRmsSettings(), cat = rmsCatalog();
   document.getElementById("rms-enabled").checked = !!cfg.enabled;
   document.getElementById("rms-pencils").checked = !!cfg.pencils;
+  document.getElementById("rms-adults").value = Number(cfg.adults) > 0 ? cfg.adults : 2;
   const propSel = document.getElementById("rms-property"), rateSel = document.getElementById("rms-rate");
   if(cat){
     const props = cat.properties && cat.properties.length ? cat.properties : [{id: cat.propertyId, name: "Property " + cat.propertyId}];
@@ -6101,28 +6112,37 @@ function renderRmsSettings(){
     const rates = (cat.rates || []).slice().sort((a, b) => a.name.localeCompare(b.name));
     rateSel.innerHTML = '<option value="">pick the rate type…</option>' + rates.map(r => '<option value="' + r.id + '"' + (Number(cfg.rateId) === Number(r.id) ? ' selected' : '') + '>' + esc(r.name) + '</option>').join("");
   }
-  const mapped = Object.keys(cfg.map).filter(k => Number(cfg.map[k]) > 0).length;
+  const mapped = Object.keys(cfg.map).filter(k => Number(cfg.map[k]) > 0 || /^area:\d+$/.test(String(cfg.map[k]))).length;
   st.innerHTML = (cfg.enabled ? '<span class="autobadge">live link on</span>' : '<span class="manualbadge">live link off</span>') +
     (cfg.pencils ? ' · <span class="autobadge">pencils on</span>' : ' · <span class="manualbadge">pencils off</span>') +
     (cat ? ' · ' + (cat.categories || []).length + ' RMS categories loaded ' + esc(rmsAsAt(cat.at)) + ' · ' + mapped + ' types mapped' : ' · catalogue not loaded yet') +
-    (cfg.rateName ? ' · rate: ' + esc(cfg.rateName) : '');
+    (cfg.rateName ? ' · rate: ' + esc(cfg.rateName) + ' for ' + (cfg.adults || 2) + ' adults' : '');
   const box = document.getElementById("rmsMap");
   if(!cat){ return; }
   const cats = (cat.categories || []).filter(c => !c.inactive).slice().sort((a, b) => a.name.localeCompare(b.name));
-  const opts = sel => '<option value="0"' + (!sel ? ' selected' : '') + '>not in RMS</option>' +
-    cats.map(c => '<option value="' + c.id + '"' + (Number(sel) === Number(c.id) ? ' selected' : '') + '>' + esc(c.name) + (c.areas ? ' · ' + c.areas + ' unit' + (c.areas === 1 ? '' : 's') : '') + '</option>').join("");
+  const rooms = (cat.areas || []).filter(a => !a.inactive).slice().sort((a, b) => a.name.localeCompare(b.name));
+  const catName = id => { const c = (cat.categories || []).find(x => Number(x.id) === Number(id)); return c ? c.name : ''; };
+  const catOpts = sel => cats.map(c => '<option value="' + c.id + '"' + (String(sel) === String(c.id) ? ' selected' : '') + '>' + esc(c.name) + (c.areas ? ' · ' + c.areas + ' unit' + (c.areas === 1 ? '' : 's') : '') + '</option>').join("");
+  const opts = (sel, isVenue) => '<option value="0"' + (!sel ? ' selected' : '') + '>not in RMS</option>' +
+    (isVenue
+      ? '<optgroup label="A specific room (recommended for venues)">' + rooms.map(a => '<option value="area:' + a.id + '"' + (String(sel) === 'area:' + a.id ? ' selected' : '') + '>' + esc(a.name) + (catName(a.categoryId) ? ' · ' + esc(catName(a.categoryId)) : '') + '</option>').join("") + '</optgroup>' +
+        '<optgroup label="Any unit of a category">' + catOpts(sel) + '</optgroup>'
+      : catOpts(sel));
   box.innerHTML = '<table class="rmsmap"><thead><tr><th style="width:44%">Quote item</th><th>RMS category</th><th style="width:90px">Units in RMS</th></tr></thead><tbody>' +
     rmsMappableItems().map(g => '<tr class="grp"><td colspan="3">' + esc(g.group) + '</td></tr>' +
       g.rows.map(r => {
-        const sel = Number(cfg.map[r.id]) || 0;
-        const c = cats.find(x => Number(x.id) === sel);
-        return '<tr><td>' + esc(r.name) + (r.mirror ? '<span class="auto">full &amp; half day</span>' : '') + '</td>' +
-          '<td><select class="rmsMapSel" data-id="' + esc(r.id) + '"' + (r.mirror ? ' data-mirror="' + esc(r.mirror) + '"' : '') + '>' + opts(sel) + '</select></td>' +
-          '<td>' + (c ? (c.areas || '?') : '<span class="fmuted">-</span>') + '</td></tr>';
+        const raw = cfg.map[r.id];
+        const sel = /^area:\d+$/.test(String(raw || '')) ? String(raw) : (Number(raw) || 0);
+        const isVenue = !!VENUES.find(x => x.fullId === r.id);
+        const room = typeof sel === 'string' ? rooms.find(a => 'area:' + a.id === sel) : null;
+        const c = room ? null : cats.find(x => Number(x.id) === sel);
+        return '<tr><td>' + esc(r.name) + (r.mirror ? '<span class="auto">full &amp; half day' + (room ? ' · price from the rate card' : '') + '</span>' : '') + '</td>' +
+          '<td><select class="rmsMapSel" data-id="' + esc(r.id) + '"' + (r.mirror ? ' data-mirror="' + esc(r.mirror) + '"' : '') + '>' + opts(sel, isVenue) + '</select></td>' +
+          '<td>' + (room ? '<span class="fmuted" title="One specific room">room</span>' : (c ? (c.areas || '?') : '<span class="fmuted">-</span>')) + '</td></tr>';
       }).join("")).join("") + '</tbody></table>';
   box.querySelectorAll(".rmsMapSel").forEach(el => el.addEventListener("change", () => {
     const map = Object.assign({}, getRmsSettings().map);
-    const v = Number(el.value) || 0;
+    const v = /^area:\d+$/.test(el.value) ? el.value : (Number(el.value) || 0);
     map[el.dataset.id] = v;
     if(el.dataset.mirror) map[el.dataset.mirror] = v;
     setRmsSettings({map: map});
@@ -6141,8 +6161,8 @@ function rmsLoadCatalog(force){
     const cats = (cat.categories || []).filter(c => !c.inactive);
     let guessed = 0;
     rmsMappableItems().forEach(g => g.rows.forEach(r => {
-      if(Number(map[r.id]) > 0) return;
-      const id = rmsSuggest(r, cats);
+      if(Number(map[r.id]) > 0 || /^area:\d+$/.test(String(map[r.id] || ''))) return;
+      const id = rmsSuggest(r, cats, cat.areas || []);
       if(id){ map[r.id] = id; if(r.mirror) map[r.mirror] = id; guessed++; }
     }));
     const patch = {map: map, propertyId: Number(cfg.propertyId) || Number(cat.propertyId) || 0};
@@ -6177,6 +6197,7 @@ document.getElementById("rms-pencils").addEventListener("change", e => {
   if(e.target.checked && !confirm("From now on, every organiser submission pencils its cabins and venues into the LIVE RMS database (one group booking, lets go on the deposit due date). Switch it on?")){ e.target.checked = false; return; }
   setRmsSettings({pencils: e.target.checked}); renderRmsSettings();
 });
+document.getElementById("rms-adults").addEventListener("change", e => { setRmsSettings({adults: Math.max(1, Number(e.target.value) || 2)}); renderRmsSettings(); });
 document.getElementById("rms-property").addEventListener("change", e => { setRmsSettings({propertyId: Number(e.target.value) || 0}); renderRmsSettings(); });
 document.getElementById("rms-rate").addEventListener("change", e => {
   const cat = rmsCatalog(); const r = cat && (cat.rates || []).find(x => Number(x.id) === Number(e.target.value));
