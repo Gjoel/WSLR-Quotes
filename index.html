@@ -123,6 +123,21 @@
   .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
   .btn.primary:hover{background:var(--accent-dn)}
   .btn.ghost{background:none}
+  /* RMS live link */
+  .rmschip{display:inline-block; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:999px; margin-top:4px; white-space:nowrap}
+  .rmschip.held{background:rgba(12,163,12,.13); color:#0a6a0a}
+  .rmschip.short{background:rgba(208,59,59,.13); color:#a52626}
+  .rmschip.warn{background:rgba(191,144,0,.15); color:#7a5b00}
+  .rmschip.muted{background:rgba(120,120,120,.12); color:#555}
+  .rmsbanner{border-radius:10px; padding:10px 14px; margin:6px 0 12px; font-size:13.5px; line-height:1.45}
+  .rmsbanner.ok{background:rgba(12,163,12,.08); color:#245c24}
+  .rmsbanner.short{background:rgba(208,59,59,.09); color:#8a1f1f; border:1px solid rgba(208,59,59,.3)}
+  .rmsmap{width:100%; border-collapse:collapse; font-size:13.5px}
+  .rmsmap th,.rmsmap td{padding:6px 8px; border-bottom:1px solid rgba(0,0,0,.08); text-align:left; vertical-align:middle}
+  .rmsmap select{width:100%; max-width:420px}
+  .rmsmap .grp td{font-weight:700; background:rgba(0,0,0,.03); padding-top:9px}
+  .rmsmap .auto{font-size:11.5px; color:#777; margin-left:6px}
+  .btn.imp3.live.on{background:rgba(12,163,12,.13); border-color:rgba(12,163,12,.5)}
   .btn.accept{background:var(--good); border-color:var(--good); color:#fff; font-size:16.5px; padding:12px 26px}
   .btn.accept:hover{background:var(--good-dn)}
   .imp3wrap{display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap}
@@ -741,6 +756,10 @@
                 <button class="btn imp3" id="impRatesBtn" title="Import the RMS rates results grid (Tariff Manager chart, Print, the results CSV or Excel file): categories down the side, one column per date, the nightly $ shown on the chart. Any RMS file is recognised automatically, whichever button you use.">Rates</button>
                 <span class="imp3until" id="impRatesUntil"></span>
               </span>
+              <span class="imp3col" id="impLiveCol" style="display:none">
+                <button class="btn imp3 live" id="impLiveBtn" title="Pull tonight's rates and unit availability for the event dates straight from RMS (the rate type and category mapping are on the Settings tab). Replaces any imported CSV figures on this quote.">↻ Live from RMS</button>
+                <span class="imp3until" id="impLiveUntil"></span>
+              </span>
             </span>
             <span class="nightschip" id="nightsChip"></span>
           </span>
@@ -945,6 +964,26 @@
       <h2>Cheapest dates search on new quotes</h2>
       <label class="secitem" style="padding:0"><input type="checkbox" id="s-cheapest"> <span><span class="sectitle">Offer the cheapest dates search</span><span class="secwhy">the panel at the foot of the organiser's page that prices their cabins across other dates</span></span></label>
       <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Any single quote can still be changed on the Prepare tab, under "Extras on the organiser's page". Switch it off here if you would rather organisers came back to you about other dates instead of comparing them themselves.</p>
+    </div>
+    <div class="card" id="rmsCard">
+      <div class="cardhead">
+        <h2>RMS live link</h2>
+        <span class="hint" id="rmsStatus">checking…</span>
+      </div>
+      <p class="hint" style="margin:0 0 10px">The quote server talks to RMS Cloud on this tool's behalf (credentials stay on the server). Once mapped, the Prepare tab pulls tonight's rates and unit counts with one button, every organiser page opens with today's availability, the Pipeline flags quotes RMS can no longer cover, and a submitted quote is pencilled into RMS as one group booking.</p>
+      <div class="actions" style="margin:0 0 10px; flex-wrap:wrap; gap:8px">
+        <button class="btn" id="rmsLoadBtn" type="button">Load from RMS</button>
+        <button class="btn ghost" id="rmsTestBtn" type="button" title="Pull the next 7 nights for the mapped types and show what came back">Test the link</button>
+        <label style="display:flex; gap:6px; align-items:center; margin-left:8px"><input type="checkbox" id="rms-enabled"> live rates &amp; availability on</label>
+        <label style="display:flex; gap:6px; align-items:center; margin-left:8px"><input type="checkbox" id="rms-pencils"> pencil-book in RMS when an organiser submits</label>
+      </div>
+      <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px">
+        <label style="flex:1; min-width:220px">Property<select id="rms-property"><option value="">(load from RMS first)</option></select></label>
+        <label style="flex:1; min-width:220px">Rate type for nightly prices<select id="rms-rate"><option value="">(load from RMS first)</option></select></label>
+      </div>
+      <div class="tablewrap" id="rmsMap"><p class="hint">Press <b>Load from RMS</b> to list the categories, then match each cabin, campsite and venue type to its RMS category. Types left as "not in RMS" keep their rate card price and are never pencilled.</p></div>
+      <div id="rmsTestOut" class="hint" style="margin-top:8px"></div>
+      <p class="hint" style="margin-top:8px">Guard rails: prices already on a sent quote never change on their own (only the Live from RMS button, on the Prepare tab, replaces them). Availability changes warn and cap the organiser's steppers; they never rewrite a quote. A pencil is written once per submission, only if every unit is still free, and only ever cancelled by this tool while it is still a pencil in RMS. Everything it does is emailed to enquiries@.</p>
     </div>
     <div class="card">
       <h2>Email subject line</h2>
@@ -1450,6 +1489,7 @@ function collectSharedSettings(){
     ratecard: editableGroups(),
     sections: sectionOverrides(),
     defaults: getDefaults(),
+    rms: getRmsSettings(),
     updated: new Date().toISOString()
   };
 }
@@ -1459,6 +1499,7 @@ function applySharedSettings(s){
   if(Array.isArray(s.ratecard) && s.ratecard.length){ lsSet(LS_RATECARD, s.ratecard); touched = true; }
   if(s.sections && typeof s.sections === "object"){ lsSet(LS_SECTIONS, s.sections); touched = true; }
   if(s.defaults && typeof s.defaults === "object"){ lsSet(LS_DEFAULTS, dropStaleDefaults(s.defaults)); touched = true; }
+  if(s.rms && typeof s.rms === "object"){ lsSet(LS_RMS, s.rms); touched = true; }
   if(touched) buildRate(lsGet(LS_RATECARD, null));
   return touched;
 }
@@ -1513,6 +1554,8 @@ const LS_PREPEMAIL = "wslr_prepemail";
 const DEFAULT_PREP_EMAIL = "functions@wslr.com.au";
 const LS_RATECARD = "wslr_ratecard_v1";
 const LS_DEFAULTS = "wslr_defaults_v1";
+const LS_RMS      = "wslr_rms_v1";          // the RMS link settings (shared via the tracker sheet)
+const LS_RMS_CAT  = "wslr_rms_catalog_v1";  // the last catalogue loaded from RMS (categories, rates, properties)
 const LS_ACCOM_FLAG = "wslr_accom_v1";
 const LS_EMAILVIA = "wslr_emailvia";   /* per computer, never synced to the sheet */
 function lsGet(k, fb){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }catch(e){ return fb; } }
@@ -1619,6 +1662,7 @@ function pullPipeline(force){
         PIPE_STATE = "ok";
         PIPE_LAST_OK = Date.now();
         renderPipeSync();
+        pullRmsCheck(!!force);
       })
       .catch(() => {
         PULL_BUSY = false;
@@ -2874,7 +2918,7 @@ const RMS_ALIASES = [
   ["MOTEL BUDGET", "acc_motel_bud"],
   ["POWERED WATERFRONT", "camp_pow_wf"],
   ["POWERED DRIVE", "camp_pow_dt"],
-  ["UNPOWERED CAMP", "camp_unpow"]
+  ["UNPOWERED CAMP", "camp_unpow"], ["UNPOWERED SITE", "camp_unpow"]
 ];
 function rmsMatch(name){
   const n = String(name || "").toUpperCase().replace(/\s+/g, " ").trim();
@@ -3339,9 +3383,15 @@ function renderImp3(){
     if(b) b.classList.toggle("on", !!on);
     if(c) c.innerHTML = on ? (iso ? "until <b>" + esc(shortDateY(iso)) + "</b>" : (openTxt || "loaded")) : "not imported";
   };
-  set("impAvailBtn", "impAvailUntil", !!Q.availInfo, Q.availInfo && Q.availInfo.to);
+  const live = !!(Q.ratesInfo && Q.ratesInfo.live);
+  set("impAvailBtn", "impAvailUntil", !!Q.availInfo && !live, Q.availInfo && Q.availInfo.to);
   /* Rates: the results grid (or, for older quotes, the two-file rebuild) */
-  set("impRatesBtn", "impRatesUntil", !!Q.ratesInfo, Q.ratesInfo && Q.ratesInfo.to);
+  set("impRatesBtn", "impRatesUntil", !!Q.ratesInfo && !live, Q.ratesInfo && Q.ratesInfo.to);
+  const col = document.getElementById("impLiveCol");
+  if(col) col.style.display = rmsOn() ? "" : "none";
+  set("impLiveBtn", "impLiveUntil", live, null, live ? "as at <b>" + esc(rmsAsAt(Q.ratesInfo.asAt)) + "</b>" : "");
+  const lb = document.getElementById("impLiveBtn");
+  if(lb) lb.disabled = !Q.dateStart || RMS_PULLING;
 }
 function renderImpStatus(){
   renderImp3();
@@ -4532,6 +4582,7 @@ function renderClient(){
 
     accomHtml = '<div class="cb-sec"><h3>Accommodation</h3>' +
       '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ' · choose how many of each cabin type you\'d like ·' + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
+      rmsLiveBanner() +
       '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
         '<span><b>Some cabins are only needed for part of the stay</b><br>' +
         '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin, you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>' +
@@ -5268,7 +5319,7 @@ function renderPipeline(){
       '<td><b>' + esc(r.num) + '</b>' + (r.token ? ' <a class="qlink" href="' + esc(linkForToken(r.token)) + '" target="_blank" rel="noopener" title="Open the client\'s quote link">↗</a>' : '') + (r.mine ? '<span class="you">' + (r.unsaved ? "editing now" : "this quote") + '</span>' : '') + '</td>' +
       '<td>' + esc(r.org || r.contact || "-") + '</td>' +
       '<td>' + esc(r.event || "-") + '</td>' +
-      '<td>' + esc(shortRange(r.dateStart, r.dateEnd)) + '</td>' +
+      '<td>' + esc(shortRange(r.dateStart, r.dateEnd)) + rmsPipeChip(r) + '</td>' +
       '<td>' + (r.unsaved ? '<span class="fmuted">-</span>' : '<input type="date" class="sentInp" data-num="' + esc(r.num) + '" value="' + esc(String(r.sentAt || "").slice(0, 10)) + '" title="Change the date sent">') + '</td>' +
       '<td class="num">' + (r.total === null || r.total === undefined ? '<span class="fmuted" title="A row typed straight into the tracker sheet, no value stored">-</span>' : money0(r.total)) + '</td>' +
       '<td>' + chip(r.status) + (r.unsaved ? '' : statusSel(r.num, r.status)) + '</td>' +
@@ -5919,6 +5970,7 @@ function renderSettings(){
   renderRcEditor();
   renderSecEditor();
   renderKdDefaults();
+  renderRmsSettings();
 }
 
 /* Re-rendering straight from a change (blur) event pulls the table out from under
@@ -5950,6 +6002,286 @@ function showToast(msg, isErr){
   toastTimer = setTimeout(() => t.classList.remove("show"), isErr ? 9000 : 4600);
 }
 
+/* ---------- RMS live link ----------
+   The quote server (Rms.gs) talks to RMS Cloud; this page only ever asks it for
+   read-only things: the catalogue (?rms=catalog), a rate & availability grid for
+   a date window (?rms=grid) and a shortfall check across open quotes (?rms=check).
+   Pencil bookings are written by the server on its own "submitted" handler; there
+   is deliberately no way to ask for one from here.
+   Settings live in the shared settings under "rms":
+     {enabled, pencils, propertyId, rateId, rateName, map: {itemId: categoryId}} */
+function getRmsSettings(){
+  const d = {enabled: false, pencils: false, propertyId: 0, rateId: 0, rateName: "", map: {}};
+  const s = lsGet(LS_RMS, null);
+  if(!s || typeof s !== "object") return d;
+  return Object.assign(d, s, {map: (s.map && typeof s.map === "object") ? s.map : {}});
+}
+function setRmsSettings(patch){
+  const cur = getRmsSettings();
+  const next = Object.assign({}, cur, patch || {});
+  if(patch && patch.map) next.map = Object.assign({}, patch.map);
+  lsSet(LS_RMS, next);
+  pushSharedSettings();
+  return next;
+}
+function rmsOn(){ return !CLIENT_MODE && getRmsSettings().enabled === true; }
+function rmsCatalog(){ return lsGet(LS_RMS_CAT, null); }
+function rmsAsAt(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  if(isNaN(d)) return "";
+  const sameDay = isoDate(d) === isoDate(new Date());
+  return d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}).toLowerCase().replace(/\s/g, "") + (sameDay ? "" : " " + shortDate(isoDate(d)));
+}
+let RMS_PULLING = false, RMS_PULL_TIMER = null, RMS_CHECK = {}, RMS_CHECK_AT = 0, RMS_CHECK_BUSY = false;
+function rmsGet(params){
+  const url = sheetEndpoint();
+  if(!url) return Promise.reject(new Error("no sheet endpoint"));
+  const qs = Object.keys(params).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k])).join("&");
+  return fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + qs + "&token=" + encodeURIComponent(SHEET_TOKEN))
+    .then(r => r.json())
+    .then(data => {
+      if(!data || !data.ok) throw new Error((data && data.error) || "RMS request failed");
+      return data;
+    });
+}
+
+/* the items that can live in RMS: every non-catering rate card item. Venues map by
+   their full-day item; the half-day item is mirrored to the same category. */
+function rmsMappableItems(){
+  const out = [];
+  editableGroups().forEach(g => {
+    if(g.group === CATER_GROUP) return;
+    const items = (g.items || []).filter(it => !it.pp);
+    if(!items.length) return;
+    const rows = [];
+    items.forEach(it => {
+      const v = VENUES.find(x => x.halfId === it.id);
+      if(v) return;                                  // half days ride on the full-day row
+      const vf = VENUES.find(x => x.fullId === it.id);
+      rows.push({id: it.id, name: vf ? vf.name : it.name, mirror: vf ? vf.halfId : null, avail: it.avail});
+    });
+    if(rows.length) out.push({group: g.group, rows: rows});
+  });
+  return out;
+}
+/* a best guess at the RMS category for an item: the CSV aliases first, then the name */
+function rmsSuggest(row, cats){
+  const norm = x => String(x || "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+  const byAlias = cats.filter(c => rmsMatch(c.name) === row.id);
+  if(byAlias.length === 1) return byAlias[0].id;
+  const n = norm(row.name);
+  const exact = cats.filter(c => norm(c.name) === n);
+  if(exact.length === 1) return exact[0].id;
+  const v = VENUES.find(x => x.fullId === row.id);
+  if(v){
+    const want = v.key === "fr13" ? /conference room[s]? ?(1|one)/ : v.key === "fr5" ? /conference room ?5|room 5/ : v.key === "aud" ? /auditorium/ : v.key === "marq" ? /marquee/ : /dining/;
+    const hits = cats.filter(c => want.test(norm(c.name)));
+    if(hits.length === 1) return hits[0].id;
+  }
+  const words = n.split(" ").filter(w => w.length > 2 && !/^(unit|units|the|and|per|night|site|sites)$/.test(w));
+  let best = null, bestScore = 0;
+  cats.forEach(c => {
+    const cn = norm(c.name);
+    const score = words.reduce((s, w) => s + (cn.indexOf(w) >= 0 ? 1 : 0), 0);
+    if(score > bestScore && score >= Math.max(2, Math.ceil(words.length * 0.6))){ best = c; bestScore = score; }
+  });
+  return best ? best.id : 0;
+}
+function renderRmsSettings(){
+  const st = document.getElementById("rmsStatus");
+  if(!st) return;
+  const cfg = getRmsSettings(), cat = rmsCatalog();
+  document.getElementById("rms-enabled").checked = !!cfg.enabled;
+  document.getElementById("rms-pencils").checked = !!cfg.pencils;
+  const propSel = document.getElementById("rms-property"), rateSel = document.getElementById("rms-rate");
+  if(cat){
+    const props = cat.properties && cat.properties.length ? cat.properties : [{id: cat.propertyId, name: "Property " + cat.propertyId}];
+    propSel.innerHTML = props.map(p => '<option value="' + p.id + '"' + (Number(cfg.propertyId || cat.propertyId) === Number(p.id) ? ' selected' : '') + '>' + esc(p.name) + ' (#' + p.id + ')</option>').join("");
+    const rates = (cat.rates || []).slice().sort((a, b) => a.name.localeCompare(b.name));
+    rateSel.innerHTML = '<option value="">pick the rate type…</option>' + rates.map(r => '<option value="' + r.id + '"' + (Number(cfg.rateId) === Number(r.id) ? ' selected' : '') + '>' + esc(r.name) + '</option>').join("");
+  }
+  const mapped = Object.keys(cfg.map).filter(k => Number(cfg.map[k]) > 0).length;
+  st.innerHTML = (cfg.enabled ? '<span class="autobadge">live link on</span>' : '<span class="manualbadge">live link off</span>') +
+    (cfg.pencils ? ' · <span class="autobadge">pencils on</span>' : ' · <span class="manualbadge">pencils off</span>') +
+    (cat ? ' · ' + (cat.categories || []).length + ' RMS categories loaded ' + esc(rmsAsAt(cat.at)) + ' · ' + mapped + ' types mapped' : ' · catalogue not loaded yet') +
+    (cfg.rateName ? ' · rate: ' + esc(cfg.rateName) : '');
+  const box = document.getElementById("rmsMap");
+  if(!cat){ return; }
+  const cats = (cat.categories || []).filter(c => !c.inactive).slice().sort((a, b) => a.name.localeCompare(b.name));
+  const opts = sel => '<option value="0"' + (!sel ? ' selected' : '') + '>not in RMS</option>' +
+    cats.map(c => '<option value="' + c.id + '"' + (Number(sel) === Number(c.id) ? ' selected' : '') + '>' + esc(c.name) + (c.areas ? ' · ' + c.areas + ' unit' + (c.areas === 1 ? '' : 's') : '') + '</option>').join("");
+  box.innerHTML = '<table class="rmsmap"><thead><tr><th style="width:44%">Quote item</th><th>RMS category</th><th style="width:90px">Units in RMS</th></tr></thead><tbody>' +
+    rmsMappableItems().map(g => '<tr class="grp"><td colspan="3">' + esc(g.group) + '</td></tr>' +
+      g.rows.map(r => {
+        const sel = Number(cfg.map[r.id]) || 0;
+        const c = cats.find(x => Number(x.id) === sel);
+        return '<tr><td>' + esc(r.name) + (r.mirror ? '<span class="auto">full &amp; half day</span>' : '') + '</td>' +
+          '<td><select class="rmsMapSel" data-id="' + esc(r.id) + '"' + (r.mirror ? ' data-mirror="' + esc(r.mirror) + '"' : '') + '>' + opts(sel) + '</select></td>' +
+          '<td>' + (c ? (c.areas || '?') : '<span class="fmuted">-</span>') + '</td></tr>';
+      }).join("")).join("") + '</tbody></table>';
+  box.querySelectorAll(".rmsMapSel").forEach(el => el.addEventListener("change", () => {
+    const map = Object.assign({}, getRmsSettings().map);
+    const v = Number(el.value) || 0;
+    map[el.dataset.id] = v;
+    if(el.dataset.mirror) map[el.dataset.mirror] = v;
+    setRmsSettings({map: map});
+    renderRmsSettings();
+  }));
+}
+function rmsLoadCatalog(force){
+  const st = document.getElementById("rmsStatus");
+  if(st) st.innerHTML = '<span class="autobadge">asking RMS…</span>';
+  return rmsGet({rms: "catalog", force: force ? 1 : 0}).then(data => {
+    const cat = data.catalog;
+    lsSet(LS_RMS_CAT, cat);
+    /* fill in the obvious matches for anything still unmapped, staff can change any of them */
+    const cfg = getRmsSettings();
+    const map = Object.assign({}, cfg.map);
+    const cats = (cat.categories || []).filter(c => !c.inactive);
+    let guessed = 0;
+    rmsMappableItems().forEach(g => g.rows.forEach(r => {
+      if(Number(map[r.id]) > 0) return;
+      const id = rmsSuggest(r, cats);
+      if(id){ map[r.id] = id; if(r.mirror) map[r.mirror] = id; guessed++; }
+    }));
+    const patch = {map: map, propertyId: Number(cfg.propertyId) || Number(cat.propertyId) || 0};
+    if(!cfg.rateId){
+      const rg = (cat.rates || []).find(r => /resort guest/i.test(r.name));
+      if(rg){ patch.rateId = rg.id; patch.rateName = rg.name; }
+    }
+    setRmsSettings(patch);
+    renderRmsSettings();
+    showToast("RMS catalogue loaded: " + cats.length + " categories, " + (cat.rates || []).length + " rate types" + (guessed ? ", " + guessed + " types matched by name (check them)" : "") + ".");
+  }).catch(e => {
+    renderRmsSettings();
+    showToast("RMS: " + e.message, true);
+  });
+}
+function rmsTest(){
+  const out = document.getElementById("rmsTestOut");
+  out.textContent = "asking RMS for the next 7 nights…";
+  const from = isoDate(today), to = isoAddDays(from, 7);
+  rmsGet({rms: "grid", from: from, to: to, fresh: 1}).then(g => {
+    const ids = Object.keys(g.avail || {});
+    out.innerHTML = '<b>Live link works.</b> ' + esc(g.rate ? g.rate.name : '') + ' · ' + shortDate(from) + ' to ' + shortDate(to) + ' · as at ' + esc(rmsAsAt(g.asAt)) + '<br>' +
+      ids.map(id => { const it = RATE[id] || {}; const days = g.avail[id]; const rs = g.rates[id] || {}; const firstDay = Object.keys(days).sort()[0];
+        return esc(it.name || id) + ': ' + (firstDay ? days[firstDay] + ' free tonight' : '') + (rs[firstDay] ? ' at ' + money(rs[firstDay]) : ' (no price on this rate)'); }).join(' · ') +
+      (g.unmapped && g.unmapped.length ? '<br><span class="overdue">Not mapped: ' + esc(g.unmapped.join(", ")) + '</span>' : '');
+  }).catch(e => { out.innerHTML = '<span class="overdue">RMS: ' + esc(e.message) + '</span>'; });
+}
+document.getElementById("rmsLoadBtn").addEventListener("click", () => rmsLoadCatalog(true));
+document.getElementById("rmsTestBtn").addEventListener("click", rmsTest);
+document.getElementById("rms-enabled").addEventListener("change", e => { setRmsSettings({enabled: e.target.checked}); renderRmsSettings(); renderImp3(); });
+document.getElementById("rms-pencils").addEventListener("change", e => {
+  if(e.target.checked && !confirm("From now on, every organiser submission pencils its cabins and venues into the LIVE RMS database (one group booking, lets go on the deposit due date). Switch it on?")){ e.target.checked = false; return; }
+  setRmsSettings({pencils: e.target.checked}); renderRmsSettings();
+});
+document.getElementById("rms-property").addEventListener("change", e => { setRmsSettings({propertyId: Number(e.target.value) || 0}); renderRmsSettings(); });
+document.getElementById("rms-rate").addEventListener("change", e => {
+  const cat = rmsCatalog(); const r = cat && (cat.rates || []).find(x => Number(x.id) === Number(e.target.value));
+  setRmsSettings({rateId: Number(e.target.value) || 0, rateName: r ? r.name : ""}); renderRmsSettings();
+});
+
+/* ---- the Prepare tab: tonight's rates and unit counts for this quote ---- */
+function rmsWindow(){
+  if(!Q.dateStart) return null;
+  const end = (Q.dateEnd && Q.dateEnd > Q.dateStart) ? Q.dateEnd : isoAddDays(Q.dateStart, 1);
+  const t = isoDate(today);
+  let from = isoAddDays(Q.dateStart, -60), to = isoAddDays(end, 60);   // room for the cheapest-dates search
+  if(from < t) from = t;
+  if(to < end) to = end;
+  const span = Math.round((new Date(to) - new Date(from)) / 86400000);
+  if(span > 170) to = isoAddDays(from, 170);
+  if(to < end) { from = Q.dateStart < t ? t : Q.dateStart; to = end; }
+  return {from: from, to: to};
+}
+function pullRmsRates(manual){
+  if(CLIENT_MODE) return;
+  if(!rmsOn()){ if(manual) showToast("The RMS live link is off. Switch it on under Settings.", true); return; }
+  const w = rmsWindow();
+  if(!w){ if(manual) showToast("Set the event dates first.", true); return; }
+  if(RMS_PULLING) return;
+  RMS_PULLING = true; renderImp3();
+  rmsGet({rms: "grid", from: w.from, to: w.to, fresh: manual ? 1 : 0}).then(g => {
+    RMS_PULLING = false;
+    const items = Object.keys(g.rates || {}).length;
+    Q.rmsBase = null; Q.rmsOver = null; Q.impError = null;
+    Q.rates = g.rates || {};
+    Q.availCal = g.avail || {};
+    Q.ratesInfo = {from: g.from, to: g.to, items: items, file: "RMS live · " + (g.rate ? g.rate.name : ""), live: true, asAt: g.asAt};
+    Q.availInfo = {from: g.from, to: g.to, items: Object.keys(g.avail || {}).length, file: "RMS live", live: true, asAt: g.asAt};
+    const notes = ["Live from RMS: " + items + " unit types priced, " + shortDateY(g.from) + " – " + shortDateY(g.to) + ", as at " + rmsAsAt(g.asAt)];
+    const missing = accomMissingFrom(g.rates).filter(n => !/campsite|site$/i.test(n));
+    const errs = [];
+    if(missing.length) errs.push("no price from RMS for " + missing.join(", ") + (g.unmapped && g.unmapped.length ? " (not mapped: " + g.unmapped.join(", ") + ")" : " (no rate for those dates on " + (g.rate ? g.rate.name : "this rate") + ")"));
+    const cov = coverageCheck(g.from, g.to);
+    if(cov && cov.missing) errs.push(cov.missing + " of the " + cov.nights + " stay nights are outside the window RMS returned.");
+    if(errs.length) Q.impError = errs.slice();
+    refresh();
+    if(manual || errs.length) showToast(notes.concat(errs).join(" · "), errs.length > 0);
+  }).catch(e => {
+    RMS_PULLING = false; renderImp3();
+    if(manual) showToast("RMS: " + e.message, true);
+  });
+}
+/* a draft follows its dates; anything already sent keeps its prices until staff press the button */
+function scheduleRmsPull(){
+  clearTimeout(RMS_PULL_TIMER);
+  if(!rmsOn() || CLIENT_MODE) return;
+  if(Q.status !== "Draft" || !Q.dateStart) return;
+  const hasRates = Q.rates && Object.keys(Q.rates).length > 0;
+  if(hasRates && !(Q.ratesInfo && Q.ratesInfo.live)) return;    // a CSV import is in charge of this quote
+  RMS_PULL_TIMER = setTimeout(() => pullRmsRates(false), 800);
+}
+
+/* ---- the organiser's page: what the server checked when the page opened ---- */
+function rmsLiveBanner(){
+  if(!CLIENT_MODE || !Q.availLive) return '';
+  const L = Q.availLive;
+  if(L.error) return '';
+  const sf = Array.isArray(L.shortfalls) ? L.shortfalls : [];
+  if(sf.length){
+    return '<div class="rmsbanner short"><b>Availability has changed since this quote was prepared.</b> ' +
+      sf.map(x => 'Only <b>' + x.available + '</b> of the ' + x.selected + ' × ' + esc(x.name) + ' selected ' + (x.available === 1 ? 'is' : 'are') + ' still free for ' + esc(fmtRange(x.from, x.to)) + '.').join(' ') +
+      ' Please adjust the numbers below, or tell us in the message box and we will find an alternative.</div>';
+  }
+  return '<div class="rmsbanner ok">Availability checked live at ' + esc(rmsAsAt(L.asAt)) + '. The numbers you can pick are what is really free right now' + (Q.rmsHold && Q.rmsHold.status === "held" ? ', including the units already held for you' : '') + '.</div>';
+}
+
+/* ---- the Pipeline: a live check across open quotes ---- */
+function pullRmsCheck(fresh){
+  if(CLIENT_MODE || !rmsOn() || RMS_CHECK_BUSY) return;
+  if(!fresh && Date.now() - RMS_CHECK_AT < 5 * 60 * 1000) return;
+  RMS_CHECK_BUSY = true;
+  rmsGet({rms: "check", fresh: fresh ? 1 : 0}).then(data => {
+    RMS_CHECK_BUSY = false;
+    RMS_CHECK = data.quotes || {};
+    RMS_CHECK_AT = Date.now();
+    renderPipeline();
+  }).catch(() => { RMS_CHECK_BUSY = false; });
+}
+function rmsPipeChip(r){
+  if(CLIENT_MODE) return '';
+  const chk = RMS_CHECK[r.num] || {};
+  const hold = chk.hold || (r.rmsHold ? {status: r.rmsHold.status, groupId: r.rmsHold.groupId, expiry: r.rmsHold.expiry, units: (r.rmsHold.units || []).length} : null);
+  const bits = [];
+  if(hold){
+    if(hold.status === "held") bits.push('<span class="rmschip held" title="Pencil booking in RMS, group ' + esc(hold.groupId) + (hold.expiry ? ', lets go ' + esc(shortDate(hold.expiry)) : '') + '">RMS pencil G' + esc(hold.groupId) + ' · ' + hold.units + ' unit' + (hold.units === 1 ? '' : 's') + (hold.expiry ? ' · to ' + esc(shortDate(hold.expiry)) : '') + '</span>');
+    else if(hold.status === "shortfall") bits.push('<span class="rmschip short" title="The organiser submitted but RMS did not have the units, nothing was pencilled">RMS: not held, short</span>');
+    else if(hold.status === "released") bits.push('<span class="rmschip muted">RMS pencils released</span>');
+    else if(hold.status === "error") bits.push('<span class="rmschip warn" title="The pencil booking failed; see the email">RMS hold failed</span>');
+  }
+  if(chk.checked){
+    const sf = chk.shortfalls || [];
+    if(sf.length) bits.push('<span class="rmschip short" title="' + esc(sf.map(x => x.name + ': ' + x.available + ' of ' + x.selected + ' free, ' + fmtRange(x.from, x.to)).join('; ')) + '">⚠ RMS short: ' + esc(sf.map(x => x.available + '/' + x.selected + ' ' + x.name.replace(/ unit.*$/i, '')).join(', ')) + '</span>');
+    else if(!hold || hold.status !== "held") bits.push('<span class="rmschip muted" title="Every unit on this quote is still free in RMS">RMS ok</span>');
+  } else if(chk.error){
+    bits.push('<span class="rmschip warn" title="' + esc(chk.error) + '">RMS check failed</span>');
+  }
+  return bits.length ? '<div>' + bits.join(' ') + '</div>' : '';
+}
+
 /* ---------- tabs ---------- */
 function switchTab(name){
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
@@ -5979,6 +6311,7 @@ BINDINGS.forEach(pair => {
     if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
     if(pair[1] === "dateStart" || pair[1] === "dateEnd"){
       refresh(); // block nights are clamped to the new stay length automatically
+      scheduleRmsPull();   // a live quote follows its dates (only while it is still a draft)
       return;
     }
     softRefresh();
@@ -6030,6 +6363,7 @@ document.querySelectorAll(".bulkbtn").forEach(el => el.addEventListener("click",
 ["impAvailBtn", "impRatesBtn"].forEach(id => {
   document.getElementById(id).addEventListener("click", () => document.getElementById("tariffFile").click());
 });
+document.getElementById("impLiveBtn").addEventListener("click", () => pullRmsRates(true));
 document.getElementById("tariffFile").addEventListener("change", e => {
   readTariffFiles(e.target.files);
   e.target.value = "";
