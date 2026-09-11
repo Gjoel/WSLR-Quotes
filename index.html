@@ -490,6 +490,8 @@
     font-size:13px; color:var(--ink2);
   }
   .keydates b{color:var(--ink)}
+  .keydates .kdhead{display:flex; align-items:baseline; gap:10px 14px; flex-wrap:wrap; margin-bottom:4px}
+  .keydates .kdhead b{color:var(--ink)}
   .keydates .kd{display:flex; gap:10px; padding:3px 0; align-items:baseline; flex-wrap:wrap}
   /* flex:none, or a long date runs under the text beside it in a narrow column */
   .keydates .kd .kdate{font-weight:600; color:var(--ink); white-space:nowrap; min-width:110px; flex:none}
@@ -575,13 +577,39 @@
   #stickySubmit.show{display:inline-block}
 
   /* ---------- deposit & deadline rules ---------- */
-  .kdcfg{display:grid; grid-template-columns:repeat(auto-fill, minmax(185px,1fr)); gap:10px 16px; margin:8px 0 2px}
+  .kdcfg{display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:12px 20px; margin:4px 0 2px}
+  /* the two rules that carry a sentence get two columns, so they stop wrapping
+     into four lines while the short ones sit half empty */
+  .kdcfg .kdwide{grid-column:span 2}
+  @media (max-width:640px){ .kdcfg .kdwide{grid-column:auto} }
   .kdcfg label{display:flex; flex-direction:column; gap:3px}
   .kdcfg .kdlab{font-size:11.5px; font-weight:600; color:var(--ink2)}
   .kdcfg .kdrow{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
   .kdcfg input{width:58px; text-align:right; padding:4px 6px; font-size:13px}
   .kdcfg .kdu{font-weight:400; font-size:11.5px; color:var(--muted)}
   .kdcfghead{font-size:11.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); margin-top:14px}
+  /* the rules and the timeline they produce, side by side rather than stacked, so
+     the card reads across the page instead of running a long way down it */
+  .kdsplit{display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); gap:6px 26px; align-items:start}
+  /* beside the timeline the rules read better as a list, one to a line, than as a
+     grid of boxes whose trailing words wrap under every input */
+  .kdcfg.kdlist{grid-template-columns:1fr; gap:7px}
+  .kdcfg.kdlist label{flex-direction:row; align-items:center; justify-content:space-between; gap:6px 12px; flex-wrap:wrap}
+  .kdcfg.kdlist .kdlab{flex:1 1 auto}
+  .kdcfg.kdlist .kdrow{flex:0 1 auto; justify-content:flex-end}
+  .kdcfg.kdlist .kdwide{grid-column:auto}
+  /* once the split stacks there is a whole card's width again, so the rules go back
+     to spreading across it rather than stretching label and box to opposite edges */
+  @media (max-width:900px){
+    .kdcfg.kdlist{grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:12px 20px}
+    .kdcfg.kdlist label{flex-direction:column; align-items:flex-start; justify-content:flex-start}
+    .kdcfg.kdlist .kdrow{justify-content:flex-start}
+    .kdcfg.kdlist .kdwide{grid-column:span 2}
+  }
+  @media (max-width:640px){ .kdcfg.kdlist .kdwide{grid-column:auto} }
+  @media (max-width:900px){ .kdsplit{grid-template-columns:1fr} }
+  .kdsplit .keydates{margin-top:0}
+  .kdsublab{font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); margin:0 0 2px}
   /* ---------- drag & drop for the RMS reports ---------- */
   .dropzone{
     position:fixed; inset:0; z-index:55; display:none;
@@ -630,8 +658,9 @@
   .spline{display:flex; align-items:center; gap:5px; justify-content:flex-end; font-size:12.5px; color:var(--muted); flex-wrap:wrap}
   .spline input{width:64px; text-align:right; padding:3px 6px; font-size:12.5px; border:1px solid var(--grid); border-radius:6px; background:#fff}
   .spline input:focus{border-color:var(--accent); outline:none}
-  .kd-tools{display:inline-flex; gap:6px; margin-left:10px; vertical-align:middle; flex-wrap:wrap}
-  .kd-tools .pinsub{white-space:nowrap}
+  .kd-tools{display:inline-flex; gap:14px; align-items:baseline; margin-left:auto; flex-wrap:wrap}
+  .kd-tools .pinsub{white-space:nowrap; display:inline; width:auto; text-align:left; padding:0}
+  .kd-tools .pinreset{display:inline; width:auto; text-align:left; padding:0; white-space:nowrap}
   .kd .kdx{border:none; background:none; color:var(--crit); font-size:14px; cursor:pointer; padding:0 4px; line-height:1}
   .pinwarn{color:var(--crit)}
   .secreset{margin-top:3px}
@@ -709,7 +738,7 @@
           <label>Email<input id="f-email" type="email"></label>
           <label>Event<input id="f-event" type="text"></label>
           <label>First day<input id="f-date-start" type="date"></label>
-          <label>Last day (departure, for multi-day events)<input id="f-date-end" type="date"></label>
+          <label title="The departure date, for multi-day events">Last day (departure)<input id="f-date-end" type="date"></label>
           <label>Guests<input id="f-guests" type="number" min="1"></label>
           <label>Mobile<input id="f-mobile" type="tel"></label>
         </div>
@@ -719,21 +748,28 @@
         <div class="fields">
           <label>Quote number<input id="f-num" type="text"></label>
           <label>Prepared by<input id="f-prepby" type="text" placeholder="Your name"></label>
-          <label>Preparer email (acceptance alerts)<input id="f-prepemail" type="email" placeholder="functions@wslr.com.au"></label>
-          <label>Quote valid for (days)<input id="f-valid" type="number" min="1"></label>
-          <label>Extra discount % (whole quote)<input id="f-disc" type="number" step="0.5" min="0"></label>
-          <label>Pricing shown to the client
+          <label title="Where the alert goes when the client accepts or declines online. The functions inbox always gets a copy.">Preparer email<input id="f-prepemail" type="email" placeholder="functions@wslr.com.au"></label>
+          <label title="Shown as Valid until on the quote, and drives the follow-up column on the Pipeline">Quote valid for (days)<input id="f-valid" type="number" min="1"></label>
+          <label title="Taken off the whole quote, after any church discount">Extra discount %<input id="f-disc" type="number" step="0.5" min="0"></label>
+          <label title="Hides the final total, or every price, on the client quote and the PDF only. You always see the full numbers here.">Pricing shown to the client
             <select id="f-pricemode">
               <option value="full">Full pricing</option>
               <option value="nototal">Hide the final total</option>
               <option value="noprices">Hide all prices</option>
             </select>
           </label>
-          <label>Security bond ($)<input id="f-bond" type="number" min="0" step="50"></label>
+          <label title="Appears in the deposit & payment information on the quote">Security bond ($)<input id="f-bond" type="number" min="0" step="50"></label>
         </div>
-        <div id="prepKeyDates"></div>
-        <p class="hint" style="margin-top:10px">All prices include GST (10%). Validity and discounts are set per quote; prices live in the rate card on the Settings tab. "Pricing shown to the client" hides the final total (or every price) on the client quote and PDF only, you always see the full numbers here. The security bond amount appears in the deposit &amp; payment information on the quote. When the client accepts or declines online, the alert email goes to the preparer email above (the functions inbox always gets a copy).</p>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="cardhead">
+        <h2>Deposit, deadlines &amp; cancellation</h2>
+        <span class="hint">from the house rules on the Settings tab; change one here and it applies to this quote only</span>
+        <span id="kdResetWrap"></span>
+      </div>
+      <div id="prepKeyDates"></div>
     </div>
 
     <div class="card">
@@ -756,8 +792,8 @@
                 <button class="btn imp3" id="impRatesBtn" title="Import the RMS rates results grid (Tariff Manager chart, Print, the results CSV or Excel file): categories down the side, one column per date, the nightly $ shown on the chart. Any RMS file is recognised automatically, whichever button you use.">Rates</button>
                 <span class="imp3until" id="impRatesUntil"></span>
               </span>
-              <span class="imp3col" id="impLiveCol" style="display:none">
-                <button class="btn imp3 live" id="impLiveBtn" title="Rates and unit availability load from RMS on their own for a draft quote with dates. Press this to fetch them again now, or to refresh a quote that has already been sent. Replaces any imported CSV figures on this quote.">↻ Live from RMS</button>
+              <span class="imp3col" id="impLiveCol">
+                <button class="btn imp3 live" id="impLiveBtn" title="Pull tonight's nightly prices and unit counts for the event dates straight from RMS. This is the only thing that loads them: nothing else fills them in, and until you press it every cabin sits at zero. It sets the link up for you the first time, so there is nothing to do on the Settings tab.">↻ Live from RMS</button>
                 <span class="imp3until" id="impLiveUntil"></span>
               </span>
             </span>
@@ -832,7 +868,7 @@
         <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission, that part is built in.</p>
       </div>
 
-      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote. Venue and catering prices start from the rate card (Settings tab); accommodation nightly prices and unit counts load themselves from RMS for the event dates, and can also come from a set price on the Settings tab, an RMS report you import, or a price you type here. The rate card never supplies a cabin price. Everything only applies to this quote.</p>
+      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote. Venue and catering prices start from the rate card (Settings tab). Cabin prices and unit counts start at zero and stay there until you press ↻ Live from RMS, drop in an RMS report, or type them in; a set price on the Settings tab can also hold certain dates. The rate card never supplies a cabin price. Everything only applies to this quote.</p>
     </div>
 
     <div class="card">
@@ -981,7 +1017,7 @@
         <h2>RMS live link</h2>
         <span class="hint" id="rmsStatus">checking…</span>
       </div>
-      <p class="hint" style="margin:0 0 10px">The quote server talks to RMS Cloud on this tool's behalf (credentials stay on the server). Once the live link is on and the types below are mapped, nothing has to be pressed: the catalogue loads itself, and every draft quote fetches tonight's rates and unit counts as soon as it has dates. Every organiser page opens with today's availability, the Pipeline flags quotes RMS can no longer cover, and a submitted quote is pencilled into RMS as one group booking.</p>
+      <p class="hint" style="margin:0 0 10px">The quote server talks to RMS Cloud on this tool's behalf (credentials stay on the server). <b>You do not need this page to get rates:</b> pressing ↻ Live from RMS on the Prepare tab sets all of this up by itself the first time, including matching the cabin types below. Come here only to check or correct that matching, to pick a different rate type, or to turn pencil bookings on. Every organiser page opens with today's availability, the Pipeline flags quotes RMS can no longer cover, and a submitted quote is pencilled into RMS as one group booking.</p>
       <div class="actions" style="margin:0 0 10px; flex-wrap:wrap; gap:8px">
         <button class="btn" id="rmsLoadBtn" type="button">Load from RMS</button>
         <button class="btn ghost" id="rmsTestBtn" type="button" title="Pull the next 7 nights for the mapped types and show what came back">Test the link</button>
@@ -1547,14 +1583,10 @@ function loadSharedSettings(){
       }
       SETTINGS_SYNC_STATE = "synced";
       renderSyncBadge();
-      /* the live link switch and the category mapping arrive with these settings, so
-         this is the first moment the tool can fetch rates on its own */
-      autoRmsBoot();
     })
     .catch(() => {
       SETTINGS_SYNC_STATE = "offline";
       renderSyncBadge();
-      autoRmsBoot();
     });
 }
 let SETTINGS_PUSH_TIMER = null;
@@ -3506,8 +3538,7 @@ function clearTariff(){
   Q.rates = {}; Q.rateFixed = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
   Q.rmsBase = null; Q.rmsOver = null; Q.impError = null;
   refresh();
-  showToast("Imported tariff & availability cleared. If the RMS live link is on, fresh rates will load again on their own.");
-  scheduleRmsPull(true);
+  showToast("Prices and unit counts cleared, every cabin is back to zero. Press ↻ Live from RMS to load them again.");
 }
 /* the rate/availability buttons: grey until loaded, then green with a "done until" date
    underneath. With the RMS live link on, the tool loads these itself and the buttons
@@ -3522,17 +3553,22 @@ function renderImp3(){
   set("impAvailBtn", "impAvailUntil", !!Q.availInfo && !live, Q.availInfo && Q.availInfo.to);
   /* Rates: the results grid (or, for older quotes, the two-file rebuild) */
   set("impRatesBtn", "impRatesUntil", !!Q.ratesInfo && !live, Q.ratesInfo && Q.ratesInfo.to);
+  /* the live button is always there and always clickable: it is the only thing
+     that loads nightly prices, and it sets the RMS link up itself the first time,
+     so nobody has to go to the Settings tab to get rates */
   const col = document.getElementById("impLiveCol");
-  if(col) col.style.display = rmsOn() ? "" : "none";
+  if(col) col.style.display = "";
   const lb = document.getElementById("impLiveBtn");
   if(RMS_PULLING){
     const c = document.getElementById("impLiveUntil");
     if(lb) lb.classList.remove("on");
     if(c) c.innerHTML = "loading…";
   } else {
-    set("impLiveBtn", "impLiveUntil", live, null, live ? "as at <b>" + esc(rmsAsAt(Q.ratesInfo.asAt)) + "</b>" : "auto");
+    set("impLiveBtn", "impLiveUntil", live, null, live ? "as at <b>" + esc(rmsAsAt(Q.ratesInfo.asAt)) + "</b>" : "");
+    const c = document.getElementById("impLiveUntil");
+    if(c && !live) c.innerHTML = "press to load";
   }
-  if(lb) lb.disabled = !Q.dateStart || RMS_PULLING;
+  if(lb) lb.disabled = !!RMS_PULLING;
 }
 function renderImpStatus(){
   renderImp3();
@@ -3546,22 +3582,11 @@ function renderImpStatus(){
     const x = document.getElementById("impErrX");
     if(x) x.addEventListener("click", () => { Q.impError = null; renderImpStatus(); });
   };
-  /* the live link is on and the tool is fetching, or about to: say so rather than
-     asking for an import that is about to arrive on its own */
-  if(rmsOn() && !Q.ratesInfo && Q.dateStart && (RMS_PULLING || Q.status === "Draft")){
-    host.innerHTML = errBox + '<div class="impstatus"><span>' +
-      (RMS_PULLING ? 'Loading tonight\'s rates and availability from RMS…' : 'Rates and availability load from RMS automatically for these dates.') +
-      '</span></div>';
-    wireErr();
-    return;
-  }
-  /* copied from an older quote: its tariff was deliberately left behind */
+  /* copied from an older quote: its prices were deliberately left behind */
   if(Q.needsTariff && !Q.ratesInfo){
     host.innerHTML = errBox + '<div class="impredo">⚠ <b>No accommodation prices on this quote yet.</b> ' +
       'It was copied from an earlier one (or reopened while the tracker sheet was unreachable), so its prices and unit counts are not here, they change every day. ' +
-      (rmsOn()
-        ? 'Switch the event dates on and they will load from RMS on their own, or press <b>↻ Live from RMS</b> above.'
-        : 'Use the <b>Rates</b> and <b>Availability</b> buttons above (or type a nightly price on each cabin) before sending.') +
+      'Press <b>↻ Live from RMS</b> above, drop in an RMS report, or type a nightly price on each cabin before sending.' +
       '<button class="impclear" id="impRedoX" title="Hide this reminder">dismiss</button></div>' +
       (Q.availInfo ? '<div class="impstatus"><span>Availability <b>' + esc(shortDate(Q.availInfo.from)) + ' – ' + esc(shortDate(Q.availInfo.to)) + '</b> · ' + Q.availInfo.items + ' unit types</span></div>' : '');
     const x = document.getElementById("impRedoX");
@@ -3569,7 +3594,17 @@ function renderImpStatus(){
     wireErr();
     return;
   }
-  if(!Q.ratesInfo && !Q.availInfo){ host.innerHTML = errBox; wireErr(); return; }
+  /* nothing loaded yet: say plainly that every cabin is at zero until the button
+     is pressed, rather than leaving the rows blank and unexplained */
+  if(!Q.ratesInfo && !Q.availInfo){
+    host.innerHTML = errBox + '<div class="impstatus"><span>' +
+      (RMS_PULLING
+        ? 'Loading tonight\'s prices and unit counts from RMS…'
+        : 'No prices or unit counts loaded yet, so every cabin is at zero. Press <b>↻ Live from RMS</b> to pull tonight\'s figures for these dates' + (Q.dateStart ? '' : ' (set the event dates first)') + ', or drop an RMS report onto the page.') +
+      '</span></div>';
+    wireErr();
+    return;
+  }
   const bits = [];
   if(Q.ratesInfo) bits.push("<span>" + (Q.ratesInfo.live ? "Rates <b>live from RMS</b>, " + esc(rmsAsAt(Q.ratesInfo.asAt)) + " · " : "Tariff <b>" + esc(shortDate(Q.ratesInfo.from)) + " – " + esc(shortDate(Q.ratesInfo.to)) + "</b> · ") + Q.ratesInfo.items + " unit types" + (Q.ratesInfo.skipped ? " <span class='fmuted'>(" + Q.ratesInfo.skipped + " rows skipped)</span>" : "") + "</span>");
   if(Q.ratesInfo && Q.ratesInfo.partial) bits.push('<span class="impwarn">⚠ ' + (Q.ratesInfo.partial === "base"
@@ -3790,8 +3825,13 @@ function renderPrep(){
     } else if(hasAvailCal){
       availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + ma + '" title="Your override, same cap every night">' +
         '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="avail" title="Go back to the loaded availability">typed · use ' + availWord.replace(/^from /, "") + '</button></div>';
+    } else if(ma !== null){
+      availCell = '<input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + ma + '" title="Units the organiser can book, typed for this quote">';
     } else {
-      availCell = '<input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + (c.avail === null ? '' : c.avail) + '" placeholder="-" title="Units the organiser can book, for this quote">';
+      /* nothing loaded: this is how many of these the resort owns, not how many are
+         free on the dates. Say so, so it is never mistaken for live availability. */
+      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + (c.avail === null ? '' : c.avail) + '" placeholder="-" title="Not loaded yet. This is the house total from the rate card, not what is free on these dates.">' +
+        (c.avail === null ? '' : '<span class="pinsub pinwarn">house total</span>') + '</div>';
     }
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="accom" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this cabin type on this quote">' +
@@ -3907,7 +3947,6 @@ function clampEventDates(changed){
   if(a) a.value = Q.dateStart || "";
   if(b){ b.value = Q.dateEnd || ""; b.min = Q.dateStart || ""; }
   refresh();
-  scheduleRmsPull();
 }
 /* tells staff when the event is inside the usual lead times, so they know why the
    timeline reads "As soon as possible" rather than a deadline that has already
@@ -3928,18 +3967,18 @@ function shortNoticeHTML(){
     ' would fall before the quote date. Those lines read “As soon as possible” below instead of a date that has already gone.</p>';
 }
 /* the deadline fields, used both per quote (Prepare tab) and as house defaults (Settings) */
-function kdFieldsHTML(c, cls){
+function kdFieldsHTML(c, cls, list){
   const f = (k, step) => '<input type="number" class="' + cls + '" data-k="' + k + '" value="' + c[k] + '" min="0" step="' + (step || 1) + '">';
-  const row = (lab, inner) => '<label><span class="kdlab">' + lab + '</span><span class="kdrow">' + inner + '</span></label>';
-  return '<div class="kdcfg">' +
+  const row = (lab, inner, wide) => '<label' + (wide ? ' class="kdwide"' : '') + '><span class="kdlab">' + lab + '</span><span class="kdrow">' + inner + '</span></label>';
+  return '<div class="kdcfg' + (list ? ' kdlist' : '') + '">' +
     row("Deposit per cabin or room", '<span class="kdu">$</span>' + f("depositPer", 10)) +
-    row("Deposit due within", f("depositWeeks") + '<span class="kdu">weeks of booking, or</span>' + f("depositLeadWeeks") + '<span class="kdu">weeks before arrival, whichever is earlier</span>') +
+    row("Deposit due, whichever is sooner", f("depositWeeks") + '<span class="kdu">weeks of booking, or</span>' + f("depositLeadWeeks") + '<span class="kdu">weeks before arrival</span>', true) +
     row("Dates held for", f("holdDays") + '<span class="kdu">days from the quote date</span>') +
     row("Confirmation email", f("emailWeeks") + '<span class="kdu">weeks before arrival</span>') +
     row("Catering locked in", f("cateringDays") + '<span class="kdu">days before arrival</span>') +
     row("Final numbers", f("finalDays") + '<span class="kdu">days before arrival</span>') +
     row("Bigger groups", f("finalDaysBig") + '<span class="kdu">days, over</span>' + f("bigUnits") + '<span class="kdu">units</span>') +
-    row("Cancellation window", f("cancelDays") + '<span class="kdu">days before arrival, fee</span><span class="kdu">$</span>' + f("cancelFee", 5) + '<span class="kdu">per room</span>') +
+    row("Cancellation window", f("cancelDays") + '<span class="kdu">days before arrival, fee</span><span class="kdu">$</span>' + f("cancelFee", 5) + '<span class="kdu">per room</span>', true) +
   '</div>';
 }
 /* the same timeline the organiser gets, with the rules behind it, on the Prepare tab */
@@ -3949,11 +3988,12 @@ function renderPrepKeyDates(){
   const a = document.activeElement;
   /* keep the field they are working in, and refresh the timeline underneath it */
   if(a && host.contains(a) && (a.isContentEditable || a.tagName === "INPUT")){ renderKdRows(); return; }
-  host.innerHTML = '<div class="kdcfghead">Deposit, deadlines &amp; cancellation' +
-      ' <button type="button" class="pinreset kdcfgReset" style="display:' + (kdCfgEdited() ? 'inline' : 'none') + '; width:auto; padding:0 0 0 6px">changed for this quote · back to the house rules</button>' +
-    '</div>' +
-    kdFieldsHTML(kdCfg(), "kdcfgInp") +
-    '<div id="kdRowsBox"></div>';
+  const wrap = document.getElementById("kdResetWrap");
+  if(wrap) wrap.innerHTML = '<button type="button" class="pinreset kdcfgReset" style="display:' + (kdCfgEdited() ? 'inline' : 'none') + '; width:auto; padding:0">changed for this quote · back to the house rules</button>';
+  host.innerHTML = '<div class="kdsplit">' +
+      '<div><div class="kdsublab">The rules</div>' + kdFieldsHTML(kdCfg(), "kdcfgInp", true) + '</div>' +
+      '<div id="kdRowsBox"></div>' +
+    '</div>';
   host.querySelectorAll(".kdcfgInp").forEach(el => el.addEventListener("input", e => {
     if(!Q.kdCfg) Q.kdCfg = {};
     const v = e.target.value;
@@ -3961,10 +4001,10 @@ function renderPrepKeyDates(){
     autosaveDraft();
     renderKdRows();
     renderClient();
-    const rb = host.querySelector(".kdcfgReset");
+    const rb = document.querySelector(".kdcfgReset");
     if(rb) rb.style.display = "inline";
   }));
-  const reset = host.querySelector(".kdcfgReset");
+  const reset = document.querySelector(".kdcfgReset");
   if(reset) reset.addEventListener("click", () => {
     Q.kdCfg = null;
     refresh();
@@ -3981,11 +4021,9 @@ function renderKdRows(){
   const on = !!(Q.features && Q.features.depositDates);
   box.innerHTML = shortNoticeHTML() +
     keyDatesHTML(showPrices, true, true) +
-    '<p class="hint" style="margin-top:6px">' +
-      (on
-        ? 'What the organiser sees on their quote and the PDF. It follows the rules above plus the dates, cabins and bond, and you can click any line to word it yourself for this quote.'
-        : '<span class="pinwarn">Not shown on the quote at the moment.</span> Tick “Deposit &amp; key dates” under “Extras on the organiser’s page”, or <button type="button" class="secauto" id="kdTurnOn">switch it on now</button>.') +
-    '</p>';
+    (on
+      ? ''
+      : '<p class="hint" style="margin-top:6px"><span class="pinwarn">Not shown on the quote at the moment.</span> Tick “Deposit &amp; key dates” under “Extras on the organiser’s page”, or <button type="button" class="secauto" id="kdTurnOn">switch it on now</button>.</p>');
   wireKeyDates(box, showPrices);
   const turnOn = document.getElementById("kdTurnOn");
   if(turnOn) turnOn.addEventListener("click", () => {
@@ -4237,7 +4275,6 @@ function setEventDates(from, nights){
   if(a) a.value = Q.dateStart;
   if(b) b.value = Q.dateEnd;
   refresh();
-  scheduleRmsPull();
 }
 function stepNights(dir){
   if(!Q.dateStart) return;
@@ -4598,15 +4635,17 @@ function keyDatesHTML(showPrices, editable, force){
   const rows = keyDatesRows(showPrices);
   if(!rows.length && !edit) return '';
   const over = Array.isArray(Q.kdOver);
-  return '<div class="keydates' + (edit ? ' kdblock' : '') + '"><b>Money &amp; key dates for your event</b>' +
-    (edit
-      ? '<span class="kd-tools staffedit-ui">' +
-          (over
-            ? '<button class="pinreset kdAuto" title="Drop the edits and go back to the automatically calculated rows">edited · back to automatic</button>'
-            : '<span class="pinsub" style="padding:0">click any line to edit it</span>') +
-          '<button class="pinreset kdAdd">+ add a line</button>' +
-        '</span>'
-      : '') +
+  return '<div class="keydates' + (edit ? ' kdblock' : '') + '">' +
+    '<div class="kdhead"><b>Money &amp; key dates for your event</b>' +
+      (edit
+        ? '<span class="kd-tools staffedit-ui">' +
+            (over
+              ? '<button class="pinreset kdAuto" title="Drop the edits and go back to the automatically calculated rows">edited · back to automatic</button>'
+              : '<span class="pinsub">click any line to edit it</span>') +
+            '<button class="pinreset kdAdd">+ add a line</button>' +
+          '</span>'
+        : '') +
+    '</div>' +
     rows.map((r, i) => '<div class="kd">' +
       '<span class="kdate"' + (edit ? ' contenteditable data-kd="' + i + '" data-part="0"' : '') + '>' + esc(r[0]) + '</span>' +
       '<span' + (edit ? ' contenteditable data-kd="' + i + '" data-part="1"' : '') + '>' + esc(r[1]) + '</span>' +
@@ -5894,9 +5933,7 @@ function copyFromQuote(num){
   normalizeQuote(Q);
   syncForm();
   refresh();
-  scheduleRmsPull(true);
-  showToast("Copied " + num + " into new quote " + Q.num + ". " +
-    (rmsOn() ? "Fresh rates and availability are loading from RMS for these dates." : "Import the RMS rates and availability for these dates, prices from the old quote are not carried over."));
+  showToast("Copied " + num + " into new quote " + Q.num + ". Prices from the old quote are not carried over: press ↻ Live from RMS for these dates.");
 }
 function renderPrevOptions(){
   const sel = document.getElementById("prevSel");
@@ -5933,7 +5970,6 @@ function showRestoreBar(){
     bar.style.display = "none";
     syncForm();
     refresh();
-    scheduleRmsPull();
     showToast("Restored " + Q.num + ". Carry on where you left off.");
   });
   document.getElementById("restoreNo").addEventListener("click", () => {
@@ -6052,7 +6088,6 @@ function applyImport(mode){
   document.getElementById("importBar").style.display = "none";
   syncForm();
   refresh();
-  scheduleRmsPull();
   showToast("Added " + lines.length + " line" + (lines.length === 1 ? "" : "s") + " covering " + n + " rooms from the statement. Event dates set from the stay.");
 }
 /* kept for anything that still asks for a statement by name: the shared reader
@@ -6310,7 +6345,7 @@ function rmsAsAt(iso){
   return d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}).toLowerCase().replace(/\s/g, "") + (sameDay ? "" : " " + shortDate(isoDate(d)));
 }
 let RMS_PULLING = false, RMS_PULL_TIMER = null, RMS_CHECK = {}, RMS_CHECK_AT = 0, RMS_CHECK_BUSY = false;
-let RMS_CAT_BUSY = false, RMS_BOOTED = false;
+let RMS_CAT_BUSY = false;
 function rmsGet(params){
   const url = sheetEndpoint();
   if(!url) return Promise.reject(new Error("no sheet endpoint"));
@@ -6422,7 +6457,6 @@ function renderRmsSettings(){
     if(el.dataset.mirror) map[el.dataset.mirror] = v;
     setRmsSettings({map: map});
     renderRmsSettings();
-    scheduleRmsPull(true);
   }));
 }
 /* the catalogue is what turns the mapping screen on and what the grid needs; it is
@@ -6484,27 +6518,23 @@ function rmsTest(){
       (g.unmapped && g.unmapped.length ? '<br><span class="overdue">Not mapped: ' + esc(g.unmapped.join(", ")) + '</span>' : '');
   }).catch(e => { out.innerHTML = '<span class="overdue">RMS: ' + esc(e.message) + '</span>'; });
 }
-document.getElementById("rmsLoadBtn").addEventListener("click", () => rmsLoadCatalog(true).then(() => scheduleRmsPull(true)));
+document.getElementById("rmsLoadBtn").addEventListener("click", () => rmsLoadCatalog(true));
 document.getElementById("rmsTestBtn").addEventListener("click", rmsTest);
 document.getElementById("rms-enabled").addEventListener("change", e => {
   setRmsSettings({enabled: e.target.checked});
   renderRmsSettings();
   renderImp3();
-  if(e.target.checked){
-    showToast("Live link on. Rates and availability will load on their own for every quote with dates.");
-    RMS_BOOTED = false;
-    autoRmsBoot();
-  }
+  if(e.target.checked) showToast("Live link on. Rates and unit counts still only load when you press ↻ Live from RMS on the Prepare tab.");
 });
 document.getElementById("rms-pencils").addEventListener("change", e => {
   if(e.target.checked && !confirm("From now on, every organiser submission pencils its cabins and venues into the LIVE RMS database (one group booking, lets go on the deposit due date). Switch it on?")){ e.target.checked = false; return; }
   setRmsSettings({pencils: e.target.checked}); renderRmsSettings();
 });
-document.getElementById("rms-adults").addEventListener("change", e => { setRmsSettings({adults: Math.max(1, Number(e.target.value) || 2)}); renderRmsSettings(); scheduleRmsPull(true); });
-document.getElementById("rms-property").addEventListener("change", e => { setRmsSettings({propertyId: Number(e.target.value) || 0}); renderRmsSettings(); scheduleRmsPull(true); });
+document.getElementById("rms-adults").addEventListener("change", e => { setRmsSettings({adults: Math.max(1, Number(e.target.value) || 2)}); renderRmsSettings(); });
+document.getElementById("rms-property").addEventListener("change", e => { setRmsSettings({propertyId: Number(e.target.value) || 0}); renderRmsSettings(); });
 document.getElementById("rms-rate").addEventListener("change", e => {
   const cat = rmsCatalog(); const r = cat && (cat.rates || []).find(x => Number(x.id) === Number(e.target.value));
-  setRmsSettings({rateId: Number(e.target.value) || 0, rateName: r ? r.name : ""}); renderRmsSettings(); scheduleRmsPull(true);
+  setRmsSettings({rateId: Number(e.target.value) || 0, rateName: r ? r.name : ""}); renderRmsSettings();
 });
 
 /* ---- the Prepare tab: tonight's rates and unit counts for this quote ---- */
@@ -6522,10 +6552,13 @@ function rmsWindow(){
 }
 function pullRmsRates(manual){
   if(CLIENT_MODE) return;
-  if(!rmsOn()){ if(manual) showToast("The RMS live link is off. Switch it on under Settings.", true); return; }
   const w = rmsWindow();
-  if(!w){ if(manual) showToast("Set the event dates first.", true); return; }
+  if(!w){ showToast("Set the event dates first, then press ↻ Live from RMS.", true); return; }
   if(RMS_PULLING) return;
+  /* pressing the button is the decision to use RMS, so it switches the link on and
+     loads (and maps) the catalogue itself. Nothing has to be done on the Settings
+     tab first, and nothing loads until this is pressed. */
+  if(!getRmsSettings().enabled) setRmsSettings({enabled: true});
   RMS_PULLING = true; renderImp3();
   ensureRmsCatalog(false).then(() => rmsGet({rms: "grid", from: w.from, to: w.to, fresh: manual ? 1 : 0})).then(g => {
     RMS_PULLING = false;
@@ -6546,48 +6579,22 @@ function pullRmsRates(manual){
     if(cov && cov.missing) errs.push(cov.missing + " of the " + cov.nights + " stay nights are outside the window RMS returned.");
     if(errs.length) Q.impError = errs.slice();
     refresh();
-    if(manual || errs.length) showToast(notes.concat(errs).join(" · "), errs.length > 0);
+    showToast(notes.concat(errs).join(" · "), errs.length > 0);
   }).catch(e => {
     RMS_PULLING = false; renderImp3();
-    if(manual) showToast("RMS: " + e.message, true);
+    showToast("RMS could not be reached: " + e.message + ". Type a nightly price on each cabin, or drop in the rates report instead.", true);
   });
 }
-/* ---- loading rates without anyone pressing a button --------------------
-   A quote that is still a draft follows its dates: set them and the rates and
-   unit counts arrive on their own. A quote that has been sent keeps the prices
-   it was sent with (that guard rail is the point of it), so those only reload
-   from the ↻ Live from RMS button. A CSV import stays in charge of any quote it
-   was used on until it is cleared.
+/* ---- nothing loads rates on its own ------------------------------------
+   Every cabin sits at no price until someone presses ↻ Live from RMS (or drops
+   in a rates report, or types a price). Prices move every day and a quote is a
+   promise, so the tool never goes and fetches them behind your back, and never
+   changes them under a quote that has already been sent.
+   These two are kept as no-ops so the places that used to ask for a background
+   fetch simply do nothing.
    ----------------------------------------------------------------------- */
-function rmsRatesStale(){
-  if(!Q.ratesInfo || !Q.ratesInfo.live) return false;
-  const age = Date.now() - (Date.parse(Q.ratesInfo.asAt || "") || 0);
-  if(!(age >= 0)) return true;
-  if(age > 6 * 60 * 60 * 1000) return true;                       /* prices move daily */
-  const w = rmsWindow();                                           /* dates moved outside what we hold */
-  return !!(w && (w.from < Q.ratesInfo.from || w.to > Q.ratesInfo.to));
-}
-function scheduleRmsPull(now){
-  clearTimeout(RMS_PULL_TIMER);
-  if(!rmsOn() || CLIENT_MODE) return;
-  if(Q.status !== "Draft" || !Q.dateStart) return;
-  const hasRates = Q.rates && Object.keys(Q.rates).length > 0;
-  if(hasRates && !(Q.ratesInfo && Q.ratesInfo.live)) return;      // a CSV import is in charge of this quote
-  if(hasRates && !rmsRatesStale() && !now) return;                // already current for these dates
-  RMS_PULL_TIMER = setTimeout(() => pullRmsRates(false), now ? 150 : 800);
-}
-/* once the shared settings have landed we know whether the live link is on and
-   which categories map where, so this is where the tool starts fetching by itself */
-function autoRmsBoot(){
-  if(CLIENT_MODE || RMS_BOOTED) return;
-  if(!rmsOn()) return;
-  RMS_BOOTED = true;
-  ensureRmsCatalog(false).then(() => {
-    renderRmsSettings();
-    renderImp3();
-    scheduleRmsPull(true);
-  });
-}
+function scheduleRmsPull(){ clearTimeout(RMS_PULL_TIMER); }   /* kept as a no-op on purpose */
+function autoRmsBoot(){}                                      /* kept as a no-op on purpose */
 
 /* ---- the organiser's page: what the server checked when the page opened ---- */
 function rmsLiveBanner(){
@@ -6665,9 +6672,8 @@ BINDINGS.forEach(pair => {
     if(pair[1] === "prepBy"){ try{ localStorage.setItem(LS_PREPBY, el.value); }catch(e){} }
     if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
     if(pair[1] === "dateStart" || pair[1] === "dateEnd"){
-      applyFixedRates();   // a set price follows the dates even before RMS answers
+      applyFixedRates();   // a set price still follows the dates, nothing is fetched
       refresh(); // block nights are clamped to the new stay length automatically
-      scheduleRmsPull();   // a draft follows its dates; a sent quote keeps its prices
       return;
     }
     softRefresh();
@@ -6978,13 +6984,10 @@ if(CLIENT_MODE){
   pullPipeline(true);
   const syncBtn = document.getElementById("syncNowBtn");
   if(syncBtn) syncBtn.addEventListener("click", () => pullPipeline(true));
-  window.addEventListener("focus", () => { pullPipeline(false); scheduleRmsPull(); });
-  document.addEventListener("visibilitychange", () => { if(!document.hidden){ pullPipeline(false); scheduleRmsPull(); } });
-  window.addEventListener("online", () => { flushOutbox(); autoRmsBoot(); scheduleRmsPull(); });
+  window.addEventListener("focus", () => pullPipeline(false));
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) pullPipeline(false); });
+  window.addEventListener("online", () => flushOutbox());
   setInterval(() => { if(!document.hidden) pullPipeline(false); }, 5 * 60 * 1000);
-  /* the settings arrive a moment later and switch this on; this covers the case
-     where they were already cached on this computer */
-  autoRmsBoot();
 }
 setInterval(dayRollover, 60 * 1000);
 window.addEventListener("focus", dayRollover);
