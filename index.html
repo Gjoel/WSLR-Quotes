@@ -757,7 +757,7 @@
                 <span class="imp3until" id="impRatesUntil"></span>
               </span>
               <span class="imp3col" id="impLiveCol" style="display:none">
-                <button class="btn imp3 live" id="impLiveBtn" title="Pull tonight's rates and unit availability for the event dates straight from RMS (the rate type and category mapping are on the Settings tab). Replaces any imported CSV figures on this quote.">↻ Live from RMS</button>
+                <button class="btn imp3 live" id="impLiveBtn" title="Rates and unit availability load from RMS on their own for a draft quote with dates. Press this to fetch them again now, or to refresh a quote that has already been sent. Replaces any imported CSV figures on this quote.">↻ Live from RMS</button>
                 <span class="imp3until" id="impLiveUntil"></span>
               </span>
             </span>
@@ -832,7 +832,7 @@
         <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission, that part is built in.</p>
       </div>
 
-      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote, always check RMS first. Venue and catering prices start from the rate card (Settings tab); accommodation nightly prices must come from an RMS tariff import or a typed price, the rate card never supplies them. Everything only applies to this quote.</p>
+      <p class="pkgfoot">Availability here is what the organiser can book up to for this quote. Venue and catering prices start from the rate card (Settings tab); accommodation nightly prices and unit counts load themselves from RMS for the event dates, and can also come from a set price on the Settings tab, an RMS report you import, or a price you type here. The rate card never supplies a cabin price. Everything only applies to this quote.</p>
     </div>
 
     <div class="card">
@@ -867,7 +867,7 @@
     <div class="card">
       <h2>Payment &amp; terms shown on the quote</h2>
       <textarea id="f-terms" rows="3"></textarea>
-      <p class="hint" style="margin-top:8px">Our EFT details are added underneath this automatically. You can use {deposit}, {depositdue}, {depositwhen}, {bond}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig} and {bigunits} here and in the notes above, so the wording follows the deposit &amp; deadline fields rather than naming a figure that can go stale.</p>
+      <p class="hint" style="margin-top:8px">Our EFT details are added underneath this automatically. You can use {deposit}, {depositdue}, {depositwhen}, {bond}, {holddays}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig}, {bigunits}, {cancellead} and {cancelfee} here and in the notes above, so the wording follows the deposit, deadline &amp; cancellation fields rather than naming a figure that can go stale.</p>
     </div>
 
     <div class="actions">
@@ -924,7 +924,7 @@
     <div class="card">
       <div class="cardhead">
         <h2>Rate card</h2>
-        <span class="hint">prices include GST. Changes apply to new lines; existing quotes keep their prices. Accommodation is the exception: cabin nightly prices always come from an RMS tariff import or a price typed on the quote, never from this card.</span>
+        <span class="hint">prices include GST. Changes apply to new lines; existing quotes keep their prices. Accommodation is the exception: cabin nightly prices come from RMS, from a set price below, or from a price typed on the quote, never from this card, so those price boxes are locked.</span>
       </div>
       <div class="tablewrap" id="rcEditor"></div>
       <div class="actions" style="margin-top:12px">
@@ -936,7 +936,7 @@
     <div class="card">
       <div class="cardhead">
         <h2>Standard information sections</h2>
-        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond; {menuoptions} the menu options ticked for the quote; and {deposit}, {depositdue}, {depositwhen}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig} and {bigunits} follow the deposit &amp; deadline rules further down this page.</span>
+        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond; {holddays} how long the quote is valid for; {menuoptions} the menu options ticked for the quote; and {deposit}, {depositdue}, {depositwhen}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig}, {bigunits}, {cancellead} and {cancelfee} follow the deposit, deadline &amp; cancellation rules further down this page.</span>
       </div>
       <div id="secEditor"></div>
     </div>
@@ -954,23 +954,34 @@
 
     <div class="card">
       <div class="cardhead">
-        <h2>Deposit &amp; deadline rules on new quotes</h2>
-        <span class="hint">the house rules behind the money &amp; key dates timeline and the standard wording. Any single quote can still be changed on the Prepare tab.</span>
+        <h2>Deposit, deadline &amp; cancellation rules on new quotes</h2>
+        <span class="hint">the house rules behind the money &amp; key dates timeline and the standard wording, including the cancellation window. Any single quote can still be changed on the Prepare tab.</span>
       </div>
       <div id="kdDefaults"></div>
-      <p class="hint" style="margin-top:8px">Changes here apply to new quotes and to any quote that has not been given its own numbers; quotes already sent keep what they were sent with. The information sections can use {deposit}, {depositdue}, {depositwhen}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig} and {bigunits} so their wording follows these numbers too.</p>
+      <p class="hint" style="margin-top:8px">Changes here apply to new quotes and to any quote that has not been given its own numbers; quotes already sent keep what they were sent with. The information sections can use {deposit}, {depositdue}, {depositwhen}, {holddays}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig}, {bigunits}, {cancellead} and {cancelfee} so their wording follows these numbers too.</p>
     </div>
     <div class="card">
       <h2>Cheapest dates search on new quotes</h2>
       <label class="secitem" style="padding:0"><input type="checkbox" id="s-cheapest"> <span><span class="sectitle">Offer the cheapest dates search</span><span class="secwhy">the panel at the foot of the organiser's page that prices their cabins across other dates</span></span></label>
       <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Any single quote can still be changed on the Prepare tab, under "Extras on the organiser's page". Switch it off here if you would rather organisers came back to you about other dates instead of comparing them themselves.</p>
     </div>
+    <div class="card" id="fixedRatesCard">
+      <div class="cardhead">
+        <h2>Set accommodation prices for certain dates</h2>
+        <span class="hint">optional, and normally empty. Cabins are priced from RMS; a row here holds one cabin type at a set nightly price over a date range (a school-group rate, a negotiated block, a season you price by hand) and beats the RMS rate for those nights.</span>
+      </div>
+      <div class="tablewrap" id="fixedRates"></div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="frAdd">+ Add a set price</button>
+      </div>
+      <p class="hint" style="margin-top:8px">Set prices are shared with every computer and are copied into a quote when its rates load, so a quote already sent keeps the numbers it went out with. Leave a date empty to run open-ended in that direction. Where two rows overlap, the lower one in the list wins. A price typed on a quote still beats everything here.</p>
+    </div>
     <div class="card" id="rmsCard">
       <div class="cardhead">
         <h2>RMS live link</h2>
         <span class="hint" id="rmsStatus">checking…</span>
       </div>
-      <p class="hint" style="margin:0 0 10px">The quote server talks to RMS Cloud on this tool's behalf (credentials stay on the server). Once mapped, the Prepare tab pulls tonight's rates and unit counts with one button, every organiser page opens with today's availability, the Pipeline flags quotes RMS can no longer cover, and a submitted quote is pencilled into RMS as one group booking.</p>
+      <p class="hint" style="margin:0 0 10px">The quote server talks to RMS Cloud on this tool's behalf (credentials stay on the server). Once the live link is on and the types below are mapped, nothing has to be pressed: the catalogue loads itself, and every draft quote fetches tonight's rates and unit counts as soon as it has dates. Every organiser page opens with today's availability, the Pipeline flags quotes RMS can no longer cover, and a submitted quote is pencilled into RMS as one group booking.</p>
       <div class="actions" style="margin:0 0 10px; flex-wrap:wrap; gap:8px">
         <button class="btn" id="rmsLoadBtn" type="button">Load from RMS</button>
         <button class="btn ghost" id="rmsTestBtn" type="button" title="Pull the next 7 nights for the mapped types and show what came back">Test the link</button>
@@ -1055,7 +1066,7 @@ const DEFAULT_RATE_GROUPS = [
     {id:"acc_4br_house", name:"4 Bedroom House",                          unit:"per night", price:930, sleeps:10, bedsMax:9, avail:1,  beds:"4 king beds or 8 king single beds; queen sofa bed in lounge room"},
     {id:"acc_2br_ter",   name:"2 Bedroom Terrace Apartment",              unit:"per night", price:465, sleeps:6, bedsMax:6,  avail:3,  beds:"2 king beds or 4 king single beds; sofa with 2 chaise single beds"},
     {id:"acc_2br_bung",  name:"2 Bedroom Bungalow Unit",                  unit:"per night", price:378, sleeps:6, bedsMax:5,  avail:5,  beds:"2 double beds or 4 single beds; queen sofa bed in lounge room"},
-    {id:"acc_2br_std",   name:"2 Bedroom Air Conditioned Unit",           unit:"per night", price:344, sleeps:7, bedsMax:5,  avail:8,  beds:"1 king bed & 2 single beds; 2 queen sofa beds in lounge room"},
+    {id:"acc_2br_std",   name:"2 Bedroom Air Conditioned Unit",           unit:"per night", price:344, sleeps:7, bedsMax:6,  avail:8,  beds:"1 king bed & 2 single beds; 2 queen sofa beds in lounge room"},
     {id:"acc_1br_ter",   name:"1 Bedroom Terrace Unit",                   unit:"per night", price:333, sleeps:6, bedsMax:5,  avail:6,  beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
     {id:"acc_1br_std",   name:"1 Bedroom Air Conditioned Unit",           unit:"per night", price:277, sleeps:6, bedsMax:5,  avail:33, beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
     {id:"acc_motel_std", name:"Motel Style Air Conditioned Unit",         unit:"per night", price:212, sleeps:4, bedsMax:4,  avail:36, beds:"1 king bed or 2 king single beds & bunk bed"},
@@ -1138,7 +1149,7 @@ const VENUES = [
   {key:"fr13", name:"Conference Rooms 1, 2 & 3", cap:"up to 150 people · walls open into one space", fullId:"fr13_full", halfId:"fr13_half", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
   {key:"fr5",  name:"Conference Room 5",          cap:"up to 45 people · fully separate room",        fullId:"fr5_full",  halfId:"fr5_half",  tour: TOUR_FULL + "&scene=vlAL&menu=0"},
   {key:"aud",  name:"Auditorium",                 cap:"up to 500 people · 30.0m × 15.0m",             fullId:"aud_full",  halfId:"aud_half",  tour: TOUR_FULL + "&scene=wVBg&menu=0"},
-  {key:"marq", name:"Marquee",                    cap:"up to 160 people · complimentary if staying onsite (book ahead)", fullId:"marq_full", halfId:"marq_half", tour: TOUR_FULL + "&scene=xnDz&menu=0"},
+  {key:"marq", name:"Marquee",                    cap:"up to 160 people · book ahead, subject to availability", fullId:"marq_full", halfId:"marq_half", tour: TOUR_FULL + "&scene=xnDz&menu=0"},
   {key:"din",  name:"Dining Room",                cap:"up to 120 people",                             fullId:"din_full",  halfId:"din_half",  tour: TOUR_FULL + "&scene=yoEz&menu=0"}
 ];
 function isAccomLine(l){
@@ -1314,23 +1325,32 @@ const VENUE_ABN = "ABN: 48 155 637 442";
 const VENUE_PHONE = "02 4283 6999";
 const VENUE_EMAIL = "functions@wslr.com.au";
 const VENUE_WEB = "www.wslr.com.au";
+const VENUE_WEB_LINK = '<a href="https://www.wslr.com.au" target="_blank" rel="noopener">' + VENUE_WEB + '</a>';
 const BANK_LINES = [
   "Account name: Wollongong Surf Leisure Resort",
   "Bank: Westpac Banking Corporation, Wollongong Branch",
   "BSB: 032 685 &nbsp; Account: 300044"
 ];
 const GST_PCT = 10; // fixed, never varies per quote
-const LOGO_DATA = "data:image/png;base64,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";
-const LOGO_QP = '<img class="qp-logo" src="' + LOGO_DATA + '" alt="Wollongong Surf Leisure Resort">';
+/* ===================== THE RESORT LOGO GOES ON THE NEXT LINE =====================
+   Open your current index.html, find the one line that starts with
+       const LOGO_DATA = "data:image/png;base64,iVBORw0KGgo...
+   copy that whole line, and paste it over the line below, replacing it entirely.
+   (It is one very long line, about 38,000 characters.) Nothing else needs changing.
+   Until you do, the tool still works, it just shows no logo.
+   ============================================================================== */
+const LOGO_DATA = "PASTE_THE_LOGO_LINE_FROM_YOUR_CURRENT_FILE_HERE";
+const HAVE_LOGO = /^data:image\//.test(LOGO_DATA);
+const LOGO_QP = HAVE_LOGO ? '<img class="qp-logo" src="' + LOGO_DATA + '" alt="Wollongong Surf Leisure Resort">' : '';
 
 /* ---------- standard information sections (wording from the quote template; editable on Settings) ---------- */
 const INFO_SECTIONS = [
   {id:"accom_notes", title:"About your accommodation", why:"auto when accommodation is quoted",
    text:"All units are fully self contained with kitchen and bathroom facilities. Linen is supplied on all beds; beach towels are not supplied. Guests have free use of the 25m indoor heated pool, spa and steam room during their stay, and complimentary pool towels are available. If extra rooms are added after the initial booking is made, pricing may differ, as we operate on dynamic pricing which changes every day depending on occupancy. For more information on our accommodation visit www.wslr.com.au, or take a virtual walk-through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
   {id:"church", title:"Church & charitable group discount conditions", why:"auto when a church discount is applied",
-   text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and conference room hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of $100 per cabin or conference room are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and conference room hire applies on conditions a) to d) if you choose to self cater or have fewer than 3 group main meals during your stay."},
+   text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and venue hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of {deposit} per cabin or conference room booked are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and venue hire applies on conditions a) to d) if you choose to self cater or have fewer than 3 group main meals during your stay. The discount applies to accommodation and venue hire only, never to catering."},
   {id:"venue_info", title:"Conference rooms & auditorium", why:"auto when venue hire is quoted",
-   text:"Conference Rooms 1, 2 & 3 hold a maximum of 150 persons; rooms 1 & 2 sit next to each other and the walls between them can be opened up to form larger rooms. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds a maximum of 500 persons, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). All conference rooms are equipped with 55 inch flat screen TVs, and Wi-Fi is complimentary for all conference delegates. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee. No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner."},
+   text:"Conference Rooms 1, 2 & 3 hold a maximum of 150 persons; rooms 1 & 2 sit next to each other and the walls between them can be opened up to form larger rooms. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds a maximum of 500 persons, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). All conference rooms are equipped with 55 inch flat screen TVs, and Wi-Fi is complimentary for all conference delegates. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee. No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner. Our Private Dining Room holds a maximum of 120 persons and is included at no charge while your group's meal service is running; like the Marquee it still has to be booked in advance and is subject to availability."},
   {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
    text:"All meals are served buffet style, and your group chooses one option per meal service with our catering team closer to the date. {menuoptions}"},
   {id:"catering_info", title:"Catering", why:"auto when catering is quoted",
@@ -1344,9 +1364,9 @@ const INFO_SECTIONS = [
   {id:"booking_info", title:"To proceed with a booking", why:"on for every quote",
    text:"To proceed with a booking we require: your group name, contact person, postal address and mobile number; arrival and departure dates; the number of rooms and each type of room you wish to book; all meals you wish to have included as part of your package; and the dates and times of use of the conference rooms. Once we receive this information we will proceed with a booking and forward an invoice for a deposit. Reservations are unconfirmed until deposits are received."},
   {id:"deposit", title:"Deposit, payment & security bond", why:"on for every quote",
-   text:"A {deposit} deposit per unit booked is due {depositwhen}, to secure your reservation and any church discount. The balance of your account must be received prior to the arrival date, and is payable by cash, EFTPOS, Mastercard or Visa (personal cheques are welcome if received 21 days prior to arrival). A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
+   text:"A {deposit} deposit per cabin or conference room booked is due {depositwhen}, to secure your reservation and any church discount. The balance of your account must be received prior to the arrival date, and is payable by cash, EFTPOS, Mastercard or Visa (personal cheques are welcome if received 21 days prior to arrival). A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
   {id:"cancel", title:"Cancellation conditions", why:"on for every quote",
-   text:"There will be no refunds of any payments made if the entire booking is cancelled within 14 days of the scheduled arrival date. If the entire booking is cancelled 14 days or more prior to your arrival, the deposit is refunded less a $50 per room booking fee. Any rooms cancelled within the 14 day period will be charged at the full rate; there are no fees or charges for rooms cancelled 14 days or more prior to your arrival date."},
+   text:"There will be no refunds of any payments made if the entire booking is cancelled within {cancellead} of the scheduled arrival date. If the entire booking is cancelled {cancellead} or more prior to your arrival, the deposit is refunded less a {cancelfee} per room booking fee. Any rooms cancelled within that period will be charged at the full rate; there are no fees or charges for rooms cancelled {cancellead} or more prior to your arrival date."},
   {id:"conduct", title:"Code of conduct", why:"auto for group stays",
    text:"A responsible adult must be nominated as your Group Manager, and agrees to assist with all conduct and security matters concerning your group; this assistance is essential between 9.00pm and 8.00am. The following are breaches of the Code of Conduct: loutish behaviour by any member of your group; noise emanating from a unit after 10.00pm (this breach may result in the eviction of your entire group, with no credit or refund granted); excessive noise after 10.00pm from a room containing more persons than indicated on the rooming list (a double breach); and the excessive use of alcohol or offensive language. The Group Manager is not permitted to depart the WSLR grounds while any member of the group remains on site, and the Group Manager's nominated mobile phone must not be switched off at any time during your stay."},
   {id:"checkin", title:"Check-in, check-out & facilities", why:"auto for group stays",
@@ -1418,18 +1438,22 @@ function fillQuoteText(t){
     .split("{depositdue}").join(leadPhrase(k.depositWeeks * 7))
     .split("{depositwhen}").join(depositWhenPhrase(k))
     .split("{depositlead}").join(leadPhrase(k.depositLeadWeeks * 7))
-    .split("{emaillead}").join(k.emailWeeks + " weeks")
+    .split("{emaillead}").join(leadPhrase(k.emailWeeks * 7))
     .split("{cateringlead}").join(leadPhrase(k.cateringDays))
-    .split("{finallead}").join(k.finalDays + " days")
-    .split("{finalleadbig}").join(k.finalDaysBig + " days")
-    .split("{bigunits}").join(String(k.bigUnits));
+    .split("{finallead}").join(leadPhrase(k.finalDays))
+    .split("{finalleadbig}").join(leadPhrase(k.finalDaysBig))
+    .split("{bigunits}").join(String(k.bigUnits))
+    .split("{cancellead}").join(leadPhrase(k.cancelDays))
+    .split("{cancelfee}").join(money0(k.cancelFee))
+    .split("{holddays}").join(leadPhrase(Number(Q.validDays) > 0 ? Number(Q.validDays) : k.holdDays));
 }
 /* the standard wording with this quote's numbers filled in. Used both to print the
    section and to tell whether staff have actually changed it. */
 function sectionBaseText(id, c){
   let t = fillQuoteText(String(c.text).split("{menuoptions}").join(menuSectionText()));
-  /* a booking made inside 10 weeks cannot get a 10 week email, so say what will happen instead */
-  if(id === "final_conf" && shortNotice()) t += " Your event is inside that 10 week window, so we will send this confirmation as soon as your booking is confirmed.";
+  /* a booking made inside the email lead time cannot get that email on time, so say
+     what will happen instead */
+  if(id === "final_conf" && shortNotice()) t += " Your event is inside that " + leadPhrase(kdCfg().emailWeeks * 7) + " window, so we will send this confirmation as soon as your booking is confirmed.";
   return t;
 }
 function resolvedSections(){
@@ -1523,10 +1547,14 @@ function loadSharedSettings(){
       }
       SETTINGS_SYNC_STATE = "synced";
       renderSyncBadge();
+      /* the live link switch and the category mapping arrive with these settings, so
+         this is the first moment the tool can fetch rates on its own */
+      autoRmsBoot();
     })
     .catch(() => {
       SETTINGS_SYNC_STATE = "offline";
       renderSyncBadge();
+      autoRmsBoot();
     });
 }
 let SETTINGS_PUSH_TIMER = null;
@@ -1793,19 +1821,27 @@ const OLD_TERMS = [
   "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
   "A {deposit} deposit per cabin or conference room confirms your booking, due within {depositdue}; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference."
 ];
+/* Notes that only ever named a flat "14 days" for final numbers, written before the
+   deadline rules became settings. A stored copy that is still one of these steps
+   aside for the current default, which follows the rules instead. */
+const OLD_NOTES = [
+  "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date. All accommodation is subject to availability at the time of booking."
+];
 function dropStaleDefaults(d){
   if(d && typeof d === "object"){
     if(OLD_EMAIL_BODIES.indexOf(d.body) >= 0) delete d.body;
     if(OLD_TERMS.indexOf(d.terms) >= 0) delete d.terms;   /* it named $100 in words while the rules moved on */
+    if(OLD_NOTES.indexOf(d.notes) >= 0) delete d.notes;   /* it named 14 days while the rules moved on */
   }
   return d;
 }
 function getDefaults(){
   return Object.assign({
-    notes: "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date. All accommodation is subject to availability at the time of booking.",
-    terms: "A {deposit} deposit per cabin or conference room is due {depositwhen}, to secure your reservation; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
+    notes: "Room hire includes setup and pack-down. Catering is booked at least {cateringlead} before the event, and final guest numbers and dietary requirements are due {finallead} before it. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
+    terms: "A {deposit} deposit per cabin or conference room booked is due {depositwhen}, to secure your reservation; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
     bond: 2000,
     cheapest: true,
+    accomRates: [],
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
     body: "Hi {contact},\n\nThank you for your enquiry. I have put a quote together for {event} that you can price up yourself here:\n\n{link}\n\n{stayline}\n{roomsline}\n{cateringline}\n{venueline}\n{churchline}\n\nAnything you change on that page comes straight back to us when you submit it, and there is a PDF copy to download for your records. If something needs adjusting, or you would rather talk it through, just reply to this email or call us on 02 4283 6999.\n\nWe look forward to working with you.\n\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999\n\nQuote {number} - Wollongong Surf Leisure Resort\n{link}"
   }, dropStaleDefaults(lsGet(LS_DEFAULTS, {})));
@@ -1813,6 +1849,67 @@ function getDefaults(){
 function saveDefaults(part){
   lsSet(LS_DEFAULTS, Object.assign(getDefaults(), part));
   if(typeof pushSharedSettings === "function") pushSharedSettings();
+}
+/* ---------- fixed accommodation rates (Settings tab) ----------------------
+   Cabin nightly prices normally come from RMS. These rows let staff hold a
+   set price for a cabin type over a date range (a school-group rate, a
+   negotiated block, a season we price by hand). They are shared with every
+   computer, and they are copied into a quote when its rates are loaded, so a
+   quote that has already gone out keeps the numbers it was sent with.
+   -------------------------------------------------------------------------- */
+function fixedRates(){
+  const list = getDefaults().accomRates;
+  return Array.isArray(list) ? list : [];
+}
+function saveFixedRates(list){ saveDefaults({accomRates: list}); }
+/* the set price for one cabin type on one night, or null */
+function fixedRateOn(id, iso){
+  if(!iso) return null;
+  let hit = null;
+  fixedRates().forEach(r => {
+    if(!r || String(r.id) !== String(id)) return;
+    const p = Number(r.price);
+    if(!(p > 0)) return;
+    if(r.from && iso < r.from) return;
+    if(r.to && iso > r.to) return;
+    hit = p;                       /* a later row wins, so the newest one you add is the one that applies */
+  });
+  return hit;
+}
+/* stamp the set prices onto this quote, over the top of whatever RMS returned.
+   Called after every rates load and whenever the event dates move. */
+function applyFixedRates(){
+  const rows = fixedRates().filter(r => r && Number(r.price) > 0);
+  if(!Q.rateFixed) Q.rateFixed = {};
+  if(!rows.length) return 0;
+  const w = ratesWindow();
+  if(!w) return 0;
+  let n = 0;
+  rows.forEach(r => {
+    if(!RATE[r.id]) return;
+    let from = r.from && r.from > w.from ? r.from : w.from;
+    let to = r.to && r.to < w.to ? r.to : w.to;
+    if(to < from) return;
+    if(!Q.rates[r.id]) Q.rates[r.id] = {};
+    if(!Q.rateFixed[r.id]) Q.rateFixed[r.id] = {};
+    for(let iso = from, guard = 0; iso <= to && guard < 800; iso = isoAddDays(iso, 1), guard++){
+      Q.rates[r.id][iso] = Number(r.price);
+      Q.rateFixed[r.id][iso] = true;
+      n++;
+    }
+  });
+  return n;
+}
+/* the span a quote holds prices for: whatever was loaded, else the stay with room
+   either side so the organiser's date search has something to work with */
+function ratesWindow(){
+  const loaded = Q.ratesInfo && Q.ratesInfo.from && Q.ratesInfo.to ? {from: Q.ratesInfo.from, to: Q.ratesInfo.to} : null;
+  const stay = rmsWindow();
+  if(loaded && stay) return {from: loaded.from < stay.from ? loaded.from : stay.from, to: loaded.to > stay.to ? loaded.to : stay.to};
+  return loaded || stay;
+}
+function isFixedRate(id, iso){
+  return !!(Q.rateFixed && Q.rateFixed[id] && iso && Q.rateFixed[id][iso]);
 }
 /* Which app the Email quote button opens. Saved on this computer only and never
    synced, so each staff member can match it to the Outlook their computer uses:
@@ -1844,8 +1941,9 @@ function blankQuote(num){
     kdCfg: null,        // per-quote deadline rules; null = the house rules from Settings
     accomPriced: true,  // made under the import-your-prices rule (see normalizeQuote for older quotes)
     catalog: {},        // per-quote menu curation: {itemId: {on, price, avail}}
-    rates: {},          // imported nightly tariffs: {itemId: {"2026-08-21": 770, ...}}
-    availCal: {},       // imported per-date availability: {itemId: {"2026-08-21": 0, ...}}
+    rates: {},          // nightly tariffs for this quote: {itemId: {"2026-08-21": 770, ...}}
+    rateFixed: {},      // which of those came from a set price rather than RMS
+    availCal: {},       // per-date availability: {itemId: {"2026-08-21": 0, ...}}
     ratesInfo: null,    // {from, to, items, file}
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
@@ -1855,6 +1953,7 @@ function blankQuote(num){
     status: "Draft",
     accepted: false,
     sentAt: null,
+    acceptedAt: null,
     submittedAt: null,
     submittedSel: null, // snapshot of what was submitted, so we only re-offer Submit when something changed
     token: null
@@ -1869,11 +1968,13 @@ function normalizeQuote(q){
   if(q.mobile === undefined || q.mobile === null) q.mobile = "";
   if(!q.catalog) q.catalog = {};
   if(!q.rates) q.rates = {};
+  if(!q.rateFixed) q.rateFixed = {};
   if(!q.availCal) q.availCal = {};
   if(!q.menu) q.menu = {};
   if(!q.secText || typeof q.secText !== "object") q.secText = {};
   if(q.kdOver === undefined || (q.kdOver !== null && !Array.isArray(q.kdOver))) q.kdOver = null;
   if(q.kdCfg === undefined || (q.kdCfg !== null && typeof q.kdCfg !== "object")) q.kdCfg = null;
+  if(q.acceptedAt === undefined) q.acceptedAt = (q.status === "Accepted" || q.accepted) ? (q.sentAt || null) : null;
   /* quotes made before accommodation required an imported/typed price were silently
      priced from the rate card; freeze that card price into the quote so those older
      quotes (and their live client links) keep the numbers they were sent with.
@@ -2111,7 +2212,7 @@ function displayLines(){
     if(d <= 0 || !catEntry(v.fullId).on) return;
     const full = Math.floor(d), half = (d % 1) ? 1 : 0;
     const vt = (Q.sel.venueTimes || {})[v.key] || "";
-    const freeTag = venueIsFree(v) ? " (included free with " + mealServiceWords() + ")" : "";
+    const freeTag = venueIsFree(v) ? " (included at no charge " + venueFreeReason(v) + ")" : "";
     if(full > 0) out.push({name: (RATE[v.fullId] || {name: v.name + " - full day"}).name + freeTag, qty: full, nights: 0, beds: "", price: venueRate(v, false), disc: 0, unit: "per day", when: vt, total: full * venueRate(v, false)});
     if(half > 0) out.push({name: (RATE[v.halfId] || {name: v.name + " - half day"}).name + freeTag, qty: half, nights: 0, beds: "", price: venueRate(v, true), disc: 0, unit: "per half day", when: (full > 0 ? "" : vt), total: half * venueRate(v, true)});
   });
@@ -2127,7 +2228,7 @@ function displayLines(){
       const dTag = days > 1 ? days : 0;
       if(b.adults > 0) out.push({name: it.name + ", adults & 13+", qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
       if(b.k412 > 0) out.push({name: it.name + ", children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
-      if(b.k13 > 0) out.push({name: it.name + ", children 1–3", qty: b.k13, nights: dTag, nightsWord: "days", beds: "", price: 5, disc: 0, unit: "per person", when: "", total: b.k13 * days * 5});
+      if(b.k13 > 0) out.push({name: it.name + ", children over 1 to 3 years", qty: b.k13, nights: dTag, nightsWord: "days", beds: "", price: 5, disc: 0, unit: "per person", when: "", total: b.k13 * days * 5});
       dietMeals += b.diet * days;
     });
     if(dietMeals > 0){
@@ -2238,10 +2339,11 @@ function blockNights(b){
   const len = blockNightsList(b).length;
   return len || 1;
 }
-/* nightly price: staff-typed override > imported tariff > nothing.
-   Accommodation is priced from an RMS tariff import (or a typed price) on every
-   quote; the rate card deliberately never supplies a cabin's nightly price, so a
-   quote can't go out silently priced from stale card numbers. */
+/* nightly price: staff-typed override > this quote's loaded rates > nothing.
+   Accommodation is priced from the RMS live link, an RMS tariff import, a set price
+   held on the Settings tab, or a price typed on the quote. The rate card deliberately
+   never supplies a cabin's nightly price, so a quote can't go out silently priced
+   from stale card numbers. */
 function nightlyRate(id, iso){
   const m = manualPrice(id);
   if(m !== null) return m;
@@ -2319,11 +2421,16 @@ function accomQtyTotal(id){
 function selAccomSub(){
   return (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + blockTotal(b) : s, 0);
 }
-/* ---------- the Dining Room is free while a meal service is running ----------
-   If the group takes catering, the Private Dining Room comes with it at no charge.
-   Everything (totals, the organiser's page, the PDF and the sheet summary) reads
-   its price through venueRate/venueDayTotal, so this one rule covers the lot. */
+/* ---------- venues that come at no charge -------------------------------
+   Two house rules, in one place so the totals, the organiser's page, the PDF
+   and the tracker sheet summary can never disagree with the wording on the
+   quote:
+     · the Private Dining Room is included while a meal service is running
+     · the Marquee is complimentary for a group staying onsite
+   Both still have to be booked in advance and are subject to availability.
+   ------------------------------------------------------------------------ */
 const DINING_KEY = "din";
+const MARQUEE_KEY = "marq";
 function caterServicesOn(){
   return caterItems().filter(it => {
     if(it.id === "diet" || !catEntry(it.id).on) return false;
@@ -2332,6 +2439,12 @@ function caterServicesOn(){
   });
 }
 function diningIsFree(){ return caterServicesOn().length > 0; }
+/* the marquee is free once the group is actually staying with us */
+function stayingOnsite(){
+  return (Q.sel.accom || []).some(b => (Number(b.qty) || 0) > 0 && catEntry(b.id).on) ||
+    Q.lines.some(l => (Number(l.qty) || 0) > 0 && isAccomLine(l));
+}
+function marqueeIsFree(){ return stayingOnsite(); }
 /* plain English list of the meals that make it free, e.g. "your breakfast and dinner service" */
 function mealServiceWords(){
   const words = [];
@@ -2343,7 +2456,19 @@ function mealServiceWords(){
   if(words.length === 1) return "your " + words[0] + " service";
   return "your " + words.slice(0, -1).join(", ") + " and " + words[words.length - 1] + " service";
 }
-function venueIsFree(v){ return !!v && v.key === DINING_KEY && diningIsFree(); }
+function venueIsFree(v){
+  if(!v) return false;
+  if(v.key === DINING_KEY) return diningIsFree();
+  if(v.key === MARQUEE_KEY) return marqueeIsFree();
+  return false;
+}
+/* why it is free, in words, so every surface says the same thing */
+function venueFreeReason(v){
+  if(!v) return "";
+  if(v.key === DINING_KEY) return "with " + mealServiceWords();
+  if(v.key === MARQUEE_KEY) return "with your stay";
+  return "";
+}
 function venueRate(v, half){ return venueIsFree(v) ? 0 : catEntry(half ? v.halfId : v.fullId).price; }
 function venueDayTotal(v, d){
   if(venueIsFree(v)) return 0;
@@ -2357,7 +2482,7 @@ function selVenueSub(){
     return s + venueDayTotal(v, d);
   }, 0);
 }
-/* children's & dietary pricing (feature toggle): adults full, 4–12 half, 1–3 $5/meal, under 1 free, dietary +$10/meal */
+/* children's & dietary pricing (feature toggle): adults full, 4–12 half, over 1 to 3 $5/meal, 12 months and under free, dietary +$10/meal */
 function kidsOn(){ return !!(Q.features && Q.features.kids); }
 function who(){
   if(!Q.sel.who) Q.sel.who = {adults: "", k412: "", k13: "", babies: "", diet: ""};
@@ -2437,7 +2562,7 @@ function selCaterSub(){
 /* The deadlines behind the timeline and the standard wording. House defaults live
    on the Settings tab and are shared with every computer; any quote can override
    them in Quote settings on the Prepare tab. */
-const KD_DEFAULTS = {depositPer: 100, depositWeeks: 4, depositLeadWeeks: 10, emailWeeks: 10, cateringDays: 30, finalDays: 14, finalDaysBig: 28, bigUnits: 50};
+const KD_DEFAULTS = {depositPer: 100, depositWeeks: 4, depositLeadWeeks: 10, emailWeeks: 10, cateringDays: 30, finalDays: 14, finalDaysBig: 28, bigUnits: 50, cancelDays: 10, cancelFee: 50, holdDays: 14};
 /* "the earlier of within 4 weeks of booking, or 10 weeks prior to arrival" */
 function depositWhenPhrase(c){
   c = c || kdCfg();
@@ -2481,7 +2606,7 @@ function unitsSelected(){
   return picked + imported;
 }
 function venuesSelected(){
-  /* a room that comes free with catering does not attract a room deposit */
+  /* a room that comes free with catering or with the stay does not attract a room deposit */
   return VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on && !venueIsFree(v)).length;
 }
 function keyDates(){
@@ -2493,6 +2618,7 @@ function keyDates(){
     catering: isoAddDays(Q.dateStart, -c.cateringDays),
     finalNums: isoAddDays(Q.dateStart, -finalDays),
     finalDays: finalDays,
+    cancel: isoAddDays(Q.dateStart, -c.cancelDays),
     email: isoAddDays(Q.dateStart, -c.emailWeeks * 7)
   };
 }
@@ -2502,7 +2628,7 @@ function keyDates(){
    possible" instead, and the wording beside it changes to match. */
 function kdPassed(iso){ return !!iso && iso < isoDate(today); }
 function kdWhen(iso){ return kdPassed(iso) ? "As soon as possible" : fmtDate(iso); }
-/* true when the event is inside the usual 10 week lead time */
+/* true when the event is inside the usual confirmation-email lead time */
 function shortNotice(){
   const kd = keyDates();
   return !!kd && kdPassed(kd.email);
@@ -2526,7 +2652,7 @@ function totals(){
   const afterChurch = sub - church;
   const disc = afterChurch * (Number(Q.discountPct) || 0) / 100;
   const total = afterChurch - disc;
-  const gst = total / 11;
+  const gst = total * GST_PCT / (100 + GST_PCT);
   return {sub, church, churchPct, disc, total, gst};
 }
 function lineUnit(l){
@@ -2594,6 +2720,7 @@ function snapshotQ(){
     ratecard: JSON.parse(JSON.stringify(editableGroups())), // so the emailed link prices from the same card
     catalog: JSON.parse(JSON.stringify(Q.catalog || {})),
     rates: JSON.parse(JSON.stringify(Q.rates || {})),
+    rateFixed: JSON.parse(JSON.stringify(Q.rateFixed || {})),
     availCal: JSON.parse(JSON.stringify(Q.availCal || {})),
     ratesInfo: Q.ratesInfo ? JSON.parse(JSON.stringify(Q.ratesInfo)) : null,
     availInfo: Q.availInfo ? JSON.parse(JSON.stringify(Q.availInfo)) : null,
@@ -2605,7 +2732,7 @@ function snapshotQ(){
     lines: JSON.parse(JSON.stringify(Q.lines)),
     total: t.total,
     status: Q.status, accepted: Q.accepted,
-    sentAt: Q.sentAt, validUntil: validUntilISO(),
+    sentAt: Q.sentAt, acceptedAt: Q.acceptedAt || null, validUntil: validUntilISO(),
     token: Q.token || null,
     savedAt: new Date().toISOString()
   };
@@ -2615,7 +2742,7 @@ function snapshotQ(){
    localStorage they filled it after a few dozen quotes, and then nothing saved. */
 function leanSnap(snap){
   const lean = Object.assign({}, snap);
-  delete lean.ratecard; delete lean.rates; delete lean.availCal;
+  delete lean.ratecard; delete lean.rates; delete lean.rateFixed; delete lean.availCal;
   return lean;
 }
 function upsertSnapshot(snap){
@@ -2765,10 +2892,10 @@ function lightUpdate(inputEl){
 
 function totalsHTML(t, grandLabel){
   return '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
-    (t.church > 0 ? '<div class="savings"><span>Church discount − ' + t.churchPct + '% (accommodation &amp; venues)</span><span>−' + money(t.church) + '</span></div>' : '') +
+    (t.church > 0 ? '<div class="savings"><span>Church discount − ' + t.churchPct + '% (accommodation &amp; venue hire)</span><span>−' + money(t.church) + '</span></div>' : '') +
     (t.disc > 0 ? '<div><span>Discount (' + Q.discountPct + '%)</span><span>−' + money(t.disc) + '</span></div>' : '') +
     '<div class="grand"><span>' + grandLabel + '</span><span>' + money(t.total) + '</span></div>' +
-    '<div><span>Includes GST (10%)</span><span>' + money(t.gst) + '</span></div>';
+    '<div><span>Includes GST (' + GST_PCT + '%)</span><span>' + money(t.gst) + '</span></div>';
 }
 function renderTotals(){
   const pm = Q.priceMode || "full";
@@ -3203,6 +3330,7 @@ function rebuildRatesFromRms(){
   });
   if(!Object.keys(rates).length) return false;
   Q.rates = rates;
+  Q.rateFixed = {};
   const skipped = []
     .concat((Q.rmsBase && Q.rmsBase.skipped) || [], (Q.rmsOver && Q.rmsOver.skipped) || [])
     .filter((n, i, a) => a.indexOf(n) === i);
@@ -3211,6 +3339,7 @@ function rebuildRatesFromRms(){
   if(Q.rmsOver && Q.rmsOver.file) files.push(Q.rmsOver.file);
   Q.ratesInfo = {from: from, to: to, items: Object.keys(rates).length, file: files.join(" + "), skipped: skipped.length,
     partial: !baseP ? "overrides" : (!over ? "base" : null)};
+  applyFixedRates();
   return true;
 }
 
@@ -3290,8 +3419,10 @@ function readTariffFiles(files){
         }
         Q.rmsBase = null; Q.rmsOver = null; /* the grid replaces the older two-file sources */
         Q.rates = ratesRes.rates;
+        Q.rateFixed = {};
         Q.ratesInfo = {from: from, to: to, items: ratesRes.matched, file: f.name, skipped: ratesRes.skipped.length};
-        notes.push("Rates: " + ratesRes.matched + " unit types, " + span);
+        const nFixed = applyFixedRates();
+        notes.push("Rates: " + ratesRes.matched + " unit types, " + span + (nFixed ? " · set prices from Settings applied over the top" : ""));
         if(cov && cov.missing){
           errs.push("Rates report only covers " + span + ", but the event is " + evWords() + ": " + cov.missing + " of the " + cov.nights +
             " stay night" + (cov.nights === 1 ? "" : "s") + " have no price. Print the chart for the whole stay and import again, or type a nightly price on the affected cabins.");
@@ -3299,7 +3430,7 @@ function readTariffFiles(files){
           if(to < isoDate(today)) errs.push("Rates report (" + f.name + ") ends " + shortDateY(to) + ", which has already passed. Print the chart for the event dates and import that.");
           else notes.push("set the event dates and the tool will check the report covers the whole stay");
         }
-        const miss = accomMissingFrom(ratesRes.rates).filter(n => !/campsite|site$/i.test(n));
+        const miss = accomMissingFrom(Q.rates).filter(n => !/campsite|site$/i.test(n));
         if(miss.length) notes.push("⚠ no prices in the report for " + miss.join(", "));
         return;
       }
@@ -3372,13 +3503,15 @@ function readTariffFiles(files){
   });
 }
 function clearTariff(){
-  Q.rates = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
+  Q.rates = {}; Q.rateFixed = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
   Q.rmsBase = null; Q.rmsOver = null; Q.impError = null;
   refresh();
-  showToast("Imported tariff & availability cleared, back to base prices and unit counts.");
+  showToast("Imported tariff & availability cleared. If the RMS live link is on, fresh rates will load again on their own.");
+  scheduleRmsPull(true);
 }
-/* the three import buttons: grey until their file has been imported, then green
-   with a "done until" date underneath */
+/* the rate/availability buttons: grey until loaded, then green with a "done until" date
+   underneath. With the RMS live link on, the tool loads these itself and the buttons
+   are only there for a manual refresh or a one-off CSV. */
 function renderImp3(){
   const set = (btnId, capId, on, iso, openTxt) => {
     const b = document.getElementById(btnId), c = document.getElementById(capId);
@@ -3391,8 +3524,14 @@ function renderImp3(){
   set("impRatesBtn", "impRatesUntil", !!Q.ratesInfo && !live, Q.ratesInfo && Q.ratesInfo.to);
   const col = document.getElementById("impLiveCol");
   if(col) col.style.display = rmsOn() ? "" : "none";
-  set("impLiveBtn", "impLiveUntil", live, null, live ? "as at <b>" + esc(rmsAsAt(Q.ratesInfo.asAt)) + "</b>" : "");
   const lb = document.getElementById("impLiveBtn");
+  if(RMS_PULLING){
+    const c = document.getElementById("impLiveUntil");
+    if(lb) lb.classList.remove("on");
+    if(c) c.innerHTML = "loading…";
+  } else {
+    set("impLiveBtn", "impLiveUntil", live, null, live ? "as at <b>" + esc(rmsAsAt(Q.ratesInfo.asAt)) + "</b>" : "auto");
+  }
   if(lb) lb.disabled = !Q.dateStart || RMS_PULLING;
 }
 function renderImpStatus(){
@@ -3407,11 +3546,22 @@ function renderImpStatus(){
     const x = document.getElementById("impErrX");
     if(x) x.addEventListener("click", () => { Q.impError = null; renderImpStatus(); });
   };
+  /* the live link is on and the tool is fetching, or about to: say so rather than
+     asking for an import that is about to arrive on its own */
+  if(rmsOn() && !Q.ratesInfo && Q.dateStart && (RMS_PULLING || Q.status === "Draft")){
+    host.innerHTML = errBox + '<div class="impstatus"><span>' +
+      (RMS_PULLING ? 'Loading tonight\'s rates and availability from RMS…' : 'Rates and availability load from RMS automatically for these dates.') +
+      '</span></div>';
+    wireErr();
+    return;
+  }
   /* copied from an older quote: its tariff was deliberately left behind */
   if(Q.needsTariff && !Q.ratesInfo){
-    host.innerHTML = errBox + '<div class="impredo">⚠ <b>Import the tariff &amp; availability for these dates.</b> ' +
-      'This quote was copied from an earlier one (or reopened while the tracker sheet was unreachable), so its accommodation prices and unit counts are not here, ' +
-      'they change every day. Use <b>Import tariff &amp; availability</b> above (or type a nightly price on each cabin) before sending.' +
+    host.innerHTML = errBox + '<div class="impredo">⚠ <b>No accommodation prices on this quote yet.</b> ' +
+      'It was copied from an earlier one (or reopened while the tracker sheet was unreachable), so its prices and unit counts are not here, they change every day. ' +
+      (rmsOn()
+        ? 'Switch the event dates on and they will load from RMS on their own, or press <b>↻ Live from RMS</b> above.'
+        : 'Use the <b>Rates</b> and <b>Availability</b> buttons above (or type a nightly price on each cabin) before sending.') +
       '<button class="impclear" id="impRedoX" title="Hide this reminder">dismiss</button></div>' +
       (Q.availInfo ? '<div class="impstatus"><span>Availability <b>' + esc(shortDate(Q.availInfo.from)) + ' – ' + esc(shortDate(Q.availInfo.to)) + '</b> · ' + Q.availInfo.items + ' unit types</span></div>' : '');
     const x = document.getElementById("impRedoX");
@@ -3421,17 +3571,19 @@ function renderImpStatus(){
   }
   if(!Q.ratesInfo && !Q.availInfo){ host.innerHTML = errBox; wireErr(); return; }
   const bits = [];
-  if(Q.ratesInfo) bits.push("<span>Tariff <b>" + esc(shortDate(Q.ratesInfo.from)) + " – " + esc(shortDate(Q.ratesInfo.to)) + "</b> · " + Q.ratesInfo.items + " unit types" + (Q.ratesInfo.skipped ? " <span class='fmuted'>(" + Q.ratesInfo.skipped + " rows skipped)</span>" : "") + "</span>");
+  if(Q.ratesInfo) bits.push("<span>" + (Q.ratesInfo.live ? "Rates <b>live from RMS</b>, " + esc(rmsAsAt(Q.ratesInfo.asAt)) + " · " : "Tariff <b>" + esc(shortDate(Q.ratesInfo.from)) + " – " + esc(shortDate(Q.ratesInfo.to)) + "</b> · ") + Q.ratesInfo.items + " unit types" + (Q.ratesInfo.skipped ? " <span class='fmuted'>(" + Q.ratesInfo.skipped + " rows skipped)</span>" : "") + "</span>");
   if(Q.ratesInfo && Q.ratesInfo.partial) bits.push('<span class="impwarn">⚠ ' + (Q.ratesInfo.partial === "base"
     ? "base rates only, import the Control Panel restrictions export too for the dynamic (red) prices"
     : "dynamic overrides only, import the Tariff Export CSV too so base-rate days get a price") + "</span>");
   if(Q.availInfo) bits.push("<span>Availability <b>" + esc(shortDate(Q.availInfo.from)) + " – " + esc(shortDate(Q.availInfo.to)) + "</b> · " + Q.availInfo.items + " unit types</span>");
+  const setCount = Object.keys(Q.rateFixed || {}).length;
+  if(setCount) bits.push('<span>Set prices from Settings on <b>' + setCount + '</b> cabin type' + (setCount === 1 ? '' : 's') + '</span>');
   let warn = "";
   if(Q.ratesInfo && Q.dateStart){
     const missing = stayNightsList().filter(d => d < Q.ratesInfo.from || d > Q.ratesInfo.to).length;
-    if(missing) warn = '<span class="impwarn">⚠ ' + missing + ' stay night' + (missing === 1 ? '' : 's') + ' outside the imported tariff, those nights have no price at all until you import them or type a nightly price</span>';
+    if(missing) warn = '<span class="impwarn">⚠ ' + missing + ' stay night' + (missing === 1 ? '' : 's') + ' outside the loaded tariff, those nights have no price at all until they load or you type a nightly price</span>';
   }
-  host.innerHTML = errBox + '<div class="impstatus">' + bits.join(" · ") + warn + '<button class="impclear" id="impClear">clear import</button></div>';
+  host.innerHTML = errBox + '<div class="impstatus">' + bits.join(" · ") + warn + '<button class="impclear" id="impClear">clear &amp; reload</button></div>';
   wireErr();
   const ic = document.getElementById("impClear");
   if(ic) ic.addEventListener("click", clearTariff);
@@ -3585,6 +3737,12 @@ function bedsLine(it){
   if(!n) return cfg;
   return (cfg ? cfg + " (up to " : "Up to ") + n + " separate bed" + (n === 1 ? "" : "s") + (cfg ? ")" : "");
 }
+/* is this cabin's price for the stay coming from a set price on the Settings tab? */
+function stayIsFixed(id){
+  const nights = stayNightsList();
+  if(!nights.length || manualPrice(id) !== null) return false;
+  return nights.some(d => isFixedRate(id, d));
+}
 function renderPrep(){
   const n = nightsCount();
   document.getElementById("nightsChip").textContent = Q.dateStart
@@ -3600,35 +3758,38 @@ function renderPrep(){
     const blocks = (Q.sel.accom || []).filter(b => b.id === it.id);
     const sub = blocks.reduce((s, b) => s + blockTotal(b), 0);
     const canUp = canAddOver(it.id, stayNightsList());
-    /* price cell: staff-typed override > imported nightly tariff > rate card */
+    /* price cell: staff-typed override > this quote's loaded rates (RMS live, an import,
+       or a set price from the Settings tab) */
     const m = manualPrice(it.id);
     const hasCal = Q.rates && Q.rates[it.id] && Object.keys(Q.rates[it.id]).length > 0;
     const rr = rateRange(it.id);
+    const srcWord = stayIsFixed(it.id) ? "set price" : (Q.ratesInfo && Q.ratesInfo.live ? "from RMS" : "from tariff");
     let priceCell;
     if(hasCal && m === null){
       const ph = rr.varies ? Math.round(rr.min) + "–" + Math.round(rr.max) : String(Math.round(rr.min));
-      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="" placeholder="' + esc(ph) + '" title="Nightly rates from the imported tariff, type a price to override every night">' +
-        '<span class="pinsub">from tariff' + (rr.missing ? ' · ' + rr.missing + ' night' + (rr.missing === 1 ? '' : 's') + ' missing' : '') + '</span></div>';
+      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="" placeholder="' + esc(ph) + '" title="Nightly rates loaded for this quote, type a price to override every night">' +
+        '<span class="pinsub">' + srcWord + (rr.missing ? ' · ' + rr.missing + ' night' + (rr.missing === 1 ? '' : 's') + ' missing' : '') + '</span></div>';
     } else if(hasCal){
       priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + m + '" title="Your override, every night at this price">' +
-        '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="price" title="Go back to the imported nightly rates">typed · use tariff</button></div>';
+        '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="price" title="Go back to the loaded nightly rates">typed · use ' + srcWord.replace(/^from /, "") + '</button></div>';
     } else if(m !== null){
       priceCell = '<input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + m + '" title="Per-night price typed for this quote">';
     } else {
-      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="" placeholder="0" title="No nightly price yet, import the RMS tariff or type a price for this quote">' +
-        '<span class="pinsub pinwarn">no price yet · import or type</span></div>';
+      priceCell = '<div><input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="" placeholder="0" title="No nightly price yet, the RMS live link loads one, or type a price for this quote">' +
+        '<span class="pinsub pinwarn">no price yet</span></div>';
     }
-    /* availability cell: staff-typed override > imported chart > rate card default */
+    /* availability cell: staff-typed override > loaded chart > rate card default */
     const ma = manualAvail(it.id);
     const hasAvailCal = Q.availCal && Q.availCal[it.id] && Object.keys(Q.availCal[it.id]).length > 0;
+    const availWord = (Q.availInfo && Q.availInfo.live) ? "from RMS" : "from chart";
     let availCell;
     if(hasAvailCal && ma === null){
       const disp = availDisplay(it.id);
-      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="" placeholder="' + (disp === null ? "-" : disp) + '" title="Lowest availability across the stay, from the imported chart, type a number to override every night">' +
-        '<span class="pinsub">from chart</span></div>';
+      availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="" placeholder="' + (disp === null ? "-" : disp) + '" title="Lowest availability across the stay, type a number to override every night">' +
+        '<span class="pinsub">' + availWord + '</span></div>';
     } else if(hasAvailCal){
       availCell = '<div><input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + ma + '" title="Your override, same cap every night">' +
-        '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="avail" title="Go back to the imported availability">typed · use chart</button></div>';
+        '<button class="pinreset" data-id="' + esc(it.id) + '" data-k="avail" title="Go back to the loaded availability">typed · use ' + availWord.replace(/^from /, "") + '</button></div>';
     } else {
       availCell = '<input type="number" class="pin prepAvail" data-id="' + esc(it.id) + '" min="0" step="1" value="' + (c.avail === null ? '' : c.avail) + '" placeholder="-" title="Units the organiser can book, for this quote">';
     }
@@ -3648,15 +3809,17 @@ function renderPrep(){
     const c = catEntry(v.fullId);
     const ch = catEntry(v.halfId);
     const d = Number((Q.sel.venues || {})[v.key]) || 0;
+    const free = venueIsFree(v);
     const sub = d > 0 ? venueDayTotal(v, d) : 0;
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="venue" data-id="' + esc(v.key) + '"' + (c.on ? ' checked' : '') + ' title="Offer this venue on this quote">' +
       '<div><span class="pkgname">' + esc(v.name) + '</span>' +
-        '<div class="pkgmeta">' + esc(v.cap) + '</div></div>' +
+        '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
+        (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') + '</div>' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
       stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0}) +
-      '<div class="pkgsub">' + (d > 0 ? money(sub) : '<span class="fmuted">-</span>') + '</div>' +
+      '<div class="pkgsub">' + (d > 0 ? (free ? '<span class="freetag">Free</span>' : money(sub)) : '<span class="fmuted">-</span>') + '</div>' +
     '</div>';
   }).join("");
 
@@ -3744,6 +3907,7 @@ function clampEventDates(changed){
   if(a) a.value = Q.dateStart || "";
   if(b){ b.value = Q.dateEnd || ""; b.min = Q.dateStart || ""; }
   refresh();
+  scheduleRmsPull();
 }
 /* tells staff when the event is inside the usual lead times, so they know why the
    timeline reads "As soon as possible" rather than a deadline that has already
@@ -3751,11 +3915,13 @@ function clampEventDates(changed){
 function shortNoticeHTML(){
   const kd = keyDates();
   if(!kd || !shortNotice()) return '';
+  const c = kdCfg();
   const away = daysUntil(kd.arrive);
   const passed = [];
-  if(kdPassed(kd.email)) passed.push("the 10 week confirmation email");
-  if(kdPassed(kd.catering)) passed.push("the 1 month catering cut-off");
-  if(kdPassed(kd.finalNums)) passed.push("final numbers at " + kd.finalDays + " days");
+  if(kdPassed(kd.email)) passed.push("the " + c.emailWeeks + " week confirmation email");
+  if(kdPassed(kd.catering)) passed.push("the " + leadPhrase(c.cateringDays) + " catering cut-off");
+  if(kdPassed(kd.finalNums)) passed.push("final numbers at " + leadPhrase(kd.finalDays));
+  if(kdPassed(kd.cancel)) passed.push("the " + leadPhrase(c.cancelDays) + " free-cancellation window");
   return '<p class="hint" id="kdShortNote" style="margin:0 0 8px">⚠ <b>Short notice:</b> this event is ' +
     (away === null ? 'close' : (away < 0 ? 'in the past' : away + ' day' + (away === 1 ? '' : 's') + ' away')) +
     ', so ' + (passed.length ? passed.join(", ") : "some of the standard deadlines") +
@@ -3768,10 +3934,12 @@ function kdFieldsHTML(c, cls){
   return '<div class="kdcfg">' +
     row("Deposit per cabin or room", '<span class="kdu">$</span>' + f("depositPer", 10)) +
     row("Deposit due within", f("depositWeeks") + '<span class="kdu">weeks of booking, or</span>' + f("depositLeadWeeks") + '<span class="kdu">weeks before arrival, whichever is earlier</span>') +
+    row("Dates held for", f("holdDays") + '<span class="kdu">days from the quote date</span>') +
     row("Confirmation email", f("emailWeeks") + '<span class="kdu">weeks before arrival</span>') +
     row("Catering locked in", f("cateringDays") + '<span class="kdu">days before arrival</span>') +
     row("Final numbers", f("finalDays") + '<span class="kdu">days before arrival</span>') +
     row("Bigger groups", f("finalDaysBig") + '<span class="kdu">days, over</span>' + f("bigUnits") + '<span class="kdu">units</span>') +
+    row("Cancellation window", f("cancelDays") + '<span class="kdu">days before arrival, fee</span><span class="kdu">$</span>' + f("cancelFee", 5) + '<span class="kdu">per room</span>') +
   '</div>';
 }
 /* the same timeline the organiser gets, with the rules behind it, on the Prepare tab */
@@ -3781,7 +3949,7 @@ function renderPrepKeyDates(){
   const a = document.activeElement;
   /* keep the field they are working in, and refresh the timeline underneath it */
   if(a && host.contains(a) && (a.isContentEditable || a.tagName === "INPUT")){ renderKdRows(); return; }
-  host.innerHTML = '<div class="kdcfghead">Deposit &amp; deadlines' +
+  host.innerHTML = '<div class="kdcfghead">Deposit, deadlines &amp; cancellation' +
       ' <button type="button" class="pinreset kdcfgReset" style="display:' + (kdCfgEdited() ? 'inline' : 'none') + '; width:auto; padding:0 0 0 6px">changed for this quote · back to the house rules</button>' +
     '</div>' +
     kdFieldsHTML(kdCfg(), "kdcfgInp") +
@@ -3917,10 +4085,10 @@ function renderSecBoxes(){
 
 /* ---------- trying other dates ------------------------------------------
    The organiser can slide the arrival date and the number of nights around on
-   their own page. Accommodation is priced from the RMS tariff imported onto the
-   quote, so any night we do not hold a price for says "request prices" instead
-   of guessing. The weekend finder walks every Friday in the imported tariff and
-   prices the cabins they have chosen over the Friday and Saturday night.
+   their own page. Accommodation is priced from the rates loaded onto the quote,
+   so any night we do not hold a price for says "request prices" instead of
+   guessing. The search walks the loaded window and prices the cabins they have
+   chosen over the same number of nights.
    ------------------------------------------------------------------------ */
 let WEEKENDS = null;          /* null = not run, "notariff" = nothing loaded, array = results */
 let WK_SIG = "";              /* the cabin mix and stay length the results were worked out for */
@@ -3946,7 +4114,7 @@ function unpricedNights(){
   if(!ids.length || !Q.dateStart) return [];
   return stayNightsList().filter(d => ids.some(id => !hasRateOn(id, d)));
 }
-/* the span of dates the imported tariff covers */
+/* the span of dates the loaded rates cover */
 function tariffSpan(){
   let min = null, max = null;
   Object.keys(Q.rates || {}).forEach(id => {
@@ -4069,6 +4237,7 @@ function setEventDates(from, nights){
   if(a) a.value = Q.dateStart;
   if(b) b.value = Q.dateEnd;
   refresh();
+  scheduleRmsPull();
 }
 function stepNights(dir){
   if(!Q.dateStart) return;
@@ -4255,10 +4424,22 @@ function datesPanelHTML(){
 function siteInviteHTML(){
   return '<div class="siteinv"><b>Organisers are welcome to come and see the resort.</b> ' +
     'We will walk you through the rooms, the dining room and a sample cabin at a time that suits, including outside office hours. ' +
-    'Call 02 4283 6999, email ' + VENUE_EMAIL + ', or just ask below and we will book a site inspection in.</div>';
+    'Call ' + VENUE_PHONE + ', email ' + VENUE_EMAIL + ', or just ask below and we will book a site inspection in.</div>';
 }
 
 /* ---------- tab 2: the organiser's interactive quote page ---------- */
+/* Wording on the quote is plain text, but people write web addresses in it. This
+   escapes the text and then turns any http(s):// or www. address into a real link,
+   so the same address can't read as clickable in one place and as raw markup in
+   another. Markdown-style [label](url) is understood too, and becomes a link. */
+function escLink(s){
+  let t = esc(String(s === null || s === undefined ? "" : s));
+  t = t.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (m, label, url) => '<a href="' + url + '" target="_blank" rel="noopener">' + label + '</a>');
+  t = t.replace(/(^|[\s(])((?:https?:\/\/|www\.)[^\s<)]+[^\s<).,;:!?])/g,
+    (m, pre, url) => pre + '<a href="' + (/^www\./i.test(url) ? "https://" + url : url) + '" target="_blank" rel="noopener">' + url + '</a>');
+  return t;
+}
 function anyLineDisc(){
   return Q.lines.some(l => (Number(l.qty)||0) > 0 && lineDiscPct(l) > 0);
 }
@@ -4345,10 +4526,10 @@ function cbTotalsHTML(t, pm){
     return '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>';
   return '<div class="cb-total">' +
     '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
-    (t.church > 0 ? '<div class="savings"><span>Church discount − ' + t.churchPct + '% (accommodation &amp; venues)</span><span>−' + money(t.church) + '</span></div>' : '') +
+    (t.church > 0 ? '<div class="savings"><span>Church discount − ' + t.churchPct + '% (accommodation &amp; venue hire)</span><span>−' + money(t.church) + '</span></div>' : '') +
     (t.disc > 0 ? '<div><span>Discount (' + Q.discountPct + '%)</span><span>−' + money(t.disc) + '</span></div>' : '') +
     '<div class="grand"><span>Your total</span><span>' + money(t.total) + '</span></div>' +
-    '<div><span>Includes GST (10%)</span><span>' + money(t.gst) + '</span></div>' +
+    '<div><span>Includes GST (' + GST_PCT + '%)</span><span>' + money(t.gst) + '</span></div>' +
     '</div>' +
     perPersonHTML(t) +
     '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>';
@@ -4359,6 +4540,9 @@ function keyDatesAutoRows(showPrices){
   if(!kd && !(u + vs)) return [];
   const anyCater = caterItems().some(it => { const c = (Q.sel.cater || {})[it.id]; return c && catEntry(it.id).on && (Number(c.days) || 0) > 0; });
   const rows = [];
+  /* dated lines are collected separately so the timeline always reads in date
+     order, whatever order the rules happen to fall in */
+  const dated = [];
   const c = kdCfg();
   if(showPrices && (u + vs) > 0 && c.depositPer > 0){
     const alsoDisc = Number(Q.sel.church) > 0 ? ' and discount' : '';
@@ -4369,7 +4553,10 @@ function keyDatesAutoRows(showPrices){
     const leadDays = (c.depositLeadWeeks > 0 ? c.depositLeadWeeks : c.depositWeeks) * 7;
     const leadDate = kd ? isoAddDays(kd.arrive, -leadDays) : null;
     const depositNow = !!leadDate && kdPassed(leadDate);
-    rows.push(['Deposit', money0(c.depositPer * (u + vs)) + ' (' + money0(c.depositPer) + ' × ' + (u + vs) + ' cabin' + (u + vs === 1 ? '' : 's') + (vs ? ' / conference room' + (vs === 1 ? '' : 's') : '') + '), ' +
+    const what = [];
+    if(u > 0) what.push(u + ' cabin' + (u === 1 ? '' : 's'));
+    if(vs > 0) what.push(vs + ' conference room' + (vs === 1 ? '' : 's'));
+    rows.push(['Deposit', money0(c.depositPer * (u + vs)) + ' (' + money0(c.depositPer) + ' × ' + listWords(what) + '), ' +
       (depositNow
         ? 'due as soon as possible to secure your reservation' + alsoDisc + ', your event is inside ' + leadPhrase(leadDays)
         : 'due ' + depositWhenPhrase(c) + (leadDate && c.depositLeadWeeks > 0 ? ' (' + fmtDate(leadDate) + ')' : '') + ', to secure your reservation' + alsoDisc)]);
@@ -4378,16 +4565,22 @@ function keyDatesAutoRows(showPrices){
     rows.push(['Security bond', money0(Q.bond) + ', paid prior to or on arrival and refunded on departure under the Code of Conduct']);
   }
   if(kd){
-    if(c.emailWeeks > 0) rows.push([kdWhen(kd.email), kdPassed(kd.email)
-      ? 'our confirmation email, sent as soon as your booking is confirmed (it normally goes out about ' + c.emailWeeks + ' weeks before arrival, and your event is inside that)'
-      : 'expect our confirmation email (about ' + c.emailWeeks + ' weeks before arrival)']);
-    if(anyCater && c.cateringDays > 0) rows.push([kdWhen(kd.catering), kdPassed(kd.catering)
+    const at = (iso, text) => dated.push({iso: iso, row: [kdWhen(iso), text]});
+    if(c.emailWeeks > 0) at(kd.email, kdPassed(kd.email)
+      ? 'our confirmation email, sent as soon as your booking is confirmed (it normally goes out about ' + leadPhrase(c.emailWeeks * 7) + ' before arrival, and your event is inside that)'
+      : 'expect our confirmation email (about ' + leadPhrase(c.emailWeeks * 7) + ' before arrival)');
+    if(anyCater && c.cateringDays > 0) at(kd.catering, kdPassed(kd.catering)
       ? 'catering to be locked in as soon as possible (normally at least ' + leadPhrase(c.cateringDays) + ' before arrival, so it is subject to availability at this notice)'
-      : 'catering locked in, at least ' + leadPhrase(c.cateringDays) + ' before arrival']);
-    rows.push([kdWhen(kd.finalNums), kdPassed(kd.finalNums)
-      ? 'final numbers & details due as soon as possible (normally ' + kd.finalDays + ' days before arrival)'
-      : 'final numbers & details due (' + kd.finalDays + ' days before arrival' + (kd.finalDays !== c.finalDays ? ', applies to more than ' + c.bigUnits + ' units / peak periods' : '') + ')']);
-    rows.push([fmtDate(kd.arrive), 'arrival, with the balance of your account due before this date']);
+      : 'catering locked in, at least ' + leadPhrase(c.cateringDays) + ' before arrival');
+    at(kd.finalNums, kdPassed(kd.finalNums)
+      ? 'final numbers & details due as soon as possible (normally ' + leadPhrase(kd.finalDays) + ' before arrival)'
+      : 'final numbers & details due (' + leadPhrase(kd.finalDays) + ' before arrival' + (kd.finalDays !== c.finalDays ? ', applies to more than ' + c.bigUnits + ' units / peak periods' : '') + ')');
+    if(c.cancelDays > 0) at(kd.cancel, kdPassed(kd.cancel)
+      ? 'the free-cancellation window has passed (it closed ' + leadPhrase(c.cancelDays) + ' before arrival); rooms cancelled from here are charged at the full rate'
+      : 'last day to cancel rooms without charge (' + leadPhrase(c.cancelDays) + ' before arrival' + (c.cancelFee > 0 ? ', a ' + money0(c.cancelFee) + ' per room booking fee applies to a full cancellation' : '') + ')');
+    dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), 'arrival, with the balance of your account due before this date']});
+    dated.sort((a, b) => (a.iso < b.iso ? -1 : (a.iso > b.iso ? 1 : 0)));
+    dated.forEach(d => rows.push(d.row));
   }
   return rows;
 }
@@ -4518,12 +4711,13 @@ function staffAccomPrice(id, showPrices){
   const hasCal = Q.rates && Q.rates[id] && Object.keys(Q.rates[id]).length > 0;
   const rr = rateRange(id);
   const ph = hasCal ? (rr.varies ? Math.round(rr.min) + "–" + Math.round(rr.max) : String(Math.round(rr.min))) : "0";
-  return '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(id) + '" step="0.5" min="0" value="' + (m !== null ? m : '') + '" placeholder="' + esc(ph) + '" title="Nightly price for this quote; leave empty to use the imported tariff"> / night' +
+  const srcWord = stayIsFixed(id) ? "set price" : (Q.ratesInfo && Q.ratesInfo.live ? "from RMS" : "from tariff");
+  return '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(id) + '" step="0.5" min="0" value="' + (m !== null ? m : '') + '" placeholder="' + esc(ph) + '" title="Nightly price for this quote; leave empty to use the loaded rates"> / night' +
     (m !== null && hasCal
-      ? ' <button class="pinreset spReset" data-id="' + esc(id) + '" title="Go back to the imported nightly rates">typed · use tariff</button>'
+      ? ' <button class="pinreset spReset" data-id="' + esc(id) + '" title="Go back to the loaded nightly rates">typed · use ' + srcWord.replace(/^from /, "") + '</button>'
       : (hasCal
-          ? ' <span class="pinsub" style="padding:0">from tariff</span>'
-          : ' <span class="pinsub pinwarn" style="padding:0">no price yet · import or type</span>')) +
+          ? ' <span class="pinsub" style="padding:0">' + srcWord + '</span>'
+          : ' <span class="pinsub pinwarn" style="padding:0">no price yet</span>')) +
   '</div>';
 }
 function renderClient(){
@@ -4600,10 +4794,12 @@ function renderClient(){
         const c = catEntry(v.fullId), ch = catEntry(v.halfId);
         const d = Number((Q.sel.venues || {})[v.key]) || 0;
         const isFree = venueIsFree(v);
-        const freeHint = v.key === DINING_KEY
+        const freeHint = (v.key === DINING_KEY || v.key === MARQUEE_KEY)
           ? (isFree
-              ? '<div class="cb-free">Included free with ' + esc(mealServiceWords()) + '</div>'
-              : '<div class="cb-note">(free during the meal service if you add catering)</div>')
+              ? '<div class="cb-free">Included at no charge ' + esc(venueFreeReason(v)) + '</div>'
+              : '<div class="cb-note">(' + (v.key === DINING_KEY
+                  ? 'free during the meal service if you add catering'
+                  : 'free if you are staying onsite, just add your cabins above') + ')</div>')
           : '';
         return '<div class="cb-row">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
@@ -4628,8 +4824,8 @@ function renderClient(){
     ? '<div class="whoRow"><span class="whohead">Who\'s eating? <span class="cb-avail" style="font-weight:400">- each meal starts with your whole group; change the eating number on a meal if not everyone\'s joining. Prices adjust automatically.</span></span>' +
       '<label>Adults &amp; 13+<input type="number" class="whoInp" data-w="adults" min="0" value="' + esc(whoAdults() || "") + '"></label>' +
       '<label>Children 4–12 <span class="whonote">half price</span><input type="number" class="whoInp" data-w="k412" min="0" value="' + esc(w.k412) + '"></label>' +
-      '<label>Children 1–3 <span class="whonote">$5 per meal</span><input type="number" class="whoInp" data-w="k13" min="0" value="' + esc(w.k13) + '"></label>' +
-      '<label>Under 12 months <span class="whonote">free</span><input type="number" class="whoInp" data-w="babies" min="0" value="' + esc(w.babies) + '"></label>' +
+      '<label>Over 1 to 3 years <span class="whonote">$5 per meal</span><input type="number" class="whoInp" data-w="k13" min="0" value="' + esc(w.k13) + '"></label>' +
+      '<label>12 months &amp; under <span class="whonote">free</span><input type="number" class="whoInp" data-w="babies" min="0" value="' + esc(w.babies) + '"></label>' +
       '<label>Special dietary <span class="whonote">medically diagnosed · +$10 per meal</span><input type="number" class="whoInp" data-w="diet" min="0" value="' + esc(w.diet) + '"></label>' +
       '</div>'
     : '';
@@ -4676,7 +4872,7 @@ function renderClient(){
                 return '<div class="bandRow"><span class="bandhead">Eating this meal:</span>' +
                   '<label>adults &amp; 13+<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatA" min="0" value="' + b.adults + '"></label>' +
                   ((Number(w2.k412) || 0) > 0 ? '<label>children 4–12<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatK" min="0" value="' + b.k412 + '"></label>' : '') +
-                  ((Number(w2.k13) || 0) > 0 ? '<label>children 1–3<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatT" min="0" value="' + b.k13 + '"></label>' : '') +
+                  ((Number(w2.k13) || 0) > 0 ? '<label>over 1 to 3 years<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatT" min="0" value="' + b.k13 + '"></label>' : '') +
                   ((Number(w2.diet) || 0) > 0 ? '<label>special dietary<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatD" min="0" value="' + b.diet + '"></label>' : '') +
                 '</div>';
               })()
@@ -4696,8 +4892,8 @@ function renderClient(){
       '<p class="cb-hint">as a registered church / ACNC charity your group can choose a concessional tier, the full conditions are in the important information below</p>' +
       '<select id="cbChurch">' +
       '<option value="0"' + (churchPct === 0 ? ' selected' : '') + '>Not applicable</option>' +
-      '<option value="20"' + (churchPct === 20 ? ' selected' : '') + '>20% off accommodation &amp; venues, self catered, or fewer than 3 catered main meals</option>' +
-      '<option value="50"' + (churchPct === 50 ? ' selected' : '') + '>50% off accommodation &amp; venues, 3+ group catered main meals, everyone catered for</option>' +
+      '<option value="20"' + (churchPct === 20 ? ' selected' : '') + '>20% off accommodation &amp; venue hire, self catered, or fewer than 3 catered main meals</option>' +
+      '<option value="50"' + (churchPct === 50 ? ' selected' : '') + '>50% off accommodation &amp; venue hire, 3+ group catered main meals, everyone catered for</option>' +
       '</select>' +
       (TIER_MSG ? '<div class="tierwarn" id="tierMsg">' + esc(TIER_MSG) + '</div>' : '') +
       (churchPct === 50 && !f50.ok && !TIER_MSG
@@ -4732,7 +4928,7 @@ function renderClient(){
   const secHtml = secs.length
     ? '<div class="qp-sechead">Important information</div>' +
       secs.map(s => CLIENT_MODE
-        ? '<div class="qp-sec"><h4>' + esc(s.title) + '</h4>' + esc(s.text) + '</div>'
+        ? '<div class="qp-sec"><h4>' + esc(s.title) + '</h4>' + escLink(s.text) + '</div>'
         : '<div class="qp-sec" data-sec="' + esc(s.id) + '"><h4 contenteditable data-sece="title" title="Click to edit this heading for this quote">' + esc(s.title) + '</h4>' +
           '<div class="sectext" contenteditable data-sece="text" title="Click to edit this wording for this quote">' + esc(s.text) + '</div>' +
           (s.edited ? '<button class="pinreset secreset staffedit-ui" data-sec="' + esc(s.id) + '">edited for this quote · back to standard</button>' : '') +
@@ -4770,7 +4966,7 @@ function renderClient(){
       '<div>Issued ' + ((CLIENT_MODE && BOOT.quote.display && BOOT.quote.display.issued) ? fmtDate(BOOT.quote.display.issued) : fmtDate(today)) + '</div>' +
       '<div>Valid until ' + ((CLIENT_MODE && Q.validUntil) ? fmtDate(Q.validUntil) : fmtDate(plusDays(today, Number(Q.validDays)||14))) + '</div>' +
         (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
-        '<div class="qp-contactlines">Phone: ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>' + VENUE_WEB + '</div></div>' +
+        '<div class="qp-contactlines">Phone: ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>' + VENUE_WEB_LINK + '</div></div>' +
     '</div>' +
     '<div class="qp-for" id="qpFor">' + qpForHTML() + '</div>' +
     '<div class="qp-event" id="qpEvent">' + qpEventHTML() + '</div>' +
@@ -4799,14 +4995,14 @@ function renderClient(){
       cheapestPanelHTML() +
     '</div>' +
     printSummary +
-    '<div class="qp-notes"' + (CLIENT_MODE ? '' : ' contenteditable id="qpNotesBlk" title="Notes shown on the quote, click to edit for this quote"') + '>' + esc(fillQuoteText(Q.notes)) + '</div>' +
-    '<div class="qp-pay"><b>Payment &amp; terms</b><br><span' + (CLIENT_MODE ? '' : ' contenteditable id="qpTermsBlk" title="Click to edit for this quote"') + '>' + esc(fillQuoteText(Q.terms)) + '</span>' +
+    '<div class="qp-notes"' + (CLIENT_MODE ? '' : ' contenteditable id="qpNotesBlk" title="Notes shown on the quote, click to edit for this quote"') + '>' + (CLIENT_MODE ? escLink(fillQuoteText(Q.notes)) : esc(fillQuoteText(Q.notes))) + '</div>' +
+    '<div class="qp-pay"><b>Payment &amp; terms</b><br><span' + (CLIENT_MODE ? '' : ' contenteditable id="qpTermsBlk" title="Click to edit for this quote"') + '>' + (CLIENT_MODE ? escLink(fillQuoteText(Q.terms)) : esc(fillQuoteText(Q.terms))) + '</span>' +
       '<div class="qp-bank">' + BANK_LINES.join('<br>') + '</div></div>' +
     secHtml +
     submitBlock +
-    '<div class="qp-print-note">' + esc(VENUE + ' \u00b7 Quote ' + (Q.num || '')) +
+    '<div class="qp-print-note">' + esc(VENUE + ' · Quote ' + (Q.num || '')) +
       '<br>To confirm this quote, simply reply to the email it came with and we\'ll take care of the rest.</div>' +
-    '<div class="qp-foot">' + esc(VENUE) + ' · ' + VENUE_ADDR1 + ', ' + VENUE_ADDR2 + ' · ' + VENUE_ABN + ' · Phone: ' + VENUE_PHONE + ' · ' + VENUE_EMAIL + ' · ' + VENUE_WEB + '</div>';
+    '<div class="qp-foot">' + esc(VENUE) + ' · ' + VENUE_ADDR1 + ', ' + VENUE_ADDR2 + ' · ' + VENUE_ABN + ' · Phone: ' + VENUE_PHONE + ' · ' + VENUE_EMAIL + ' · ' + VENUE_WEB_LINK + '</div>';
 
   /* wire the organiser's controls */
   const page = document.getElementById("quotePage");
@@ -5105,7 +5301,7 @@ function pipelineRows(){
     rows.unshift({
       num: Q.num, contact: Q.contact, org: Q.org, event: Q.event,
       dateStart: Q.dateStart, dateEnd: Q.dateEnd,
-      total: totals().total, status: Q.status, sentAt: Q.sentAt,
+      total: totals().total, status: Q.status, sentAt: Q.sentAt, acceptedAt: Q.acceptedAt,
       validUntil: validUntilISO(), mine: true, unsaved: true,
       catered: snapHasCatering(Q),
       selfcater: !snapHasCatering(Q) && snapHasAccom(Q)
@@ -5131,15 +5327,21 @@ function statusSel(num, cur){
     '</select>';
 }
 function setStatus(num, status){
+  const now = new Date().toISOString();
   const i = SAVED.findIndex(s => s.num === num);
   if(i >= 0){
     SAVED[i].status = status;
     SAVED[i].accepted = (status === "Accepted");
+    /* stamp when it was actually accepted, so the monthly tile counts the right month */
+    if(status === "Accepted"){ if(!SAVED[i].acceptedAt) SAVED[i].acceptedAt = now; }
+    else SAVED[i].acceptedAt = null;
     saveQuotes();
   }
   if(Q.num === num){
     Q.status = status;
     Q.accepted = (status === "Accepted");
+    if(status === "Accepted"){ if(!Q.acceptedAt) Q.acceptedAt = now; }
+    else Q.acceptedAt = null;
   }
   postToSheet({action: "status", num: num, status: status});
   renderClient();
@@ -5238,6 +5440,7 @@ function openQuoteForEdit(num){
         src = full;
       } else {
         src.rates = full.rates || {};
+        src.rateFixed = full.rateFixed || {};
         src.availCal = full.availCal || {};
         if(!src.ratesInfo && full.ratesInfo) src.ratesInfo = full.ratesInfo;
         if(!src.availInfo && full.availInfo) src.availInfo = full.availInfo;
@@ -5255,8 +5458,8 @@ function loadQuoteForEdit(src, haveRates, note){
   normalizeQuote(Q, src);
   Q.rmsBase = null; Q.rmsOver = null;
   Q.needsTariff = false;
-  /* cabins priced from an imported tariff need that tariff back; if the sheet
-     couldn't be reached the quote opens without it and asks for a fresh import */
+  /* cabins priced from loaded rates need those rates back; if the sheet couldn't be
+     reached the quote opens without them and asks for a fresh load */
   const importedCabins = accomItems().some(it => catEntry(it.id).on && manualPrice(it.id) === null);
   const noRates = !Q.rates || !Object.keys(Q.rates).length;
   if(importedCabins && noRates){ Q.needsTariff = true; Q.ratesInfo = null; Q.availInfo = null; }
@@ -5265,7 +5468,7 @@ function loadQuoteForEdit(src, haveRates, note){
   refresh();
   switchTab("staff");
   showToast("Editing " + Q.num + " under its own number." +
-    (haveRates ? "" : " The tracker sheet could not be reached, so its imported nightly prices are missing: import the tariff again or type a price on each cabin before saving.") +
+    (haveRates ? "" : " The tracker sheet could not be reached, so its nightly prices are missing: load them again or type a price on each cabin before saving.") +
     " Press Save changes (or Email quote) when you're done and the organiser's link shows the new version." + note);
 }
 function renderEditBar(){
@@ -5302,7 +5505,12 @@ function renderPipeline(){
   const acc     = rows.filter(r => r.status === "Accepted");
   const decided = rows.filter(r => r.status === "Accepted" || r.status === "Declined" || r.status === "Expired");
   const overdue = rows.filter(r => { const f = followFor(r); return f !== null && f < 0; });
-  const accMonth = acc.filter(r => r.sentAt && new Date(r.sentAt).getMonth() === today.getMonth() && new Date(r.sentAt).getFullYear() === today.getFullYear());
+  /* counted by when it was accepted, falling back to the date sent for quotes
+     accepted before that was recorded */
+  const accMonth = acc.filter(r => {
+    const d = new Date(r.acceptedAt || r.sentAt || "");
+    return !isNaN(d) && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  });
   const win = decided.length ? Math.round(acc.length / decided.length * 100) : 0;
 
   document.getElementById("tiles").innerHTML =
@@ -5366,7 +5574,7 @@ function readyToSend(){
     showToast("Everything is switched off, offer at least one item, or add a fixed extra.");
     return false;
   }
-  /* accommodation must be priced from an import or a typed price, never silently from the rate card */
+  /* accommodation must be priced from the loaded rates or a typed price, never silently from the rate card */
   const unpriced = [];
   let needDates = false;
   accomItems().forEach(it => {
@@ -5377,14 +5585,19 @@ function readyToSend(){
     if(!hasCal){ unpriced.push(it.name); return; }
     if(!Q.dateStart){ needDates = true; return; }
     const rr = rateRange(it.id);
-    if(rr.missing > 0) unpriced.push(it.name + " (" + rr.missing + " night" + (rr.missing === 1 ? "" : "s") + " not in the import)");
+    if(rr.missing > 0) unpriced.push(it.name + " (" + rr.missing + " night" + (rr.missing === 1 ? "" : "s") + " with no price)");
   });
   if(needDates){
-    showToast("Set the event dates first, nightly accommodation prices come from the imported tariff for those exact dates.");
+    showToast("Set the event dates first, nightly accommodation prices are loaded for those exact dates.");
     return false;
   }
   if(unpriced.length){
-    showToast("No nightly price yet for: " + unpriced.join(", ") + ". Import the RMS tariff, type a price, or untick those cabins.");
+    if(RMS_PULLING){
+      showToast("Rates are still loading from RMS, give it a moment and press again.");
+      return false;
+    }
+    showToast("No nightly price yet for: " + unpriced.join(", ") + ". " +
+      (rmsOn() ? "Press ↻ Live from RMS, type a price, or untick those cabins." : "Import the RMS rates report, type a price, or untick those cabins."));
     return false;
   }
   return true;
@@ -5432,6 +5645,7 @@ function sheetQuotePayload(snap){
     const pads = [180, 120, 90, 60, 30, 14, 7, 0];
     for(let i = 0; i < pads.length && size() > SHEET_SAFE_SIZE; i++){
       payload.rates = pruneDated(snap.rates, stayWindow(pads[i]), 62);
+      payload.rateFixed = pruneDated(snap.rateFixed, stayWindow(pads[i]), 62);
       payload.availCal = pruneDated(snap.availCal, stayWindow(pads[i]), 62);
       trimmedRates = true;
     }
@@ -5555,7 +5769,7 @@ function doEmail(){
   const subject = emailSubject();
   const body = fillTemplate(getDefaults().body);
   /* the client's link only works once the quote reaches the tracker sheet */
-  const linkWarn = SHEET_REACHABLE ? "" : " \u26a0 The tracker sheet could not be reached, so the link in this email will not work until this computer is back online with the tool open.";
+  const linkWarn = SHEET_REACHABLE ? "" : " ⚠ The tracker sheet could not be reached, so the link in this email will not work until this computer is back online with the tool open.";
   if(getEmailVia() === "app"){
     /* Hand the email to the computer's default mail app via mailto:.
        Reliable with classic Outlook; on machines that run new Outlook this
@@ -5587,7 +5801,7 @@ function doSend(){
   if(!readyToSend()) return;
   sendCore();
   showToast("Quote " + Q.num + " marked as sent and saved here." +
-    (SHEET_REACHABLE ? " Logged to the tracker sheet." : " \u26a0 The tracker sheet could not be reached, so the client's link will not work until this computer is back online with the tool open."));
+    (SHEET_REACHABLE ? " Logged to the tracker sheet." : " ⚠ The tracker sheet could not be reached, so the client's link will not work until this computer is back online with the tool open."));
 }
 /* save the quote as it stands, without marking it sent or opening an email.
    For an already-sent quote this also refreshes what the client's link shows. */
@@ -5620,7 +5834,7 @@ function doSubmit(){
   postToSheet({action: "submitted", quote: sheetQuotePayload(snap)}, CLIENT_MODE ? function(){
     Q.status = wasStatus; Q.submittedSel = wasSel; Q.submittedAt = wasAt;
     renderClient();
-    showToast("That did not reach us, please check your connection and press Submit again. If it keeps failing, call 02 4283 6999 or email " + VENUE_EMAIL + ".");
+    showToast("That did not reach us, please check your connection and press Submit again. If it keeps failing, call " + VENUE_PHONE + " or email " + VENUE_EMAIL + ".");
   } : null);
   renderClient();
   renderPrevOptions();
@@ -5665,9 +5879,9 @@ function copyFromQuote(num){
   })));
   /* Accommodation prices and availability are never carried across from an older
      quote: dynamic pricing moves every day and the units held will have changed.
-     The copy starts with no tariff at all, so a fresh RMS import (or a typed
-     price) is the only way this quote can be sent. */
-  Q.rates = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
+     The copy starts with no rates at all, so a fresh load (the RMS live link, an
+     import, or a typed price) is the only way this quote can be sent. */
+  Q.rates = {}; Q.rateFixed = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
   Q.rmsBase = null; Q.rmsOver = null;
   Object.keys(Q.catalog || {}).forEach(id => {
     if(/^(acc_|camp_)/.test(String(id))){
@@ -5680,7 +5894,9 @@ function copyFromQuote(num){
   normalizeQuote(Q);
   syncForm();
   refresh();
-  showToast("Copied " + num + " into new quote " + Q.num + ". Import the RMS tariff and availability for these dates, prices from the old quote are not carried over.");
+  scheduleRmsPull(true);
+  showToast("Copied " + num + " into new quote " + Q.num + ". " +
+    (rmsOn() ? "Fresh rates and availability are loading from RMS for these dates." : "Import the RMS rates and availability for these dates, prices from the old quote are not carried over."));
 }
 function renderPrevOptions(){
   const sel = document.getElementById("prevSel");
@@ -5717,6 +5933,7 @@ function showRestoreBar(){
     bar.style.display = "none";
     syncForm();
     refresh();
+    scheduleRmsPull();
     showToast("Restored " + Q.num + ". Carry on where you left off.");
   });
   document.getElementById("restoreNo").addEventListener("click", () => {
@@ -5835,6 +6052,7 @@ function applyImport(mode){
   document.getElementById("importBar").style.display = "none";
   syncForm();
   refresh();
+  scheduleRmsPull();
   showToast("Added " + lines.length + " line" + (lines.length === 1 ? "" : "s") + " covering " + n + " rooms from the statement. Event dates set from the stay.");
 }
 /* kept for anything that still asks for a statement by name: the shared reader
@@ -5850,16 +6068,23 @@ function persistRate(){
   refresh();
   pushSharedSettings();
 }
+/* cabins and campsites are priced from RMS (or a set price, or a price typed on the
+   quote), never from this card, so their price box is shown but locked rather than
+   inviting an edit that would change nothing */
+function isAccomRateId(id){ return /^(acc_|camp_)/.test(String(id)); }
 function renderRcEditor(){
   const host = document.getElementById("rcEditor");
   const groups = editableGroups();
   let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th class="num" title="How many people the unit sleeps, shown as the Sleeps badge">Sleeps</th><th class="num" title="The most separate beds the unit can be made up with (king beds split, bunks count as two, a sofa bed as one); shown as the beds badge and on the quote">Separate beds</th><th class="num" title="Default units available, the per-quote number starts from this">Units</th><th title="Priced per person">Per person</th><th title="Shows the day &amp; time control on fixed lines">Day &amp; time</th><th></th></tr></thead><tbody>';
   groups.forEach((g, gi) => {
     g.items.forEach((it, ii) => {
+      const locked = isAccomRateId(it.id);
       html += '<tr>' +
         '<td><input type="text" class="rc-name" data-gi="' + gi + '" data-ii="' + ii + '" data-k="name" value="' + esc(it.name) + '"></td>' +
         '<td><input type="text" list="rcGroups" data-gi="' + gi + '" data-ii="' + ii + '" data-k="group" value="' + esc(g.group) + '"></td>' +
-        '<td class="num"><input type="number" step="0.5" min="0" data-gi="' + gi + '" data-ii="' + ii + '" data-k="price" value="' + it.price + '"></td>' +
+        '<td class="num">' + (locked
+          ? '<span class="fmuted" title="Cabin and campsite prices come from the RMS live link, an import, a set price below, or a price typed on the quote. This number is not used.">priced from RMS</span>'
+          : '<input type="number" step="0.5" min="0" data-gi="' + gi + '" data-ii="' + ii + '" data-k="price" value="' + it.price + '">') + '</td>' +
         '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="sleeps" value="' + (it.sleeps || "") + '" placeholder="-"></td>' +
         '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="bedsMax" value="' + (it.bedsMax || "") + '" placeholder="-"></td>' +
         '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="avail" value="' + (it.avail || "") + '" placeholder="-"></td>' +
@@ -5921,6 +6146,54 @@ function renderRcEditor(){
     renderRcEditor();
   }));
 }
+/* ---------- set accommodation prices for certain dates ---------- */
+function renderFixedRates(){
+  const host = document.getElementById("fixedRates");
+  if(!host) return;
+  const a = document.activeElement;
+  if(a && host.contains(a)) return;
+  const rows = fixedRates();
+  const opts = sel => accomItems().map(it => '<option value="' + esc(it.id) + '"' + (String(sel) === String(it.id) ? ' selected' : '') + '>' + esc(it.name) + '</option>').join("");
+  host.innerHTML = rows.length
+    ? '<table class="rc-table"><thead><tr><th>Cabin or site type</th><th>From</th><th>To</th><th class="num">$ per night</th><th></th></tr></thead><tbody>' +
+      rows.map((r, i) =>
+        '<tr>' +
+          '<td><select class="frInp rc-name" data-i="' + i + '" data-k="id">' + opts(r.id) + '</select></td>' +
+          '<td><input type="date" class="frInp" data-i="' + i + '" data-k="from" value="' + esc(r.from || "") + '"></td>' +
+          '<td><input type="date" class="frInp" data-i="' + i + '" data-k="to" value="' + esc(r.to || "") + '"></td>' +
+          '<td class="num"><input type="number" class="frInp" data-i="' + i + '" data-k="price" min="0" step="0.5" value="' + esc(r.price || "") + '"></td>' +
+          '<td><button class="xBtn frDel" data-i="' + i + '" title="Remove this set price">×</button></td>' +
+        '</tr>').join("") +
+      '</tbody></table>'
+    : '<p class="hint">No set prices. Every cabin is priced from RMS.</p>';
+  host.querySelectorAll(".frInp").forEach(el => el.addEventListener("change", e => {
+    const list = fixedRates().slice();
+    const i = Number(e.target.dataset.i), k = e.target.dataset.k;
+    if(!list[i]) return;
+    list[i] = Object.assign({}, list[i]);
+    list[i][k] = (k === "price") ? (Number(e.target.value) || 0) : e.target.value;
+    if(list[i].from && list[i].to && list[i].to < list[i].from) list[i].to = list[i].from;
+    saveFixedRates(list);
+    renderFixedRates();
+    reapplyFixedRates();
+  }));
+  host.querySelectorAll(".frDel").forEach(el => el.addEventListener("click", e => {
+    const list = fixedRates().slice();
+    list.splice(Number(e.currentTarget.dataset.i), 1);
+    saveFixedRates(list);
+    renderFixedRates();
+    reapplyFixedRates();
+    showToast("Set price removed. Those dates are priced from RMS again.");
+  }));
+}
+/* a set price only reaches quotes that have not gone out yet; a sent quote keeps
+   the numbers it was sent with until someone reloads its rates on purpose */
+function reapplyFixedRates(){
+  if(CLIENT_MODE) return;
+  if(Q.status !== "Draft"){ refresh(); return; }
+  if(Q.ratesInfo && Q.ratesInfo.live) pullRmsRates(false);
+  else { applyFixedRates(); refresh(); }
+}
 function sectionOverrides(){ return lsGet(LS_SECTIONS, {}) || {}; }
 function saveSecOverride(id, key, val){
   const base = INFO_SECTIONS.find(s => s.id === id);
@@ -5970,6 +6243,7 @@ function renderSettings(){
   document.getElementById("s-emailvia").value = getEmailVia();
   document.getElementById("s-cheapest").checked = d.cheapest !== false;
   renderRcEditor();
+  renderFixedRates();
   renderSecEditor();
   renderKdDefaults();
   renderRmsSettings();
@@ -6036,6 +6310,7 @@ function rmsAsAt(iso){
   return d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}).toLowerCase().replace(/\s/g, "") + (sameDay ? "" : " " + shortDate(isoDate(d)));
 }
 let RMS_PULLING = false, RMS_PULL_TIMER = null, RMS_CHECK = {}, RMS_CHECK_AT = 0, RMS_CHECK_BUSY = false;
+let RMS_CAT_BUSY = false, RMS_BOOTED = false;
 function rmsGet(params){
   const url = sheetEndpoint();
   if(!url) return Promise.reject(new Error("no sheet endpoint"));
@@ -6115,7 +6390,7 @@ function renderRmsSettings(){
   const mapped = Object.keys(cfg.map).filter(k => Number(cfg.map[k]) > 0 || /^area:\d+$/.test(String(cfg.map[k]))).length;
   st.innerHTML = (cfg.enabled ? '<span class="autobadge">live link on</span>' : '<span class="manualbadge">live link off</span>') +
     (cfg.pencils ? ' · <span class="autobadge">pencils on</span>' : ' · <span class="manualbadge">pencils off</span>') +
-    (cat ? ' · ' + (cat.categories || []).length + ' RMS categories loaded ' + esc(rmsAsAt(cat.at)) + ' · ' + mapped + ' types mapped' : ' · catalogue not loaded yet') +
+    (cat ? ' · ' + (cat.categories || []).length + ' RMS categories loaded ' + esc(rmsAsAt(cat.at)) + ' · ' + mapped + ' types mapped' : (RMS_CAT_BUSY ? ' · loading the catalogue…' : ' · catalogue not loaded yet')) +
     (cfg.rateName ? ' · rate: ' + esc(cfg.rateName) + ' for ' + (cfg.adults || 2) + ' adults' : '');
   const box = document.getElementById("rmsMap");
   if(!cat){ return; }
@@ -6147,12 +6422,28 @@ function renderRmsSettings(){
     if(el.dataset.mirror) map[el.dataset.mirror] = v;
     setRmsSettings({map: map});
     renderRmsSettings();
+    scheduleRmsPull(true);
   }));
 }
-function rmsLoadCatalog(force){
+/* the catalogue is what turns the mapping screen on and what the grid needs; it is
+   fetched on its own rather than waiting for someone to press a button */
+function rmsCatalogFresh(){
+  const cat = rmsCatalog();
+  if(!cat || !cat.at) return false;
+  const age = Date.now() - (Date.parse(cat.at) || 0);
+  return age >= 0 && age < 12 * 60 * 60 * 1000;   /* a working day's worth */
+}
+function ensureRmsCatalog(force){
+  if(CLIENT_MODE || RMS_CAT_BUSY) return Promise.resolve(rmsCatalog());
+  if(!force && rmsCatalogFresh()) return Promise.resolve(rmsCatalog());
+  return rmsLoadCatalog(!!force, true);
+}
+function rmsLoadCatalog(force, quiet){
   const st = document.getElementById("rmsStatus");
-  if(st) st.innerHTML = '<span class="autobadge">asking RMS…</span>';
+  if(!quiet && st) st.innerHTML = '<span class="autobadge">asking RMS…</span>';
+  RMS_CAT_BUSY = true;
   return rmsGet({rms: "catalog", force: force ? 1 : 0}).then(data => {
+    RMS_CAT_BUSY = false;
     const cat = data.catalog;
     lsSet(LS_RMS_CAT, cat);
     /* fill in the obvious matches for anything still unmapped, staff can change any of them */
@@ -6172,10 +6463,13 @@ function rmsLoadCatalog(force){
     }
     setRmsSettings(patch);
     renderRmsSettings();
-    showToast("RMS catalogue loaded: " + cats.length + " categories, " + (cat.rates || []).length + " rate types" + (guessed ? ", " + guessed + " types matched by name (check them)" : "") + ".");
+    if(!quiet) showToast("RMS catalogue loaded: " + cats.length + " categories, " + (cat.rates || []).length + " rate types" + (guessed ? ", " + guessed + " types matched by name (check them)" : "") + ".");
+    return cat;
   }).catch(e => {
+    RMS_CAT_BUSY = false;
     renderRmsSettings();
-    showToast("RMS: " + e.message, true);
+    if(!quiet) showToast("RMS: " + e.message, true);
+    return null;
   });
 }
 function rmsTest(){
@@ -6190,18 +6484,27 @@ function rmsTest(){
       (g.unmapped && g.unmapped.length ? '<br><span class="overdue">Not mapped: ' + esc(g.unmapped.join(", ")) + '</span>' : '');
   }).catch(e => { out.innerHTML = '<span class="overdue">RMS: ' + esc(e.message) + '</span>'; });
 }
-document.getElementById("rmsLoadBtn").addEventListener("click", () => rmsLoadCatalog(true));
+document.getElementById("rmsLoadBtn").addEventListener("click", () => rmsLoadCatalog(true).then(() => scheduleRmsPull(true)));
 document.getElementById("rmsTestBtn").addEventListener("click", rmsTest);
-document.getElementById("rms-enabled").addEventListener("change", e => { setRmsSettings({enabled: e.target.checked}); renderRmsSettings(); renderImp3(); });
+document.getElementById("rms-enabled").addEventListener("change", e => {
+  setRmsSettings({enabled: e.target.checked});
+  renderRmsSettings();
+  renderImp3();
+  if(e.target.checked){
+    showToast("Live link on. Rates and availability will load on their own for every quote with dates.");
+    RMS_BOOTED = false;
+    autoRmsBoot();
+  }
+});
 document.getElementById("rms-pencils").addEventListener("change", e => {
   if(e.target.checked && !confirm("From now on, every organiser submission pencils its cabins and venues into the LIVE RMS database (one group booking, lets go on the deposit due date). Switch it on?")){ e.target.checked = false; return; }
   setRmsSettings({pencils: e.target.checked}); renderRmsSettings();
 });
-document.getElementById("rms-adults").addEventListener("change", e => { setRmsSettings({adults: Math.max(1, Number(e.target.value) || 2)}); renderRmsSettings(); });
-document.getElementById("rms-property").addEventListener("change", e => { setRmsSettings({propertyId: Number(e.target.value) || 0}); renderRmsSettings(); });
+document.getElementById("rms-adults").addEventListener("change", e => { setRmsSettings({adults: Math.max(1, Number(e.target.value) || 2)}); renderRmsSettings(); scheduleRmsPull(true); });
+document.getElementById("rms-property").addEventListener("change", e => { setRmsSettings({propertyId: Number(e.target.value) || 0}); renderRmsSettings(); scheduleRmsPull(true); });
 document.getElementById("rms-rate").addEventListener("change", e => {
   const cat = rmsCatalog(); const r = cat && (cat.rates || []).find(x => Number(x.id) === Number(e.target.value));
-  setRmsSettings({rateId: Number(e.target.value) || 0, rateName: r ? r.name : ""}); renderRmsSettings();
+  setRmsSettings({rateId: Number(e.target.value) || 0, rateName: r ? r.name : ""}); renderRmsSettings(); scheduleRmsPull(true);
 });
 
 /* ---- the Prepare tab: tonight's rates and unit counts for this quote ---- */
@@ -6224,16 +6527,19 @@ function pullRmsRates(manual){
   if(!w){ if(manual) showToast("Set the event dates first.", true); return; }
   if(RMS_PULLING) return;
   RMS_PULLING = true; renderImp3();
-  rmsGet({rms: "grid", from: w.from, to: w.to, fresh: manual ? 1 : 0}).then(g => {
+  ensureRmsCatalog(false).then(() => rmsGet({rms: "grid", from: w.from, to: w.to, fresh: manual ? 1 : 0})).then(g => {
     RMS_PULLING = false;
     const items = Object.keys(g.rates || {}).length;
-    Q.rmsBase = null; Q.rmsOver = null; Q.impError = null;
+    Q.rmsBase = null; Q.rmsOver = null; Q.impError = null; Q.needsTariff = false;
     Q.rates = g.rates || {};
+    Q.rateFixed = {};
     Q.availCal = g.avail || {};
     Q.ratesInfo = {from: g.from, to: g.to, items: items, file: "RMS live · " + (g.rate ? g.rate.name : ""), live: true, asAt: g.asAt};
     Q.availInfo = {from: g.from, to: g.to, items: Object.keys(g.avail || {}).length, file: "RMS live", live: true, asAt: g.asAt};
-    const notes = ["Live from RMS: " + items + " unit types priced, " + shortDateY(g.from) + " – " + shortDateY(g.to) + ", as at " + rmsAsAt(g.asAt)];
-    const missing = accomMissingFrom(g.rates).filter(n => !/campsite|site$/i.test(n));
+    const nFixed = applyFixedRates();
+    const notes = ["Live from RMS: " + items + " unit types priced, " + shortDateY(g.from) + " – " + shortDateY(g.to) + ", as at " + rmsAsAt(g.asAt) +
+      (nFixed ? " · set prices from Settings applied over the top" : "")];
+    const missing = accomMissingFrom(Q.rates).filter(n => !/campsite|site$/i.test(n));
     const errs = [];
     if(missing.length) errs.push("no price from RMS for " + missing.join(", ") + (g.unmapped && g.unmapped.length ? " (not mapped: " + g.unmapped.join(", ") + ")" : " (no rate for those dates on " + (g.rate ? g.rate.name : "this rate") + ")"));
     const cov = coverageCheck(g.from, g.to);
@@ -6246,14 +6552,41 @@ function pullRmsRates(manual){
     if(manual) showToast("RMS: " + e.message, true);
   });
 }
-/* a draft follows its dates; anything already sent keeps its prices until staff press the button */
-function scheduleRmsPull(){
+/* ---- loading rates without anyone pressing a button --------------------
+   A quote that is still a draft follows its dates: set them and the rates and
+   unit counts arrive on their own. A quote that has been sent keeps the prices
+   it was sent with (that guard rail is the point of it), so those only reload
+   from the ↻ Live from RMS button. A CSV import stays in charge of any quote it
+   was used on until it is cleared.
+   ----------------------------------------------------------------------- */
+function rmsRatesStale(){
+  if(!Q.ratesInfo || !Q.ratesInfo.live) return false;
+  const age = Date.now() - (Date.parse(Q.ratesInfo.asAt || "") || 0);
+  if(!(age >= 0)) return true;
+  if(age > 6 * 60 * 60 * 1000) return true;                       /* prices move daily */
+  const w = rmsWindow();                                           /* dates moved outside what we hold */
+  return !!(w && (w.from < Q.ratesInfo.from || w.to > Q.ratesInfo.to));
+}
+function scheduleRmsPull(now){
   clearTimeout(RMS_PULL_TIMER);
   if(!rmsOn() || CLIENT_MODE) return;
   if(Q.status !== "Draft" || !Q.dateStart) return;
   const hasRates = Q.rates && Object.keys(Q.rates).length > 0;
-  if(hasRates && !(Q.ratesInfo && Q.ratesInfo.live)) return;    // a CSV import is in charge of this quote
-  RMS_PULL_TIMER = setTimeout(() => pullRmsRates(false), 800);
+  if(hasRates && !(Q.ratesInfo && Q.ratesInfo.live)) return;      // a CSV import is in charge of this quote
+  if(hasRates && !rmsRatesStale() && !now) return;                // already current for these dates
+  RMS_PULL_TIMER = setTimeout(() => pullRmsRates(false), now ? 150 : 800);
+}
+/* once the shared settings have landed we know whether the live link is on and
+   which categories map where, so this is where the tool starts fetching by itself */
+function autoRmsBoot(){
+  if(CLIENT_MODE || RMS_BOOTED) return;
+  if(!rmsOn()) return;
+  RMS_BOOTED = true;
+  ensureRmsCatalog(false).then(() => {
+    renderRmsSettings();
+    renderImp3();
+    scheduleRmsPull(true);
+  });
 }
 
 /* ---- the organiser's page: what the server checked when the page opened ---- */
@@ -6310,6 +6643,7 @@ function switchTab(name){
   window.scrollTo({top:0, behavior:"instant"});
   updateStickySubmit();
   if(name === "pipeline") pullPipeline(false);   // opening the pipeline refreshes it from the sheet
+  if(name === "settings") ensureRmsCatalog(false).then(() => renderRmsSettings());
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
@@ -6331,8 +6665,9 @@ BINDINGS.forEach(pair => {
     if(pair[1] === "prepBy"){ try{ localStorage.setItem(LS_PREPBY, el.value); }catch(e){} }
     if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
     if(pair[1] === "dateStart" || pair[1] === "dateEnd"){
+      applyFixedRates();   // a set price follows the dates even before RMS answers
       refresh(); // block nights are clamped to the new stay length automatically
-      scheduleRmsPull();   // a live quote follows its dates (only while it is still a draft)
+      scheduleRmsPull();   // a draft follows its dates; a sent quote keeps its prices
       return;
     }
     softRefresh();
@@ -6474,6 +6809,15 @@ document.getElementById("s-emailvia").addEventListener("change", e => {
     ? "On this computer, Email quote now opens the default mail app (for classic Outlook)."
     : "On this computer, Email quote now opens Outlook on the web (for new Outlook).");
 });
+document.getElementById("frAdd").addEventListener("click", () => {
+  const first = accomItems()[0];
+  if(!first){ showToast("Add an accommodation item to the rate card first."); return; }
+  const list = fixedRates().slice();
+  list.push({id: first.id, from: Q.dateStart || isoDate(today), to: Q.dateStart ? isoAddDays(Q.dateStart, nightsCount()) : isoAddDays(isoDate(today), 7), price: 0});
+  saveFixedRates(list);
+  renderFixedRates();
+  showToast("Set price added. Pick the cabin type, the dates and the nightly price.");
+});
 document.getElementById("rcAdd").addEventListener("click", () => {
   const groups = editableGroups();
   const target = groups[groups.length - 1] || {group: "Catering", items: []};
@@ -6535,7 +6879,8 @@ document.getElementById("pdfBtn").addEventListener("click", downloadPDF);
 document.getElementById("pdfBtn2").addEventListener("click", downloadPDF);
 
 /* ---------- go ---------- */
-document.getElementById("appLogo").src = LOGO_DATA;
+if(HAVE_LOGO) document.getElementById("appLogo").src = LOGO_DATA;
+else document.getElementById("appLogo").style.display = "none";
 /* one-time: an email body that is only an older default steps aside for the current one */
 (function(){
   const st = lsGet(LS_DEFAULTS, null);
@@ -6587,6 +6932,21 @@ document.getElementById("appLogo").src = LOGO_DATA;
   if(touched) lsSet(LS_RATECARD, stored);
   lsSet(FLAG, true);
 })();
+/* one-time: the 2 Bedroom Air Conditioned Unit was the only room whose separate-bed
+   count did not match its bed list (1 king split into 2, 2 singles, 2 sofa beds = 6) */
+(function(){
+  const FLAG = "wslr_beds_v3";
+  const stored = lsGet(LS_RATECARD, null);
+  if(lsGet(FLAG, false)){ return; }
+  if(stored && stored.length){
+    let touched = false;
+    stored.forEach(g => (g.items || []).forEach(it => {
+      if(it.id === "acc_2br_std" && Number(it.bedsMax) === 5){ it.bedsMax = 6; touched = true; }
+    }));
+    if(touched) lsSet(LS_RATECARD, stored);
+  }
+  lsSet(FLAG, true);
+})();
 buildRate(lsGet(LS_RATECARD, null));
 if(CLIENT_MODE){
   /* the emailed quote link: same page, organiser's view only */
@@ -6618,10 +6978,13 @@ if(CLIENT_MODE){
   pullPipeline(true);
   const syncBtn = document.getElementById("syncNowBtn");
   if(syncBtn) syncBtn.addEventListener("click", () => pullPipeline(true));
-  window.addEventListener("focus", () => pullPipeline(false));
-  document.addEventListener("visibilitychange", () => { if(!document.hidden) pullPipeline(false); });
-  window.addEventListener("online", () => flushOutbox());
+  window.addEventListener("focus", () => { pullPipeline(false); scheduleRmsPull(); });
+  document.addEventListener("visibilitychange", () => { if(!document.hidden){ pullPipeline(false); scheduleRmsPull(); } });
+  window.addEventListener("online", () => { flushOutbox(); autoRmsBoot(); scheduleRmsPull(); });
   setInterval(() => { if(!document.hidden) pullPipeline(false); }, 5 * 60 * 1000);
+  /* the settings arrive a moment later and switch this on; this covers the case
+     where they were already cached on this computer */
+  autoRmsBoot();
 }
 setInterval(dayRollover, 60 * 1000);
 window.addEventListener("focus", dayRollover);
