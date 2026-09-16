@@ -4950,7 +4950,8 @@ const INV_LOGO = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwM
    screen the organiser sees and the PDF they are emailed match line for line.
    d = {logo, number, date, due, reservation, reservationNote, stay, quoteNum,
         bill: {name, group, email, phone}, groups: [{label, lines: [{desc, sub, qty, unit, amount}]}],
-        credits: [{label, amount}], message, schedule: [string], preparedBy, draft} */
+        credits: [{label, amount}], message, schedule: [string], preparedBy, draft,
+        plan: {quoteTotal, payments: [{label, due, amount, note}]}} */
 function wslrDepositInvoiceHtml(d) {
   var e = function (s) { return String(s === undefined || s === null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); };
   var m = function (n) { n = Math.round((Number(n) || 0) * 100) / 100; var neg = n < 0; var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); return (neg ? "-$" : "$") + s; };
@@ -5002,9 +5003,24 @@ function wslrDepositInvoiceHtml(d) {
     "<tr><td></td><td class=\"lbl\" style=\"color:#667\">GST included</td><td class=\"r\" style=\"color:#667\">" + m(gst) + "</td></tr>";
   (d.credits || []).forEach(function (c) { h += "<tr><td></td><td class=\"lbl\">" + e(c.label) + "</td><td class=\"r\">" + m(-c.amount) + "</td></tr>"; });
   h += "<tr class=\"big\"><td></td><td class=\"lbl\">BALANCE DUE</td><td class=\"r\">" + m(balance) + "</td></tr></table>";
+  /* the whole booking: the quoted total and every payment that makes it up */
+  if (d.plan && d.plan.payments && d.plan.payments.length) {
+    var sumPay = 0;
+    d.plan.payments.forEach(function (p) { sumPay += Number(p.amount) || 0; });
+    h += "<div class=\"pay\" style=\"background:#fff;border-color:#0b5c8e\"><div style=\"color:#0b5c8e;font-weight:bold;margin-bottom:6px\">PAYMENT PLAN FOR YOUR BOOKING</div>" +
+      "<table style=\"width:100%;font-size:10pt\">" +
+      "<tr><td style=\"padding:4px 6px;font-size:11.5pt\"><b>Total price based on current selection</b></td><td></td><td class=\"r\" style=\"padding:4px 6px;font-size:11.5pt\"><b>" + m(d.plan.quoteTotal) + "</b></td></tr>" +
+      "<tr><th style=\"text-align:left;padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#445\">Payment</th><th style=\"text-align:left;padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#445\">Due</th><th class=\"r\" style=\"padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#445\">Amount</th></tr>" +
+      d.plan.payments.map(function (p, i) {
+        return "<tr><td style=\"padding:4px 6px;border-bottom:1px solid #e3e9ee\">" + (i + 1) + ". " + e(p.label) + (p.note ? "<div style=\"color:#667;font-size:8.5pt\">" + e(p.note) + "</div>" : "") + "</td>" +
+          "<td style=\"padding:4px 6px;border-bottom:1px solid #e3e9ee\">" + e(p.due) + "</td><td class=\"r\" style=\"padding:4px 6px;border-bottom:1px solid #e3e9ee\">" + m(p.amount) + "</td></tr>";
+      }).join("") +
+      "<tr><td style=\"padding:7px 6px;border-top:2px solid #0b5c8e;font-size:12pt;color:#0b5c8e\"><b>TOTAL OF ALL PAYMENTS</b></td><td style=\"border-top:2px solid #0b5c8e\"></td><td class=\"r\" style=\"padding:7px 6px;border-top:2px solid #0b5c8e;font-size:12pt;color:#0b5c8e\"><b>" + m(sumPay) + "</b></td></tr>" +
+      "</table><div style=\"font-size:8.5pt;color:#667;margin-top:4px\">Based on your current selection. If numbers change, the later payments change with them; the deposit counts towards the part payment.</div></div>";
+  }
   if (d.message || (d.schedule && d.schedule.length)) {
     h += "<div class=\"msg\">" + (d.message ? e(d.message).replace(/\n/g, "<br>") : "") +
-      (d.schedule && d.schedule.length ? (d.message ? "<br><br>" : "") + "<b>Payment schedule</b><br>" + d.schedule.map(function (s, i) { return (i + 1) + ". " + e(s); }).join("<br>") : "") + "</div>";
+      (d.schedule && d.schedule.length ? (d.message ? "<br><br>" : "") + "<b>Key dates</b><br>" + d.schedule.map(function (s, i) { return (i + 1) + ". " + e(s); }).join("<br>") : "") + "</div>";
   }
   var ref = d.quoteNum ? String(d.quoteNum) : "";
   h += "<div class=\"pay\"><div style=\"color:#0b5c8e;font-weight:bold;margin-bottom:3px\">HOW TO PAY</div>" +
@@ -5045,10 +5061,15 @@ function depositInvoiceData(){
   const total = totals().total;
   const half = b.halfAmount || 0;
   const halfDue = Q.dateStart ? isoAddDays(Q.dateStart, -c.halfDays) : "";
+  /* the deposit counts towards the part payment (director, Sept 2026) */
+  const halfPay = Math.max(0, Math.round((half - depTotal) * 100) / 100);
+  const balance = Math.max(0, Math.round((total - depTotal - halfPay) * 100) / 100);
+  const payments = [{label: "Deposit (this invoice" + (dep && dep.number ? ", " + dep.number : "") + ")", due: short(due) + (dep && dep.status === "paid" ? " (paid)" : ""), amount: depTotal}];
+  if(c.halfPct > 0 && half > 0) payments.push({label: c.halfPct + "% of accommodation, less the deposit",
+    due: halfDue && kdPassed(halfDue) ? "As soon as possible" : short(halfDue), amount: halfPay,
+    note: c.halfPct + "% of accommodation is " + money(half) + "; the " + money(depTotal) + " deposit counts towards it"});
+  if(Q.dateStart) payments.push({label: "Balance", due: "Before arrival, " + short(Q.dateStart), amount: balance, note: "Paid before keys are handed over"});
   const schedule = [];
-  schedule.push("Deposit " + money(depTotal) + (dep && dep.number ? " (invoice " + dep.number + ")" : "") + (credit > 0 ? ", " + money(depTotal - credit) + " still to pay" : "") + " due " + short(due) + (dep && dep.status === "paid" ? " - PAID" : ""));
-  if(c.halfPct > 0 && half > 0) schedule.push(c.halfPct + "% of accommodation " + money(half) + " due " + (halfDue && kdPassed(halfDue) ? "as soon as possible after the deposit" : short(halfDue)));
-  if(Q.dateStart) schedule.push("Balance " + money(Math.max(0, total - depTotal - half)) + " due before arrival " + short(Q.dateStart) + " (before keys are handed over)");
   if(Q.dateStart && c.finalDays > 0) schedule.push("Final numbers & catering numbers due " + short(isoAddDays(Q.dateStart, -Math.max(c.finalDays, c.cateringDays))));
   const nights = Q.dateStart ? nightsCount() : 0;
   const units = b.cabins + b.sites;
@@ -5066,6 +5087,7 @@ function depositInvoiceData(){
     credits: credit > 0 ? [{label: "Less deposit already received", amount: credit}] : [],
     message: "Thank you for accepting your quote. We have made an unconfirmed booking for you; it is confirmed once this deposit is paid.",
     schedule: schedule,
+    plan: {quoteTotal: total, payments: payments},
     preparedBy: "the WSLR quote tool"
   };
 }
@@ -5228,7 +5250,10 @@ function keyDatesAutoRows(showPrices){
     /* 3: part of the accommodation */
     if(split.total > 0 && c.halfPct > 0){
       const amt = accomShareBase() * c.halfPct / 100;
-      const fig = (showPrices && amt > 0) ? ' (about ' + money0(amt) + ')' : '';
+      const depAmt = depositTotal(c);
+      const fig = (showPrices && amt > 0)
+        ? (depAmt > 0 ? ' (about ' + money0(amt) + ', less your ' + money0(depAmt) + ' deposit: about ' + money0(Math.max(0, amt - depAmt)) + ' to pay)' : ' (about ' + money0(amt) + ')')
+        : '';
       at(kd.half, kdPassed(kd.half)
         ? c.halfPct + '% of your accommodation' + fig + ' due as soon as possible after the deposit (normally ' + leadPhrase(c.halfDays) + ' before arrival)'
         : c.halfPct + '% of your accommodation' + fig + ' due, ' + leadPhrase(c.halfDays) + ' before arrival');
