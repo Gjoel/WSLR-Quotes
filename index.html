@@ -4956,7 +4956,7 @@ function wslrDepositInvoiceHtml(d) {
   var m = function (n) { n = Math.round((Number(n) || 0) * 100) / 100; var neg = n < 0; var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); return (neg ? "-$" : "$") + s; };
   var biz = {name: "Wollongong Surf Leisure Resort", abn: "48 155 637 442", address: "201 Pioneer Road, Fairy Meadow NSW 2519",
              phone: "02 4283 6999", email: "functions@wslr.com.au", web: "wslr.com.au"};
-  var bank = {name: "Wollongong Surf Leisure Resort", bsb: "032-685", acc: "300044", reference: "Please quote your reservation number"};
+  var bank = {name: "Wollongong Surf Leisure Resort", bsb: "032-685", acc: "300044"};
   var groups = d.groups || [];
   var subtotal = 0;
   groups.forEach(function (g) { (g.lines || []).forEach(function (l) { subtotal += Number(l.amount) || 0; }); });
@@ -5006,14 +5006,14 @@ function wslrDepositInvoiceHtml(d) {
     h += "<div class=\"msg\">" + (d.message ? e(d.message).replace(/\n/g, "<br>") : "") +
       (d.schedule && d.schedule.length ? (d.message ? "<br><br>" : "") + "<b>Payment schedule</b><br>" + d.schedule.map(function (s, i) { return (i + 1) + ". " + e(s); }).join("<br>") : "") + "</div>";
   }
-  var ref = d.reservation && /^\d+$/.test(String(d.reservation)) ? d.reservation : "";
+  var ref = d.quoteNum ? String(d.quoteNum) : "";
   h += "<div class=\"pay\"><div style=\"color:#0b5c8e;font-weight:bold;margin-bottom:3px\">HOW TO PAY</div>" +
     "<b>Bank transfer</b>: " + e(bank.name) + ", BSB " + e(bank.bsb) + ", account " + e(bank.acc) + ". " +
-    (ref ? e(bank.reference) + " <b>" + e(ref) + "</b> as the payment reference." : "Please use your surname and quote " + e(d.quoteNum || "") + " as the payment reference until your reservation number reaches you by email.") + "<br>" +
+    "Please quote <b>" + e(ref || "your quote number") + "</b> as the payment reference.<br>" +
     "<b>Card</b>: Payments can be taken over the phone on 02 4283 6999, and we can also send you a secure payment link.<br>" +
     "Due <b>" + e(d.due || "") + "</b>. Questions: " + e(biz.email) + " or " + e(biz.phone) + "." +
     "<div style=\"font-size:8pt;color:#667;margin-top:4px\">We do not accept American Express.</div></div>";
-  h += "<div class=\"terms\">Please pay by the due date and quote your reservation number as the payment reference. Your booking is held as unconfirmed until this deposit is received, and the deposit is credited to your final account. Group bookings are held subject to our group booking terms, which were provided with your quote.</div>";
+  h += "<div class=\"terms\">Please pay by the due date and quote " + e(ref || "your quote number") + " as the payment reference. Your booking is held as unconfirmed until this deposit is received, and the deposit is credited to your final account. Group bookings are held subject to our group booking terms, which were provided with your quote.</div>";
   h += "<div class=\"terms\" style=\"margin-top:6px\">Deposit invoice" + (/\d/.test(String(d.number || "")) ? " " + e(d.number) : "") + (d.preparedBy ? ", prepared by " + e(d.preparedBy) : "") + ", " + e(d.date || "") + ". " + e(biz.name) + ".</div>";
   h += "</body></html>";
   return h;
@@ -5077,8 +5077,8 @@ function openDepositScreen(){
   const note = document.getElementById("depNote");
   const msg = dep && dep.status === "paid" ? "✓ Deposit received, thank you. Your booking is being confirmed."
     : (dep && dep.number
-        ? "This invoice has been emailed to " + (Q.email || "you") + "."
-        : "Your invoice number and reservation number are being created now and will be on the copy emailed to " + (Q.email || "you") + " (please check your junk folder). Until then, use your surname as the payment reference.");
+        ? "Our functions team emails this invoice to " + (Q.email || "you") + ". Please quote " + Q.num + " when you pay."
+        : "Your invoice number and reservation number are being created now. Our functions team will email the invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay.");
   note.textContent = msg; note.style.display = "block";
   document.getElementById("depTitle").textContent = "Deposit invoice" + (dep && dep.number ? " " + dep.number : "") + " · Quote " + Q.num;
   document.getElementById("depFrame").srcdoc = wslrDepositInvoiceHtml(depositInvoiceData());
@@ -5119,7 +5119,7 @@ function depositPayHTML(){
   if(b.cabins) parts.push(b.cabins + ' cabin' + (b.cabins === 1 ? '' : 's') + ' × ' + money0(b.perCabin));
   if(b.sites) parts.push(b.sites + ' campsite' + (b.sites === 1 ? '' : 's') + ' × ' + money0(b.perSite));
   if(b.rooms) parts.push(b.rooms + ' conference room' + (b.rooms === 1 ? '' : 's') + ' × ' + money0(b.perRoom));
-  const ref = (h && h.groupId) ? String(h.groupId) : 'the reservation number on your invoice';
+  const ref = Q.num;
   return '<div class="paybox' + (dep && dep.status === "overdue" ? ' wait' : '') + '">' +
     '<h3>' + (dep && dep.status === "overdue" ? 'Your deposit is now due' : 'Next step: pay your deposit') + '</h3>' +
     'Your booking is held as <b>unconfirmed</b> until the deposit is paid.' +
@@ -5269,7 +5269,8 @@ function keyDatesAutoRows(showPrices){
     });
     merged.forEach(d => rows.push(d.row));
   }
-  return rows;
+  /* each line starts with a capital, whatever the rule above it wrote */
+  return rows.map(r => [r[0], String(r[1] || "").replace(/^\s*([a-z])/, (m, c) => m.replace(c, c.toUpperCase()))]);
 }
 /* staff-edited rows for this quote win over the automatic calculation */
 function keyDatesRows(showPrices){
@@ -7446,7 +7447,7 @@ function rmsPipeChip(r){
     deposit: r.rmsHold.deposit ? r.rmsHold.deposit.status : ""} : null);
   const bits = [];
   if(hold){
-    if(hold.status === "held") bits.push('<span class="rmschip ' + (hold.partial ? 'warn' : 'held') + '" title="' + (hold.partial ? 'Only part of this quote is booked in RMS: ' + (hold.missed || 'some') + ' line(s) could not be held and need doing by hand. ' : '') + 'Unconfirmed reservation in RMS, group ' + esc(hold.groupId) + ', ' + hold.units + ' unit' + (hold.units === 1 ? '' : 's') + (hold.deposit ? ', deposit ' + esc(hold.deposit) : '') + '">G' + esc(hold.groupId) + ' · ' + hold.units + (hold.partial ? ' · part' : '') + '</span>');
+    if(hold.status === "held") bits.push('<span class="rmschip ' + (hold.partial ? 'warn' : 'held') + '" title="' + (hold.partial ? 'Only part of this quote is booked in RMS: ' + (hold.missed || 'some') + ' line(s) could not be held and need doing by hand. ' : '') + 'Unconfirmed reservation in RMS, group ' + esc(hold.groupId) + ', ' + hold.units + ' unit' + (hold.units === 1 ? '' : 's') + (hold.deposit ? ', deposit ' + esc(hold.deposit) : '') + '">' + esc(hold.groupId) + ' · ' + hold.units + (hold.partial ? ' · part' : '') + '</span>');
     else if(hold.status === "shortfall") bits.push('<span class="rmschip short" title="The organiser submitted but RMS had nothing free, so nothing was booked">not held</span>');
     else if(hold.status === "none") bits.push('<span class="rmschip muted" title="Nothing on this quote needed an RMS booking">nothing to hold</span>');
     else if(hold.status === "released") bits.push('<span class="rmschip muted" title="The unconfirmed reservations for this quote have been cancelled in RMS">released</span>');
