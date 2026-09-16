@@ -7143,6 +7143,14 @@ function pullRmsRates(manual){
   if(CLIENT_MODE) return;
   const w = rmsWindow();
   if(!w){ showToast("Set the event dates first, then press ↻ Live from RMS.", true); return; }
+  /* RMS only prices from today on. A quote whose stay has already gone (an old quote
+     reopened, or a year typed wrong) cannot be priced live, so say that plainly
+     instead of asking RMS and reporting the nights as "outside the window". */
+  const lastNight = stayNightsList().slice(-1)[0] || Q.dateStart;
+  if(lastNight < isoDate(today)){
+    showToast("This quote's stay (" + fmtRange(Q.dateStart, Q.dateEnd) + ") is in the past, so RMS has no live rates for it. Change the event dates to today or later, then press ↻ Live from RMS. The prices already on the quote have been left as they are.", true);
+    return;
+  }
   if(RMS_PULLING) return;
   /* pressing the button is the decision to use RMS, so it switches the link on and
      loads (and maps) the catalogue itself. Nothing has to be done on the Settings
@@ -7169,7 +7177,11 @@ function pullRmsRates(manual){
     if(missing.length) errs.push("no price from RMS for " + missing.join(", ") + (g.unmapped && g.unmapped.length ? " (not mapped: " + g.unmapped.join(", ") + ")" : " (no rate for those dates on " + (g.rate ? g.rate.name : "this rate") + ")"));
     if(g.venuesUnmapped && g.venuesUnmapped.length) errs.push("no room in RMS yet for " + g.venuesUnmapped.join(", ") + " (Settings tab › RMS live link)");
     const cov = coverageCheck(g.from, g.to);
-    if(cov && cov.missing) errs.push(cov.missing + " of the " + cov.nights + " stay nights are outside the window RMS returned.");
+    if(cov && cov.missing){
+      const gone = stayNightsList().filter(d => d < isoDate(today)).length;
+      errs.push(cov.missing + " of the " + cov.nights + " stay nights (" + fmtRange(Q.dateStart, Q.dateEnd) + ") are outside the dates RMS returned (" + shortDateY(g.from) + " – " + shortDateY(g.to) + ")" +
+        (gone ? ": " + gone + " of them are already in the past, so they cannot be priced live. Check the event dates." : ". Press ↻ Live from RMS again; if it repeats, check the event dates."));
+    }
     if(errs.length) Q.impError = errs.slice();
     refresh();
     showToast(notes.concat(errs).join(" · "), errs.length > 0);
@@ -7196,6 +7208,8 @@ function rmsAutoOk(){
   if(CLIENT_MODE) return false;
   if(!getRmsSettings().enabled) return false;
   if(Q.status && Q.status !== "Draft") return false;
+  const lastNight = stayNightsList().slice(-1)[0] || Q.dateStart;
+  if(lastNight && lastNight < isoDate(today)) return false;   /* a stay already gone: nothing to price */
   return !!rmsWindow();
 }
 function scheduleRmsPull(delay){
