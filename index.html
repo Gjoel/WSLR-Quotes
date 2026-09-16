@@ -98,6 +98,55 @@
   }
   .editQ:hover{background:rgba(42,120,214,.08)}
   .pipe td:last-child{white-space:nowrap}
+  /* the pipeline is meant to be read at a glance, so every quote is one line: the date
+     and status controls sit beside their value instead of under it, and a long RMS
+     shortfall is clipped with the whole of it on hover */
+  .pipe{font-size:12.5px}
+  .pipe th{padding:6px 6px}
+  .pipe td{padding:5px 6px; vertical-align:middle; white-space:nowrap}
+  .pipe td:first-child, .pipe th:first-child{padding-left:2px}
+  .pipe .fcell{display:inline-block; max-width:104px; overflow:hidden; text-overflow:ellipsis; vertical-align:middle}
+  .pipe .stSel{display:inline-block; margin:0 0 0 5px; width:auto; max-width:74px; font-size:11px; padding:1px 2px; vertical-align:middle}
+  .pipe .sentInp{width:104px; padding:2px 4px; font-size:11.5px}
+  .pipe .rmschip{max-width:200px}
+  .pipe .editQ{padding:2px 7px; font-size:11.5px}
+  .pipe .xBtn{padding:4px 3px}
+  .pipe .you{font-size:10.5px}
+  .pipe .rmschip{margin-top:0; margin-left:6px; vertical-align:middle; max-width:240px; overflow:hidden; text-overflow:ellipsis}
+  .pipe .tcut{display:inline-block; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle}
+  .pipe .rmscut{display:inline-block; max-width:270px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle}
+  @media (max-width:1200px){ .pipe .tcut{max-width:120px} .pipe .rmscut{max-width:170px} }
+  /* the pipeline is a wide table and the one screen meant to be taken in at a glance,
+     so on a real monitor it is allowed out past the page's usual 1060px column */
+  @media (min-width:1120px){
+    #tab-pipeline{width:min(1560px, calc(100vw - 40px)); margin-left:calc(50% - min(780px, 50vw - 20px))}
+    .pipe .tcut{max-width:148px}
+    .pipe .rmscut{max-width:138px}
+    .pipe .rmschip{max-width:138px}
+  }
+  @media (min-width:1120px) and (max-width:1340px){
+    .pipe .tcut{max-width:118px}
+    .pipe .rmscut{max-width:118px}
+    .pipe .rmschip{max-width:118px}
+    .pipe .fcell{max-width:84px}
+  }
+  @media (min-width:1600px){
+    .pipe .tcut{max-width:232px}
+    .pipe .rmscut{max-width:240px}
+    .pipe .rmschip{max-width:240px}
+  }
+  /* the house-wide RMS booking switch, on the Prepare tab beside the quote's own settings.
+     The global input rule makes every input full width, so the tick box is sized back
+     down here, otherwise it pushes the words into a narrow column on the right. */
+  .pencilsw{display:flex; gap:10px; align-items:flex-start; margin-top:12px; padding:10px 12px; border-radius:9px;
+    background:rgba(191,144,0,.09); border:1px solid rgba(191,144,0,.28); cursor:pointer; font-size:13px; line-height:1.4}
+  .pencilsw input[type="checkbox"]{width:16px; height:16px; min-width:16px; margin:2px 0 0; padding:0; flex:0 0 16px; cursor:pointer}
+  .pencilsw > span{flex:1 1 auto; min-width:0}
+  .pencilsw b{display:block; font-weight:600; color:var(--ink)}
+  .pencilsw .hint{display:block; margin-top:3px; font-weight:400}
+  .pencilsw .swstate{display:inline-block; margin-right:6px; padding:0 7px; border-radius:10px; font-size:11px; font-weight:700; letter-spacing:.3px; background:rgba(191,144,0,.18); color:#7a5a00}
+  .pencilsw.on .swstate{background:rgba(12,163,12,.16); color:#0a6b0a}
+  .pencilsw.on{background:rgba(12,163,12,.09); border-color:rgba(12,163,12,.3)}
 
   .whenrow{display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap}
   .whenrow input[type="date"]{width:132px; padding:4px 6px; font-size:12.5px}
@@ -129,6 +178,8 @@
   .rmschip.short{background:rgba(208,59,59,.13); color:#a52626}
   .rmschip.warn{background:rgba(191,144,0,.15); color:#7a5b00}
   .rmschip.muted{background:rgba(120,120,120,.12); color:#555}
+  .caterwarn{background:rgba(191,144,0,.12); border:1px solid rgba(191,144,0,.3); border-radius:9px;
+    padding:9px 12px; margin:0 0 10px; font-size:13px; line-height:1.45; color:#6b4f00}
   .rmsbanner{border-radius:10px; padding:10px 14px; margin:6px 0 12px; font-size:13.5px; line-height:1.45}
   .rmsbanner.ok{background:rgba(12,163,12,.08); color:#245c24}
   .rmsbanner.short{background:rgba(208,59,59,.09); color:#8a1f1f; border:1px solid rgba(208,59,59,.3)}
@@ -137,6 +188,8 @@
   .rmsmap select{width:100%; max-width:420px}
   .rmsmap .grp td{font-weight:700; background:rgba(0,0,0,.03); padding-top:9px}
   .rmsmap .auto{font-size:11.5px; color:#777; margin-left:6px}
+  .rmsslot{display:flex; align-items:center; gap:8px; margin-bottom:4px}
+  .rmsslot .auto{margin-left:0; min-width:74px; text-align:right; flex:none}
   .btn.imp3.live.on{background:rgba(12,163,12,.13); border-color:rgba(12,163,12,.5)}
   .btn.accept{background:var(--good); border-color:var(--good); color:#fff; font-size:16.5px; padding:12px 26px}
   .btn.accept:hover{background:var(--good-dn)}
@@ -425,6 +478,11 @@
   .holpill{display:inline-block; padding:1px 7px; border-radius:999px; font-size:11px; font-weight:700; background:rgba(236,131,90,.18); color:#a34c14}
   .cb-free{font-size:12.5px; font-weight:700; color:var(--good-dn)}
   .cb-note{font-size:11.5px; color:var(--muted)}
+  .cb-taken{font-size:12.5px; font-weight:700; color:var(--crit)}
+  .cb-shared{font-size:12.5px; font-weight:600; color:#a34c14; background:rgba(236,131,90,.13); border-radius:7px; padding:6px 10px; line-height:1.45}
+  .vtimeInp.needtimes{border-color:#d98b4a; background:#fffaf4; box-shadow:0 0 0 2px rgba(236,131,90,.18)}
+  .venuenote{margin-top:2px}
+  .venuenote .fmuted{font-weight:400}
   .freetag{font-weight:700; color:var(--good-dn)}
   .cb-total{margin:16px 0 0 auto; max-width:320px; font-variant-numeric:tabular-nums}
   .cb-total > div{display:flex; justify-content:space-between; padding:3px 8px; font-size:14px; color:var(--ink2)}
@@ -436,6 +494,16 @@
     border-radius:10px; padding:16px 18px; text-align:center; font-weight:700; font-size:15px;
   }
   .submitted-box span{display:block; font-weight:400; font-size:13px; color:var(--ink2); margin-top:4px}
+  /* after submitting: the deposit invoice and how to pay it */
+  .paybox{margin-top:14px; border:1.5px solid var(--good, #0c7a0c); border-radius:10px; padding:14px 16px; background:rgba(12,163,12,.06); font-size:14px; text-align:left}
+  .paybox h3{margin:0 0 6px; font-size:16px}
+  .paybox .payamt{font-size:22px; font-weight:800; margin:2px 0 4px}
+  .paybox .paygrid{display:grid; grid-template-columns:max-content 1fr; gap:3px 14px; margin:10px 0 6px; font-size:13.5px}
+  .paybox .paygrid b{font-weight:600; color:var(--ink2)}
+  .paybox .paysmall{font-size:12px; color:var(--ink2); margin-top:6px}
+  .paybox.paid{border-color:rgba(12,163,12,.5)}
+  .paybox.wait{border-color:rgba(191,144,0,.5); background:rgba(191,144,0,.07)}
+  @media (max-width:520px){ .paybox .paygrid{grid-template-columns:1fr} .paybox .paygrid b{margin-top:4px} }
   .fixedtag{font-size:10.5px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); background:var(--page); border:1px solid var(--grid); border-radius:99px; padding:1px 7px; margin-left:6px}
 
   /* ---------- tariff & availability import ---------- */
@@ -597,7 +665,10 @@
   .kdcfg.kdlist label{flex-direction:row; align-items:center; justify-content:space-between; gap:6px 12px; flex-wrap:wrap}
   .kdcfg.kdlist .kdlab{flex:1 1 auto}
   .kdcfg.kdlist .kdrow{flex:0 1 auto; justify-content:flex-end}
-  .kdcfg.kdlist .kdwide{grid-column:auto}
+  .kdcfg.kdlist .kdwide{grid-column:auto; flex-direction:column; align-items:stretch}
+  .kdcfg.kdlist .kdwide .kdrow{justify-content:flex-start}
+  .kdcfg .kdgrp{grid-column:1/-1; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); border-top:1px solid var(--grid); padding-top:6px; margin-top:4px}
+  .kdcfg .kdgrp:first-child{border-top:none; margin-top:0; padding-top:0}
   /* once the split stacks there is a whole card's width again, so the rules go back
      to spreading across it rather than stretching label and box to opposite edges */
   @media (max-width:900px){
@@ -760,6 +831,10 @@
           </label>
           <label title="Appears in the deposit & payment information on the quote">Security bond ($)<input id="f-bond" type="number" min="0" step="50"></label>
         </div>
+        <label class="pencilsw" title="When an organiser presses submit, the cabins, sites and rooms they picked are written into RMS as an unconfirmed group reservation and the organiser is emailed a deposit invoice. This is a house setting: it applies to every quote, on every computer.">
+          <input type="checkbox" id="f-pencils">
+          <span><b>Book the units in RMS (unconfirmed) when an organiser submits</b><span class="hint" id="pencilNote"></span></span>
+        </label>
       </div>
     </div>
 
@@ -826,6 +901,7 @@
           <span class="bulkpick"><button type="button" class="bulkbtn" data-kind="cater" data-on="1">tick all</button><button type="button" class="bulkbtn" data-kind="cater" data-on="0">untick all</button></span>
           <span class="hint">the organiser picks meals × people × days · minimum group size 20</span>
         </div>
+        <div id="prepCaterWarn"></div>
         <div class="preprow prephead">
           <span class="prepcol"></span><span class="prepcol">Meal</span><span class="prepcol">$ / person</span><span class="prepcol"></span><span class="prepcol">Suggest</span><span class="prepcol">Suggested $</span>
         </div>
@@ -903,7 +979,7 @@
     <div class="card">
       <h2>Payment &amp; terms shown on the quote</h2>
       <textarea id="f-terms" rows="3"></textarea>
-      <p class="hint" style="margin-top:8px">Our EFT details are added underneath this automatically. You can use {deposit}, {depositdue}, {depositwhen}, {bond}, {holddays}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig}, {bigunits}, {cancellead} and {cancelfee} here and in the notes above, so the wording follows the deposit, deadline &amp; cancellation fields rather than naming a figure that can go stale.</p>
+      <p class="hint" style="margin-top:8px">Our EFT details are added underneath this automatically. You can use {deposit}, {depositsite}, {depositroom}, {depositdays}, {halfpct}, {halflead}, {bond}, {holddays}, {cateringlead}, {finallead}, {bigunits}, {cancelpct}, {cancelbiglead} and {cancellead} here and in the notes above, so the wording follows the deposit, deadline &amp; cancellation fields rather than naming a figure that can go stale.</p>
     </div>
 
     <div class="actions">
@@ -972,7 +1048,7 @@
     <div class="card">
       <div class="cardhead">
         <h2>Standard information sections</h2>
-        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond; {holddays} how long the quote is valid for; {menuoptions} the menu options ticked for the quote; and {deposit}, {depositdue}, {depositwhen}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig}, {bigunits}, {cancellead} and {cancelfee} follow the deposit, deadline &amp; cancellation rules further down this page.</span>
+        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond; {holddays} how long the quote is valid for; {menuoptions} the menu options ticked for the quote; and {deposit}, {depositsite}, {depositroom}, {depositdays}, {halfpct}, {halflead}, {cateringlead}, {finallead}, {bigunits}, {cancelpct}, {cancelbiglead} and {cancellead} follow the deposit, deadline &amp; cancellation rules further down this page.</span>
       </div>
       <div id="secEditor"></div>
     </div>
@@ -994,7 +1070,7 @@
         <span class="hint">the house rules behind the money &amp; key dates timeline and the standard wording, including the cancellation window. Any single quote can still be changed on the Prepare tab.</span>
       </div>
       <div id="kdDefaults"></div>
-      <p class="hint" style="margin-top:8px">Changes here apply to new quotes and to any quote that has not been given its own numbers; quotes already sent keep what they were sent with. The information sections can use {deposit}, {depositdue}, {depositwhen}, {holddays}, {emaillead}, {cateringlead}, {finallead}, {finalleadbig}, {bigunits}, {cancellead} and {cancelfee} so their wording follows these numbers too.</p>
+      <p class="hint" style="margin-top:8px">Changes here apply to new quotes and to any quote that has not been given its own numbers; quotes already sent keep what they were sent with. The information sections can use {deposit}, {depositsite}, {depositroom}, {depositdays}, {halfpct}, {halflead}, {holddays}, {cateringlead}, {finallead}, {bigunits}, {cancelpct}, {cancelbiglead} and {cancellead} so their wording follows these numbers too.</p>
     </div>
     <div class="card">
       <h2>Cheapest dates search on new quotes</h2>
@@ -1017,22 +1093,22 @@
         <h2>RMS live link</h2>
         <span class="hint" id="rmsStatus">checking…</span>
       </div>
-      <p class="hint" style="margin:0 0 10px">The quote server talks to RMS Cloud on this tool's behalf (credentials stay on the server). <b>You do not need this page to get rates:</b> pressing ↻ Live from RMS on the Prepare tab sets all of this up by itself the first time, including matching the cabin types below. Come here only to check or correct that matching, to pick a different rate type, or to turn pencil bookings on. Every organiser page opens with today's availability, the Pipeline flags quotes RMS can no longer cover, and a submitted quote is pencilled into RMS as one group booking.</p>
+      <p class="hint" style="margin:0 0 10px">The quote server talks to RMS Cloud on this tool's behalf (credentials stay on the server). <b>You do not need this page to get rates:</b> pressing ↻ Live from RMS on the Prepare tab sets all of this up by itself the first time, including matching the cabin types below. Come here only to check or correct that matching, to pick a different rate type, or to turn RMS bookings on. Every organiser page opens with today's availability, the Pipeline flags quotes RMS can no longer cover, and a submitted quote is booked into RMS as one unconfirmed group reservation with a deposit invoice emailed to the organiser.</p>
       <div class="actions" style="margin:0 0 10px; flex-wrap:wrap; gap:8px">
         <button class="btn" id="rmsLoadBtn" type="button">Load from RMS</button>
         <button class="btn ghost" id="rmsTestBtn" type="button" title="Pull the next 7 nights for the mapped types and show what came back">Test the link</button>
         <label style="display:flex; gap:6px; align-items:center; margin-left:8px"><input type="checkbox" id="rms-enabled"> live rates &amp; availability on</label>
-        <label style="display:flex; gap:6px; align-items:center; margin-left:8px"><input type="checkbox" id="rms-pencils"> pencil-book in RMS when an organiser submits</label>
+        <label style="display:flex; gap:6px; align-items:center; margin-left:8px"><input type="checkbox" id="rms-pencils" style="width:auto"> book in RMS (unconfirmed) when an organiser submits</label>
       </div>
       <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px">
         <label style="flex:1; min-width:220px">Property<select id="rms-property"><option value="">(load from RMS first)</option></select></label>
         <label style="flex:1; min-width:220px">Rate type for nightly prices<select id="rms-rate"><option value="">(load from RMS first)</option></select></label>
         <label style="flex:0 0 150px">Priced for (adults per unit)<input type="number" id="rms-adults" min="1" max="12" step="1"></label>
       </div>
-      <div class="tablewrap" id="rmsMap"><p class="hint">Press <b>Load from RMS</b> to list the categories and rooms, then match each cabin and campsite type to its RMS category, and each venue to its specific room. Types left as "not in RMS" keep their rate card price and are never pencilled.</p></div>
-      <p class="hint" style="margin-top:8px">Cabins and sites take their nightly price and unit counts from RMS. A venue mapped to a specific room keeps its full-day and half-day price from the rate card (the RMS rate is per category, so every room in "Conference Room" would otherwise price the same); RMS is only asked whether that room is free, and that room is what gets pencilled.</p>
+      <div class="tablewrap" id="rmsMap"><p class="hint">Press <b>Load from RMS</b> to list the categories and rooms, then match each cabin and campsite type to its RMS category, and each venue to its specific room. Types left as "not in RMS" keep their rate card price and are never booked into RMS.</p></div>
+      <p class="hint" style="margin-top:8px">Cabins and sites take their nightly price and unit counts from RMS. A venue is one specific room in RMS: it keeps its full-day and half-day price from the rate card (the RMS rate is per category, so every room in "Conference Room" would otherwise price the same), RMS is asked day by day whether that room is free (so a room is ever only 1 free or 0, never a count), and that room is what gets booked. Conference Rooms 1, 2 &amp; 3 together have no room of their own in RMS: map Room 1, Room 2 and Room 3 and the combined space follows, free only when all three are, and a combined booking books all three.</p>
       <div id="rmsTestOut" class="hint" style="margin-top:8px"></div>
-      <p class="hint" style="margin-top:8px">Guard rails: prices already on a sent quote never change on their own (only the Live from RMS button, on the Prepare tab, replaces them). Availability changes warn and cap the organiser's steppers; they never rewrite a quote. A pencil is written once per submission, only if every unit is still free, and only ever cancelled by this tool while it is still a pencil in RMS. Everything it does is emailed to enquiries@.</p>
+      <p class="hint" style="margin-top:8px">Guard rails: prices already on a sent quote never change on their own (only the Live from RMS button, on the Prepare tab, replaces them). Availability changes warn and cap the organiser's steppers; they never rewrite a quote. A reservation is written once per submission for whatever is still free (the rest is emailed to you), and is only ever cancelled by this tool while it is still unconfirmed in RMS. Nothing is cancelled automatically for a late deposit: you get a reminder and decide. Everything it does is emailed to enquiries@.</p>
     </div>
     <div class="card">
       <h2>Email subject line</h2>
@@ -1089,6 +1165,12 @@ const DEFAULT_RATE_GROUPS = [
   {group:"Function rooms", items:[
     {id:"fr13_full", name:"Conference Rooms 1-3 (combined) - full day", unit:"per day",      price:500},
     {id:"fr13_half", name:"Conference Rooms 1-3 (combined) - half day", unit:"per half day", price:250},
+    {id:"fr1_full",  name:"Conference Room 1 - full day",               unit:"per day",      price:500},
+    {id:"fr1_half",  name:"Conference Room 1 - half day",               unit:"per half day", price:250},
+    {id:"fr2_full",  name:"Conference Room 2 - full day",               unit:"per day",      price:500},
+    {id:"fr2_half",  name:"Conference Room 2 - half day",               unit:"per half day", price:250},
+    {id:"fr3_full",  name:"Conference Room 3 - full day",               unit:"per day",      price:500},
+    {id:"fr3_half",  name:"Conference Room 3 - half day",               unit:"per half day", price:250},
     {id:"fr5_full",  name:"Conference Room 5 - full day",               unit:"per day",      price:300},
     {id:"fr5_half",  name:"Conference Room 5 - half day",               unit:"per half day", price:150},
     {id:"aud_full",  name:"Auditorium - full day",                      unit:"per day",      price:1000},
@@ -1127,6 +1209,36 @@ const CUSTOM_ITEM = {id:"custom", name:"Custom item (type your own)", unit:"flat
 let RATE_GROUPS = [];
 let RATE = {};
 let ITEM_GROUP = {};
+/* The single conference rooms (1, 2 and 3 on their own) arrived after most rate
+   cards were saved, on this computer and on the tracker sheet. Any saved card that
+   lacks them gets them from the defaults, slotted in under the combined rooms, so
+   nobody has to rebuild their card. A quote's own snapshot is never touched: a
+   quote that went out without the single rooms keeps not offering them. */
+const ROOM_ITEM_IDS = ["fr1_full", "fr1_half", "fr2_full", "fr2_half", "fr3_full", "fr3_half"];
+function withRoomItems(groups){
+  if(!Array.isArray(groups) || !groups.length) return groups;
+  const have = {};
+  groups.forEach(g => (g.items || []).forEach(it => { have[it.id] = true; }));
+  const missing = ROOM_ITEM_IDS.filter(id => !have[id]);
+  if(!missing.length) return groups;
+  let target = groups.find(g => g.group === "Function rooms") ||
+               groups.find(g => (g.items || []).some(it => /^(fr|aud_|marq_|din_)/.test(String(it.id))));
+  if(!target){
+    target = {group: "Function rooms", items: []};
+    groups.unshift(target);
+  }
+  if(!Array.isArray(target.items)) target.items = [];
+  let at = target.items.findIndex(it => it.id === "fr13_half");
+  if(at < 0) at = target.items.findIndex(it => it.id === "fr13_full");
+  at = at < 0 ? 0 : at + 1;
+  missing.forEach(id => {
+    const def = DEFAULT_ITEM_BY_ID[id];
+    if(!def) return;
+    target.items.splice(at, 0, JSON.parse(JSON.stringify(def)));
+    at++;
+  });
+  return groups;
+}
 function buildRate(stored){
   const src = (stored && stored.length) ? stored : JSON.parse(JSON.stringify(DEFAULT_RATE_GROUPS));
   RATE_GROUPS = src.filter(g => g.group !== "Other").concat([{group:"Other", items:[CUSTOM_ITEM]}]);
@@ -1180,13 +1292,25 @@ function tourFor(id){
 function tourLink(url, label){
   return url ? ' <a class="tourlink" href="' + esc(url) + '" target="_blank" rel="noopener">' + (label || 'virtual tour') + ' ↗</a>' : '';
 }
-/* venues are picked in half-day steps; each maps to the full/half day items in the rate card */
+/* venues are picked in half-day steps; each maps to the full/half day items in the rate card.
+   Conference Rooms 1, 2 & 3 are usually booked together, so the combined line stays, but each
+   room is also its own venue: in RMS there are only the three single rooms, so the combined
+   space is free only when all three are (members), and a single room cannot be picked while
+   the combined space is (partOf), or the same room would be held twice. */
 const VENUES = [
-  {key:"fr13", name:"Conference Rooms 1, 2 & 3", cap:"up to 150 people · walls open into one space", fullId:"fr13_full", halfId:"fr13_half", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
+  {key:"fr13", name:"Conference Rooms 1, 2 & 3", cap:"up to 150 people · walls open into one space", fullId:"fr13_full", halfId:"fr13_half", members:["fr1", "fr2", "fr3"], tour: TOUR_FULL + "&scene=r8wB&menu=0"},
+  {key:"fr1",  name:"Conference Room 1",          cap:"6.7m × 11.3m · on its own, part of the Rooms 1, 2 & 3 space", fullId:"fr1_full",  halfId:"fr1_half",  partOf:"fr13", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
+  {key:"fr2",  name:"Conference Room 2",          cap:"6.7m × 11.2m · on its own, part of the Rooms 1, 2 & 3 space", fullId:"fr2_full",  halfId:"fr2_half",  partOf:"fr13", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
+  {key:"fr3",  name:"Conference Room 3",          cap:"6.7m × 7.6m · on its own, part of the Rooms 1, 2 & 3 space",  fullId:"fr3_full",  halfId:"fr3_half",  partOf:"fr13", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
   {key:"fr5",  name:"Conference Room 5",          cap:"up to 45 people · fully separate room",        fullId:"fr5_full",  halfId:"fr5_half",  tour: TOUR_FULL + "&scene=vlAL&menu=0"},
   {key:"aud",  name:"Auditorium",                 cap:"up to 500 people · 30.0m × 15.0m",             fullId:"aud_full",  halfId:"aud_half",  tour: TOUR_FULL + "&scene=wVBg&menu=0"},
   {key:"marq", name:"Marquee",                    cap:"up to 160 people · book ahead, subject to availability", fullId:"marq_full", halfId:"marq_half", tour: TOUR_FULL + "&scene=xnDz&menu=0"},
-  {key:"din",  name:"Dining Room",                cap:"up to 120 people",                             fullId:"din_full",  halfId:"din_half",  tour: TOUR_FULL + "&scene=yoEz&menu=0"}
+  /* shared: the Dining Room is three RMS rooms (CONF 6, 7 and 8) and more than one group
+     can be in it at once, at different meal sittings. So its availability is a count of
+     free rooms rather than free/not, it never blocks the organiser, and a submission
+     pencils only as many rooms as the headcount needs. CONF 9 is not used by this tool:
+     it is not a space groups are given. */
+  {key:"din",  name:"Dining Room",                cap:"up to 120 people · several sittings, shared with other groups", fullId:"din_full",  halfId:"din_half",  shared:3, roomNos:["6", "7", "8"], tour: TOUR_FULL + "&scene=yoEz&menu=0"}
 ];
 function isAccomLine(l){
   if(ITEM_GROUP[l.id] === ACCOM_GROUP) return true;
@@ -1368,14 +1492,12 @@ const BANK_LINES = [
   "BSB: 032 685 &nbsp; Account: 300044"
 ];
 const GST_PCT = 10; // fixed, never varies per quote
-/* ===================== THE RESORT LOGO GOES ON THE NEXT LINE =====================
-   Open your current index.html, find the one line that starts with
-       const LOGO_DATA = "data:image/png;base64,iVBORw0KGgo...
-   copy that whole line, and paste it over the line below, replacing it entirely.
-   (It is one very long line, about 38,000 characters.) Nothing else needs changing.
-   Until you do, the tool still works, it just shows no logo.
+/* ===================== THE RESORT LOGO IS THE NEXT LINE ==========================
+   One very long line (about 38,000 characters): logo.png from the repo, embedded so
+   the quote page and the PDF carry the logo wherever the file is served from.
+   To change the logo, replace the whole line with a new data:image/png;base64 URL.
    ============================================================================== */
-const LOGO_DATA = "PASTE_THE_LOGO_LINE_FROM_YOUR_CURRENT_FILE_HERE";
+const LOGO_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWkAAAEsCAMAAAA2MLKjAAABgFBMVEX///////7+///+//79//7//v7+/v/+/v7+/v39/v/9/v79/v38/v7+/f79/f79/f39/fz8/f78/f37/f79/P38/P78/P38/Pz7/P37+/z4/P35+vz3+Pry+Pvr9fvt8PXg8Pnm6fDf4OjV6/jO5vTD4/W33vTS1eGx2O+n1/Kg0/Gc0vCb0fCa0fGa0fCZ0u+Z0fGZ0fCY0fCa0PCZ0PGZ0PCY0PGY0PCYz/CX0PCWz/CVz/CVzvCUz/CTzvCTzu6Szu/GyNetxdyTze+Sze+Uw+ORze+0tsqZr8yZm7eEh6hmptM+j8doeqMYebw2cKkEbrYDbrYHbbQBbbVfY44LabAAbLUAa7UAarQAZ7MAZbIAY7EAYrFKTn85PXMtMmsqL2gqLmgpLmgpLmcpLmYoLmcpLWcoLWcoLWYoLGcnLWcnLGcnLGYmLGYnLGUnK2YmK2YmK2UlK2UlKmUkKWQjKGQhJmIgJWEfI2AdIl8cIV4aIF0ZHlwYHVwWHFsSGFi7u4HxAABupUlEQVR42u29i18aybYG2sAJPbAzcNS5KIqIKCAaOBhBRnTYIRIIRPxp5Ca+eAg3opEYCO+n//pdq6q6aR4mmpjJ7OzUOXsi0DTdX69a61uPWsVxv8bfOXgckn854V+On9Trp7R8/2E4lJK/heP+4IdPp6RvaafwPL3D8fXkbwOn7Z0ST6cf5/+LnsAk+0P7heOEz8dv+VwjYNp/mPYWLHV3+9n/vKGZgzELfxjwDw3718DBX/PhSCQSIH9yOvouHeQQPQOwdxwvnG6OHWOgn5vh87CN/In/MQTg8PA8fT2LhwO4evwX3/iNmwv0fvbnGUrOkEglU3EQsHgqmUwBHpE0/BvgHs1FU61ut1tPhjmthjMnk8l0jAiajoumyaHwQvYvbi6abrLjNBpuPonDzHGxVPIsyul4bj6WgfO0y/F5gPaRhgsna3B4Kx2dw/PCYcl0hOMC8G8C3tFykWRD+NmfS0dw8W6xkTRwc8lmpdwJA0Q3hWrBzM0lbkrZVCqdq3UinJ4zl6qfunEB6ZtSuR1APcBrxOOq3Qh8NJ+uVUo3AF28m7uJcnp+LtEtpuHzy25ijgdNE+nWruB1pnQTN2gn4bBSuRP/jQu0yvXkHDl3NUd+tvmTQT3JRdvpcsrMmXMfr9IdhKiZriYMcMepfLHdrV+dl8og6eZ0Id0SZbqdzjYI0rrecblCFY6bT5VyZ604nKaVake5GXhwqatyq1X6mIInMcPZKsXsZb3bLlyl8EHAYenLQtrMBaqZCiANiOdyH5qtWj5dTxgEk/pTDB0XbmeLJRsXaFwWs50YN5VopNtxEPHqZbESiyRq79PdKCCdKWXbItKd7EUTkQblk6xe0OMuyXHzqfL1dSU1j0jDa34uWbkopyKRD6VcPaGHr3bT+VoiEisXLgmy8Va2AA9YHqjnqvg61knn67FwonZxWQ/8VEKt4WylYrYV5iLtTPGiGUfo0p0oyFg+i6JpLhQzjTh/C9Ja+m08Ll3KNBKglVOV62K2HWZIc4HaRRZOx8UaqUISNHW8mStdmXHmvLvCOQBIF8/hBAxpTaKerYIuC9fTqVaEm/qp9DSBNoLCVryoJ7UglGcAfLh1nu1GNDOGRI3c+mikYUa0stluVDMzk6hnECpAOl/EI2NtgjTMmGwnotNFbmqtjg1/LFNL6Gc0ke5ZDjQxQTpfTs0RpOdhKlWyzfhvOnOrVSPa5ecyiS0U4ngrU8BbtpU/lkBvRtrZNCjWSR0IWQUguBXpbibbBpMpSzSzqDTMqXK+AKDNRDsEaTgPSjgfTsTjcbCzqUq2kdDowTCmM+0IQzrbDdvqF4i0OVXKgITz83B0Iixy659EUUe7KdDPyfplqXDZtAVa6RoYxEgHkA6DCYs3s+XU7UjDcQRpLtHIEsMKSJdKuU4g0iVIRzsUafZrMGMyoKKmQNbPM12K9MdyphMzV/OItO28lIaLUf+MriAqgFQ7DsJWSqbfd8PhG3jFSZBuZVHGb0WayTSXaApIl5Opj91o5EaKtIEMIIvpcpYi3XpHLGi8dZlOlqpJW7qIUwfUPiJND5/5uZAGo1bONeO26kU1nry+iQBCyPW+AuncNZg4mP61RLxRT0Q6ItLdwHwyASMZGIV09mPsKl+NJKuIdKB2hQQojscnoz+Xm0hMYi0Rbmbr0WS5GwXLCAbxq5DO1xDpMpC4RiEVK6d7SJsb1Xq9CucbgXS6Dig34okaRTp/Bkgn2tV69Sb2kznkYBKblWS0nm6GE9VWPN6+yJkHkD6z3Ul7kCeSKleSgVSlnEznJEh36znwRfqQzglIdyOxTimZrBDtUSig9kjc5C4FR+nnGVNgEgvJeC1ftsUb1USiDqRO04c00b9ftIiini5+MMdbuVIhI9Ee8UT5+gJYHXx83qBIE25DaHckfJMplahFzBGko3GwnO2fDWkdka9UCRherFNIJUsgczOU5b3kdBrgFD2Wp9QplUoBaeWUEtnaENLv62Z4t1DMSlgeuKAXiDQYXnCEyPfOMh2GdHSuULoqEqTBAUIPleOTtfRPhzR4ieVCsXRZTYJwZ/N5FEUD9UgiOr2BOG1ziDQKmYzYUCbTatA81DPRzujZcUDjLms2c/W6SJF+SbiHdibczBGkwXOpJ2b0OkS6FaZIx1DJU6TB8QGXk9fDcT8f0jze/kUx10igABaL6LrNgAzmUFuAEJaz9YSaIN2KzxhmYBCkGwG9YcagQ6+dHleB4/QccTEDXKJ+QZEONHNnhMt004j0FLiSMHnAO29ncvUAQ1oJ2p4iPQMuaT0Bzn1OVFY/lVDHQaQyMGnBBS9+xLCEDhEDjzFsi9VzKMuINLwmXC2MSBdLhIjFwH3Ol9NwXIMeB99Lt+kRWRpxKuVqCVsgWc0j0gThRswWBtFHhwiRBr1sq3xApMkTyBarL82xZu7n09MYOO2mi2fgkdvKINLoISq1XLyT/lBplBof8+l2gCB9XSzXgavdRAiORcLbElysmy6U4bgiuBxhRLaSAaQDTKZn8DzX1etyFeNXqK87Z/mPjXK9kketoWfaYyYB3IQgHYafLVXT9czVTyjTQASa6Yt0M8LNJ0vZNFADDaflbalmOp3Owf8Dr9WBqcq/uziHd1INkNhW+uIiC39XE7w51TpLp7PkOI0WZTgN2gMjRWmMT/PmdBM/LjdzyPL0/4rdnJPDz1opMw9IN1M4FTDiXU5iFoZ8DldTTjV/OqTBS2w0G/Ub8JmT3TqG0HTkzUSn02q2urWYgQeka80GGTWU6Zsa+bt+k+DhuHan1aLHAdKlVu2GZG5qeKZJDReAz9vdVLTUhPf1vCFW78LhnXbChtmt+E0FniQX6NbrHdAmWvJ5u9ONJbo38Z8NaRk3E4ARnpNxgTD8O09Tr5whHI3H41GaajUEhBGel5nDwt8BmXb4uPAc92gez2TmlBz5PBYxc/TMSo6zkcPDmJKVcbZwAJO59PQz5BSBaCwagA/gfflPFmRSCJDLBOipqAsyzw89Gsnfst5xv0nelU4ZZnfpUGp7lpiTDZ9QyWpNfsZonoxTjOtg8DJOS/4V6B/8yWv1WoKDTCcOnlOLf2sBVH4SjtPoKZSyP+iZ4MvjrHqG1+l1UxpOOLMMDuV53SS+kMMvjuvgF8jp/yBpQ7lWD194pMWT/xq/xq/xa/wav8Z/zZDT8QuI74MuL1eqVP+jkPW/q+DVKqXyF+oPJMEqpVzW45cTE9NsPO7BDo/hF9rfMpQqVmYnn541LSxaLNYlu92+TAf8tWS1WBZMxll6FAj3L8ju7xrJVUxKp40LFqt92bu5HQoF/X7/5qaPjU2/fzsYCvl9K3arZcE4gUerf6F9T62slFGQrfYVXzDk/8u37nY5HC43jnU68E8XvOle9/m3Q9urduuCEWH+pUfuDLOKiLJp0brsCwb9vj9dTs+qAO/I4fGsOte8m8Gg124x8qi1f6H4RZQVGNuQgSwv+0PbvnWU2LsOt8O17g9t2hdn/4FYwyxVqXilUvHPuDCCz5hx0e4J+jcQuHsP99rqXyGn1YSU5R8D8oCl/vGGm2ADMPtCfq/T6Vn/qvGn1+P8M7iJWP8zpIfCOj1rNJkWFkwm47Si9+6PGWowgbMLSwDz+tcIc99wuf1/WY2c7IdHrOVqYnEs1uVVn98P1GnLu2y3LOC6N7Xix6kNk3Ul6PfcQzF/DmtX0LM48aMTMEqE2bq8DWbduwrcyeVye3z+YHB1CcFW/hicpxfsW8ENh8vj/SzJcAGvA6p3B6Ff9YbsRk71Y3GeXbT7g75Vp8fjZfflebrqcm74g8uWvx9rnGGzluWg/zP4uV1Op3PVC84KeCv+f4PvsgGq3PV58Xf4V00/roAdSNTU4kpo0+kaeT8boSeWaY5X/L3ybLSshHy3aQ2cdBuboOOC/lX0wJeWiEP+xPcsGNoCLXE70hurG37Tj7KLoLdM9pBPYthxNuKgr7xrG8FlE/fo7zIl6KTMWhyhDcdIquF1Od2+ZyG/Y9lqWQS7PTutJppX+Rht+aLV7g5urztu1zdun9P4Q3S1TM1NW/2bDtCFT6nWc6BjhcPvc7vhip963Y5Nv+Xx3yQJKhngvBJad4zUyWueDX/It2xdNM1O3PJ98HA8Qc/thHDtmfWHIK3mjPbQmjBLvR6PH9xXkJbFRcvS8va/V70eGk4ILc0S0vX9+fPE4nJowzmaPIB6QJSnmZD0h6Hl4A6oiLkzWnxbt+prr2fDKPv79YeSW/BsPRHn2qrfb180CtICVNbvY4bf+cw++/1FQY2aLOhzeUfg4/gTYaYoyz/jU8l5og/9q7cykNDC384/FCpuwe91MbbhdW4El0xK4hviQAleeLLlEaz28ux3ViBA3Get/i2ne1T8whfyWBemiR7/4lUAdZld9t0GtSNk+dvph5pbDP0pajSn/8mCss8phD+NKz52446gfUIuk33P+SVbeBJcXXs6gmtshZYtRtTC/J3mlewxZ9p234q09T5Iy5Uq5bcGp0CiQx7RLXBtA6tXDFwCXLFfIE3O0OJ3lAXgmsYlIHbDisO9uhm0ozjL7x4ZkMunl323IO0M3l2mb0mQAfRquUImV6h52Z2ANvmfig9+bXtpevACUOEtbYiX6FuZlcm/m0BzC07/KMLh8AHOE/cOwEzZbzGKXmfwjnpaTuIQsyaL1WqZlr4tH7jyLwyem3VurPZsoX0IaJlaafH7Jbb/+wm1CrhmyOscIdDroeWFMU52bxM2Yd+8BemNJ3ey7fhkZcbFpRVwh/xw5ypJHI5k16xLVuBBj798Jl61JJGhjRXjUCiJ5yyhVcndu/1L34N+yOVA6k3LwWFL6PU6/RsoTl+hJmVL/tFIu4LWO8khRiiWvCH/hsvhWAlSpIlynV2wLm8FSf4yFPLbF7jPu88gJIshR++OYEaph+zlQqif126sfBemx/Pcgm9zRPTZ4wnaTehcfcU5OUtwtFfu9Rn7kQbKyA3cFrxSmayOoN9LAwKrm+Q7QMfGTNYn6NORIJzL5fRshSwiGZLTvH0/BQUe9KSngT3+JeXg/Shk0iOoUG99j5iBQqawoOYYUh2OzS1wTVX8I/nXqCPTM/dtHE8phXlEQlfJKRfs4MI5mavp8dup7phetG9ve52rnt6sW3MCPcdH1XcOufSZW4NOCdKmESK9OCDScNjCQyMtk/GyCWtoRAgONMfyN2RJZBN234hwqyO49Jjv2TaeagM76ACJswksyO+XBKocoDyUoDoWlkObQ/Erz6Z9TKmWCdp7aclqAaKk6D01o4QEuf12hXx4/ln9ru/vXfHc9FJoFOdwkgDAN1FYxwig7bOy/xEjWQTmle2gL7T8WAK0yevv02VezywGGE2h7SfDp/T+uTLNEso+qr2Dz5Z7Eoki7ZIYiVEIqod4kiv44EgrZNNLz0YB7QpZx76F6YDOtIaeDGg/d8g+S4wddUUAHWfwmW/VseZbltC42ZVN0GW9+eACJoCzZHpxedu/MRjKdfntE0aL/c+Q34eFD07PqsPpCwpzBES6b2J5RgUSh3mS+4FjuzIFD0AHHaPCQOBeKL7J+sq5aXvI2XPJAYbNoHVCppQTBqE0UmZBEpTuTbuqN91N/jVv/0MXON40zICQz+X9s8/C2u1bQX9fWNzhE7iDEvib5P58IzkFPxSl8XoeOLTLKyZGqw4P3tyjb2SPsmlr8C83LXJyOYAlwKSWqVGl8sZF+3oImIVLcNt6kVQ5N7u81X9NbhbxURLqt+x3e/tA8W151vpl0vuExVbgZCsbA7KqGvbarMF+3xie/NgDB15k1pFAO9BH+uZnClZpwb4VwrI9fxDLa6hvpoa57gv63RJ5d/Q8E6KnV6S8Ba2YTOLOzFr9nn758wyaXrdry/5YsBbOPvYGDqJqBE/q4x5eB8zoB828SDm99IfWHiraBnQNfGk7DOrNqbgJk8VOqhrc/fzBNMA9Nj0S07wo0ZloSJf8X04PO1FNgKKy9ztQ4IvPwsQakKKx/qM8Ht/DKg8Qnu1RuREHeHEq/v4WkAZ7VRK/QU4CQMppGnEHTmcEmrw5VNXg7jOINK4mSfb1PQYigiHXiHqSjQ23e8D0oc7v/60/gbsuqDkF3y8QcJhbSrusHP+AUVMl6DDfCB4Ns3Vawd8LZKViMDYk5GJkKvQAuUfEewPGFXriGM4zuP39CS+53OjzSB7DxICAGAflw+vYeOZ/8sS/6RpEetBT9XjXfOD48lyfDlHC5N4AVU0trXPzgVMBvNLqH85ieVd9T+4zdZRqck3TRlK1brEsLphI0kiuHhWPXxjlI/WraWrHnmx4JXES+QCpGYjIejzPnBbT7OzCsgg1IRnkSPdwtN2/bTfB5akfSa/M5/c418B2O51+58NSPCW3EBwRvFtfHRGCufUc5IJmSemVPxTCPHMo5PeAVjaOimfKFOD3b667Bm0D6gflIJZuiRMxcKax5T7+6/L5rUbKxIVHAPNSzW5xFLNy/uW3gw4R0xqyRwrOaPUFt/1gu4NLxgc1h6OfNxAuDLXdSaRVrAp1aQW8Mp/X7XA4nE74j8sLvpp7CXMHI9ysBeAdoY0+mra60a+mybVtiKmfjaEpppR6Gt5VGjVQKRRjgKyDxcDBpoNMW/1rg0T5KXBEr3vVj8EzCaIKrPRE4/3QhZoyVT+llxqnuxTfEmmepkTC53b16wRgz+v+4PLiBKeUDTn/auOCZUU6+73/9++BOGof0pvLQ61++5B2IpugTpZCzqTH69k0EgO8Okj/nJ6NP4lFdjv+8ltnJQWZ5AzqiYH41IOYQ4fXM4p33MHhF2Be3g5uep2jy/Y8Tl8IpUY+9IRhLErJg/f/ng1kOKRIo5pWfAZpB0mh0AcqAyEOugn6S494Gcbo1vru0QU8fmVlM0TU+aoztNw3XeQqEAyZ+oFLmNSjRXp1RPh2OPHNIS1e9gd97turUL0Igt+iGhZrpUo16/hTqj0GgwxSzTYqk977FIQXeIKqRwAtxFGhZ1QMRo6c/hU0nOCgPvN6/qT1BvLvXIYHnvKojKp3VPi2n9DJMWRhsfuf+b5U7YhaJLQ0PaJiWqaSTn/PAJvu96FdwWEiIBo+eEp/mbh/SQOIz9aoQ0DI9FY/5X5mnaVNSKYtPkIjV+AxfufSE7TKI/wsNNmKL2gNkIjN4Naa0/P0DjXTzpB9ejjLLOOkPpnDbx1KuRh7se0hgwifrkqdLElpF9zWtnPdtbk8rSBkus/DcYGVBOWtlPPwDZMDp4UXH/L3rVcChTaqHsMVui3VIJPLWdTeM+RLf7aMN7g0ppQ/Gkw/SJF2BhcHfpTnTJtPKdIe4CUyBTfk0Y2OuRGkVzd8ODEHabdTSqrAz/R64WG6/N+5yBin56hyDN9tiUriVk+ZrMtBv9d5rxUCRM8OIs1J07nDOTuMCzF25tmycwPlRJL5CPqg76vwkX/Fh0DLhqZtv/iingFiMugzfQflYRrhHqLyGGUgSNhegco56Ftb/fwKgRFGdns4UCmXmqohNc1JGOjakGqRfgoiKRtAOrS9Ar/3SMYNkOkBUgV23RpcI3LwXZHGi10bXSDAD3nb4vKtTffXLCuCxzcx+PimJE4eBj2Ut5YwrPYneOlgsbynq5v2CVl/ota4ZKE5OSDTkrwNOXTAp0e7+t2RxuftHIX0wG3JVTxZvmV1hv7yur5yXdFQTq4/PO8amsAKyefOoU97+vfp/z0bFd2lZAdpbC918xQ5u2pgXi+GHN9de3Aq+5ZnlPiR2kSZwOOFlGrQv+Fce7r+lcPtX1LIB6mF5EH8NUJNPxOLEYc8KdR8q0xQnw3ZM0ye9Uh3D+kRpTLoUDpG5WAedEyNjHnAFRk5lVqtVlFHCRPOT4LbG65vW4zo9RoH7JZJRNL7dGOIaCllvXT22lDqVC1qPvefjlsrjZT9qXlU96OcN9Bsj75v/f/0ysaoHIBry24UpvCsyWJfDf17w3knmN3uz5Hqfu6o4hbFLDG44sNsWkKMhvxHjuftf3lEA37rHY715btdI7QEKCn7svF7L2qZXvGNXIni2Vy1LsBYtNqf+DGlOjI4MugJutZ9f236btXjzgH1TzKkYv3OYFmnTCnNuXk3B7AASydMx7XbzZmaM/Wl/D2bw54myPL0NPe9x8Syb7SouteDIRxkOf5dTKDb6d0Oepft9hX/bQsuVreXBqSpR/KI/98PZV/p9eogRJKAzVrwVj+L1/SHPIaZJIvZffcFLUBob1sc4XLguBvRcDvW/aEV64JxWvV41rQUHP0l8D5Ut2kH92BsGqEMPrkVaSyB37g9RyBJ7kizHGCUlbeQsO88YP4++9Yl9+BgubdC62S5NRsWv+cOSIMn3Mt8uwY9E1J05L0N6UcqSTDDGbqlVkCunAYt7e13FH7MImrVcHXlfYfH6fX77WTxCy3zxP9ago4vI91X2jmUQpQ/tktrDPqVi2IMtHRvpRt4IyN3uRyqrnB8/5jd7d741jf1N3C7fCGv1TSB68/kPZRGLwRY9S/12zRrsCf7A5UVyoGn5dnuaQiMCsxK1R7GptSjVILkcTCZXvxhjQEAk6+nx7g+la7l6s84grSOisWu9a0CUGC9r9ghy2efGJDGfmWPDPGxqFPVpj6Bd2+sjWBpCuWYfSB9eLtG/xvUx8iUy92ic6g26Fquoali3BjJp6VhUV7qIQIl7lMd3IJ/MFNvFUMb0xb75pZroM50eqRHMpD0d/3ItgCzTp/7K9XGqtWE8qWQ3THf7tmW3qda6r0B0krJg+IWt72DWaBNurgYSIc95POsDlJ166CmBl8+uDqwwMG1/cOQJquV7inUXrd3dVVYAnpLoYJ81DoijHrfksHEVDwNisiUPK4fG+rhtOrxE02Os/CJ68sLdoHZbHkHr8H17AcirZj+zNLuW3yUjeC/idpQ8rdOlRFIA5GTyftt3kCRPpbzKciS9aGHv+phqodUmq2vb2yQVpMb2B/OTf1sqQMKCm3BN+z+/kikH2EGyeO+n9rwWE1qUqj56HaPaATS/eZogMv7Vkz0faPVv7U2vKjJv0iLEUFWfX7fumOFjCfr2KuKhL5wSYpcxFlleeYdzlX8SKRpksh7xwTKKlhBxjY+1zdTzk0N0Tzv6oAnPFCV6PZ5LCajaXHJF6RRKo+XNkh6+vSp808sGRF/0IiNW2ZJS+BZo2nBYneQXNvTf5uIA/NILuOMS8FR4vMDuYfgQXjvokBcLl/QtzSSbQzZWdfGkIczoEkHK03cG0GshvN7hMyhZ5MkS1b/byPktEjqyocMsIykKDb/D5O68DgecbNWn39kUz9XaPFHIq0AFrCx5bgDzH4izrIvrhLAJhquocXLK9N9PvPQoi73Kow1D1u84vT57Ssel8P917MV/FVp7k8lF5oEKBVqNVkdMrtofxYk3g+mq0ByvF7v167r/b6uoj2E5V7e22wg3Pcz1j7lDleqGrGw1jEoTuDB3a60nN7Q8sJCaOtZyEd6oX5hDiHu0wuLRsye41xZcWI/uRE3smX/sR0RsQmUxREcGezHqPNWyL9spd0R7xb0GqbTWOUymFVSjkytkbr+oAf0hXFpybpoVNyp/QLVZ9jfHdymFex2BmbTPRSK9K7M/tiWiI9IH7FlLBd1EGl4+nQd11k53BtbweCG3UKkWaG6W+2aakRh1IiFfag+nox4tGvrwU2rRF/cdUmTUk1L/0B9LFqsVvuyaxN4ic8hXY7l9Jt+eE9VJW0ugKQJmwsCX8UWA1tPsEf3Y+4+7VN45VCAybs6qj+NXG3fHipWd3iDPqtJhtwGnHL517QGZyocm+pb7E+2n0k64zlHFTP87Y45SsQsdrqzs1b/VsuCibb5V91nqRzGlwbiDR7UHfzwwzWu9DVtcWOk24nyrP4mOOQqpVjmj+IT3F53iUu2VNyPH4LYjhGqKsTW+HsuSFRxxtU/+2yr143pO9WoeWRcDvmcDteqy+0Crr4Z8ou9wB8gU63k2dqbBasv6KVY/+me5f6H+0eALZmu+EJ+/6k7Negf3t4HSAmWeAWtFy4rCXrAHjx+6D7gVHyM1g0/WRfguMfqnb8D76/fZkguV1sHoxZkSfFoGQWyMIvbZ+CeJAtGNfdd+mwrsELZaA1icnrU0oL/yKHmVAProt1eZ8iqHvHgeK1uSq/T6/9XJpPxTOK/1IJPqdHrtOOTk+r7KheMhS0sP3M+9W5890rpv4uXWwcInteJUfqhe9Nq+1HHLoxfBKD3Hc291TjPg5MeWn06quT1P2+AMbQHB+JwuKRquH0piNicLRyJRKKRSDgwf7ftVzUcZ4tEY7FoZP4rFgpiGymL/+n//RN43jcqd17BmZ74B1WHf0QfVhnPBeLJaqNLRquWiofvAN3vXCBR6XTa7U4nHRY30r2XDeEWfF6f/fF/uECrZbLFTZ97SHWMWHqt5SKdViV/kU2fnaXTuXy52Q3jXt1fkOhIq3GVycJIN5OGr1r+isFtn8f4n62olaAGg4PbFTmx3a16WHUYktV0vtgbqVb8S0hrOPNVOVMo4OHX+dTc1y00VnMmb3DhP1lRYxvl5QF2571FooEI6BI3ORHpQiFXvYl8CWktF6idfSJfyKW68fGvjMlhsMXyH4y0kpuw+H0D1VBPnUFgHcqRqNkShcq1gPRVPRnhv4Qcz82/r6ZRd1xUuwkzaO2vhdqy+B9rEpVkh4OhJUaOkHXiFukBPRlIlRnSuUZ8tC7QkD3QNT09XeyANew0k9E5CeHj8Rge/5HiR/ZQV/a/FGkPIfPkxLxkQ3Z6L1qdbvC9f8oAaZy2+Abb+3o93pBFfqvp0f7GxZsXDOlWmJsZPu2keLdTPIPIHIlGo5GA9LA+LcIzZjM52XcmXb9iUuvYx7xMO3AOfrL3pX+khraH1gcTHE7f5gL3md7N45pYO0uRvqoGeO0oJ8UcAMIdtv2LuSyy/6UfzeHbc7QkAT6YD4TDNgM3Hw7rCdRaPExmDrykBxEXiceXYW0PwvlAIGyDa4cvB+bElM44x+mR5ROGz/H/NMVhtG6PqBrAXhuf2TlCMcnFOgzpD1UbN4j0OGcIx1OtdrvdukoAYgjPbwoAPxxLpJvt1g1hhYAFHNVotcvJRLLdjc/xPLYzmg9HE6kGOWgKVMQcfdmtmkEDjbPX1VY3Nc9FUs12IxmdIajySs4cTZThN9tNZPhDF/VDKTRmxbaHqtk9Tuzx+NngpK6HdKFkHvBDYFYHEu1mKZdOp7PFejcJuGKKkIBfL19kUx0AkfuNm4u1mvAyW6w2qtn0TQzPE4glWx08KN0IA7Dwsgkvc9nMR3igoIGi+HEln03XzeGbMhjYyk18Bj74jXsUSXXqxWw6fXZRbrbiZk4r+4fIs5wbW1geUSvi8G1bHn8hNqnjol2G9KdBpGU6LlKvn2WB/bWqF8WLdK0ZAWU9H2+2KufZC6CHGfB0pniNIXGTziKFyZJ/0oC/IdZsV3LkoFwjwM1EG+3KeebiuvihULZxei6c7lRzGfz4oh5J1HOovVLAMcEqzMa75fTF9UW9VcoXM9l20va1Us2rcEsDtepB9pLFzCO/YA/6hrsoO7ZXFr64nkEPSKcZ+RhEGoDuXuWKpYtmMp5svC8W3xXBaHJRgDVPPBeKtIaL3aTI608tgA/wBv8ncpPOMKaerwa4cDfHXKQ8Is3Zaj2XqVAt54v4/Vw9oeM1M/Eu+aiRiOeq8Ac4ovP8b18hgMq+YMs3go3akDctBbeGcs/eVe+dNvf5DNKgOurXcKvvmsD+5uMNwDBXTc4h0oKzg0jPcLbqewpZORpJNtIAbVIb6R1UKNoA6bMCw710ZgbV0j3r+aZ59ud1BVxOdj35egR+P1VBqLux+wu10FPfQvYAn2W27KtjSUoZN7Fg92+vDRcRPPH7FuUc/8VWqLcjzfNzZFbny2CyDOAZIh7pboSbT7QuJEgbuEjnjMpuEkxlopNOV5IGQ7zFPKLrUsYMyqRFHfjix1IaFK8+2qqIUF+w013jLwUauY/wVjPOTRm4KLUhefN9A1nIxKzLm8EQNld75l9ZIqVIX9cZVoG72U0v2J/5R5SurJGND2X8lwP1tyM9CboDP7loJAgfy5WuiXzDd2LN84IE6Vg7Q169r8bmuLlEt30ThRNFG7mCiB+4O/VLJtOA9JiMC6fKgnap1cmRhfe1hIGPN/FkWXiiMCIE6XTnizGCIUfWaN0M0p76+D+fP0TL6+7PGEnzJaNlObg5Yvmc2+n/0zJxt9nyGZnWU0OVryTDgUAgSmQ6X0satJy5VJAiHRcZeSsZMXDhaFgPbHmOQZlHjTPOG5JV+hKB55VaLt7K0edTT8Tr56jlUU3YKld46ot6HH4znKijuGc6sfsh/T/cgnd7VYKM27OKC1QWp++5Do90P58wWT19ewtKKEdo6c4b1N6KtIazMTyvy41avd4sijgp5xlqDOko1R7FQuGs2klGWOR7Llm9EpHWcCLSqIx5Ja8VkE7fRMytSjoLdC9lhnlEFToIeq3WqJOvZFux+2gPBbYh8jmG6voBl+UF+XDHr89KM4iz/d9kI4rBxRHeNW9weYG/s/ofjbRWD55yuJ2hknv9Lnf+LnOVh5ErJ8Ftm0tW8hKLGGhmBJV7mal2EjZukiJNDrqoJww0QEtefiRIw/8JSJ/BOSKlbgtcGPDvYy1hfuRyuUwGfzOfbt3LJJJmcaPXxW5iP8m7qBA566a5sLQR8q2OWirqWfX7LLP32HF5JNI8VdOCUiiWqsIodYGIcbpkrYe0ntfEWyLRKF6eNXNhdE0kSM9IkAYRN/QhnWuG0Y+JxSLzoCMIxSETpNL70Zv76GlccXjbdpDuJ/4/F9VfKIaW04ItmXFhyYmbja+OqrR2bG4vmbj7FFJIfEQR6d+4QDSsVEaFD8rpZG8E4CsGphgon9bKbOlaD+rCWaUcgAd1C9JXtcQA0g0xsAXPh2pmGJVU7zfj8/fZYXXCvnX7emWXl3T1lKlHEmw5z7pPYzfNW1uJeZ+u+UL2hQHK/hVI8/x86gboA5NpUKy2OWHMGzBm2KendYBqIN1K5woC1ulWYlJzq0zXWEYs0eghrdPqtOM6gn8zRwU9Pj8v/uj9IkALwc/WoDv9W2SJLLZkxEIAMmifbqLBZdOmRayL9HvXbnlgTlD4ixPcPbfV0XKx9gDSejBLqev6fJiR2VJmvu8LPcVAtQcwQHBs2o1e9uaqauPEgwi0Wm4+VRlAui5qD1E3aISrySGb7Fnne3Xf/kKHdy/QEL/dYpodBmoMazWXlrdC27gr9y1V7I6N4Irl/oRRKUoR2KqqTafXavQyQ6J2ke2E50vFa8H0czN6vR4eg5knWZc+pH+PFpJhLpxoVAWoz9FpF5C+LqfndQaNjan2PGgPOa/kZpI16lmmu2ExCD3JGDQcBpKu10/p4TkazPdLozrXv7Qwy+XeDPlX7FbszW00zsL/TCZ0J+1P/sL6Y/etnSe8njXfs5Wv2gZdq50VUAM5YrH9KNj/bDsszu+rJngkOALxctzAa7VmwetAlLj5crXWesnpwsnqJUO6DVSvp8xbSPyi7XdF0SJqtUC3GX85AydlRiam2xi1zFcuwzQKHkmUInenHirOtL365WVZbod7AzxIf3DT611Z9fr8/8Yd8nyfAZk6Kj623fz9oyiPuIgg0jDnE2GbLRCJN/J4pzbupcBKLtvJaBg+qLU+tQNgvsLCdzJtEHdbtnj2qQFo2sqFD+TtLFEIiTpFGhR9NBKrXlE9XrhsRNW/81yUKY8ieIZzHIsgyf4X3CBKGa/KzXgkEI4m29XGPWodBjuJfAa2tTXc1sfr3vB6PG4njNXPNyx1uf3PcL8Qjr9/BIXnDdG6aMgKV/UWuChtlORLkDx+JtFkLsm7WqfZ6DQvM+kGyP3LvOBIF68AYXP6U/F9sRkLvCwXPtKcwpUZ1LdgAApX5Xa7xQoX4GWuG9PMxNp5SaJYLOgBoa58JJ98uso12/Vmp5bJVABp5Z21x2LoWzul3NYKaIsus/2aqKBWEbvJSMo9LnLgJ2QvkKmBsOo5W6bKPr7MXlxkcwVgFQZwVHrBoY950B9o2/IXrWqd5X7TnTin0XHhjkD98tlUuXklPNJ8rmoIS3/3QlL8oAVznGGH5rIXuWz+Qwp40Ph93BbHg+Pscm0Kq/NH4KxUPx4bm6BjbGwUfwQSkSpcForD4yNG78FNDBTrksqbi3QrBaQCmEnvyDTGolHL5LMs+PkRvWqlBuZLopkWvthOxitE3q8vshc3GL5OXUtOUksIQv0IUxOFs95n2fc3ccNv/N2RNgUfEmkvtmfaCG7bR67OV2omJkZV/o9NjPXhrUQwzvJ94yKXO8u8T3XiCs0jJMrJbiWbzV1c5N5l8/VOArWC7X27mMucZTLZdPayevOSMyS6qWy5lD3L5rKZbKkL3o0WGVvgsl3IZeCgWjc+b0hdpTPn+XKjU43N8+Zkt5zLps+y2XQ6myuB1Ao2T/EH+ObtYgYmEUh0ptSuRe9TkYZNJbzehwN61eHxB52EgA94lgAn8xCNQA1fsPF8adFkoHI8MaGWuC3hy1q1Jh2NZqvbrnVQKskBc5juazbqjVa3mnjJA348Z4ufNbvdTqfTbdeTEQVw5cRNK5Vtd1vNVqedjs1TVxN0brwAB7Zrycg4sLqbTrtVSyWiNlJyFkvVW6zysp6KzfUqeuT4vatOu1GvN9qdTDxwP+oq55a2PQ+lnHG9D12IyfU10ZerJ+jme4svXu3s7u4dHR8fn5yenp7Av4evd3devUBXHbc5YGDLlFgG0DfC4XAklojbOB0PCgAlbS4cjScSCSACOk6hoYUJ5jBWfGDNh4GTyX7jZiPhefPLaDwej740i8lsemAED5JrZWGhcBgdkd9I1QIpG4m8xDdlfX4rZ4aLgN+MRczER78XoTY9ewip9rpcHj9uToZaQ9HXmmqMeJimJQD58OT0+Ojw7cH+/v4eDvj34PDo+PT06PXOK4I2P4bPRPZFnjqJrkMPAoUQnpD6jLIBmRsXC8j+4HtfFKHUjdO6qD7T3H8GrUbK+O8buldYg85vRNq9uvqnP7QByhkLC6QJX8VjhHnK8mLn9fHp8eHBPoB7cPAGxgEO+gegvn8IH7/eebGIgZjHtCaGDh0gYTDMGWDMGjDWYDab54nC0U9izZZco9MqJfVjeqzl0usYRLwOpgAWi2kGCrzgQOEg/EsngZTX6vRTut7nAwVq+CY/rrt/eTauV//LsfENzcNc638Fn60sLRrxuvot2wS8NWV9BbJ8fAggA7IHKM0E7MPDQwFmeInP4O3xyd7OCxMKtlzixEbiiWQymcCRTKVSafi/ZDwaJiGl/6gh54zL20/c9xdrj9u1turdfBb0YliEeJy8BGeZBsV58dXu0enRG0QZQd5/i7riBDXI69evDw4Pj05AWx+9wceAqL85Ptl9hd1ymcYGFhK/adYF61itVCrlcrlSbXZamEPhub+vtEWm1X1r1RJI9VJo435N/THl6PH5Q9tOXMys5oYonXwM3jS+2Hl7enSwt09k+eDo+ORoD+3fiyXLwoLJZFogLAT09xvQHW/39ohoH54c7TyfZXk14AK1dPoSWB7+7yKfz11cw8jnstlaN2bQ/v63Aa35Xw53KZF906NVcqrF5eBf6w6X230HZeFyrPswjf7nstXCFjPzA1uOKFGcLa92T47fEJhBD5+cvN1FjjE14gJmF5+/2nl9cnK4Tw4+AMF+YSK6gch0UeJL1Ko50V3B4q+/aZmEHOTZFk0kwpzuG6Uat0L3BoN+n8/rWcWgxprbueqiY3XVs+Z0OpwOt3djY8v/LBj0reCSceMUS9MO3q16DM73fOcQkTtAmI9Oj3fB2k2zT6eoc6h5rFajszhGDdrCi1e7xydv0Ubu7x2dvuDGmLsYTQvRjMKnciLZFOIUxSz4i+N/h97gtI+AZ5c6VXAiv3UWKUl6yrJkfwKKFzfVe7btlw66y57PsQwQLy4YZxnvVY2IaqjGUG3sHh8fEG0A0ny8+2rJSPny2GOsRZP1ssXkDEo1ZYLG569evyVm8+iFkAlTyLgwS5YWMu3ozFy0Lrjh2U6M6y+E1o6PawczaLxGo8HNLQeLy3kNHj3CqOIX2L+s3nqSm4mk2oV0tpb49h0+2SZaE7hRJO4UaV1asgtjyWrF0qYFk3F2ekx0RkZX76E8m17tnh4Rcd5/ewIWbgnN5WMgb8IK2YlZDHLPzk6wOjW2OxvI5wIifXBwDBItlPWM6+ZZ1LlAAvm93OlFI6HpZcx6UEoxZWxMoyVKv3e7Ou3AEZzICoWnJhBowNuW6JbTHwr5WlKv0bAH8S06RHWXCCDZhvY27Yh72S28en16CNqZiPPrnecozaAr6MaqatK1YnkZG6Q8WYZnuEhasNC7UytMu0f7b/ZRoqck4SYh04eZPaWBFxO2eZpjFf03bt4WCNjMJEXC6AJI4JzZZp5Bz6+3IkOGBxvM4Hna0DUcFwSVei0G+AJWs83ZbHPEQdFGSs0sLd9JsBM8egDVD0iSBoDShdxyssGvSvmFVfkoz4AzqGcU54Nj0BqLBGalHGGWzS5Y7Gv/xjSND/n7xsbmX8HQJrYVIts4Kcemd47BJO6dANDSLbJmRKSbmK2OdFhgk6RclSygzc1F4qlavV5LJXCFLXkAf3B8OJ7MwVvxWLKVDDCpBvwN+H6dHI3hDi1LFhIPP5kqtyOP5qLJSikZM5OKvpKQjE/FcUR/LJNXMZzfonreewNc7QV2PJlQ0ljT7MLSk2Bwy+tZW1tlneqeroLx9fi2/U4LPsIJ7tXpHgO6z4RohQoAgnRPps+bcYYR3Hgk2W1UrjKZfLnRTUWI5dEiSK1q6apUb7Wr6XraxtHolC6SbOP7V7mrSr1biM0xRmGLJpvdZrWcbse5+E05X6h0UzZzqtUL0JaarVazmzL8wJUXyj6c357uE/8DSTVq0ukF6yrpxOgmCwIQYPLfVcIbn5CV2mPc0jECffqKmxhQYyLSjbBWrGsslLC+dJIpmHi3ms5dnVer7/K5dLkbm/kdFK0t1U5n8x+L+TT8UwT8tDwP5s2c6Faz2TzhjvmLs2IXS85lan200qnmsrn8NRiAcOvsqli8TrcT8ZYk6l3EBbyl5I9DWknsIMN5//D0NaoNHgFTsoLIf3vX3Cwh+Zc/GHrm/zf8N7TtE7cUU/HG3UNQ0ic7U2OD9KEn0wFQuGJWtpGkMU1eYyBF5PlSMwkkEP5Aqq3j57BmmpQ/t7GSsZCrg/6YBPyJkF7nLpiophspM2il6E1eEN5C/rLwkSQILirNRrUsragulxr3SGo9MK2fIDifCjjvvloApTeG1U2gExaWfCHfGpZJOVwbfpJkB6K4QDxEK25eQRvljYHuAKCPdk3cGDcaaYAqagsL5RiX7ZSN0mktFyMp3EIlMjcXJczkrBMmpeWfaJ15LNHK5QtnnQiWr6fqaWDkH8vNZvVCrLgxaLlEO/VJXNVbLHxkBY9xVNwC0NVaJZVKxX6MnkacgT9TO7iHOJuI2niEJZGkjnrdASrDserb3l5ZWjTNSiRWbt9c9WAvZMUE6A7gK3tHS9wEdwvSMOr1JqXThUItzmrI/uDC7TQr/1CyEqRcI6EzJEglR4FUE0Q7ubMUID3JUlvXpVwknKwJUMMhfCDX7JU7CZ5othsFW8ty8WCCgduY53+M4gABnH2xe9qHM4aHCM6Ly6G/sLTJ7fA+Cy5bTbMyRhSR3qjGlLiROW4Cp+LVM0jwiJLmPoN0Pn8hKJIIFjURLW2gn2fbpCwkhtSkcFW1zedLQhGDDcs62i08gKGWJWUKArAXwBfVnDnOamrwkZYE7yiiEase0gD7jxrgSU8gzswOCvJM2MDsIvYFc9ME7hPrAuldiJuW9oIA1m1sL2rEOMkL4B2gO2bH1J9F+lxcDZSImMkiDh34kBlazBGZN5ttRLsUMt3wXFWoMq2no2YuEMcmIYZkLccQROMq0JhcLcAZOFvtimmPciJNnf4MePx8pIe01qD+1w9QHY//xXHPd06OCH9+A3bQRLAn3RlRnn1YEUk2GSEZL7F3IXXssG8p9ou34gezu0cHb/aPl4aVtBTp62qzwub1db1zHuF0j0gBHyPYVdChpeoHVmY+Iy6jyJU6qShmD6a4ANPy2XaEM/ABoawG1ceMxlYS1rWk5+I3qdwFNlXQ6DkJ0pz+B8gzOipLO8dHGIDbf3PyGu0gCSurZBRnlGfHRnDDiq3XqCzLVWNCRAlrTYIOugfCGPfihPCOkUDLBKSvK8l4UkA9d/bphlRraQQbWfhYLpULFDuELt4USig/piu4OlTfAw2R1stmEjVWld6JorEsCxMmOWkGfl5v3CTmZTM/GGnE2bJzdExwPjg5QF43wfTGxALivO71As5u7NjIqakTyCJvRhMJMqnsf7ndm/YJkPFp0NIHB3uL3OMRwS/RR8TlPGYB12Lx/VXNJqmHLpbeX+Uv8wWc9h8yN2Eu3DkTLVw+Xe1E+V79Ej4JfW86ZGnBTrlQFFcLgM+ZiEeAOf9YmUaHcPHVIcV5//hwB3AewzytnMf1nlRvOHyhFVr3IcREOJlpCSP/aPfotjVkowRKPPZGi7SyF/cApMkql49C4QvBRyjLLX6oY06GjHI9PqdVxrppSUFS5gbsWbx1LkKrlYo4kekKVc6AtJ4Xwy4/EmklwXnvBOOi+/tHRztWZgflpJPHs00nKecN0TJTJUnBoOq2vtrZOz49OTpFKsf23PMZOX6ce3UC9vDQMop48L3VKyjTBklddb6SnOtV6V40Y7bemOF04NDcXGRFqK/OWwFxuQqCCWo7zGQ6g3qaC7DVAORDjY6XkfjgD0NaxlPH+xSUBuJ8srMEOCOzxYW1Rqvfj/K8uh7yEJwVBGcho3j8dn9v7+2ukXizS/5Vz5b9MfZ22z082D/eGbloQMOJtbqI9AwvFpTSLgm8PkFpcYYuFRQvkyNrD1t5kSRn2nHwZjJs2WcO/cKwUP9PWogEWu96SCs5lmHrQ5rX8+P6v6cbp4o6hCdvUJ73jo53nqs49WOWTTBafaTxgWv12TrqDWoFAeeppZ09klE8eEO0hJruBuwhe08KyuPFKJHGiiOmPgnS+p5eRuwQILbsEOzYPGfQ6/Uzv3P/0nH8fDwZAW5XbeZKAttLACN8x1YsEocxUBdWyM1zej7MkL6ShmMHZHrmb7SDGOingSRwVF5MczKydzW2p7Y4g7g3kNv9bIt0LhZwNrzYOcaMIi3w2Dt9QZSHye98irvPqkgQ7+Dt69G9F3XaMNOtQIKjOr0GdO07RnsJwRXDqOeNBK3SnwknwFmJ3JRv4ljFLswBXF8BmuiKRasS3IyOzY8009rsRLhOvJcq6CENz9LM6QNAzn/7zjhriN4gjsoBxRn0A9Zm4Ir+icXl4IZr3eta9W9bTbj3MXPVp8FVxxQMFhm8ffPm4M0edsMlG3q5N5axt5h8Bz4/3hm9RkwSkEYzNtkDhK060aIeL9AwaioaMNsiiXYNMI610uluHGi0ADXJHIhr7zAEC54jPsT8hwo2nJgVaQ0uJhKFWs+9FH4QnlU8UXuAbOIX/BQh0C/I8ysjxZmTKzgZEo41L1nEaDfJOAVJlo/x3BTFGSnK0embvbfgCO6MkR0olvxuF27Tp+JMoKZvccSxMlTUFvlyKgy0zlb5ILK3UnSeeNj0jXOMe1Y69fN0I05W0afbicBcTOAbrTg+Fkah4WSRaKlUECwdb040RVe0nI7O9YrUA2Lq8n2lVc+VvmssT47+xqIYgBYCHLxAOJaAcHiAQON6OB7soIxRQeJCEspNamYQ0hMCqWxi2ecmO8SPcRbMaY32D7GxY6VXS14CdfEbn2iciwXVnVRAORMXas+vMvnSh0yuAC4i5RWZRjVVLQiF6sTs1UsXDM5uB8l3HiR/SjfOxyX9KK4KNwmhzFRCfuBLmYvzWnLmu8WneZQ266v9k15gFHFWioRjCwyh14tbf2CtgVKo+bBSFxJc9WNSLmM6eHtALR+w6VXaVluFDiKo6YNRHbaBeBQKuR4pvso0bRwX7vHkAvjLYPwSnfSVeNCHzPlNfIbH9eGF4vk1QwkB1akf6bhws0K/fp2BR/ExU8D+TFpOn6yc934IzivWdui4KOvIQmZG7ibC6b6fGcT6jeM3TJ5fizjjszVafH40hC5PcBUXLKuFGN/CK9GFPEIqqJ54jpFRoM1jaBD/7SJsGqNLgPTh7qgdvXnwSxpn2Ww2BwP+OSu0bJzuDxC/7AVZLp5Gf2SGm493qxl4i5Q3XTYbUYMCyHI3c5bNZ9Nw5AV8E6RUyWNJQTjd/pjJkqKobLbUrkRxZScwwpvSOTY2JP/JVNoBIcPL/z6X6NIfzGUvGs0op/0eykOJasOI5OFgX4qzihMIx0rQ4/R63W6/jxEOGYkzzYKqOSD6+eRwx4LzYgoDdgxSJbfwzLG+gbunEOoB2ntqVOMFDRdONjvddhNGq91tV6MaXsPPxdvterVarTW79ZhBDRKpiSTxrUoF3qrRInItYNdp1dqdRq1Wb3XStIT/EcijOV6AD+D79XbnLG4j3FvJG6Ip/KV2q93udloZSddJLTzJFv5grdmpJwLc748evBzw0Rgr+zqlylYM9KtIBJRG7DYc6x6Pc9OP9c+EcMjU4xz3Aqgg+QroDQudF2PoCu4f7SKZxt1RXe7N5QmWqQXqMdrK/MbNhSOxGMlJx6IRM5tI4ViCLNzGzLactqvGt1JYhgo4E6FTw1EvbVhankzE8ZuiiePMrICVvC2qgvlwJAq/FIvFIuH5/qlFfzBBT/7wWmNCRqsYacEc+oM9/YztKGjEDj3vLbK8nEoBMjsLKGii0iUuJNz5zjGyOaTN2OrC5fbb5cIDuA3pwQYaWnbnnAJLqjmxmBzh0szNk9Jq/g8RIMrTiLvRm/KkzkYPX0eyJtbJKPsR7KtDwz48MoNhRryCB4VZKa1iPCDkAesKQJ7JlkrcFInYubETSHB5Qc0paBkY8W1I7AlMJ3xFzmkek30S5XJEGtncOFI7a9CBJE9OMoifQRrriqa0PM8reZ1+UrhN1iBTOSm2rOOZr8Hrx8VyzMlJnXYSa905zWTfE9OyE2kntX2/pJ/6Q8NrtZN63QCesknyg/ykTgFki1fB4Plv3xxCrib0beHFzuEpq/98i7W20yLfIB2tgpsOt9ez6pMQjkdjapLsIgr64PQ1uDbKMTEoh7FRRHqK5FuATpOd20Ttwd/vwrHcZ+AdfB4jjxz1Jq+8V3MGTs5rxqYmxsckBO/R47Gpqa/exEc5NkZLP3deY6SCVDEegRnErcCnBP6MOG9hByD3n8+eYCSJEg4MPj1HH5LGUjE30KtGAiNJkCbhDTlu6OkK4Y71zCLu/pO3nJCrJiZEto/bW+IwGoQc38TYfS5dRms+ceZNLb7Y2cPacepCY7EoYKYYVzKcpxcB5zV0VNaDJGLHkwJuBSC4yBT0HihoC7o20rIvrOjoIb3tRqR57nMs7x+BspqBPG2yYF39zu7u7mscu7s7O69e2MkeetzdwVaNTUwQVExLZF0KwoyLIo5O90mJvuaxYBnQDm5hpyUn7jVmFFcDjKOC3jshxvPt6e4LRlEkSJteo9ctIB10ufxWUunx/AQmweHiP2lvIPGiJ0iIYGoBl57tHZ6cnpwcHx0d0nF0fHJyenywu/PCgrZy6vHnwUZBFtYB4lK218csvEmKRY9oFeME6dmIkOLefZuoN1weQqBlTLuyagTGoF+/MnKKx4PJExrfIEgTi+gmFvExZzmEuXNL0PRHDro+cmzxxatdksEABxcX9u0fsEEW++2/OTo5Pdx9tTRDuWzvGY2P0TExgepd7HoJM+MVXcq2z6SZlpjPoPblOQXrhGd1hnyu1T89zvVnVJ7pjFdrmIImQesjfDpDswn1NJz8hCGNobwtu4ppFRJhGvsHoSyjrMBkf7V7cAIg0/V9wkpKxHuf/IuI7+0d4LIHvGv57YsUcCnAi1cwNeDJMJRxxdoRwkxrn9WcYAZNuOWaY30dO7L5rCZxrzH0VJZ2TqiCPiQMemLEPgvMIhLuQRPjpCIPVDXy7KPdKfk/SGloKCvYhRn+RkBlb/8tWad6egJq4wRXCR8fHSLOb6iefY13TpflwgR+vsTG8xcvEOEdXFwszAxhXeDpEYOZ6nnScXB2ETvhrXrW3Y4/g16pPGNWUciSo4Ke4tSjNK6cxKFZdJT1fyJbp9By3oODRU7zzzCBhH0h+Trpyd7BIaB7vIdG8JWw6h0FFCT05Iitm3oL/vDSDNoyrJw9PTyiA58JfPcYFxfTla8EZXj/9c4rK1kwgSGPRwpMnahN1pXQpsvl8a46faEnmLlicft/keztwYlEQd+mBUQfUU2bx7nZlqoYNj2gAep/QOdsNRZvmyj52hdQPgHZw+XtpEKo72jUuruHpzT6Bnd3ukS8ywnu+fGeqM7Zwm1cWIKLMt8cgmzv7bx6vkAs3BjldKisjIt2f5AUFnicm7ThD9MbqnGWVaTVCERB36oE0O1GLfEY0yzc7IqPlZnKiUsDHxh++KpZ+ThMq+kl9IzfMlZAZvjOC7omipC0KdacZGKKFQlNW4SQxf7h7iy5CSnSPeOJGIOSfruLKCNhUEyN82J11yxWmW95MLzhWmeFX4xv0KwiK+fF7C0qaPWtuwtO0FjeaxOhc3K73+3GUjFhNcD+yXNu6sdqZ6o1QCEc7tH1fYc4w19YqCSD86IedMDlwNyIESRxi/29Y7aggRYa0vEW+ODRMej34+M3qH2eLxrZ+WjBEXk00wvWlSDpOEjUho907hD48zitRnhL/JvD093nstEKuof0c6wJO7KielFzFlDUuBkhCvsinuN4R6n+gUYRV19PLRHPeL+3vu+5iXmBZK2anGergChLUCnV6P/Tdg+zL3aOTnen6bosQPp4/y0de+DjUP2+xDAGGZ2g5xPalFqXg8ENWpbr9oPaEAuSKCVZFOUZQ0kzxBn/nAbkFvFYgebhTtirfpIQV4EG3yMJrh9GqdV09fXRyVsWHxaXUaonmCKVyLOMk3b+wE1mSVh4aYctWCU7bQsDlxf21OJjEGUV10N5zLi4tBLc3nCC0+12uXzYkBrVBm3dq5yQ43wRcEbCAdc0rvi8QSOE+gDLPTQY0Zx9srGO/riSWOpjsiBg+scINcuS0hw+roc6BtNOOe4UehzC5r0qXK5psVitSN5wnSZZBitn8S6UkjHl55zwMRqNkivV1I9RA8W2+8gKIGyy69zYFsSZqWc85RLYgLeY/tt/y6LWX8ZIw+2c7B+A0aATY8nvIYxaibMJF8jtn774EZqarXJ/TVZfo9Y4PSTNLygrkFPDM2E0Waz2lQ1/CJcgCyuP4QUu7V4wopSq+Yk+DS4OcQUnrkEUZgZuFmB3BoObHtIcweV46g+yKnOVgj5+Ns3oamWQ517Z9JeGUI++hOU2uGnbGgj1AhNqzI8fvF78W1aCj8qSsmw0yeFbiGpWCi7DtHHRal9/Fgpu+QARbDzvJoN0oMd2BaTxxgQnU0gXHtM2sHQpp6pvb9hZXDi+vPEstOV1ujwerweUxnbISbQGKct9hGEtjhTXnBwL2kxcbnEXm8MtHh68wTKEMY6Wi62DQ07iMmMo7qCpd6bHlH+r2lALWVLkZDA/QZxRS8IdKQjMMMGty5uh7U0vWdsntIMgAxD34rJKp8O7FfLbpWZstKTNovKx2pd92EETHhoK8+oTjy/0bMW6MMuJTooaw9MGtM4027V3xKoR7ryboHIKq5VQfWCOlLOGXOuuIBFqjXzhNT4F9NX5v2kXajlJ3y32sqQYhrcwa08oBHZ73ghtC11FVxFT36Z/G7QGjqB/ywcPYHUVK4rcmyG31aQSDeUsdjAxmoykj8nCIih3u33FtxWEh+bzuMgJ3YC1DzwVO4WZzQiaIFgknSEoCTqi2a6Je+zaOEWJ8/Fz6pAbN8FN3LSTvktjlICKhPT7jzHKFl4PZEmx5xYJP0yZLMt+8CQEUNZ9fsDWu0IsIRkA3rL7GTwJbNe/7nZugLthoqkP8IFDoMl9Ph/qc/pY/Jsb4Po5V0FdrIPqcT6FE/qXrYvGCU40BzyBGVzUfbDOvdXKs6Qe7D43JxBnEuHADnJu7yrV1CBIqD8O3r62/h1QY8ks3tAxK8o6OD4mq6/HNAo58p8xArPPg7i4XW40hL7lJQsQtmmpZPFARhatyz7S5dzrWfVshqhfhgWeT8hEQH3uYMqd9KJxO9ewCW8wtLHMGhT02kEgLMbnvRY0wOn3dpaUIyN2X7hBDH2w4hpsQLm56vH4lmdlpDEn6YQAPqRF2PDw+4aQLD1WR7KkKOIquYKEHywYfiCLr1edgF7QY7csGKfF76ONU/Wam4DFXPoz6HM4vKubdlq2ouQW/NKWbRRvOOPGpv8ZKGl8avSE1Bxg50Y5g/mYuajUOpP0wP3xYG4iqaDGghZr0OlxBq1EDCaQfxwgq7Z8V6lWs/lJfG5UG4dUPcvgftBdmF5Y8oY2V+n6vnV/yAco0+WqcrVyqB8EcGMCAzycbb/nibDbMDIrz4bX/fSp17ux4fNtbvmRH25vrixjqw321OSkF4ecH5sQcrcI8z4p5aVk00iv9/6RN7ncsHsE+gOEelyGiwG8MJzbCwxqTCgi1KBAFLLvBLOchZDA5xaKKzBLyo/x4q4/fu+aG5QpOBJAvRaNNK/3uX3f5CSotLC0GbILPg63sLkCrGJjY8Px5MnyMvYywY22jLPTPceSBKTBNyJPaunVzh5GaWn48C26qBYxPfA1ZggMH2FzZMtSrK9xrLt8K0YGNZasv9k/fP2cG/vX91DOamrVj5gVBG+ANscAdSIHt21qYcmHWoO2dQ45wSWRqFFRdahZ2uqxJOBE+JlpySTSvLFZ0pkHe/PMTk8/7jWcUyrUvRWDlKZYQJiPTo+EKO3bY9aC5reJr6e8PE/WeO5R+sEpJux+jH7YJxRyklwnLT723x694h46BKIi+WOYoG+A1NFaIYHVTaiJUphdtPv9xGNzuTeDXhqM5lWKvoyrckjnTwiJaawDUNzOUJVKNS1RecT3pW4B5cPTk8MD1jLw7fHpHnNRH3/TvGZCfbQ7i3EWOWfyecguzRwvl2Gukkj1wf7pjgl+6aFQVqinfqfK+fUpK8nCbDS5IQXQJxWWxVlWQmjUvB7HRpC5IeKqYKDeAsY87kNhwcCHReyvRh3KgZ6BbJMQulsI0ckqNYl9sIcxRlYMvj4GlXEgpLsOCcwLRM19qwcnV6H38mafLQFQcYsh5/r6Gi5LROPwmGQLQKxPdp9/BbcZHXUmRSwmkq16S4wgkDpwupYmUG7IHoMcTZFicHhtK7RCVgULuIn1HrOLS7TcY+/w6OQEAHq7t0syMQsSsKX1C+IATSPlhuB24qrM10cnp0e9LqRvaLM7PBk/8RAFGSTEAdOE9ZdQKq2gqoFV03IP5WPuBfw6uDCHx7icdOLbdrNnKMkWaVKQpVGOhBASnJ1WZC1tgtrAyeUN+vvaOrOKrplF2qoSew2zZsOoU9+Sko/j1zs0jP1Z6yWbAeq9REtz9o9I0+J91mR0f+/NEencSNsVTzxU3csYdRQPd03ov8jl03Zknq7gIig5Ga71er6LbYIOMClpwgC9+tFXqgxaFTMLVn3/lFj1A6GGxcIidTiPQD0H/W5UG06QayLOSladTB7TNNZ7vMHKgTf7LB8ozVrtkRQ3SCPWH6nHFILjsPCil9jFzDjOBezqenJ8fERStzStKNaLvFicIM6L6uFMk1qNVWNvgX9M4YTjZbPLW5gmBwWCboN8ilvcIRU6pI3FIgm43DdsrWRmnaDUa2ELE4X171NgJy7K6lZoLwHPmq8vOEyJCpCv3bdij9s3LB8o7ecsaljqZbB6SAxbYr0CDqxYQHwP374Rcrf0RATk4z1A2YIlfrKJsQeu4iK9rQ7ekmiSnJMBq3b63OseT8g6Rmj/BDf96vCYrfTYox33QA3eraYTE3usjA5R3sduqXuCNJ/s0rNNPFaQVXzThNU5MW7p9geJ2iDUGJ6Umqp28CSO3oh9mw8OSUkBVnlg9hUbDdOiGxYIeksLPqiLdrTXG1TboBAfsNTtEYK8T1K30+z+vkMSRNqvjXTFMnl9uL4ItxJ+rCDblFt3hPYsCA+dWRw/PjWuuaVoGWju4zGxWZYRTA6pPXqzR/wTVpHF2iTKWQUL+NzYugisoPeZ374gpEgVj8cECyo8pj2s9wAqRmoeX4ATglkry9Jz1N57x6cskb6HC6cWefVgblwseNo/IJr99ORon5rSWcZcHn+nVJNybIZEk/aPaDZczZlWN9dwN7VlE8m7A7GefsFW8u7jxMQ+v5ZeHcAYM+i06o30oxXOPbNAui2QehdB2MCqC6VC4xipQzwnTFZnaIs4KQ6inpUMZyVZCfEc6ddhr6LrhNR7WEzDJH+CFDMyVrO3f0JCOkR7vBUKJY+Oj2l1DXaF3iWpW4YxN7jtx4P7xByNJr0FAjJF9hUwrvhBuNY2fYsKkHGZbExG6hsE5xRt8yGtbekFevpPOWuyUBE7OiXcSaw9Ojk52KG5V9x+g+ZJMYS0/acDCzld/hBTzzIWSuUtr3aPj3sOG7FXwnMeG5+YItvQ0EbDE5TzkwlwBJJ78oq2KAGk/99dUvm7SxLjAC/tu22ckJgS9ffPeoxxFgz8g99NoMY9i+1BJ+7HGGLbjMrpCnWMatIy7v0DUpXyZlco2GJVb9S4Y9Ubzu/jXtkbrfDCqphFtZAUJFUSoJ09oU037cS1TVkdcaZ5jJkBaKyf8/5+X72HamJCPUJ1oVOtpHUix6CaxWYwUwZMAswaDIap/pIBvpe6/TsGWox9CdRqbnop5ALPYW3bAcBgiAvrKo1UWR4wdo/FhrRqGasP6UDjjggT6kSpgMCdEGXSMucRqTZSotSC1sAQkpNE931BD21dJBfqakgoVdLPmfJuoRLh8xGV2Rc7txTMypRi121e+Yj7e8cUC9wdHr4g6QQl99ji30BWu0HWgeFGl2oarse6N6p1e0RLsOeSv3v0FlgrqR8nKHOPschISAqSwPPaqtfrdqwLFSykI7aaFICjOJOiZtrPmah2fuIu6Q4FFubIny8oVb04B63CUcrlP7aIlq4Dpc2meXRhZNzCih/3lnH4SdMKlUJO153SWBe6B8StGnQeelVvZG8YUhAK3MlAZY32OsPyiscA82Zw00187tXN4J8k5U9zpNghyoTT/0DwIl+TGB88JtU9DD33jxw8cj1yXyevptAxV6hxawivE/c7D3pQ2shCLBWlx7OLLFRAVcXhISvFekuNO5r240MWhpgRzLpSjBJNmUgJiwe7q7odG8/8kp3BhJY6QuIWMzAk/DB+3yiPfOwfuVRHPg4K5GCfBe4meBmuOF98EnS5yFr/J8LMxmAIM/FThF+wRT3MKXgt2HbgJQIJU09MqUkYls5lTHFvYhXnqteDWgNDSBPCM1DR7gN7Qnvyo5PXr5bGKFH5WYZ8QogmHe8ugVuiwAyc0erfpI32QjQGoaB8U6mW7EOnnga7vriA2f1FsO+SJKpSqFXEYkVOqNfYpkpjfdXp9Ye8lMwSmHlUG1i6ePJmX0zcstjTzzT4KW7p9REJ3B2BBsHCaxUuLaG12s6nWEPcl/SQo9NCS44HzjQ2NYXbPcgFf5GCjV3cvUHc0JgojXWyAZtRLK0gToqJ7B6xT7tpgDs9Qb3In21McJZdQkFAgyxysjHSjAz7DPmwC/iaexMkcNFI4mNqMVkq4xRynleJZW+8QoReIVex3Q4eY9mbIxjaWnc4Pd5V1xrNvRqVTJxlCnRS5FZwj2jrov2jU2GdGvczjgnOtHO6TzTI6xdTHGsOTpf+U9cCpruw2xRhTiN3K6D1byzLS7d98DwLsS7ubodzwx/6E2BWi5E6ofvAEan3IK2LdlFtqH9CcRa9xYlXx7j8ee/tKVmVK2dtFuxChfya96/Q9pO+ggu2cwSOPtzHpo0LAPKKH+vo1lgN5/pmMLjCasRpJT2J1I1ZJVW8bFeDicfcTzzUHAn9o548PhSaOymFiKbH5fEAWtiNPejDfXswkT+lGuBWuJIbS9/sKz6Q5L82sOzN4/E4HB5J2RvbTpAXVmYJCXLwBQ92ltT3rcf6T6QgY6hB3tLuCUJjODnbYGA76KMlmbg7oM+P25x7yEYwkmG3L6+A3AeD/k0s4KQ1Wi4norwplr0J1YX4wvgE+yTu7wnlhVQ9K7mffsjg7l+8xkQtXcYxTcuxMZOHVYibqG9F/NY8f274tvyIORn+oP8vn2/DS3YLI3tpwDPBCk7cKYaWvcnYBmw0Jzi7RCJ1kgQ5rROScf8NQ6XmFtgaXexyg1hjCkJOK2sXl1YAT5/XiaWDHlbkJqlhppuXAFteczjXsLYw6Cd1+tOUGNIFDxqyxIrALETqaIJ87GdXzwPxmQmy7vztHiljPiY6hFQ80P3AZk0W67KXbLLmRf0wNByu9Q3fJlbdepaXLIumWba4Sim4MzzLCR6JWkOo9+DGlNx/0ZDJNGrOSLuR4aZ9gu5EzsXTWO6UkWzZteJDtSEuNcFd7sg+dxtPmL1kBAVcS4o22/CZbgrIqpdo2ZsVq3fH5dx/3RCbh5Nmy6d7O5jDpvliweljCxgWheVTMMg+d2Qh2rSAmbhqR82qC2ctwkaXBOY3Qtnbz+Zz3z3qOI5NyQ6Ja4x4oNhN0zC8ivrYI+a5rC/9IdY0K4XYvWGRVBcKi5P33hydHgiROu6/d6BjYSXNJpl/fAQma06IgSLQctKoSsXjYksy1CqeR49cwFiO5YWMGRvp6vkToe4NS2D26Vbbmgkl9989HqtYCJNtaUtr1UgVFZFukoIbzuYB5Cr1OH7KZNxIwtlHJFfTq31hO5rL/1u1xoC6VrN1eG9oseI+tnx4jRF+06yUF0rqC6XpT7WR1CnuHoqNYZjOEKoLFT9pBOmr5JquETyg/aAO2Kbvp8IO2osmw4iqC4wqPaflhZjhOjygrXv290gFwwFbA85PPZb/AljqydB8086hpBZr7+AtyYof7b8WCiiEQcoLX2P9C9ba0tSumCEnVTmLJP8+9kuahwcpvZiy4NqPU4o2xQ57eQmJw9MTocKQJhZ7LajExjD7iPIs8fj/603g7W4jqUEgHge2PEO494SkuFB8IKkvlDTiOSClibQxzBTlLb90xheifGqyRk9G2gK+xn5epEq8V+vRG/jeAe38dXL4erfXGOb71HD+lBSblptzUya69AFrwk5pQfIx6dx1fMxaqh0f0sUQz4U6Rc3UL5TvK9piRcDY7IJliXafI2aQViDQQr0lSVYGno+a/4Xy18Gt6q0sE8b09PTMQOUpruMZU/3C+NvxJmsCEc1xhZIuKVEq/jVBe4eOqZW/IP4+sLOVfrJfUPwav8av8Wv8Gr/GTzG0eh0ZdL+FgcFrdLpJnU77uZbRvBa+PTmp/VxtkFIDp5nUae9dP4Qnn5zUaW4PHPF/kCvkv3gWne6zQb6vvsQ734r41xDQZCddYehGb9pzl2OUuvHRx3/x2nS9J6wb+bA1OvkXz/zls3C0Ue7n7+Jbx++cLULH/MBugDz+4JwtEIYRMOMVakfchOSYeeFLg5MG/jdjxmMCNswW3nkvvN7JA2aduCHU4M/Pk1+//cz0LPQuENJRzwNhNrBLnBnaMephJFpjSNy02u126ybQ1wGTn4R7iMSThWYLRj2VIJt+/TaEIR5TbkmO+d8BJcT/zk2GY4kMOU8lGX85h2/dYWhwO7N4soTfa54ncJOzP/pOLRvHPcwSqToeUU3GI3OcTDu4OO1fj7i5l/FkBY9pwBUC2H8MzTktpw7EkjlyG1eJGNzF5EMDLZviot0U7hSYrvUjPc6Zo6lOq1o4z5yfn1+U62Qju36x13FzcEyzUsjlcGfDSr1Ti9s4rWxAOYUTjXatBMec5wrVZicZ4e6yU4CO00WSbbyAc/hiqd6pxOb7hXaSm49muo1KLgNH5MmZdYMwajklOcuH8yycBe4iN3gWskwxQC6R/lKtXY8HuIfu+/4HF2jQbXgvGlKklTz3MtUpZ3JXH4vk43wuk2s2owapBtFytmS3fJa7pPvNFj7mzi5b1UjfA1Nzhlirnstc0V8p5N+dVbvx+S/v1KbjzAncdvKK7nefv8zku8lADyQZAB1IdktnuTweUShe5TJwZnM/jH/QzSvPyX6gBbjCTKGbDPcf8xunjzYauQy7wg8XZ7km3IXyQaHmf59L0v3S+5EG/RftVNLXxb6RzXXjs9KNGwO5+tAxxW6UmxSP4ZVziW4213dIPt1JmL/UqxdgTLXS+b4vpmuVgDitH+m4l/VaeuDM7WTfnNKBLLQHz1Jt9G2byvOGeDd33n8XV92Y/kGlWsfFhE14+5DWcZGbjLhj7Edx19d0Nz4p7D+Im97XhH2q8xcXwsbKuMe9eCLNeLy3GW1ePE07Mfd5MqXjAlfVM+F7wtPMVFNmweSOc+Fm4V1xYKTrKVtPNcElJuvCz4sikSs0X/agVmp1cIkfB85zle7GeO1DAh1uCfImRRrus5mjuBRy2Xwpn83SmVVMA4xaSgc1fLydptvWn3+oNeqVLJnGxXzp0izXik9M3Pc7U6gUMpfk709wH59V1Vp4itUsvYDMZbmcyxXYtstxpndAcxXKuRJeUx7Oms+wy003knO/8wJ5MiRa9OcL2VypkBG2Gf9UFzevJfsEp4mGLMAlfsplBGm4iT7chsEafj5ZvRxGWskbEvV3DOhGu/qu2m5dXrH9qXNmepEwvZsZev85oBSJRKpdoXiQneqZ7phPsb3s39Xan1LldpXd7LtW4DPmnUBEb/my0K6nUs1mjqrrXINipNTqEy3yKD7lKu16rtapZJlUd4Vfh3+E5/wh32pewnHC1vG15NxvvKClalf0Kb2rt8uFVvM9e2bvG4GHgvoR6g5hhkqRBlFvs/evWomIzWwLxxtlegFnoIbHmeJp0wu/aMUDBqR7KYrjdTk1TyV2Em71jCKE55m3RZKNHEM6PsBR+ueaAFGuWokFzOZwvHnV27WdXSI7op6KBmyBaKrBoM4JAosbPtOrzpfrsbDNFkm0c8LjEARWq423hNtIvLThnZao+cw0Eg/U4VaGuiNTHIG0hotTeSnmwXjQES6V8qgq8tUk2XUe90Gne97nWlHmadpSdM/vbJtZd34mUb8oUIDodo7ziTp9GsWP5lv5B5hRdu58NRWg70VbZJJ9KJGnKON1CfrMLmpgA3GYE016zRl4GBp8iHogsORpFErlMDnGEG1Ty5evpKifBladXtCnTCuqp3daLtEt5rOt8MMItRYeeeVyBNK/wQclBlmU0+o0Go1Oz0VaacoG62RSgZ6sXtPXCd3vk9g8bIZ7SR9QtkMlRgPH5NkxM5xew2tmOHO21P80Rou0YKeBbOjHeQ34x4AsmN1sqoHfw1+/+oBPrHRp42a0Gq0eH+IF5XKfbPgQedSBF1QWIpwebgOQFOZhpkP5B3Iscs3vmnGO15M7DTfeF4T58xBC/WiSi0tEWoI0bj9/Tp98ck7DDJDWwOhgFmziJDmoQV4j1dAL7iYVRbxEjaAEstmL/LtmmB2jE35UeBqj/VYmsHgQbXgA9986r9bBz7yJwfemBLWER+jZEYEam/bIM6ks0ElXS8z8gZDJtLxwF7lGgiczc4Y9jXzVxk3iTHikFx7HR7RJmofgHZFuVsK9ekhPwlRN5fIfP2ZE04bXzX6fQYSKMksMRy0gRAl4Lt7MSYRBw8Ua9XanUaklDMwP0PNRahqyAMfUrcSjSMlAsWDjdcJ79U9gdmPRSIBTwss4JU2X9QA7gjzEdwxFDU+MBBXXjKiU4XGw94qlC9ReQAPfl6hyTwjxKS1vLhT7BP8beQdnThNzka8UBpCG27ip16vlYroVUQq/pFcyI4UahSJN9GKhUBYJrEZJ9TsiTeOTc+ZAJJZIwmtmAiaVkY74wPS3K4+sRPBwyDlDwDYvfEEhiKKob2FMKcNUFq5LaTO8KSqG856+1SjNqfJ1T3uBmmazpx0TQQWBYdOVzc1vcw51U3Qa58vJTwPeOM9F4vFEMlWo3/R0qZ7rR3pcmKyXDVGqlKBML6SXzcjFrM386DfRVepSpNu3ygtOHyqM8DQmZdKILq+d1Gsl5vgKDQBFWgbaosyoYBOvW7TrKAui8dUxbUGvER6qoMx6lwOPqHvG1I7hmzW1ANx5Kx6h1Kc/7sHpDPO2QLgXSJ0UDHmWzkU1NwdMo0Dh0FNXRsNYVW/W8ZpxnRRPzfhMopYX9OItwWxOz9B4h8Ko1E39xvO8TgcWVSlKHfslkHpJKEtgLGfkEgVd9rF41VO3otrBbyrJ9MnQr0iRfkmfdOEBFDV6WMgBros1W/gmM4j0+HBMXbhuMu307Jrxi1dI+wAFHqx2lF5hceACeZqxUfKEwgiKYZJX3pKZmGczPF+xMYNIEeC5uyGdbaEHKlwxKJOewIwL84WyVZEInnXDoieFivFCpObfFj7FoDQh+sjg2VMdkGklr9XqepEiDW/OUHr2sUL1MqgPqqhzTcaVkYleE5c5NkpcSeA4XKFnSXdAXGW3SEGAkelKcp7nDOFoHEYU5pdEk96G9BW9lQS8EmWjlJfKNEO6WPoA74oyne2T6TD9IpF0/Tf5LKAKCGE9byQM/Gikh7QNMy+XoLvkCubfUHl4B/6feX4+EKvRu6/0wkD954BD6gh0ofC5uMcUYzXFfD2px9h2t9VstrqtVNQsuJWi+AJRNwgd+3syDd6MAfuYCXq6YhuBdL4GrqSu5wL0Id2iMp3tfmPsA3z9KrpBBbwG7i5I61DbXAtWaopFG+cTHRKRzNTapWSq0c4TMl0C9fLHsEqYAyNbp+GTfLobn7s1Jon0kxikC5gssW7t/Ow8l8uls5VO6iVLcImq/Krc4x7Aps5LRWEyYM6IGbZMK6zszYZEU4gSw6zSjeIeU0p2AeTdb9mJTQm6o47BIAzMGe6CtIabY74EPB3RkmnALetWPyCnzn6qlK+yJCDfLo9y/gCGeqNyCYeUQEXegL7R3P5Uo8IVxeM36VyxIASfK/CUNbzAnanqAuYzKajxcIuGuK7LKaIZmGGT8GmQjiSNGFCah1yXSBBMDj2v7AUjzvuiLF/vs1AzkG0mZrT6OyDN/z4TZyEndGYk4V9DNEmJlRhDzsRtoyYcCE+VBTaLn5IRDa/53OWxCV4o1bIk9i2Evsls5pkHQn1EuB69oHViLFpD9YWGs1ERf19NGlgCVC9oJurbToFNZDznCo0fiwYLFvlbkRaCKvkSiOe47stIg9KNdc8+CU6BQiPR3lykJE26gEW3cXLNKPheCrd4UY3Nc5+5AZEegDBfgtq/rNZr11khExERIiqfyCO+Ln2ygeNJoi5gSD/Sx35VQ80sopgB7j6jUXJKPWdgJJNOaD2ZQMTYnDfBSwEGoNQihWJRilwzwf32DbxjLlnLsZ/ScV9GGnCLddIF8fK0kmCgLVFlk/v6A7nLfKUUmxsh1GQe5XJIwD/mayUQfA1/B6QLMPHqyUSyyvTCR6ThGko6qQCD9TPT75mTtQtB0RCkxUBVoVShsTzOIAQpBaSB7rLI3TkJSeKINIS4GyLNf4PuoAkt0B06nfLLSGv4GebWwdW14to/+J5hDX+iYeN85l3h/RmNShW7INZ/jPD7WqVavZKjs6ldiXCa376ENAnDxQNzvCEQb4nxaa2GZYVoriJTT76c12rnI6m6mOuiSJPg63san65GzQZ+LpBoiflCijS6BSzQnccwu8xgizXFRNg3IS3Q8mvUHRrui0hruBkgcwUhVTH/SNsDL9wsk09ylU67Wu+yhFi6mRp2/3g+0UkmEslmnZKqAmrcR19EOtuK8tQTjzCKm2OZEDBbLLL6rtrCM7cqvbwwRRrvlSUU8h/aaTim3ugFLwWk5eaz8nuGaxVOVGj3IsnfgrSah+d8IdF4X0BaBxOO3dGnXLkc6JlD8FyqJSAG4LI2U9FwIBCJN8vkIjGVN8ThZsKBOYN+LsyyViSv+8eXtAcqT36SV4AvjuauwEyyltzIfLJxxgxlpdGonOeLeQGjjxRpnElCGjNbqjeq7+F6L4sFKdL4ODqZD/SZ5WvNWuld4dNVQZxRX2sRZZiTOqNhKi3xAD+PtA5osCDRuVK957GCmZxJNM9YFohpypc5yqAkqbyhAZqSZB/znwo2mfY2pOkcL+Srgjes5YEsXwnOP82W2FJC3ptm5i8KdWrtroV4BSYDuqxO4pocU8jVCx+KfSEu4N0371gdQD53cY2zRGCCX480zPg23mi+cm5WTmI/Rb3ER+SnlEplP9DziXb6E6UMZQRaJtFCbcKz3uOtz+i0Ov04F65RspcvD+sPnY7nlTxaf0oIzjq3uIkin8agsVbY7FYrMOirKqGRWFhjS7bPLsRSiXS1EkuV+3JXGAeLd/Oi1i+e57rxRP19X+6K/wPIRrVXFAJ+VSLWFAN+X4c0LzfTVN9FMyK+GemKMk3EXiaTAt0SiggqlT6PBPRkU4z+UkYrnxHm/RnNeox261n4Ji/mdUeEp4UUVEwS9om20/1pMR1njrfrl5kMuJCZTKlzHrbV80VJrpPUd85Ea60COebdWa7Zis4ma3lJlo6wMS6c6lYy9ETZajcxH+1mv5QY+lKsFGsbMLySi4sjWaHTqZwgL3txL7iTZJPlyLPVUlgabFELATdMEQqETcfbqPxfosc12pQoMcH02UxiLzGe6Q/7DKUQ/hdL/urddrPZbHdyMTPHUgGY2hSjITIuEP9Ajml16omwmCO9rkqjIfPRZLuN8ZV2OxmZEWJT6a+OMGGQkIrLp6YwWgKVL9abzUY7Py9wdfj5HtC1VICbkg1TGCExwKYDi7NflVLztxltQQ2QCIruFnZEaUR/2Ccg3H0vWfM7z2nBEsOIRcBWaFm8IivJlcgUMP1tkRiJB8Ks1diqtP6nIr1EHZa1spjhHCcmF1HDTH410gy73LscHeciqbnI5bI9iADoRDMtFgYN+NggeFRRSMONvYjBdZXWXGAmYBILvxUyqRrOCo79SAIPzkRhKI+HVOdqEOm+gmmNXpqrkX4geeYzwmMk6XppDkqCEtYD5UlJ563pinsgPXr0njTPz4ExZISoCX6YfvSZst1wP9IZISQ53l9nLfUWP4s0Rj8r10JoSN+T6cYw0jyPS0d4AEqHnkqicT44F1BfacgxSq1OKxNrfc77aIUSExm4XEADR8KjrpHfv6qI+v77Ic2TukAaPUq3gMZNcrchHbkdad2cORCORONJySTsZQlvQVoOXk7zoijhzv16miKtxJU5w0+IWURWxYTrb/iBCQOzrsCum0R/AduBFRmTSjZfc43419ab3hlpmZg2JEAPRzL0QhC5zzzzWpqyLRYrNgyzh1OZaqvbrt9IKg4ARxqATd9m2EX9ctnLx3LARtvDqV7DnM3Mi/aYaXKRelCNpZ8z2zTcQAqh8J5RD/a+Yd42OzJjrPt6pNPXA0OEGf6+YJF1ZMvvqOp41wCgJ0fE5sSEoBgB1fIs6URSd79ruUArn8+ms+lqj59oeHOaxiSlSdLRFbCFy3pAiOGPc3HqzyA70yrBgMFciYN7L4o9PqBzaVRfIQtEojE4piAqAYxhXxQFL4CU1tgiETwmBe4EKw3g51jV23kz8A1I35SqA6MsIF2BF3WCNCkGoS5pvpoCHc33DRZ6pX4VWo3JgboVYm743nTOiZybpMkyxcGk05AaoIKH3jCtQsSgMalazRPdCRdY67bb4DvXkwb6EP8fLH4rCPRxkjDRxE2r06xXCkL5jXIS+JuomHT0km+anVa9etntFUNFOu/Y3BBTZ/fOtnDmgK1/BGxRKkD5WgReBGwGTqEEbSYUm+Zr4c+igbnIcXgUSv53vfgeuw8xkwcSNE8q43R6LlApfGRPQ6+8Lc0ZY0/jXSvCafVa7aSYHmDVLkptoprOXsCUgYc4owXDKBN+jPjrarqEp5XK5C7yZ60Y/DrPT+q5lyx1JBSk/j9AaUhBWw5hBYnSznDMu5MUpH5N3GPEewM+Ipu+QtCrlE4MDhKiFpVZ4bwVY7nx+URDKPcMCxVlzK9uJGwsf55iMbd099bSGp04YfIfhGLXCItppEFgpyS6nOQeCH8T4lIIEIkaTGKSkE7M+kv261Xqtvx/DVYc1ps/71oxGvGyJev0W6Xzb6n2+E2n7R8zml7cQzMDbyhg2s8IWUP8vWajKR31G1YtBrfxkUW8EuF5nX7+ZZIWTpLaH9QxWPFeuyQVdu8a6SjWQcdqlctP9Jjk3K1rdkQOU8znW/EwqZ+mjuwlO7VOKKGCE6UitjlzWAg9oz2kRlLGgTtK49OlWiwwT1LzVyTD0CvYnRRqyLGaImyes0VTdZq6xCf2v9zDjRGxvEmh1pQ5NP0j3aJzalwphFOL2TpGiFOt2rkQ+mX3QajZJxYJ7NQzuWYrzyruMyCb47cXDdpKpbwQI27lck2W0KZ1IkI9KktyVzqlVLpFqXThY6YrpuZ7fv11vl1LperCr/etG7BVL1mwstFMpyqdMhWyc3hiWv77Io1aOnsrEWS0ToZEoyaU4b+r1OuVd5cCGnFW7/FIEiDOn70vlXJZIYuHM0P2mZhjRIh2FnO5UulcXFoh+Buo4bLCGqZCpZTN9RZfTHK9THiVPaJsvlwW1rCQADqLOSh7SZfCea5UKZzRK7wooSaXfVeksUCokv8i0kg/SlVhYVQ+l2NL/grIvwWOy2tmE0J8G2hKoReYjM98TmBwld7NGV2hVCgWhKvBNV+8WPAID/ETy4ULMwVPbNBIwhnhjhAOhWMKYmxBsh4BaGeqmmFpy7zwS9lSM/xwC4puQRql5bz4JaSpxUk10xd9n368POskJYYEK2oGF/sV06VubObzbi7Qn2i3dCZdvPYpl+4meoFWXjMHD7FfIjJX3fis9MQY5c/0r4bEC7T1r18N1ytnhf51jfVa+KEXNGNda/9qZkKOsreOVEtAWjHJ2RLdWjbbC6JnM7VO/wJaLTcTbTQussIDub44u25/inD8v76UwucipVZe/B6cut6Oz0nIAI/LZ8vpC8H1gt9oVqP/6nuC/B+Poq167wrz2WwdL3BgUXQ43RL1WvE6l63gal697MGRvmm2YTRvWCZJzcXpO6NH46ZXV6UlS7vbtcJlJp0GTVltt5IvBxaFw40HEvUOWH1cN54v17vluO0Oq7JB1dvitU6t9D6byeQ+VNvtRLj/1GpuJpLq1kv57Fk68/4TLloPcI/6TyzjuXCi06rkc+l0JleAC8SzaAcxMMcb7Wohl4Fj8pVmNxWd+6YqsVvMfCDGhjinIrHPjrBEyQGTCseShXq7223XS8l42DAEIq7NCEQT72otdOpSpKfBnTQg/d5VvdVpNSrJGJxaPdAWg7RCSNfIj1+RRgxDSeBHk3CF8VS12e12GuWRF0guJxBLlhqdbrdVTcUjn638eZAhu9W96T+sdwQpisPGGJEIa7ExQruNy4T+HuHAPNzmb3e06Wgz8dwvbzu1Et+hPx4wz4xsLiKTkfYeeMxLdpbh6fSI/JIt/BJPND/6mAcYvI6N3tJ73WeHZvDrEmxuaRujlRyju4ffJfne+Mi7l0bwb2s1I21Zc9sFYtlc7/h/7BZoSo1Op9fDI+A/dwx5fvf2BfDcus+emtfSH1d+Vunrpr5wgaTjlF73Hdsw/RpfP/5/2MFjiQhu3aoAAAAASUVORK5CYII=";
 const HAVE_LOGO = /^data:image\//.test(LOGO_DATA);
 const LOGO_QP = HAVE_LOGO ? '<img class="qp-logo" src="' + LOGO_DATA + '" alt="Wollongong Surf Leisure Resort">' : '';
 
@@ -1384,13 +1506,13 @@ const INFO_SECTIONS = [
   {id:"accom_notes", title:"About your accommodation", why:"auto when accommodation is quoted",
    text:"All units are fully self contained with kitchen and bathroom facilities. Linen is supplied on all beds; beach towels are not supplied. Guests have free use of the 25m indoor heated pool, spa and steam room during their stay, and complimentary pool towels are available. If extra rooms are added after the initial booking is made, pricing may differ, as we operate on dynamic pricing which changes every day depending on occupancy. For more information on our accommodation visit www.wslr.com.au, or take a virtual walk-through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
   {id:"church", title:"Church & charitable group discount conditions", why:"auto when a church discount is applied",
-   text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and venue hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of {deposit} per cabin or conference room booked are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and venue hire applies on conditions a) to d) if you choose to self cater or have fewer than 3 group main meals during your stay. The discount applies to accommodation and venue hire only, never to catering."},
+   text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and venue hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room booked are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and venue hire applies on conditions a) to d) if you choose to self cater or have fewer than 3 group main meals during your stay. The discount applies to accommodation and venue hire only, never to catering."},
   {id:"venue_info", title:"Conference rooms & auditorium", why:"auto when venue hire is quoted",
    text:"Conference Rooms 1, 2 & 3 hold a maximum of 150 persons; rooms 1 & 2 sit next to each other and the walls between them can be opened up to form larger rooms. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds a maximum of 500 persons, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). All conference rooms are equipped with 55 inch flat screen TVs, and Wi-Fi is complimentary for all conference delegates. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee. No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner. Our Private Dining Room holds a maximum of 120 persons and is included at no charge while your group's meal service is running; like the Marquee it still has to be booked in advance and is subject to availability."},
   {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
    text:"All meals are served buffet style, and your group chooses one option per meal service with our catering team closer to the date. {menuoptions}"},
   {id:"catering_info", title:"Catering", why:"auto when catering is quoted",
-   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Catering must be booked at least {cateringlead} prior to your arrival date, subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
+   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Final catering numbers are due no later than {cateringlead} prior to your arrival date, and catering is subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
   {id:"children", title:"Children's pricing & dietary requirements", why:"auto when catering is quoted",
    text:"Children's catering is charged as: 12 months and under free; 1–3 years $5.00 per meal; 4–12 years 50% of the full rate; 13 years and over full rate. Medically diagnosed special dietary requirements (e.g. gluten free, intolerances, allergies) incur a surcharge of $10.00 per person per meal; special diet meals are served by our Catering Team Leader on duty, and it is the customer's responsibility to make themselves known to our staff. Any additional persons added after your final details are submitted {finallead} prior to arrival incur an additional $10 per person per meal surcharge."},
   {id:"selfcater", title:"Self catering", why:"auto when accommodation is quoted without catering",
@@ -1398,28 +1520,31 @@ const INFO_SECTIONS = [
   {id:"coffee", title:"Barista coffee", why:"switch on if the group would like the coffee van",
    text:"Looking for a real barista coffee whilst staying with us? Contact Andrew from Murphy's Coffee Co, looking after locals with his coffee van, mob. 0413 582 497 · murphyscoffeeco@outlook.com.au."},
   {id:"booking_info", title:"To proceed with a booking", why:"on for every quote",
-   text:"To proceed with a booking we require: your group name, contact person, postal address and mobile number; arrival and departure dates; the number of rooms and each type of room you wish to book; all meals you wish to have included as part of your package; and the dates and times of use of the conference rooms. Once we receive this information we will proceed with a booking and forward an invoice for a deposit. Reservations are unconfirmed until deposits are received."},
+   text:"To proceed with a booking we require: your group name, contact person, postal address and mobile number; arrival and departure dates; the number of rooms and each type of room you wish to book; all meals you wish to have included as part of your package; and the dates and times of use of the conference rooms. Once you accept your quote online we make an unconfirmed booking for you straight away and email you an invoice for the deposit. Reservations stay unconfirmed until the deposit is received."},
   {id:"deposit", title:"Deposit, payment & security bond", why:"on for every quote",
-   text:"A {deposit} deposit per cabin or conference room booked is due {depositwhen}, to secure your reservation and any church discount. The balance of your account must be received prior to the arrival date, and is payable by cash, EFTPOS, Mastercard or Visa (personal cheques are welcome if received 21 days prior to arrival). A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
+   text:"1. Once your quote is accepted we make an unconfirmed booking and email you a deposit invoice. 2. The deposit is {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room, payable within {depositdays} of the invoice, to secure your reservation and any church discount. If it is not received we will be in touch, and an unconfirmed booking can be cancelled. 3. Once the deposit is paid, {halfpct} of the accommodation is due {halflead} prior to arrival (as soon as possible if you book inside that time). 4. The remaining balance must be paid prior to arrival, before keys are handed over, and is payable by EFT, cash, EFTPOS, Mastercard or Visa. A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
   {id:"cancel", title:"Cancellation conditions", why:"on for every quote",
-   text:"There will be no refunds of any payments made if the entire booking is cancelled within {cancellead} of the scheduled arrival date. If the entire booking is cancelled {cancellead} or more prior to your arrival, the deposit is refunded less a {cancelfee} per room booking fee. Any rooms cancelled within that period will be charged at the full rate; there are no fees or charges for rooms cancelled {cancellead} or more prior to your arrival date."},
+   text:"Groups of more than {bigunits} cabins and campsites may cancel more than {cancelpct} of their cabins and campsites without penalty up to {cancelbiglead} prior to arrival, and up to {cancelpct} of them without penalty up to {cancellead} prior to arrival. Groups of {bigunits} cabins and campsites or fewer may cancel without penalty up to {cancellead} prior to arrival. Within {cancellead} of arrival nothing can be cancelled without penalty: cabins and campsites cancelled from then on are charged at the full rate, so all numbers must be final {cancellead} before your event."},
   {id:"conduct", title:"Code of conduct", why:"auto for group stays",
    text:"A responsible adult must be nominated as your Group Manager, and agrees to assist with all conduct and security matters concerning your group; this assistance is essential between 9.00pm and 8.00am. The following are breaches of the Code of Conduct: loutish behaviour by any member of your group; noise emanating from a unit after 10.00pm (this breach may result in the eviction of your entire group, with no credit or refund granted); excessive noise after 10.00pm from a room containing more persons than indicated on the rooming list (a double breach); and the excessive use of alcohol or offensive language. The Group Manager is not permitted to depart the WSLR grounds while any member of the group remains on site, and the Group Manager's nominated mobile phone must not be switched off at any time during your stay."},
   {id:"checkin", title:"Check-in, check-out & facilities", why:"auto for group stays",
    text:"Check in is between 2.00pm and 8.00pm Monday to Saturday, and 2.00pm to 5.00pm Sunday; if your arrival time is likely to be outside these times, please advise reception. Check out is between 8.00am and 10.00am; late check out is available on request, subject to availability. Pool hours are 8.00am to 8.45pm Monday to Saturday and 8.00am to 5.45pm Sunday (the pool is closed 3.30pm to 7.30pm Monday to Friday during NSW school terms for swimming training). Other sporting facilities are available at a discounted hire fee. No pets."},
   {id:"final_conf", title:"Final confirmation details", why:"auto for group stays",
-   text:"If you have booked more than {bigunits} accommodation units and/or a peak period, your final details for accommodation are due {finalleadbig} prior to your arrival date. Otherwise, final numbers and details are required {finallead} prior to your arrival. An email will be sent to you {emaillead} prior to your arrival."},
+   text:"Final numbers and details for your accommodation are due {finallead} prior to your arrival date, and final catering numbers no later than {cateringlead} prior to arrival."},
   {id:"site_visit", title:"Come and see the resort", why:"on for every quote",
    text:"Organisers are always welcome to visit us before booking, and we would love to show you around. A site inspection takes about half an hour and covers the conference rooms, the auditorium, the marquee lawn, the private dining room and a sample of the accommodation, so you can picture exactly how your event will run. We can also walk through catering, room set ups and arrival times while you are here. Site inspections are by appointment at a date and time that suits you, including outside office hours by arrangement. To book one, call 02 4283 6999, email functions@wslr.com.au, or just say so in your reply to this quote and we will organise it. If you cannot get to us before booking, there is a full virtual walk through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
   {id:"other", title:"Other information", why:"on for every quote",
    text:"You do not have exclusivity of the resort; there will be other holiday makers and permanent residents on site during your stay. For things to see and do, restaurants and dining, events, maps and itineraries throughout the Wollongong and Illawarra region, see www.visitwollongong.com. For detailed map information on our location: https://goo.gl/maps/oCRniwYWBAiMw4zC9. Would you like to meet with one of our staff to discuss your next function at the resort? A meeting can be arranged at a date, time and venue convenient to you, just let us know."}
 ];
 const LS_SECTIONS = "wslr_sections_v1";
+const OLD_RULE_TOKENS = /\{(depositwhen|cancelfee|emaillead|finalleadbig|depositdue)\}/;
 function sectionContent(id){
   const base = INFO_SECTIONS.find(s => s.id === id);
   if(!base) return null;
   const ov = (lsGet(LS_SECTIONS, {}) || {})[id] || {};
-  return {id: id, title: ov.title || base.title, text: ov.text || base.text, why: base.why};
+  /* wording saved for the old deposit and cancellation rules would contradict the new ones */
+  const stale = OLD_RULE_TOKENS.test(String(ov.text || "")) && ["deposit", "cancel", "final_conf", "booking_info"].indexOf(id) >= 0;
+  return {id: id, title: ov.title || base.title, text: (!stale && ov.text) || base.text, why: base.why};
 }
 function anyCatOn(ids){ return ids.some(id => RATE[id] && catEntry(id).on); }
 function quoteHasAccom(){
@@ -1470,17 +1595,24 @@ function fillQuoteText(t){
   const k = kdCfg();
   return String(t === null || t === undefined ? "" : t)
     .split("{bond}").join(money0(Number(Q.bond) || 0))
-    .split("{deposit}").join(money0(k.depositPer))
-    .split("{depositdue}").join(leadPhrase(k.depositWeeks * 7))
+    .split("{depositsite}").join(money0(k.depositSite))
+    .split("{depositroom}").join(money0(k.depositRoom))
+    .split("{depositdays}").join(leadPhrase(k.depositDays))
+    .split("{depositdue}").join(leadPhrase(k.depositDays))
     .split("{depositwhen}").join(depositWhenPhrase(k))
-    .split("{depositlead}").join(leadPhrase(k.depositLeadWeeks * 7))
-    .split("{emaillead}").join(leadPhrase(k.emailWeeks * 7))
+    .split("{deposit}").join(money0(k.depositPer))
+    .split("{halfpct}").join(k.halfPct + "%")
+    .split("{halflead}").join(leadPhrase(k.halfDays))
+    .split("{depositlead}").join(leadPhrase(k.halfDays))
+    .split("{emaillead}").join(leadPhrase(k.halfDays))
     .split("{cateringlead}").join(leadPhrase(k.cateringDays))
+    .split("{finalleadbig}").join(leadPhrase(k.finalDays))
     .split("{finallead}").join(leadPhrase(k.finalDays))
-    .split("{finalleadbig}").join(leadPhrase(k.finalDaysBig))
     .split("{bigunits}").join(String(k.bigUnits))
+    .split("{cancelpct}").join(k.cancelPct + "%")
+    .split("{cancelbiglead}").join(leadPhrase(k.cancelBigDays))
     .split("{cancellead}").join(leadPhrase(k.cancelDays))
-    .split("{cancelfee}").join(money0(k.cancelFee))
+    .split("{cancelfee}").join(money0(0))
     .split("{holddays}").join(leadPhrase(Number(Q.validDays) > 0 ? Number(Q.validDays) : k.holdDays));
 }
 /* the standard wording with this quote's numbers filled in. Used both to print the
@@ -1489,7 +1621,6 @@ function sectionBaseText(id, c){
   let t = fillQuoteText(String(c.text).split("{menuoptions}").join(menuSectionText()));
   /* a booking made inside the email lead time cannot get that email on time, so say
      what will happen instead */
-  if(id === "final_conf" && shortNotice()) t += " Your event is inside that " + leadPhrase(kdCfg().emailWeeks * 7) + " window, so we will send this confirmation as soon as your booking is confirmed.";
   return t;
 }
 function resolvedSections(){
@@ -1558,10 +1689,10 @@ function collectSharedSettings(){
 function applySharedSettings(s){
   if(!s || typeof s !== "object") return false;
   let touched = false;
-  if(Array.isArray(s.ratecard) && s.ratecard.length){ lsSet(LS_RATECARD, s.ratecard); touched = true; }
+  if(Array.isArray(s.ratecard) && s.ratecard.length){ lsSet(LS_RATECARD, withRoomItems(s.ratecard)); touched = true; }
   if(s.sections && typeof s.sections === "object"){ lsSet(LS_SECTIONS, s.sections); touched = true; }
   if(s.defaults && typeof s.defaults === "object"){ lsSet(LS_DEFAULTS, dropStaleDefaults(s.defaults)); touched = true; }
-  if(s.rms && typeof s.rms === "object"){ lsSet(LS_RMS, s.rms); touched = true; }
+  if(s.rms && typeof s.rms === "object"){ lsSet(LS_RMS, dropGroupMappings(s.rms)); touched = true; }
   if(touched) buildRate(lsGet(LS_RATECARD, null));
   return touched;
 }
@@ -1580,6 +1711,9 @@ function loadSharedSettings(){
         const a = document.activeElement;
         const busy = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable);
         if(!busy){ renderSettings(); refresh(); }
+        /* the live link is a shared setting: it can arrive a second or two after
+           the page opens, so a quote that already has its dates asks now */
+        scheduleRmsPull(600);
       }
       SETTINGS_SYNC_STATE = "synced";
       renderSyncBadge();
@@ -1851,12 +1985,14 @@ const OLD_EMAIL_BODIES = [
 ];
 const OLD_TERMS = [
   "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
-  "A {deposit} deposit per cabin or conference room confirms your booking, due within {depositdue}; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference."
+  "A {deposit} deposit per cabin or conference room confirms your booking, due within {depositdue}; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
+  "A {deposit} deposit per cabin or conference room booked is due {depositwhen}, to secure your reservation; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference."
 ];
 /* Notes that only ever named a flat "14 days" for final numbers, written before the
    deadline rules became settings. A stored copy that is still one of these steps
    aside for the current default, which follows the rules instead. */
 const OLD_NOTES = [
+  "Room hire includes setup and pack-down. Catering is booked at least {cateringlead} before the event, and final guest numbers and dietary requirements are due {finallead} before it. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
   "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date. All accommodation is subject to availability at the time of booking."
 ];
 function dropStaleDefaults(d){
@@ -1867,10 +2003,21 @@ function dropStaleDefaults(d){
   }
   return d;
 }
+/* The combined conference rooms (1, 2 & 3 together) are not mapped to an RMS room of
+   their own any more: they follow the three single rooms. A direct mapping saved for
+   them, on this computer or on the sheet, is dropped wherever the settings come from. */
+function dropGroupMappings(rms){
+  if(!rms || !rms.map || typeof rms.map !== "object") return rms;
+  VENUES.forEach(v => {
+    if(!v.members) return;
+    [v.fullId, v.halfId].forEach(id => { if(id in rms.map) delete rms.map[id]; });
+  });
+  return rms;
+}
 function getDefaults(){
   return Object.assign({
-    notes: "Room hire includes setup and pack-down. Catering is booked at least {cateringlead} before the event, and final guest numbers and dietary requirements are due {finallead} before it. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
-    terms: "A {deposit} deposit per cabin or conference room booked is due {depositwhen}, to secure your reservation; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
+    notes: "Room hire includes setup and pack-down. Final guest numbers, dietary requirements and catering numbers are due {finallead} before the event. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
+    terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the accommodation is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
     bond: 2000,
     cheapest: true,
     accomRates: [],
@@ -2198,6 +2345,9 @@ function roomsSummary(){
     if(d <= 0 || !catEntry(v.fullId).on) return;
     const val = d >= 1 ? "Full" : "Half";
     if(v.key === "fr13"){ mark("r1", val); mark("r2", val); mark("r3", val); }
+    else if(v.key === "fr1") mark("r1", val);
+    else if(v.key === "fr2") mark("r2", val);
+    else if(v.key === "fr3") mark("r3", val);
     else if(v.key === "fr5") mark("r5", val);
     else if(v.key === "marq") mark("marquee", val);
     else if(v.key === "aud") mark("auditorium", val);
@@ -2210,6 +2360,9 @@ function roomsSummary(){
     const name = String(it.custom ? (l.desc || "") : it.name).toLowerCase();
     const v = /half/.test(name) ? "Half" : "Full";
     if(/rooms? 1\s*-?\s*3|rooms? 1, ?2/.test(name)){ mark("r1", v); mark("r2", v); mark("r3", v); }
+    else if(/room 1\b/.test(name)) mark("r1", v);
+    else if(/room 2\b/.test(name)) mark("r2", v);
+    else if(/room 3\b/.test(name)) mark("r3", v);
     else if(/room 5/.test(name)) mark("r5", v);
     else if(/marquee/.test(name)) mark("marquee", v);
     else if(/auditorium/.test(name)) mark("auditorium", v);
@@ -2502,6 +2655,120 @@ function venueFreeReason(v){
   return "";
 }
 function venueRate(v, half){ return venueIsFree(v) ? 0 : catEntry(half ? v.halfId : v.fullId).price; }
+
+/* ---------- the conference rooms: one space or three rooms, never both ---------
+   Picking "Conference Rooms 1, 2 & 3" takes all three rooms, so the single rooms
+   step aside while it is selected, and the other way round. Returns the venue
+   that is in the way, or null. */
+function venueDaysSel(key){ return Number((Q.sel && Q.sel.venues || {})[key]) || 0; }
+/* a venue maps to one RMS room ("area:277") or, for a shared space, to several at once
+   ("area:277+278+279"). These two are the only places that shape is understood. */
+const ROOM_MAP_RE = /^area:\d+(?:\+\d+)*$/;
+function roomIdsOf(raw){
+  const v = String(raw || "");
+  return ROOM_MAP_RE.test(v) ? v.slice(5).split("+").map(Number).filter(n => n > 0) : [];
+}
+/* how many rooms a shared venue holds in total (0 for anything else) */
+function venueSharedRooms(v){ return v && Number(v.shared) > 0 ? Number(v.shared) : 0; }
+/* the rooms a group of this size takes: up to 50 one, 51-100 two, over 100 all three */
+function sharedRoomsWanted(v){
+  const max = venueSharedRooms(v);
+  if(!max) return 0;
+  const g = Number(Q.guests) || 0;
+  return Math.max(1, Math.min(max, g > 100 ? 3 : (g > 50 ? 2 : 1)));
+}
+function venueBlockedBy(v){
+  if(!v) return null;
+  if(v.members){
+    const m = v.members.map(k => VENUES.find(x => x.key === k)).filter(x => x && venueDaysSel(x.key) > 0 && catEntry(x.fullId).on);
+    return m.length ? m[0] : null;
+  }
+  if(v.partOf){
+    const p = VENUES.find(x => x.key === v.partOf);
+    return (p && venueDaysSel(p.key) > 0 && catEntry(p.fullId).on) ? p : null;
+  }
+  return null;
+}
+/* ---------- what RMS says about a room over the event days -------------------
+   RMS is read one room at a time (a function room is one specific unit in RMS, so
+   its availability is 1 or 0 per day, never a count), and the numbers land in
+   Q.availCal under the venue's full-day item. The combined space is free on a day
+   only when all three rooms are: the server sends that under fr13_full, and the
+   page derives it from the three rooms itself when the server did not.
+   Result: {known, free, taken: [iso...], days: n} for the event days. */
+function venueDayAvail(v, iso){
+  const a = availOn(v.fullId, iso);
+  if(a !== null) return a;
+  if(v.members){
+    let worst = null;
+    for(const k of v.members){
+      const m = VENUES.find(x => x.key === k);
+      const ma = m ? availOn(m.fullId, iso) : null;
+      if(ma === null) return null;                 // any unknown room makes the space unknown
+      worst = worst === null ? ma : Math.min(worst, ma);
+    }
+    return worst;
+  }
+  return null;
+}
+function venueAvailInfo(v){
+  const days = stayNightsList();
+  const out = {known: false, free: true, taken: [], tight: [], days: days.length, shared: venueSharedRooms(v)};
+  if(!v || !days.length) return out;
+  let known = 0;
+  days.forEach(iso => {
+    const a = venueDayAvail(v, iso);
+    if(a === null) return;
+    known++;
+    const n = Number(a);
+    /* a shared space reports how many of its rooms are free: none left is "taken",
+       some left is "tight" (another group is in, but there is still a room) */
+    if(out.shared){
+      if(n <= 0) out.taken.push(iso); else if(n < out.shared) out.tight.push(iso);
+    } else if(n <= 0){
+      out.taken.push(iso);
+    }
+  });
+  out.known = known > 0;
+  out.free = out.taken.length === 0 && out.tight.length === 0;
+  return out;
+}
+/* "booked Sat 3 Oct" / "booked Fri 2, Sat 3 Oct" */
+function takenDaysWords(list){
+  const arr = (list || []).slice().sort();
+  if(!arr.length) return "";
+  if(arr.length <= 3) return arr.map(shortDate).join(", ");
+  return arr.slice(0, 2).map(shortDate).join(", ") + " and " + (arr.length - 2) + " more day" + (arr.length - 2 === 1 ? "" : "s");
+}
+/* the note under a venue row: what RMS said (staff and organiser see the same words) */
+function venueAvailNote(v){
+  const blk = venueBlockedBy(v);
+  if(blk) return '<div class="cb-note venuenote">(' + (v.members ? 'the single rooms are selected below, take those off to book the whole space' : 'included in ' + esc(blk.name) + ' above') + ')</div>';
+  const a = venueAvailInfo(v);
+  if(!a.known) return '';
+  if(a.free) return '<div class="cb-free venuenote">free for ' + (a.days === 1 ? 'your event day' : 'all ' + a.days + ' event days') + ' <span class="fmuted">(RMS)</span></div>';
+  /* a shared space is never "already booked": another group being in is a conversation
+     about meal times, not a closed door */
+  if(a.shared){
+    const busy = a.taken.concat(a.tight).sort();
+    return '<div class="cb-shared venuenote">Another group is booked in ' + esc(takenDaysWords(busy)) + '. ' +
+      (a.taken.length
+        ? 'On some of those every sitting is taken, so tell us the meal times you want below and we will see what we can move around.'
+        : 'The dining room runs several sittings, so tell us the meal times you want below and we will work them in.') +
+      ' <span class="fmuted">(RMS)</span></div>';
+  }
+  return '<div class="cb-taken venuenote">already booked ' + esc(takenDaysWords(a.taken)) + ' <span class="fmuted">(RMS)</span></div>';
+}
+/* can the organiser add this venue? staff can always add and are warned instead */
+function venueCanAdd(v){
+  if(venueBlockedBy(v)) return {ok: false, why: v.members ? "Take the single rooms off first" : "Included in " + venueBlockedBy(v).name};
+  if(venueSharedRooms(v)) return {ok: true, why: ""};      // shared: always pickable, times get agreed with us
+  if(CLIENT_MODE){
+    const a = venueAvailInfo(v);
+    if(a.known && !a.free && venueDaysSel(v.key) <= 0) return {ok: false, why: "Already booked " + takenDaysWords(a.taken)};
+  }
+  return {ok: true, why: ""};
+}
 function venueDayTotal(v, d){
   if(venueIsFree(v)) return 0;
   const full = Math.floor(d), half = (d % 1) ? 1 : 0;
@@ -2594,17 +2861,34 @@ function selCaterSub(){
 /* The deadlines behind the timeline and the standard wording. House defaults live
    on the Settings tab and are shared with every computer; any quote can override
    them in Quote settings on the Prepare tab. */
-const KD_DEFAULTS = {depositPer: 100, depositWeeks: 4, depositLeadWeeks: 10, emailWeeks: 10, cateringDays: 30, finalDays: 14, finalDaysBig: 28, bigUnits: 50, cancelDays: 10, cancelFee: 50, holdDays: 14};
-/* "the earlier of within 4 weeks of booking, or 10 weeks prior to arrival" */
+/* The group booking rules (Sept 2026):
+   1. accepted quote -> unconfirmed booking in RMS and a deposit invoice
+   2. deposit per cabin / campsite / conference room, due N days after the invoice
+   3. then a share of the accommodation, due a set time before arrival
+   4. more than bigUnits cabins+sites: more than cancelPct may be cancelled free until
+      cancelBigDays out, up to cancelPct until cancelDays out; smaller groups can
+      cancel anything free until cancelDays out; nothing free inside cancelDays
+   5. the balance before arrival and the keys
+   6. catering numbers and final numbers due before arrival */
+const KD_VERSION = 2;
+const KD_DEFAULTS = {depositPer: 100, depositSite: 50, depositRoom: 100, depositDays: 7, halfPct: 50, halfDays: 90,
+  cateringDays: 10, finalDays: 10, bigUnits: 20, cancelPct: 20, cancelBigDays: 28, cancelDays: 10, holdDays: 14};
+/* keys whose meaning changed with the 2026 rules: a value saved under the old rules is dropped */
+const KD_CHANGED = ["cateringDays", "finalDays", "bigUnits", "cancelDays"];
+function kdClean(o){
+  if(!o || typeof o !== "object") return {};
+  if(Number(o.kdVer) >= KD_VERSION) return o;
+  const c = Object.assign({}, o);
+  KD_CHANGED.forEach(k => { delete c[k]; });
+  return c;
+}
 function depositWhenPhrase(c){
   c = c || kdCfg();
-  const within = "within " + leadPhrase(c.depositWeeks * 7) + " of booking";
-  if(!(c.depositLeadWeeks > 0)) return within;
-  return "the earlier of " + within + ", or " + leadPhrase(c.depositLeadWeeks * 7) + " prior to arrival";
+  return "within " + leadPhrase(c.depositDays) + " of the deposit invoice (sent when you accept this quote)";
 }
 function kdCfg(){
-  const house = getDefaults().keydates || {};
-  const mine = Q.kdCfg || {};
+  const house = kdClean(getDefaults().keydates);
+  const mine = kdClean(Q.kdCfg);
   const out = {};
   Object.keys(KD_DEFAULTS).forEach(k => {
     const raw = (mine[k] !== undefined && mine[k] !== null && mine[k] !== "") ? mine[k]
@@ -2616,7 +2900,7 @@ function kdCfg(){
 }
 function kdCfgEdited(){
   const mine = Q.kdCfg || {};
-  return Object.keys(KD_DEFAULTS).some(k => mine[k] !== undefined && mine[k] !== null && mine[k] !== "");
+  return Object.keys(KD_DEFAULTS).some(k => kdClean(mine)[k] !== undefined && kdClean(mine)[k] !== null && kdClean(mine)[k] !== "");
 }
 /* 28 -> "4 weeks", 30 -> "1 month", 5 -> "5 days" */
 function leadPhrase(days){
@@ -2630,12 +2914,75 @@ function leadPhrase(days){
 }
 /* deposit & key dates, worked out from the selection and the template's rules,
    unless staff have edited the rows for this quote (Q.kdOver) on the preview */
-function unitsSelected(){
-  const picked = (Q.sel.accom || []).reduce((s, b) => catEntry(b.id).on ? s + (Number(b.qty) || 0) : s, 0);
+/* a campsite is not a cabin: it carries the smaller deposit. Everything in the
+   accommodation group whose id starts camp_ is a site, and so is anything named
+   as one (a typed line, or a room imported from an RMS statement) */
+function isSiteId(id, desc){
+  const s = String(id || "");
+  if(/^camp_/.test(s)) return true;
+  const nm = String((RATE[s] || {}).name || desc || "");
+  return /\bsites?\b|campsite/i.test(nm);
+}
+/* the kitchen does not run a group sitting for fewer than 20, but plenty of smaller
+   groups still go ahead after a conversation, so this warns and never blocks. */
+const CATER_MIN = 20;
+function caterHeadcount(){
+  let w = 0;
+  try{ w = Number(whoAll()) || 0; }catch(e){}
+  return Math.max(Number(Q.guests) || 0, w);
+}
+function caterMinShort(){
+  const n = caterHeadcount();
+  return (n > 0 && n < CATER_MIN) ? n : 0;
+}
+function caterMinNote(staff){
+  const n = caterMinShort();
+  if(!n) return '';
+  return '<div class="caterwarn">\u26a0 <b>Catering normally starts at ' + CATER_MIN + ' people' +
+    (staff ? ', and this quote has ' + n + '.</b> ' : '.</b> You have ' + n + '. ') +
+    (staff
+      ? 'Meals can still be quoted and the organiser can still pick them; the kitchen just has to agree to a sitting this size first.'
+      : 'You can still choose meals here and we will do our best, but the kitchen has to confirm a sitting this small, so please mention it in your message and we will come straight back to you.') +
+    '</div>';
+}
+function unitsSplit(){
+  let cabins = 0, sites = 0;
+  (Q.sel.accom || []).forEach(b => {
+    if(!catEntry(b.id).on) return;
+    const n = Number(b.qty) || 0;
+    if(isSiteId(b.id)) sites += n; else cabins += n;
+  });
   /* rooms imported from an RMS statement sit in the fixed extras, they are still
      rooms, so they count towards the deposit and the final-details rule */
-  const imported = Q.lines.reduce((s, l) => isAccomLine(l) ? s + (Number(l.qty) || 0) : s, 0);
-  return picked + imported;
+  Q.lines.forEach(l => {
+    if(!isAccomLine(l)) return;
+    const n = Number(l.qty) || 0;
+    if(isSiteId(l.id, l.desc)) sites += n; else cabins += n;
+  });
+  return {cabins: cabins, sites: sites, total: cabins + sites};
+}
+function unitsSelected(){ return unitsSplit().total; }
+/* what is owing up front: cabins and conference rooms at one rate, campsites at
+   the other. Both rates live on the Settings tab. */
+function depositTotal(c){
+  c = c || kdCfg();
+  const u = unitsSplit();
+  return (c.depositPer * u.cabins) + (c.depositRoom * venuesSelected()) + (c.depositSite * u.sites);
+}
+/* what the deposit invoice is made of; travels with a submission so the server can raise it */
+function depositBreakdown(){
+  const c = kdCfg(), u = unitsSplit(), rooms = venuesSelected();
+  return {cabins: u.cabins, sites: u.sites, rooms: rooms, perCabin: c.depositPer, perSite: c.depositSite,
+          perRoom: c.depositRoom, total: depositTotal(c), days: c.depositDays,
+          halfPct: c.halfPct, halfDays: c.halfDays, halfAmount: Math.round(accomShareBase() * c.halfPct) / 100};
+}
+/* the accommodation part of the quote, after the church discount and any extra discount */
+function accomShareBase(){
+  let a = 0;
+  try{ a = selAccomSub() + Q.lines.filter(isAccomLine).reduce((s, l) => s + lineTotal(l), 0); }catch(e){ a = 0; }
+  const church = Number(Q.sel && Q.sel.church) || 0;
+  a = a * (1 - church / 100);
+  return a * (1 - (Number(Q.discountPct) || 0) / 100);
 }
 function venuesSelected(){
   /* a room that comes free with catering or with the stay does not attract a room deposit */
@@ -2644,14 +2991,15 @@ function venuesSelected(){
 function keyDates(){
   if(!Q.dateStart) return null;
   const c = kdCfg();
-  const finalDays = unitsSelected() > c.bigUnits ? c.finalDaysBig : c.finalDays;
   return {
     arrive: Q.dateStart,
     catering: isoAddDays(Q.dateStart, -c.cateringDays),
-    finalNums: isoAddDays(Q.dateStart, -finalDays),
-    finalDays: finalDays,
+    finalNums: isoAddDays(Q.dateStart, -c.finalDays),
+    finalDays: c.finalDays,
+    half: isoAddDays(Q.dateStart, -c.halfDays),
+    cancelBig: isoAddDays(Q.dateStart, -c.cancelBigDays),
     cancel: isoAddDays(Q.dateStart, -c.cancelDays),
-    email: isoAddDays(Q.dateStart, -c.emailWeeks * 7)
+    big: unitsSelected() > c.bigUnits
   };
 }
 /* Groups often book inside these windows (a conference 5 weeks out is already
@@ -2660,10 +3008,10 @@ function keyDates(){
    possible" instead, and the wording beside it changes to match. */
 function kdPassed(iso){ return !!iso && iso < isoDate(today); }
 function kdWhen(iso){ return kdPassed(iso) ? "As soon as possible" : fmtDate(iso); }
-/* true when the event is inside the usual confirmation-email lead time */
+/* true when the event is inside the 50% payment lead time */
 function shortNotice(){
   const kd = keyDates();
-  return !!kd && kdPassed(kd.email);
+  return !!kd && kdPassed(kd.half);
 }
 function fixedSub(){
   return Q.lines.reduce((s, l) => s + lineTotal(l), 0);
@@ -3027,6 +3375,11 @@ function setSplit(v){
 }
 function stepVenue(key, dir){
   const cur = Number((Q.sel.venues || {})[key]) || 0;
+  if(dir > 0){
+    const v = VENUES.find(x => x.key === key);
+    const can = v ? venueCanAdd(v) : {ok: true};
+    if(!can.ok){ showToast(can.why + ".", true); return; }
+  }
   const next = Math.max(0, Math.round((cur + dir * 0.5) * 2) / 2);
   if(next <= 0) delete Q.sel.venues[key]; else Q.sel.venues[key] = next;
   refresh();
@@ -3600,7 +3953,9 @@ function renderImpStatus(){
     host.innerHTML = errBox + '<div class="impstatus"><span>' +
       (RMS_PULLING
         ? 'Loading tonight\'s prices and unit counts from RMS…'
-        : 'No prices or unit counts loaded yet, so every cabin is at zero. Press <b>↻ Live from RMS</b> to pull tonight\'s figures for these dates' + (Q.dateStart ? '' : ' (set the event dates first)') + ', or drop an RMS report onto the page.') +
+        : (Q.dateStart
+            ? 'No prices or unit counts loaded yet, so every cabin is at zero. Press <b>↻ Live from RMS</b> to pull tonight\'s figures for these dates, or drop an RMS report onto the page.'
+            : 'Set the event dates and tonight\'s prices and unit counts load from RMS by themselves. Until then every cabin is at zero.')) +
       '</span></div>';
     wireErr();
     return;
@@ -3851,19 +4206,23 @@ function renderPrep(){
     const d = Number((Q.sel.venues || {})[v.key]) || 0;
     const free = venueIsFree(v);
     const sub = d > 0 ? venueDayTotal(v, d) : 0;
+    const can = venueCanAdd(v);
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="venue" data-id="' + esc(v.key) + '"' + (c.on ? ' checked' : '') + ' title="Offer this venue on this quote">' +
       '<div><span class="pkgname">' + esc(v.name) + '</span>' +
         '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
-        (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') + '</div>' +
+        (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') +
+        venueAvailNote(v) + '</div>' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
-      stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0}) +
+      stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0, canUp: can.ok, upTitle: can.why}) +
       '<div class="pkgsub">' + (d > 0 ? (free ? '<span class="freetag">Free</span>' : money(sub)) : '<span class="fmuted">-</span>') + '</div>' +
     '</div>';
   }).join("");
 
   /* catering */
+  const cwarn = document.getElementById("prepCaterWarn");
+  if(cwarn) cwarn.innerHTML = caterMinNote(true);
   document.getElementById("prepCater").innerHTML = caterItems().map(it => {
     const c = catEntry(it.id);
     const selc = (Q.sel.cater || {})[it.id];
@@ -3947,6 +4306,7 @@ function clampEventDates(changed){
   if(a) a.value = Q.dateStart || "";
   if(b){ b.value = Q.dateEnd || ""; b.min = Q.dateStart || ""; }
   refresh();
+  scheduleRmsPull();
 }
 /* tells staff when the event is inside the usual lead times, so they know why the
    timeline reads "As soon as possible" rather than a deadline that has already
@@ -3957,8 +4317,9 @@ function shortNoticeHTML(){
   const c = kdCfg();
   const away = daysUntil(kd.arrive);
   const passed = [];
-  if(kdPassed(kd.email)) passed.push("the " + c.emailWeeks + " week confirmation email");
-  if(kdPassed(kd.catering)) passed.push("the " + leadPhrase(c.cateringDays) + " catering cut-off");
+  if(kdPassed(kd.half)) passed.push("the " + c.halfPct + "% payment " + leadPhrase(c.halfDays) + " out");
+  if(kd.big && kdPassed(kd.cancelBig)) passed.push("the " + leadPhrase(c.cancelBigDays) + " cancellation mark");
+  if(kdPassed(kd.catering)) passed.push("catering numbers at " + leadPhrase(c.cateringDays));
   if(kdPassed(kd.finalNums)) passed.push("final numbers at " + leadPhrase(kd.finalDays));
   if(kdPassed(kd.cancel)) passed.push("the " + leadPhrase(c.cancelDays) + " free-cancellation window");
   return '<p class="hint" id="kdShortNote" style="margin:0 0 8px">⚠ <b>Short notice:</b> this event is ' +
@@ -3970,15 +4331,23 @@ function shortNoticeHTML(){
 function kdFieldsHTML(c, cls, list){
   const f = (k, step) => '<input type="number" class="' + cls + '" data-k="' + k + '" value="' + c[k] + '" min="0" step="' + (step || 1) + '">';
   const row = (lab, inner, wide) => '<label' + (wide ? ' class="kdwide"' : '') + '><span class="kdlab">' + lab + '</span><span class="kdrow">' + inner + '</span></label>';
+  const grp = t => '<div class="kdgrp">' + t + '</div>';
   return '<div class="kdcfg' + (list ? ' kdlist' : '') + '">' +
-    row("Deposit per cabin or room", '<span class="kdu">$</span>' + f("depositPer", 10)) +
-    row("Deposit due, whichever is sooner", f("depositWeeks") + '<span class="kdu">weeks of booking, or</span>' + f("depositLeadWeeks") + '<span class="kdu">weeks before arrival</span>', true) +
-    row("Dates held for", f("holdDays") + '<span class="kdu">days from the quote date</span>') +
-    row("Confirmation email", f("emailWeeks") + '<span class="kdu">weeks before arrival</span>') +
-    row("Catering locked in", f("cateringDays") + '<span class="kdu">days before arrival</span>') +
+    grp("Deposit (invoiced when the quote is accepted)") +
+    row("Per cabin", '<span class="kdu">$</span>' + f("depositPer", 10)) +
+    row("Per campsite", '<span class="kdu">$</span>' + f("depositSite", 10)) +
+    row("Per conference room", '<span class="kdu">$</span>' + f("depositRoom", 10)) +
+    row("Invoice due", f("depositDays") + '<span class="kdu">days after acceptance</span>') +
+    grp("Part payment") +
+    row("Share of accommodation", f("halfPct") + '<span class="kdu">%, due</span>' + f("halfDays") + '<span class="kdu">days before arrival</span>', true) +
+    grp("Cancellation without penalty") +
+    row("A bigger group is more than", f("bigUnits") + '<span class="kdu">cabins &amp; sites</span>') +
+    row("Bigger groups: more than", f("cancelPct") + '<span class="kdu">% until</span>' + f("cancelBigDays") + '<span class="kdu">days out</span>', true) +
+    row("Anyone: up to that % (smaller groups: anything) until", f("cancelDays") + '<span class="kdu">days before arrival</span>', true) +
+    grp("Numbers") +
+    row("Catering numbers", f("cateringDays") + '<span class="kdu">days before arrival</span>') +
     row("Final numbers", f("finalDays") + '<span class="kdu">days before arrival</span>') +
-    row("Bigger groups", f("finalDaysBig") + '<span class="kdu">days, over</span>' + f("bigUnits") + '<span class="kdu">units</span>') +
-    row("Cancellation window", f("cancelDays") + '<span class="kdu">days before arrival, fee</span><span class="kdu">$</span>' + f("cancelFee", 5) + '<span class="kdu">per room</span>', true) +
+    row("Dates held for", f("holdDays") + '<span class="kdu">days from the quote date</span>') +
   '</div>';
 }
 /* the same timeline the organiser gets, with the rules behind it, on the Prepare tab */
@@ -3998,6 +4367,7 @@ function renderPrepKeyDates(){
     if(!Q.kdCfg) Q.kdCfg = {};
     const v = e.target.value;
     Q.kdCfg[e.target.dataset.k] = (v === "" ? "" : Number(v));
+    Q.kdCfg.kdVer = KD_VERSION;
     autosaveDraft();
     renderKdRows();
     renderClient();
@@ -4041,13 +4411,15 @@ function renderKdDefaults(){
   if(!host) return;
   const a = document.activeElement;
   if(a && host.contains(a)) return;
-  const house = Object.assign({}, KD_DEFAULTS, getDefaults().keydates || {});
+  const house = Object.assign({}, KD_DEFAULTS, kdClean(getDefaults().keydates));
+  delete house.kdVer;
   Object.keys(house).forEach(k => { if(house[k] === "" || house[k] === null || isNaN(Number(house[k]))) house[k] = KD_DEFAULTS[k]; });
   host.innerHTML = kdFieldsHTML(house, "kdDefInp");
   host.querySelectorAll(".kdDefInp").forEach(el => el.addEventListener("change", e => {
-    const cur = Object.assign({}, getDefaults().keydates || {});
+    const cur = kdClean(Object.assign({}, getDefaults().keydates || {}));
     const v = e.target.value;
     cur[e.target.dataset.k] = (v === "" ? KD_DEFAULTS[e.target.dataset.k] : Number(v));
+    cur.kdVer = KD_VERSION;
     saveDefaults({keydates: cur});
     refresh();
     showToast("House rule saved. Quotes already made keep their own numbers.");
@@ -4275,6 +4647,7 @@ function setEventDates(from, nights){
   if(a) a.value = Q.dateStart;
   if(b) b.value = Q.dateEnd;
   refresh();
+  scheduleRmsPull();
 }
 function stepNights(dir){
   if(!Q.dateStart) return;
@@ -4489,17 +4862,42 @@ function perPersonHTML(t){
   if(n > 0) out += ' &nbsp;·&nbsp; <b>' + money0(pp / n) + '</b> per person per night over ' + n + ' night' + (n === 1 ? '' : 's');
   return '<div class="ppLine">' + out + '</div>';
 }
+/* what the selected cabins and sites add up to: {cabins, sites, cabinSleeps, siteSleeps} */
+function selSleepSplit(){
+  const o = {cabins: 0, sites: 0, cabinSleeps: 0, siteSleeps: 0};
+  (Q.sel.accom || []).forEach(b => {
+    const it = RATE[b.id];
+    if(!it || !catEntry(b.id).on) return;
+    const n = Number(b.qty) || 0, sl = n * (Number(it.sleeps) || 0);
+    if(isSiteId(b.id)){ o.sites += n; o.siteSleeps += sl; }
+    else { o.cabins += n; o.cabinSleeps += sl; }
+  });
+  return o;
+}
 function capBarHTML(){
   const cap = selSleeps();
   const guests = Number(Q.guests) || 0;
   const split = !!(Q.sel && Q.sel.split);
   const short = guests > 0 && cap < guests;
+  const m = selSleepSplit();
+  const pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  /* cabins only, sites only, or a mix of both, each worded for what was picked */
+  let lead;
+  if(m.cabins > 0 && m.sites > 0){
+    lead = 'Your ' + pl(m.cabins, 'cabin') + ' and ' + pl(m.sites, 'campsite') + ' sleep up to <b>&nbsp;' + cap + '&nbsp;</b> people' +
+      '<span class="capsub">(' + m.cabinSleeps + ' in cabins, ' + m.siteSleeps + ' on sites)</span>';
+  } else if(m.sites > 0){
+    lead = 'Your ' + pl(m.sites, 'campsite') + ' sleep' + (m.sites === 1 ? 's' : '') + ' up to <b>&nbsp;' + cap + '&nbsp;</b> people';
+  } else {
+    lead = 'Your ' + (m.cabins === 1 ? 'cabin sleeps' : 'cabins sleep') + ' up to <b>&nbsp;' + cap + '&nbsp;</b> people';
+  }
+  const more = m.cabins > 0 && m.sites > 0 ? 'cabins or sites' : (m.sites > 0 ? 'sites' : 'cabins');
   return '<div class="capbar' + (short ? ' short' : '') + '" id="capBar">' +
     (cap > 0
-      ? ('Your cabins sleep up to <b>&nbsp;' + cap + '&nbsp;</b> people' +
-         (guests ? '<span class="capsub">· you expect ' + guests + ' guest' + (guests === 1 ? '' : 's') + (short ? ', you may need more cabins' : ' ✓') + '</span>' : '') +
+      ? (lead +
+         (guests ? '<span class="capsub">· you expect ' + guests + ' guest' + (guests === 1 ? '' : 's') + (short ? ', you may need more ' + more : ' ✓') + '</span>' : '') +
          (split ? '<span class="capsub">· capacity varies on split nights</span>' : ''))
-      : 'No cabins selected yet' + (guests ? ' <span class="capsub">· you expect ' + guests + ' guests</span>' : '')) +
+      : 'No cabins or campsites selected yet' + (guests ? ' <span class="capsub">· you expect ' + guests + ' guests</span>' : '')) +
     '</div>';
 }
 /* the "Prepared for" and event header lines, refreshed in place as details are edited */
@@ -4523,7 +4921,50 @@ function submitDirty(){
 }
 function submitStateSig(){
   const anySel = hasSel(Q) || Q.lines.some(l => (Number(l.qty) || 0) > 0);
-  return [Q.status, Q.accepted ? 1 : 0, submitDirty() ? 1 : 0, anySel ? 1 : 0, firstName(Q.contact)].join("|");
+  return [Q.status, Q.accepted ? 1 : 0, submitDirty() ? 1 : 0, anySel ? 1 : 0, firstName(Q.contact), depositTotal(), Q.email || ""].join("|");
+}
+/* true when a submission books the units in RMS and raises the deposit invoice (house switch) */
+function bookingsOnSubmit(){
+  try{ return !!getRmsSettings().pencils; }catch(e){ return false; }
+}
+const PAY_BANK = {name: "Wollongong Surf Leisure Resort", bsb: "032-685", acct: "300044"};
+/* the deposit invoice and how to pay it, shown once the organiser has submitted */
+function depositPayHTML(){
+  if(!bookingsOnSubmit() && !(Q.rmsHold && Q.rmsHold.deposit)) return '';
+  const h = Q.rmsHold || null;
+  const dep = (h && h.deposit) || null;
+  if(h && (h.status === "shortfall" || h.status === "error") && !dep){
+    return '<div class="paybox wait"><h3>Your deposit invoice</h3>Some of what you picked needs a quick check with our team before we can book it, so we will be in touch before sending the deposit invoice. Questions? Call ' + VENUE_PHONE + '.</div>';
+  }
+  if(dep && dep.status === "paid"){
+    return '<div class="paybox paid"><h3>✓ Deposit received</h3>Thank you, your deposit' + (dep.number ? ' for invoice ' + esc(dep.number) : '') + ' has been received. Your booking is now being confirmed.</div>';
+  }
+  const b = depositBreakdown();
+  const amount = dep && Number(dep.amount) > 0 ? Number(dep.amount) : b.total;
+  if(!(amount > 0)) return '';
+  const base = dep && dep.due ? dep.due : isoAddDays(isoDate(Q.submittedAt ? new Date(Q.submittedAt) : today), b.days);
+  const parts = [];
+  if(b.cabins) parts.push(b.cabins + ' cabin' + (b.cabins === 1 ? '' : 's') + ' × ' + money0(b.perCabin));
+  if(b.sites) parts.push(b.sites + ' campsite' + (b.sites === 1 ? '' : 's') + ' × ' + money0(b.perSite));
+  if(b.rooms) parts.push(b.rooms + ' conference room' + (b.rooms === 1 ? '' : 's') + ' × ' + money0(b.perRoom));
+  const ref = (h && h.groupId) ? String(h.groupId) : 'the reservation number on your invoice';
+  return '<div class="paybox' + (dep && dep.status === "overdue" ? ' wait' : '') + '">' +
+    '<h3>' + (dep && dep.status === "overdue" ? 'Your deposit is now due' : 'Next step: pay your deposit') + '</h3>' +
+    'Your booking is held as <b>unconfirmed</b> until the deposit is paid.' +
+    '<div class="payamt">' + money(amount) + '</div>' +
+    (parts.length && !(dep && dep.amount) ? '<div class="paysmall" style="margin-top:0">' + esc(parts.join(' + ')) + '</div>' : '') +
+    '<div class="paygrid">' +
+      '<b>Due by</b><span>' + esc(fmtDate(base)) + ' (' + leadPhrase(b.days) + ' from the invoice)</span>' +
+      '<b>Invoice</b><span>' + (dep && dep.number ? esc(dep.number) + ', emailed to ' + esc(Q.email || 'you') : 'on its way to ' + esc(Q.email || 'your email') + ' (please check your junk folder)') + '</span>' +
+      '<b>Account name</b><span>' + PAY_BANK.name + '</span>' +
+      '<b>BSB</b><span>' + PAY_BANK.bsb + '</span>' +
+      '<b>Account</b><span>' + PAY_BANK.acct + '</span>' +
+      '<b>Reference</b><span>' + esc(ref) + '</span>' +
+    '</div>' +
+    '<div>Card payments can be taken over the phone on ' + VENUE_PHONE + ', or ask us for a payment link.</div>' +
+    (b.halfPct > 0 ? '<div class="paysmall">After the deposit, ' + b.halfPct + '% of the accommodation is due ' + leadPhrase(b.halfDays) + ' before arrival, and the balance before keys are handed over.</div>' : '') +
+    '<div class="paysmall">We do not accept American Express.</div>' +
+    '</div>';
 }
 /* the accept/submit area at the foot of the organiser page */
 function submitZoneHTML(){
@@ -4534,12 +4975,21 @@ function submitZoneHTML(){
   }
   if(Q.status === "Submitted"){
     const dirty = submitDirty();
-    return '<div class="submitted-box">✓ Selection received, ' + esc(firstName(Q.contact)) + '.' +
-      '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit.</span></div>' +
+    const booked = bookingsOnSubmit() || !!(Q.rmsHold && Q.rmsHold.deposit);
+    return '<div class="submitted-box">✓ ' + (booked ? 'Quote accepted' : 'Selection received') + ', ' + esc(firstName(Q.contact)) + '.' +
+      (booked
+        ? '<span>We have made an unconfirmed booking for you and emailed your deposit invoice. Pay it to confirm your booking.</span></div>' + depositPayHTML()
+        : '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit.</span></div>') +
       (dirty
         ? '<div class="tierwarn" style="text-align:center">You\'ve changed your selection since submitting. Please submit again so we quote the right package.</div>' +
           '<div class="acceptrow"><button class="btn accept" id="submitBtn">Submit updated selection</button>' + askBtn + '</div>'
         : '<div class="acceptrow">' + askBtn + '</div>');
+  }
+  if(bookingsOnSubmit()){
+    const d = depositTotal();
+    return '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>Accept quote &amp; book</button>' + askBtn + '</div>' +
+      '<p class="qp-aud" style="text-align:center; margin-top:6px">Accepting makes an unconfirmed booking for what you have picked and emails you a deposit invoice' +
+      (d > 0 && (Q.priceMode || "full") !== "noprices" ? ' for ' + money0(d) : '') + ', due within ' + leadPhrase(kdCfg().depositDays) + '. Your booking is confirmed once the deposit is paid.</p>';
   }
   return '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>Submit my selection for confirmation</button>' + askBtn + '</div>' +
     '<p class="qp-aud" style="text-align:center; margin-top:6px">Submitting doesn\'t lock anything in. Our team confirms availability and final pricing with you first.</p>';
@@ -4578,46 +5028,71 @@ function keyDatesAutoRows(showPrices){
   const anyCater = caterItems().some(it => { const c = (Q.sel.cater || {})[it.id]; return c && catEntry(it.id).on && (Number(c.days) || 0) > 0; });
   const rows = [];
   /* dated lines are collected separately so the timeline always reads in date
-     order, whatever order the rules happen to fall in */
+     order, and lines falling on the same day are joined into one */
   const dated = [];
   const c = kdCfg();
-  if(showPrices && (u + vs) > 0 && c.depositPer > 0){
-    const alsoDisc = Number(Q.sel.church) > 0 ? ' and discount' : '';
-    /* due the earlier of N weeks from booking or M weeks before arrival. The
-       "before arrival" mark is a real date once the event dates are set; when it
-       has already gone (or the window from booking lands after arrival) the
-       deposit is simply due now */
-    const leadDays = (c.depositLeadWeeks > 0 ? c.depositLeadWeeks : c.depositWeeks) * 7;
-    const leadDate = kd ? isoAddDays(kd.arrive, -leadDays) : null;
-    const depositNow = !!leadDate && kdPassed(leadDate);
-    const what = [];
-    if(u > 0) what.push(u + ' cabin' + (u === 1 ? '' : 's'));
-    if(vs > 0) what.push(vs + ' conference room' + (vs === 1 ? '' : 's'));
-    rows.push(['Deposit', money0(c.depositPer * (u + vs)) + ' (' + money0(c.depositPer) + ' × ' + listWords(what) + '), ' +
-      (depositNow
-        ? 'due as soon as possible to secure your reservation' + alsoDisc + ', your event is inside ' + leadPhrase(leadDays)
-        : 'due ' + depositWhenPhrase(c) + (leadDate && c.depositLeadWeeks > 0 ? ' (' + fmtDate(leadDate) + ')' : '') + ', to secure your reservation' + alsoDisc)]);
+  const split = unitsSplit();
+  /* 1 & 2: the unconfirmed booking and the deposit invoice */
+  if((u + vs) > 0){
+    const what = [], per = [];
+    if(split.cabins > 0){ what.push(split.cabins + ' cabin' + (split.cabins === 1 ? '' : 's')); per.push(money0(c.depositPer) + ' per cabin'); }
+    if(split.sites > 0){ what.push(split.sites + ' campsite' + (split.sites === 1 ? '' : 's')); per.push(money0(c.depositSite) + ' per campsite'); }
+    if(vs > 0){ what.push(vs + ' conference room' + (vs === 1 ? '' : 's')); per.push(money0(c.depositRoom) + ' per conference room'); }
+    rows.push(['When you accept', 'we make an unconfirmed booking for your ' + listWords(what) + ' and email you the deposit invoice']);
+    const total = depositTotal(c);
+    if(showPrices && total > 0){
+      const alsoDisc = Number(Q.sel.church) > 0 ? ' and your discount' : '';
+      rows.push(['Deposit', money0(total) + ' (' + listWords(per) + '), due within ' + leadPhrase(c.depositDays) + ' of the invoice. Your booking' + alsoDisc + ' is confirmed once it is paid']);
+    }
   }
   if(showPrices && Number(Q.bond) > 0){
     rows.push(['Security bond', money0(Q.bond) + ', paid prior to or on arrival and refunded on departure under the Code of Conduct']);
   }
   if(kd){
     const at = (iso, text) => dated.push({iso: iso, row: [kdWhen(iso), text]});
-    if(c.emailWeeks > 0) at(kd.email, kdPassed(kd.email)
-      ? 'our confirmation email, sent as soon as your booking is confirmed (it normally goes out about ' + leadPhrase(c.emailWeeks * 7) + ' before arrival, and your event is inside that)'
-      : 'expect our confirmation email (about ' + leadPhrase(c.emailWeeks * 7) + ' before arrival)');
+    /* 3: part of the accommodation */
+    if(split.total > 0 && c.halfPct > 0){
+      const amt = accomShareBase() * c.halfPct / 100;
+      const fig = (showPrices && amt > 0) ? ' (about ' + money0(amt) + ')' : '';
+      at(kd.half, kdPassed(kd.half)
+        ? c.halfPct + '% of your accommodation' + fig + ' due as soon as possible after the deposit (normally ' + leadPhrase(c.halfDays) + ' before arrival)'
+        : c.halfPct + '% of your accommodation' + fig + ' due, ' + leadPhrase(c.halfDays) + ' before arrival');
+    }
+    /* 4: cancellation, which depends on the size of the group */
+    const n = split.total;
+    const pctUnits = Math.floor(n * c.cancelPct / 100);
+    if(n > 0 && c.cancelDays > 0){
+      if(kd.big && c.cancelBigDays > c.cancelDays){
+        at(kd.cancelBig, kdPassed(kd.cancelBig)
+          ? 'the ' + leadPhrase(c.cancelBigDays) + ' mark has passed: from here only up to ' + c.cancelPct + '% of your cabins and sites (' + pctUnits + ' of ' + n + ') can be cancelled without penalty'
+          : 'last day to cancel more than ' + c.cancelPct + '% of your cabins and sites (more than ' + pctUnits + ' of ' + n + ') without penalty');
+        at(kd.cancel, kdPassed(kd.cancel)
+          ? 'the free-cancellation window has passed (it closed ' + leadPhrase(c.cancelDays) + ' before arrival); nothing can be cancelled without penalty'
+          : 'last day to cancel up to ' + c.cancelPct + '% of your cabins and sites (' + pctUnits + ' of ' + n + ') without penalty. After this nothing can be cancelled without penalty, so all numbers are final');
+      } else {
+        at(kd.cancel, kdPassed(kd.cancel)
+          ? 'the free-cancellation window has passed (it closed ' + leadPhrase(c.cancelDays) + ' before arrival); nothing can be cancelled without penalty'
+          : 'last day to cancel cabins and sites without penalty (' + leadPhrase(c.cancelDays) + ' before arrival). After this nothing can be cancelled without penalty, so all numbers are final');
+      }
+    }
+    /* 6: numbers */
     if(anyCater && c.cateringDays > 0) at(kd.catering, kdPassed(kd.catering)
-      ? 'catering to be locked in as soon as possible (normally at least ' + leadPhrase(c.cateringDays) + ' before arrival, so it is subject to availability at this notice)'
-      : 'catering locked in, at least ' + leadPhrase(c.cateringDays) + ' before arrival');
-    at(kd.finalNums, kdPassed(kd.finalNums)
+      ? 'final catering numbers due as soon as possible (normally ' + leadPhrase(c.cateringDays) + ' before arrival)'
+      : 'final catering numbers due, no later than ' + leadPhrase(c.cateringDays) + ' before arrival');
+    if(c.finalDays > 0) at(kd.finalNums, kdPassed(kd.finalNums)
       ? 'final numbers & details due as soon as possible (normally ' + leadPhrase(kd.finalDays) + ' before arrival)'
-      : 'final numbers & details due (' + leadPhrase(kd.finalDays) + ' before arrival' + (kd.finalDays !== c.finalDays ? ', applies to more than ' + c.bigUnits + ' units / peak periods' : '') + ')');
-    if(c.cancelDays > 0) at(kd.cancel, kdPassed(kd.cancel)
-      ? 'the free-cancellation window has passed (it closed ' + leadPhrase(c.cancelDays) + ' before arrival); rooms cancelled from here are charged at the full rate'
-      : 'last day to cancel rooms without charge (' + leadPhrase(c.cancelDays) + ' before arrival' + (c.cancelFee > 0 ? ', a ' + money0(c.cancelFee) + ' per room booking fee applies to a full cancellation' : '') + ')');
-    dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), 'arrival, with the balance of your account due before this date']});
+      : 'final numbers & details due (' + leadPhrase(kd.finalDays) + ' before arrival)');
+    /* 5: the balance */
+    dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), 'arrival. The remaining balance must be paid before this, and before keys are handed over']});
     dated.sort((a, b) => (a.iso < b.iso ? -1 : (a.iso > b.iso ? 1 : 0)));
-    dated.forEach(d => rows.push(d.row));
+    /* same day, one line (e.g. the 10 day cancellation cut-off and the numbers) */
+    const merged = [];
+    dated.forEach(d => {
+      const last = merged[merged.length - 1];
+      if(last && last.iso === d.iso && last.row[0] === d.row[0]) last.row = [last.row[0], last.row[1] + '; ' + d.row[1]];
+      else merged.push({iso: d.iso, row: d.row.slice()});
+    });
+    merged.forEach(d => rows.push(d.row));
   }
   return rows;
 }
@@ -4730,13 +5205,14 @@ function buildDisplayPayload(){
          (Q.dateStart ? (" · " + money0(t.total / g / Math.max(1, nightsCount())) + " per person per night over " +
             Math.max(1, nightsCount()) + " night" + (Math.max(1, nightsCount()) === 1 ? "" : "s")) : "")) : "",
     keyDates: (Q.features && Q.features.depositDates) ? keyDatesRows(pm !== "noprices") : [],
+    deposit: depositBreakdown(),
     message: String(Q.sel.message || ""),
     who: w ? {adults: whoAdults(), k412: Number(w.k412) || 0, k13: Number(w.k13) || 0, babies: Number(w.babies) || 0, diet: Number(w.diet) || 0} : null,
     venueTimes: JSON.parse(JSON.stringify(Q.sel.venueTimes || {})),
     nights: nightsCount(),
     units: unitsSelected(),
     venuesCount: venuesSelected(),
-    depositEst: kdCfg().depositPer * (unitsSelected() + venuesSelected()),
+    depositEst: depositTotal(),
     menuOn: MENU_GROUPS.map(g => {
       const opts = enabledOptions(g);
       return opts.length ? (g.title.replace(/: .*$/, "") + ": " + opts.map(o => o.name).join("; ")) : null;
@@ -4833,6 +5309,7 @@ function renderClient(){
         const c = catEntry(v.fullId), ch = catEntry(v.halfId);
         const d = Number((Q.sel.venues || {})[v.key]) || 0;
         const isFree = venueIsFree(v);
+        const can = venueCanAdd(v);
         const freeHint = (v.key === DINING_KEY || v.key === MARQUEE_KEY)
           ? (isFree
               ? '<div class="cb-free">Included at no charge ' + esc(venueFreeReason(v)) + '</div>'
@@ -4842,12 +5319,18 @@ function renderClient(){
           : '';
         return '<div class="cb-row">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
-            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + freeHint +
+            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + freeHint + venueAvailNote(v) +
             (showPrices ? (isFree ? '<div class="cb-price"><s>' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</s></div>' : '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>') +
               (CLIENT_MODE ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price for this quote"> full · $<input type="number" class="spNum" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price for this quote"> half</div>') : '') +
-            (d > 0 ? '<input type="text" class="vtimeInp" data-key="' + esc(v.key) + '" placeholder="days & times you plan to use it (e.g. Sat 9am–4pm)" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">' : '') +
+            (d > 0 ? (function(){
+              const sh = venueSharedRooms(v);
+              const busy = sh && (function(){ const i = venueAvailInfo(v); return i.known && !i.free; })();
+              return '<input type="text" class="vtimeInp' + (busy ? ' needtimes' : '') + '" data-key="' + esc(v.key) + '" placeholder="' +
+                (sh ? 'meal times you would like (e.g. breakfast 8am, dinner 6pm)' : 'days &amp; times you plan to use it (e.g. Sat 9am–4pm)') +
+                '" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">';
+            })() : '') +
           '</div>' +
-          stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0}) +
+          stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0, canUp: can.ok, upTitle: can.why}) +
           '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : money(venueDayTotal(v, d))) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         '</div>';
       }).join('') + '</div>'
@@ -4870,7 +5353,8 @@ function renderClient(){
     : '';
   const caterHtml = caterOn.length
     ? '<div class="cb-sec"><h3>Catering</h3>' +
-      '<p class="cb-hint">buffet style in our Private Dining Room · minimum group size 20 · your group picks the actual dishes with our catering team closer to the date</p>' +
+      '<p class="cb-hint">buffet style in our Private Dining Room · minimum group size ' + CATER_MIN + ' · your group picks the actual dishes with our catering team closer to the date</p>' +
+      caterMinNote(false) +
       whoHtml +
       caterOn.map(it => {
         const c = catEntry(it.id);
@@ -5566,13 +6050,13 @@ function renderPipeline(){
   tb.innerHTML = rows.map(r =>
     '<tr class="' + (r.mine ? "mine " : "") + (r.catered ? "catered" : (r.selfcater ? "selfcater" : "")) + '">' +
       '<td><b>' + esc(r.num) + '</b>' + (r.token ? ' <a class="qlink" href="' + esc(linkForToken(r.token)) + '" target="_blank" rel="noopener" title="Open the client\'s quote link">↗</a>' : '') + (r.mine ? '<span class="you">' + (r.unsaved ? "editing now" : "this quote") + '</span>' : '') + '</td>' +
-      '<td>' + esc(r.org || r.contact || "-") + '</td>' +
-      '<td>' + esc(r.event || "-") + '</td>' +
+      '<td><span class="tcut" title="' + esc(r.org || r.contact || "") + '">' + esc(r.org || r.contact || "-") + '</span></td>' +
+      '<td><span class="tcut" title="' + esc(r.event || "") + '">' + esc(r.event || "-") + '</span></td>' +
       '<td>' + esc(shortRange(r.dateStart, r.dateEnd)) + rmsPipeChip(r) + '</td>' +
       '<td>' + (r.unsaved ? '<span class="fmuted">-</span>' : '<input type="date" class="sentInp" data-num="' + esc(r.num) + '" value="' + esc(String(r.sentAt || "").slice(0, 10)) + '" title="Change the date sent">') + '</td>' +
       '<td class="num">' + (r.total === null || r.total === undefined ? '<span class="fmuted" title="A row typed straight into the tracker sheet, no value stored">-</span>' : money0(r.total)) + '</td>' +
       '<td>' + chip(r.status) + (r.unsaved ? '' : statusSel(r.num, r.status)) + '</td>' +
-      '<td>' + followCell(followFor(r)) + '</td>' +
+      '<td><span class="fcell">' + followCell(followFor(r)) + '</span></td>' +
       '<td>' + editCell(r) + (r.unsaved ? '' : '<button class="xBtn delQ" data-num="' + esc(r.num) + '" title="Delete this quote here and in the tracker sheet">×</button>') + '</td>' +
     '</tr>'
   ).join("");
@@ -5879,7 +6363,9 @@ function doSubmit(){
   renderPrevOptions();
   renderPipeline();
   showToast(CLIENT_MODE
-    ? "Selection submitted, thank you! Our functions team has been notified and will confirm availability and final pricing with you."
+    ? (bookingsOnSubmit()
+        ? "Thank you! Your unconfirmed booking is being made and your deposit invoice is on its way to " + (Q.email || "your email") + "."
+        : "Selection submitted, thank you! Our functions team has been notified and will confirm availability and final pricing with you.")
     : "Selection for " + Q.num + " submitted and logged to the tracker sheet. In the live version this also emails the functions team, who confirm availability and final pricing.");
 }
 
@@ -5933,7 +6419,8 @@ function copyFromQuote(num){
   normalizeQuote(Q);
   syncForm();
   refresh();
-  showToast("Copied " + num + " into new quote " + Q.num + ". Prices from the old quote are not carried over: press ↻ Live from RMS for these dates.");
+  autoRmsBoot();
+  showToast("Copied " + num + " into new quote " + Q.num + ". Prices from the old quote are not carried over; RMS is being asked for these dates now.");
 }
 function renderPrevOptions(){
   const sel = document.getElementById("prevSel");
@@ -5970,6 +6457,7 @@ function showRestoreBar(){
     bar.style.display = "none";
     syncForm();
     refresh();
+    autoRmsBoot();
     showToast("Restored " + Q.num + ". Carry on where you left off.");
   });
   document.getElementById("restoreNo").addEventListener("click", () => {
@@ -6344,7 +6832,7 @@ function rmsAsAt(iso){
   const sameDay = isoDate(d) === isoDate(new Date());
   return d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}).toLowerCase().replace(/\s/g, "") + (sameDay ? "" : " " + shortDate(isoDate(d)));
 }
-let RMS_PULLING = false, RMS_PULL_TIMER = null, RMS_CHECK = {}, RMS_CHECK_AT = 0, RMS_CHECK_BUSY = false;
+let RMS_PULLING = false, RMS_PULL_TIMER = null, RMS_AUTO_SIG = "", RMS_CHECK = {}, RMS_CHECK_AT = 0, RMS_CHECK_BUSY = false;
 let RMS_CAT_BUSY = false;
 function rmsGet(params){
   const url = sheetEndpoint();
@@ -6371,7 +6859,9 @@ function rmsMappableItems(){
       const v = VENUES.find(x => x.halfId === it.id);
       if(v) return;                                  // half days ride on the full-day row
       const vf = VENUES.find(x => x.fullId === it.id);
-      rows.push({id: it.id, name: vf ? vf.name : it.name, mirror: vf ? vf.halfId : null, avail: it.avail});
+      /* the combined rooms are not mapped themselves: they follow the three single rooms */
+      rows.push({id: it.id, name: vf ? vf.name : it.name, mirror: vf ? vf.halfId : null, avail: it.avail,
+                 venue: !!vf, members: vf && vf.members ? vf.members.slice() : null, shared: vf ? venueSharedRooms(vf) : 0});
     });
     if(rows.length) out.push({group: g.group, rows: rows});
   });
@@ -6380,21 +6870,42 @@ function rmsMappableItems(){
 /* a best guess at the RMS category for an item: the CSV aliases first, then the name */
 function rmsSuggest(row, cats, areas){
   const norm = x => String(x || "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+  const v = VENUES.find(x => x.fullId === row.id);
+  if(v){
+    /* venues are looked up among the rooms before anything else: the alias table would
+       otherwise hand the Auditorium its whole RMS category */
+    if(v.members) return 0;                      // the combined rooms follow the single rooms
+    /* a shared space is several rooms at once: match each of its room numbers and join
+       them ("area:277+278+279"), so the Dining Room finds CONF 6, CONF 7 and CONF 8 */
+    if(venueSharedRooms(v) && Array.isArray(v.roomNos)){
+      const hits = [];
+      v.roomNos.forEach(no => {
+        const want = new RegExp("\\b(conf(erence)? ?(room|rm)?|rm|cr|room) ?" + no + "(?! ?[0-9])");
+        const f = (areas || []).filter(a => !a.inactive && want.test(norm(a.name)));
+        if(f.length === 1 && hits.indexOf(f[0].id) < 0) hits.push(f[0].id);
+      });
+      return hits.length ? "area:" + hits.join("+") : 0;
+    }
+    /* a venue is one specific room in RMS (never a category: a category would hand back any
+       room of that type, and count all of them as free), so only the rooms are searched.
+       RMS names vary ("Conference Room 1", "Conf Rm 1", "CONF 1"), so match loosely on the
+       room number, but never let "1" match "10" or "1-3". */
+    const roomNo = {fr1: "1", fr2: "2", fr3: "3", fr5: "5"}[v.key];
+    /* norm() has already lower-cased the name and turned punctuation into spaces, so
+       "Conference Room 1-3" arrives as "conference room 1 3" and the trailing digit
+       check is what keeps Room 1 from claiming it */
+    const want = roomNo
+      ? new RegExp("\\b(conf(erence)? ?(room|rm)?|rm|cr|room) ?" + roomNo + "(?! ?[0-9])")
+      : v.key === "aud" ? /auditorium/ : v.key === "marq" ? /marquee/ : /dining/;
+    const roomHits = (areas || []).filter(a => !a.inactive && want.test(norm(a.name)));
+    if(roomHits.length === 1) return "area:" + roomHits[0].id;
+    return 0;
+  }
   const byAlias = cats.filter(c => rmsMatch(c.name) === row.id);
   if(byAlias.length === 1) return byAlias[0].id;
   const n = norm(row.name);
   const exact = cats.filter(c => norm(c.name) === n);
   if(exact.length === 1) return exact[0].id;
-  const v = VENUES.find(x => x.fullId === row.id);
-  if(v){
-    const want = v.key === "fr13" ? /conference room[s]? ?(1|one)\b|rooms? 1 ?[-,&]/ : v.key === "fr5" ? /conference room ?5\b|room 5\b/ : v.key === "aud" ? /auditorium/ : v.key === "marq" ? /marquee/ : /dining/;
-    /* a venue is one specific room in RMS, so look at the rooms before the categories */
-    const roomHits = (areas || []).filter(a => !a.inactive && want.test(norm(a.name)));
-    if(roomHits.length === 1) return "area:" + roomHits[0].id;
-    const hits = cats.filter(c => want.test(norm(c.name)));
-    if(hits.length === 1) return hits[0].id;
-    return 0;
-  }
   const words = n.split(" ").filter(w => (w.length > 2 || /^\d+$/.test(w)) && !/^(unit|units|the|and|per|night|site|sites)$/.test(w));
   const nums = words.filter(w => /^\d+$/.test(w));
   let best = null, bestScore = 0;
@@ -6408,7 +6919,37 @@ function rmsSuggest(row, cats, areas){
   });
   return best ? best.id : 0;
 }
+/* the switch lives on the Prepare tab and on the Settings tab; they are the same
+   house setting, so whichever one is used the other follows */
+function renderPencilSwitch(){
+  if(CLIENT_MODE) return;
+  const on = !!getRmsSettings().pencils;
+  const box = document.getElementById("f-pencils");
+  const wrap = box && box.closest(".pencilsw");
+  const note = document.getElementById("pencilNote");
+  if(box) box.checked = on;
+  if(wrap) wrap.classList.toggle("on", on);
+  if(note) note.innerHTML = on
+    ? '<span class="swstate">ON</span>A submitted quote becomes an <b style="display:inline">unconfirmed group reservation</b> in the live RMS database, and the organiser is emailed a deposit invoice due in ' + kdCfg().depositDays + ' days. Whatever RMS has free is booked; anything it cannot cover is emailed to you to sort by hand.'
+    : '<span class="swstate">OFF</span>Submissions are emailed to you and nothing is written into RMS. No deposit invoice is sent.';
+  const other = document.getElementById("rms-pencils");
+  if(other) other.checked = on;
+}
+function setPencils(on, el){
+  if(on && !confirm("From now on, every organiser submission books whatever RMS has free into the LIVE RMS database as one UNCONFIRMED group reservation, and emails the organiser a deposit invoice. Anything RMS cannot cover is emailed to you instead. Switch it on?")){
+    if(el) el.checked = false;
+    renderPencilSwitch();
+    return;
+  }
+  setRmsSettings({pencils: !!on});
+  renderRmsSettings();
+  renderPencilSwitch();
+  showToast(on
+    ? "RMS bookings on. Submitted quotes now become unconfirmed reservations in RMS and a deposit invoice goes to the organiser."
+    : "RMS bookings off. Nothing is written into RMS on submit.");
+}
 function renderRmsSettings(){
+  renderPencilSwitch();
   const st = document.getElementById("rmsStatus");
   if(!st) return;
   const cfg = getRmsSettings(), cat = rmsCatalog();
@@ -6422,9 +6963,9 @@ function renderRmsSettings(){
     const rates = (cat.rates || []).slice().sort((a, b) => a.name.localeCompare(b.name));
     rateSel.innerHTML = '<option value="">pick the rate type…</option>' + rates.map(r => '<option value="' + r.id + '"' + (Number(cfg.rateId) === Number(r.id) ? ' selected' : '') + '>' + esc(r.name) + '</option>').join("");
   }
-  const mapped = Object.keys(cfg.map).filter(k => Number(cfg.map[k]) > 0 || /^area:\d+$/.test(String(cfg.map[k]))).length;
+  const mapped = Object.keys(cfg.map).filter(k => Number(cfg.map[k]) > 0 || ROOM_MAP_RE.test(String(cfg.map[k]))).length;
   st.innerHTML = (cfg.enabled ? '<span class="autobadge">live link on</span>' : '<span class="manualbadge">live link off</span>') +
-    (cfg.pencils ? ' · <span class="autobadge">pencils on</span>' : ' · <span class="manualbadge">pencils off</span>') +
+    (cfg.pencils ? ' · <span class="autobadge">bookings on submit</span>' : ' · <span class="manualbadge">bookings on submit off</span>') +
     (cat ? ' · ' + (cat.categories || []).length + ' RMS categories loaded ' + esc(rmsAsAt(cat.at)) + ' · ' + mapped + ' types mapped' : (RMS_CAT_BUSY ? ' · loading the catalogue…' : ' · catalogue not loaded yet')) +
     (cfg.rateName ? ' · rate: ' + esc(cfg.rateName) + ' for ' + (cfg.adults || 2) + ' adults' : '');
   const box = document.getElementById("rmsMap");
@@ -6433,26 +6974,65 @@ function renderRmsSettings(){
   const rooms = (cat.areas || []).filter(a => !a.inactive).slice().sort((a, b) => a.name.localeCompare(b.name));
   const catName = id => { const c = (cat.categories || []).find(x => Number(x.id) === Number(id)); return c ? c.name : ''; };
   const catOpts = sel => cats.map(c => '<option value="' + c.id + '"' + (String(sel) === String(c.id) ? ' selected' : '') + '>' + esc(c.name) + (c.areas ? ' · ' + c.areas + ' unit' + (c.areas === 1 ? '' : 's') : '') + '</option>').join("");
+  /* a venue is one specific room in RMS, never "any unit of a category": a category would
+     hand the pencil any room of that type and count every room in it as free */
   const opts = (sel, isVenue) => '<option value="0"' + (!sel ? ' selected' : '') + '>not in RMS</option>' +
     (isVenue
-      ? '<optgroup label="A specific room (recommended for venues)">' + rooms.map(a => '<option value="area:' + a.id + '"' + (String(sel) === 'area:' + a.id ? ' selected' : '') + '>' + esc(a.name) + (catName(a.categoryId) ? ' · ' + esc(catName(a.categoryId)) : '') + '</option>').join("") + '</optgroup>' +
-        '<optgroup label="Any unit of a category">' + catOpts(sel) + '</optgroup>'
+      ? '<optgroup label="The room in RMS">' + rooms.map(a => '<option value="area:' + a.id + '"' + (String(sel) === 'area:' + a.id ? ' selected' : '') + '>' + esc(a.name) + (catName(a.categoryId) ? ' · ' + esc(catName(a.categoryId)) : '') + '</option>').join("") + '</optgroup>'
       : catOpts(sel));
+  const roomOf = id => { const ids = roomIdsOf(cfg.map[id]); return ids.length === 1 ? rooms.find(a => Number(a.id) === ids[0]) : null; };
   box.innerHTML = '<table class="rmsmap"><thead><tr><th style="width:44%">Quote item</th><th>RMS category</th><th style="width:90px">Units in RMS</th></tr></thead><tbody>' +
     rmsMappableItems().map(g => '<tr class="grp"><td colspan="3">' + esc(g.group) + '</td></tr>' +
       g.rows.map(r => {
+        if(r.members){
+          /* the combined rooms: made up of the single rooms mapped on the rows below */
+          const parts = r.members.map(k => VENUES.find(x => x.key === k)).filter(Boolean);
+          const mapped = parts.map(p => ({p: p, room: roomOf(p.fullId)}));
+          const missing = mapped.filter(m => !m.room).map(m => m.p.name);
+          return '<tr><td>' + esc(r.name) + '<span class="auto">full &amp; half day · price from the rate card</span></td>' +
+            '<td><span class="fmuted">' + (missing.length
+              ? 'follows the three single rooms below: map ' + esc(missing.join(", ")) + ' to finish'
+              : 'all three of ' + esc(mapped.map(m => m.room.name).join(", ")) + ' free') + '</span></td>' +
+            '<td>' + (missing.length ? '<span class="overdue" title="Map every single room to its RMS room">' + (3 - missing.length) + ' of 3</span>' : '<span class="fmuted" title="Free only when all three rooms are free">3 rooms</span>') + '</td></tr>';
+        }
+        if(r.shared){
+          /* a shared space: several rooms, and groups share them, so it is never blocked */
+          const ids = roomIdsOf(cfg.map[r.id]);
+          const slots = [];
+          for(let i = 0; i < r.shared; i++){
+            slots.push('<div class="rmsslot"><span class="auto">room ' + (i + 1) + ' of ' + r.shared + '</span>' +
+              '<select class="rmsMapSel" data-id="' + esc(r.id) + '"' + (r.mirror ? ' data-mirror="' + esc(r.mirror) + '"' : '') +
+              ' data-shared="' + r.shared + '" data-slot="' + i + '">' + opts(ids[i] ? 'area:' + ids[i] : 0, true) + '</select></div>');
+          }
+          return '<tr><td>' + esc(r.name) + '<span class="auto">full &amp; half day · price from the rate card · shared, several groups at once</span></td>' +
+            '<td>' + slots.join('') + '</td>' +
+            '<td>' + (ids.length
+              ? '<span class="fmuted" title="Groups share these rooms, so the tool never blocks on them; a submission books as many as the headcount needs">' + ids.length + ' of ' + r.shared + ' rooms</span>'
+              : '<span class="overdue" title="Map the rooms that make up this space">not mapped</span>') + '</td></tr>';
+        }
         const raw = cfg.map[r.id];
-        const sel = /^area:\d+$/.test(String(raw || '')) ? String(raw) : (Number(raw) || 0);
-        const isVenue = !!VENUES.find(x => x.fullId === r.id);
+        const sel = ROOM_MAP_RE.test(String(raw || '')) ? String(raw) : (Number(raw) || 0);
+        const isVenue = !!r.venue;
         const room = typeof sel === 'string' ? rooms.find(a => 'area:' + a.id === sel) : null;
         const c = room ? null : cats.find(x => Number(x.id) === sel);
         return '<tr><td>' + esc(r.name) + (r.mirror ? '<span class="auto">full &amp; half day' + (room ? ' · price from the rate card' : '') + '</span>' : '') + '</td>' +
-          '<td><select class="rmsMapSel" data-id="' + esc(r.id) + '"' + (r.mirror ? ' data-mirror="' + esc(r.mirror) + '"' : '') + '>' + opts(sel, isVenue) + '</select></td>' +
-          '<td>' + (room ? '<span class="fmuted" title="One specific room">room</span>' : (c ? (c.areas || '?') : '<span class="fmuted">-</span>')) + '</td></tr>';
+          '<td><select class="rmsMapSel" data-id="' + esc(r.id) + '"' + (r.mirror ? ' data-mirror="' + esc(r.mirror) + '"' : '') + '>' + opts(isVenue && !room ? 0 : sel, isVenue) + '</select>' +
+            (isVenue && c ? '<span class="auto overdue">was mapped to a whole category, pick the room</span>' : '') + '</td>' +
+          '<td>' + (room ? '<span class="fmuted" title="One specific room: free or not, never a count">1 room</span>' : (c && !isVenue ? (c.areas || '?') : '<span class="fmuted">-</span>')) + '</td></tr>';
       }).join("")).join("") + '</tbody></table>';
   box.querySelectorAll(".rmsMapSel").forEach(el => el.addEventListener("change", () => {
     const map = Object.assign({}, getRmsSettings().map);
-    const v = /^area:\d+$/.test(el.value) ? el.value : (Number(el.value) || 0);
+    let v;
+    if(el.dataset.shared){
+      /* one value per shared venue, joined from its slots and de-duplicated */
+      const ids = [];
+      Array.from(box.querySelectorAll('.rmsMapSel[data-id="' + el.dataset.id + '"][data-shared]'))
+        .sort((a, b) => Number(a.dataset.slot) - Number(b.dataset.slot))
+        .forEach(sl => { const n = roomIdsOf(sl.value)[0]; if(n && ids.indexOf(n) < 0) ids.push(n); });
+      v = ids.length ? "area:" + ids.join("+") : 0;
+    } else {
+      v = ROOM_MAP_RE.test(el.value) ? el.value : (Number(el.value) || 0);
+    }
     map[el.dataset.id] = v;
     if(el.dataset.mirror) map[el.dataset.mirror] = v;
     setRmsSettings({map: map});
@@ -6486,7 +7066,9 @@ function rmsLoadCatalog(force, quiet){
     const cats = (cat.categories || []).filter(c => !c.inactive);
     let guessed = 0;
     rmsMappableItems().forEach(g => g.rows.forEach(r => {
-      if(Number(map[r.id]) > 0 || /^area:\d+$/.test(String(map[r.id] || ''))) return;
+      if(r.members){ delete map[r.id]; if(r.mirror) delete map[r.mirror]; return; }   // follows the single rooms
+      const isRoom = ROOM_MAP_RE.test(String(map[r.id] || ''));
+      if(isRoom || (Number(map[r.id]) > 0 && !r.venue)) return;   // a venue on a whole category is re-guessed as a room
       const id = rmsSuggest(r, cats, cat.areas || []);
       if(id){ map[r.id] = id; if(r.mirror) map[r.mirror] = id; guessed++; }
     }));
@@ -6514,8 +7096,11 @@ function rmsTest(){
     const ids = Object.keys(g.avail || {});
     out.innerHTML = '<b>Live link works.</b> ' + esc(g.rate ? g.rate.name : '') + ' · ' + shortDate(from) + ' to ' + shortDate(to) + ' · as at ' + esc(rmsAsAt(g.asAt)) + '<br>' +
       ids.map(id => { const it = RATE[id] || {}; const days = g.avail[id]; const rs = g.rates[id] || {}; const firstDay = Object.keys(days).sort()[0];
+        const v = VENUES.find(x => x.fullId === id);
+        if(v) return esc(v.name) + ': ' + (firstDay ? (Number(days[firstDay]) > 0 ? 'free tonight' : 'booked tonight') : '') + ' (price from the rate card)';
         return esc(it.name || id) + ': ' + (firstDay ? days[firstDay] + ' free tonight' : '') + (rs[firstDay] ? ' at ' + money(rs[firstDay]) : ' (no price on this rate)'); }).join(' · ') +
-      (g.unmapped && g.unmapped.length ? '<br><span class="overdue">Not mapped: ' + esc(g.unmapped.join(", ")) + '</span>' : '');
+      (g.unmapped && g.unmapped.length ? '<br><span class="overdue">Not mapped: ' + esc(g.unmapped.join(", ")) + '</span>' : '') +
+      (g.venuesUnmapped && g.venuesUnmapped.length ? '<br><span class="overdue">No RMS room yet for: ' + esc(g.venuesUnmapped.join(", ")) + '</span>' : '');
   }).catch(e => { out.innerHTML = '<span class="overdue">RMS: ' + esc(e.message) + '</span>'; });
 }
 document.getElementById("rmsLoadBtn").addEventListener("click", () => rmsLoadCatalog(true));
@@ -6524,12 +7109,16 @@ document.getElementById("rms-enabled").addEventListener("change", e => {
   setRmsSettings({enabled: e.target.checked});
   renderRmsSettings();
   renderImp3();
-  if(e.target.checked) showToast("Live link on. Rates and unit counts still only load when you press ↻ Live from RMS on the Prepare tab.");
+  if(e.target.checked){
+    showToast("Live link on. Rates and unit counts now load by themselves as soon as a quote has its dates, and ↻ Live from RMS refreshes them any time.");
+    scheduleRmsPull(300);
+  } else showToast("Live link off. Nothing is fetched from RMS: type a nightly price on each cabin, or drop in a rates report.");
 });
-document.getElementById("rms-pencils").addEventListener("change", e => {
-  if(e.target.checked && !confirm("From now on, every organiser submission pencils its cabins and venues into the LIVE RMS database (one group booking, lets go on the deposit due date). Switch it on?")){ e.target.checked = false; return; }
-  setRmsSettings({pencils: e.target.checked}); renderRmsSettings();
-});
+document.getElementById("rms-pencils").addEventListener("change", e => setPencils(e.target.checked, e.target));
+(function(){
+  const fp = document.getElementById("f-pencils");
+  if(fp) fp.addEventListener("change", e => setPencils(e.target.checked, e.target));
+})();
 document.getElementById("rms-adults").addEventListener("change", e => { setRmsSettings({adults: Math.max(1, Number(e.target.value) || 2)}); renderRmsSettings(); });
 document.getElementById("rms-property").addEventListener("change", e => { setRmsSettings({propertyId: Number(e.target.value) || 0}); renderRmsSettings(); });
 document.getElementById("rms-rate").addEventListener("change", e => {
@@ -6559,6 +7148,8 @@ function pullRmsRates(manual){
      loads (and maps) the catalogue itself. Nothing has to be done on the Settings
      tab first, and nothing loads until this is pressed. */
   if(!getRmsSettings().enabled) setRmsSettings({enabled: true});
+  clearTimeout(RMS_PULL_TIMER);
+  RMS_AUTO_SIG = w.from + "|" + w.to;   // this window has now been asked for
   RMS_PULLING = true; renderImp3();
   ensureRmsCatalog(false).then(() => rmsGet({rms: "grid", from: w.from, to: w.to, fresh: manual ? 1 : 0})).then(g => {
     RMS_PULLING = false;
@@ -6570,11 +7161,13 @@ function pullRmsRates(manual){
     Q.ratesInfo = {from: g.from, to: g.to, items: items, file: "RMS live · " + (g.rate ? g.rate.name : ""), live: true, asAt: g.asAt};
     Q.availInfo = {from: g.from, to: g.to, items: Object.keys(g.avail || {}).length, file: "RMS live", live: true, asAt: g.asAt};
     const nFixed = applyFixedRates();
-    const notes = ["Live from RMS: " + items + " unit types priced, " + shortDateY(g.from) + " – " + shortDateY(g.to) + ", as at " + rmsAsAt(g.asAt) +
+    const roomsChecked = VENUES.filter(v => !v.members && g.avail && g.avail[v.fullId] && Object.keys(g.avail[v.fullId]).length).length;
+    const notes = ["Live from RMS: " + items + " unit types priced" + (roomsChecked ? ", " + roomsChecked + " function room" + (roomsChecked === 1 ? "" : "s") + " checked" : "") + ", " + shortDateY(g.from) + " – " + shortDateY(g.to) + ", as at " + rmsAsAt(g.asAt) +
       (nFixed ? " · set prices from Settings applied over the top" : "")];
     const missing = accomMissingFrom(Q.rates).filter(n => !/campsite|site$/i.test(n));
     const errs = [];
     if(missing.length) errs.push("no price from RMS for " + missing.join(", ") + (g.unmapped && g.unmapped.length ? " (not mapped: " + g.unmapped.join(", ") + ")" : " (no rate for those dates on " + (g.rate ? g.rate.name : "this rate") + ")"));
+    if(g.venuesUnmapped && g.venuesUnmapped.length) errs.push("no room in RMS yet for " + g.venuesUnmapped.join(", ") + " (Settings tab › RMS live link)");
     const cov = coverageCheck(g.from, g.to);
     if(cov && cov.missing) errs.push(cov.missing + " of the " + cov.nights + " stay nights are outside the window RMS returned.");
     if(errs.length) Q.impError = errs.slice();
@@ -6585,16 +7178,44 @@ function pullRmsRates(manual){
     showToast("RMS could not be reached: " + e.message + ". Type a nightly price on each cabin, or drop in the rates report instead.", true);
   });
 }
-/* ---- nothing loads rates on its own ------------------------------------
-   Every cabin sits at no price until someone presses ↻ Live from RMS (or drops
-   in a rates report, or types a price). Prices move every day and a quote is a
-   promise, so the tool never goes and fetches them behind your back, and never
-   changes them under a quote that has already been sent.
-   These two are kept as no-ops so the places that used to ask for a background
-   fetch simply do nothing.
+/* ---- rates load themselves once the dates are in ------------------------
+   Nothing is fetched when the page opens, and nothing is fetched for a quote
+   with no dates: every cabin sits at no price until there is a stay to price.
+   The moment both dates are set on a draft, the tool goes and gets that window
+   on its own, so nobody has to visit the Settings tab or remember the button.
+   Three things it will not do:
+     - touch a quote that has already been sent; it keeps the prices it went out
+       with until someone presses the button on purpose,
+     - run when the live link is switched off on the Settings tab,
+     - ask twice for the same window; a failed pull is not retried on a loop, the
+       button is there for that.
+   ↻ Live from RMS stays exactly where it was and still works: it forces a
+   fresh pull, ignoring anything the server has cached.
    ----------------------------------------------------------------------- */
-function scheduleRmsPull(){ clearTimeout(RMS_PULL_TIMER); }   /* kept as a no-op on purpose */
-function autoRmsBoot(){}                                      /* kept as a no-op on purpose */
+function rmsAutoOk(){
+  if(CLIENT_MODE) return false;
+  if(!getRmsSettings().enabled) return false;
+  if(Q.status && Q.status !== "Draft") return false;
+  return !!rmsWindow();
+}
+function scheduleRmsPull(delay){
+  clearTimeout(RMS_PULL_TIMER);
+  if(!rmsAutoOk()) return;
+  RMS_PULL_TIMER = setTimeout(() => {
+    if(!rmsAutoOk() || RMS_PULLING) return;
+    const w = rmsWindow();
+    if(!w) return;
+    const sig = w.from + "|" + w.to;
+    if(sig === RMS_AUTO_SIG) return;   // already asked for this window
+    pullRmsRates(false);
+  }, Math.max(250, Number(delay) || 900));
+}
+/* opening a draft that has dates but no prices is the same situation as typing
+   the dates, so it loads them too */
+function autoRmsBoot(){
+  if(CLIENT_MODE || Q.ratesInfo) return;
+  scheduleRmsPull(1400);
+}
 
 /* ---- the organiser's page: what the server checked when the page opened ---- */
 function rmsLiveBanner(){
@@ -6603,8 +7224,11 @@ function rmsLiveBanner(){
   if(L.error) return '';
   const sf = Array.isArray(L.shortfalls) ? L.shortfalls : [];
   if(sf.length){
+    const isVenue = x => !!VENUES.find(v => v.fullId === x.itemId || v.halfId === x.itemId) || x.venue === true;
     return '<div class="rmsbanner short"><b>Availability has changed since this quote was prepared.</b> ' +
-      sf.map(x => 'Only <b>' + x.available + '</b> of the ' + x.selected + ' × ' + esc(x.name) + ' selected ' + (x.available === 1 ? 'is' : 'are') + ' still free for ' + esc(fmtRange(x.from, x.to)) + '.').join(' ') +
+      sf.map(x => isVenue(x)
+        ? '<b>' + esc(x.name) + '</b> is no longer free for ' + esc(fmtRange(x.from, x.to)) + '.'
+        : 'Only <b>' + x.available + '</b> of the ' + x.selected + ' × ' + esc(x.name) + ' selected ' + (x.available === 1 ? 'is' : 'are') + ' still free for ' + esc(fmtRange(x.from, x.to)) + '.').join(' ') +
       ' Please adjust the numbers below, or tell us in the message box and we will find an alternative.</div>';
   }
   return '<div class="rmsbanner ok">Availability checked live at ' + esc(rmsAsAt(L.asAt)) + '. The numbers you can pick are what is really free right now' + (Q.rmsHold && Q.rmsHold.status === "held" ? ', including the units already held for you' : '') + '.</div>';
@@ -6625,22 +7249,29 @@ function pullRmsCheck(fresh){
 function rmsPipeChip(r){
   if(CLIENT_MODE) return '';
   const chk = RMS_CHECK[r.num] || {};
-  const hold = chk.hold || (r.rmsHold ? {status: r.rmsHold.status, groupId: r.rmsHold.groupId, expiry: r.rmsHold.expiry, units: (r.rmsHold.units || []).length} : null);
+  const hold = chk.hold || (r.rmsHold ? {status: r.rmsHold.status, groupId: r.rmsHold.groupId, units: (r.rmsHold.units || []).length,
+    partial: !!r.rmsHold.partial, missed: r.rmsHold.missed || 0,
+    deposit: r.rmsHold.deposit ? r.rmsHold.deposit.status : ""} : null);
   const bits = [];
   if(hold){
-    if(hold.status === "held") bits.push('<span class="rmschip held" title="Pencil booking in RMS, group ' + esc(hold.groupId) + (hold.expiry ? ', lets go ' + esc(shortDate(hold.expiry)) : '') + '">RMS pencil G' + esc(hold.groupId) + ' · ' + hold.units + ' unit' + (hold.units === 1 ? '' : 's') + (hold.expiry ? ' · to ' + esc(shortDate(hold.expiry)) : '') + '</span>');
-    else if(hold.status === "shortfall") bits.push('<span class="rmschip short" title="The organiser submitted but RMS did not have the units, nothing was pencilled">RMS: not held, short</span>');
-    else if(hold.status === "released") bits.push('<span class="rmschip muted">RMS pencils released</span>');
-    else if(hold.status === "error") bits.push('<span class="rmschip warn" title="The pencil booking failed; see the email">RMS hold failed</span>');
+    if(hold.status === "held") bits.push('<span class="rmschip ' + (hold.partial ? 'warn' : 'held') + '" title="' + (hold.partial ? 'Only part of this quote is booked in RMS: ' + (hold.missed || 'some') + ' line(s) could not be held and need doing by hand. ' : '') + 'Unconfirmed reservation in RMS, group ' + esc(hold.groupId) + ', ' + hold.units + ' unit' + (hold.units === 1 ? '' : 's') + (hold.deposit ? ', deposit ' + esc(hold.deposit) : '') + '">G' + esc(hold.groupId) + ' · ' + hold.units + (hold.partial ? ' · part' : '') + '</span>');
+    else if(hold.status === "shortfall") bits.push('<span class="rmschip short" title="The organiser submitted but RMS had nothing free, so nothing was booked">not held</span>');
+    else if(hold.status === "none") bits.push('<span class="rmschip muted" title="Nothing on this quote needed an RMS booking">nothing to hold</span>');
+    else if(hold.status === "released") bits.push('<span class="rmschip muted" title="The unconfirmed reservations for this quote have been cancelled in RMS">released</span>');
+    else if(hold.status === "error") bits.push('<span class="rmschip warn" title="The RMS booking failed; see the email">hold failed</span>');
+    if(hold.deposit === "paid") bits.push('<span class="rmschip held" title="The deposit has been received in RMS">dep paid</span>');
+    else if(hold.deposit === "overdue") bits.push('<span class="rmschip short" title="The deposit invoice is past its due date and nothing has been received in RMS. Decide whether to cancel the unconfirmed reservation.">dep overdue</span>');
+    else if(hold.deposit === "invoiced") bits.push('<span class="rmschip muted" title="The deposit invoice has been emailed to the organiser">dep invoiced</span>');
+    else if(hold.deposit === "failed") bits.push('<span class="rmschip warn" title="The deposit invoice could not be sent; see the email">dep inv failed</span>');
   }
   if(chk.checked){
     const sf = chk.shortfalls || [];
-    if(sf.length) bits.push('<span class="rmschip short" title="' + esc(sf.map(x => x.name + ': ' + x.available + ' of ' + x.selected + ' free, ' + fmtRange(x.from, x.to)).join('; ')) + '">⚠ RMS short: ' + esc(sf.map(x => x.available + '/' + x.selected + ' ' + x.name.replace(/ unit.*$/i, '')).join(', ')) + '</span>');
-    else if(!hold || hold.status !== "held") bits.push('<span class="rmschip muted" title="Every unit on this quote is still free in RMS">RMS ok</span>');
+    if(sf.length) bits.push('<span class="rmschip short" title="' + esc(sf.map(x => x.name + ': ' + x.available + ' of ' + x.selected + ' free, ' + fmtRange(x.from, x.to)).join('; ')) + '">⚠ short ' + esc(sf.length === 1 ? (sf[0].available + '/' + sf[0].selected) : (sf.length + ' lines')) + '</span>');
+    else if(!hold || hold.status !== "held") bits.push('<span class="rmschip muted" title="Every unit on this quote is still free in RMS">ok</span>');
   } else if(chk.error){
-    bits.push('<span class="rmschip warn" title="' + esc(chk.error) + '">RMS check failed</span>');
+    bits.push('<span class="rmschip warn" title="' + esc(chk.error) + '">check failed</span>');
   }
-  return bits.length ? '<div>' + bits.join(' ') + '</div>' : '';
+  return bits.length ? '<span class="rmscut" title="' + esc(bits.map(b => b.replace(/<[^>]+>/g, "")).join(" \u00b7 ")) + '">' + bits.join(' ') + '</span>' : '';
 }
 
 /* ---------- tabs ---------- */
@@ -6672,8 +7303,9 @@ BINDINGS.forEach(pair => {
     if(pair[1] === "prepBy"){ try{ localStorage.setItem(LS_PREPBY, el.value); }catch(e){} }
     if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
     if(pair[1] === "dateStart" || pair[1] === "dateEnd"){
-      applyFixedRates();   // a set price still follows the dates, nothing is fetched
+      applyFixedRates();   // a set price still follows the dates
       refresh(); // block nights are clamped to the new stay length automatically
+      scheduleRmsPull();   // and RMS is asked for this window a moment later
       return;
     }
     softRefresh();
@@ -6953,6 +7585,25 @@ else document.getElementById("appLogo").style.display = "none";
   }
   lsSet(FLAG, true);
 })();
+/* the single conference rooms: fill them into a rate card saved before they existed
+   (no flag: it is a no-op once they are there, and the shared copy from the sheet
+   goes through the same fill-in when it lands) */
+(function(){
+  const stored = lsGet(LS_RATECARD, null);
+  if(!stored || !stored.length) return;
+  const before = JSON.stringify(stored);
+  withRoomItems(stored);
+  if(JSON.stringify(stored) !== before) lsSet(LS_RATECARD, stored);
+})();
+/* the combined rooms are no longer mapped to one RMS room of their own: they follow
+   the three single rooms, so an old direct mapping is dropped once */
+(function(){
+  const s = lsGet(LS_RMS, null);
+  if(!s || !s.map || typeof s.map !== "object") return;
+  const before = JSON.stringify(s);
+  dropGroupMappings(s);
+  if(JSON.stringify(s) !== before) lsSet(LS_RMS, s);
+})();
 buildRate(lsGet(LS_RATECARD, null));
 if(CLIENT_MODE){
   /* the emailed quote link: same page, organiser's view only */
@@ -6975,6 +7626,7 @@ if(CLIENT_MODE){
   renderTplOptions();
   renderPrevOptions();
   renderSettings();
+  renderPencilSwitch();
   syncForm();
   showRestoreBar();
   refresh();
