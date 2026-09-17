@@ -5255,17 +5255,23 @@ function wslrDepositInvoiceHtml(d) {
   (d.credits || []).forEach(function (c) { balance -= Number(c.amount) || 0; });
   var css = "body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:#1c2b36;margin:0;padding:24px 28px;background:#fff}" +
     "table{border-collapse:collapse}td,th{vertical-align:top}" +
-    ".hdr td{padding:0}.biz{font-size:9.5pt;color:#445;line-height:1.4;text-align:right}.biz b{font-size:12pt;color:#0b5c8e}" +
+    ".hdr td{padding:0}.biz{font-size:9.5pt;color:#2f3b45;line-height:1.4;text-align:right}.biz b{font-size:12pt;color:#0b5c8e}" +
     ".title{font-size:20pt;font-weight:bold;color:#0b5c8e;letter-spacing:1px;margin:18px 0 4px}" +
-    ".meta td{padding:2px 14px 2px 0;font-size:10pt}.meta .k{color:#667;width:110px}" +
+    ".meta td{padding:2px 14px 2px 0;font-size:10pt}.meta .k{color:#4f5b66;width:110px}" +
     ".box{border:1px solid #c9d4dc;padding:8px 10px;font-size:10pt;line-height:1.45}" +
     ".lines{width:100%;margin-top:14px;font-size:10pt}.lines th{background:#0b5c8e;color:#fff;text-align:left;padding:6px 7px;font-size:9.5pt}" +
     ".lines td{padding:5px 7px;border-bottom:1px solid #e3e9ee}.lines tr.g td{background:#eef3f7;font-weight:bold;color:#1c2b36;border-bottom:1px solid #d4dee6}" +
     ".r{text-align:right;white-space:nowrap}.tot td{padding:4px 7px;font-size:10.5pt}.tot td.lbl{white-space:nowrap}.tot .big td{font-size:13pt;font-weight:bold;color:#0b5c8e;border-top:2px solid #0b5c8e;padding-top:7px}" +
     ".pay{margin-top:16px;border:1px solid #c9d4dc;background:#f7fafc;padding:9px 12px;font-size:10pt;line-height:1.5}" +
-    ".terms{margin-top:14px;font-size:8.5pt;color:#556;line-height:1.4}.msg{margin-top:12px;font-size:10pt;line-height:1.45;border-left:3px solid #f28c28;padding-left:10px}" +
-    "tr{page-break-inside:avoid}@media (max-width:600px){body{padding:14px}.hdr td,.two>tbody>tr>td{display:block;width:auto!important;text-align:left}.biz{text-align:left;margin-top:8px}.two .box{margin-top:10px}}";
-  var h = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>" + e(d.number || title) + "</title><style>" + css + "</style></head><body>";
+    ".terms{margin-top:14px;font-size:8.5pt;color:#3c4751;line-height:1.4}.msg{margin-top:12px;font-size:10pt;line-height:1.45;border-left:3px solid #f28c28;padding-left:10px}" +
+    "tr{page-break-inside:avoid}" +
+    /* print: crisp dark text, the blue bars kept, no browser header or footer, one A4 sheet */
+    "html,body{-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+    "@page{size:A4;margin:0}" +
+    "@media print{body{padding:0}.sheet{width:210mm;min-height:0;padding:11mm 13mm 9mm;box-sizing:border-box}" +
+    ".sheet{-webkit-font-smoothing:antialiased}.lines td,.meta td,.box{color:#0d1a24}.terms{color:#2f3b45}}" +
+    "@media (max-width:600px){body{padding:14px}.hdr td,.two>tbody>tr>td{display:block;width:auto!important;text-align:left}.biz{text-align:left;margin-top:8px}.two .box{margin-top:10px}}";
+  var h = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>" + e(d.number || title) + "</title><style>" + css + "</style></head><body><div class=\"sheet\">";
   h += "<table class=\"hdr\" style=\"width:100%\"><tr><td style=\"width:55%\">" + (d.logo ? "<img src=\"" + d.logo + "\" alt=\"" + e(biz.name) + "\" style=\"height:92px;width:auto\">" : "<b style=\"font-size:16pt;color:#0b5c8e\">" + e(biz.name) + "</b>") + "</td>" +
     "<td class=\"biz\"><b>" + e(biz.name) + "</b><br>ABN " + e(biz.abn) + "<br>" + e(biz.address) + "<br>" + e(biz.phone) + " &nbsp;|&nbsp; " + e(biz.email) + " &nbsp;|&nbsp; " + e(biz.web) + "</td></tr></table>";
   h += "<div class=\"title\">" + e(title) + "</div>";
@@ -5277,19 +5283,19 @@ function wslrDepositInvoiceHtml(d) {
     "<tr><td class=\"k\">Reservation</td><td>" + e(d.reservation || "") + (d.reservationNote ? " (" + e(d.reservationNote) + ")" : "") + "</td></tr>" +
     (d.stay ? "<tr><td class=\"k\">Stay</td><td>" + e(d.stay) + "</td></tr>" : "") +
     (d.quoteNum ? "<tr><td class=\"k\">Your reference</td><td>Quote " + e(d.quoteNum) + "</td></tr>" : "") +
-    "</table></td><td style=\"width:50%\"><div class=\"box\"><div style=\"color:#667;font-size:9pt;margin-bottom:2px\">BILL TO</div><b>" + e(b.name) + "</b>" +
+    "</table></td><td style=\"width:50%\"><div class=\"box\"><div style=\"color:#4f5b66;font-size:9pt;margin-bottom:2px\">BILL TO</div><b>" + e(b.name) + "</b>" +
     (b.group ? "<br>" + e(b.group) : "") + (b.address ? "<br>" + e(b.address) : "") + (b.email ? "<br>" + e(b.email) : "") + (b.phone ? "<br>" + e(b.phone) : "") + "</div></td></tr></table>";
   h += "<table class=\"lines\"><tr><th>Description</th><th class=\"r\" style=\"width:50px\">Qty</th><th class=\"r\" style=\"width:90px\">Unit</th><th class=\"r\" style=\"width:100px\">Amount</th></tr>";
   groups.forEach(function (g) {
     if (g.label) h += "<tr class=\"g\"><td colspan=\"4\">" + e(g.label) + "</td></tr>";
     (g.lines || []).forEach(function (l) {
-      h += "<tr><td>" + e(l.desc) + (l.sub ? "<div style=\"color:#667;font-size:8.5pt\">" + e(l.sub) + "</div>" : "") + "</td><td class=\"r\">" + e(l.qty) + "</td><td class=\"r\">" + m(l.unit) + "</td><td class=\"r\">" + m(l.amount) + "</td></tr>";
+      h += "<tr><td>" + e(l.desc) + (l.sub ? "<div style=\"color:#4f5b66;font-size:8.5pt\">" + e(l.sub) + "</div>" : "") + "</td><td class=\"r\">" + e(l.qty) + "</td><td class=\"r\">" + m(l.unit) + "</td><td class=\"r\">" + m(l.amount) + "</td></tr>";
     });
   });
-  if (!groups.length) h += "<tr><td colspan=\"4\" style=\"color:#667\">No lines</td></tr>";
+  if (!groups.length) h += "<tr><td colspan=\"4\" style=\"color:#4f5b66\">No lines</td></tr>";
   h += "</table>";
   h += "<table class=\"tot\" style=\"width:100%;margin-top:6px\"><tr><td style=\"width:38%\"></td><td class=\"lbl\">Subtotal (includes GST)</td><td class=\"r\" style=\"width:110px\">" + m(subtotal) + "</td></tr>" +
-    "<tr><td></td><td class=\"lbl\" style=\"color:#667\">GST included" + (bill ? " (after discounts)" : "") + "</td><td class=\"r\" style=\"color:#667\">" + m(gst) + "</td></tr>";
+    "<tr><td></td><td class=\"lbl\" style=\"color:#4f5b66\">GST included" + (bill ? " (after discounts)" : "") + "</td><td class=\"r\" style=\"color:#4f5b66\">" + m(gst) + "</td></tr>";
   (d.credits || []).forEach(function (c) { h += "<tr><td></td><td class=\"lbl\">" + e(c.label) + "</td><td class=\"r\">" + m(-c.amount) + "</td></tr>"; });
   h += "<tr class=\"big\"><td></td><td class=\"lbl\">" + e(d.balanceLabel || "BALANCE DUE") + "</td><td class=\"r\">" + m(balance) + "</td></tr></table>";
   /* the whole booking: the quoted total and every payment that makes it up */
@@ -5299,13 +5305,13 @@ function wslrDepositInvoiceHtml(d) {
     h += "<div class=\"pay\" style=\"background:#fff;border-color:#0b5c8e\"><div style=\"color:#0b5c8e;font-weight:bold;margin-bottom:6px\">PAYMENT PLAN FOR YOUR BOOKING</div>" +
       "<table style=\"width:100%;font-size:10pt\">" +
       "<tr><td style=\"padding:4px 6px;font-size:11.5pt\"><b>Total price based on current selection</b></td><td></td><td class=\"r\" style=\"padding:4px 6px;font-size:11.5pt\"><b>" + m(d.plan.quoteTotal) + "</b></td></tr>" +
-      "<tr><th style=\"text-align:left;padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#445\">Payment</th><th style=\"text-align:left;padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#445\">Due</th><th class=\"r\" style=\"padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#445\">Amount</th></tr>" +
+      "<tr><th style=\"text-align:left;padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#2f3b45\">Payment</th><th style=\"text-align:left;padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#2f3b45\">Due</th><th class=\"r\" style=\"padding:6px 6px 3px;border-bottom:1px solid #c9d4dc;color:#2f3b45\">Amount</th></tr>" +
       d.plan.payments.map(function (p, i) {
-        return "<tr><td style=\"padding:4px 6px;border-bottom:1px solid #e3e9ee\">" + (i + 1) + ". " + e(p.label) + (p.note ? "<div style=\"color:#667;font-size:8.5pt\">" + e(p.note) + "</div>" : "") + "</td>" +
+        return "<tr><td style=\"padding:4px 6px;border-bottom:1px solid #e3e9ee\">" + (i + 1) + ". " + e(p.label) + (p.note ? "<div style=\"color:#4f5b66;font-size:8.5pt\">" + e(p.note) + "</div>" : "") + "</td>" +
           "<td style=\"padding:4px 6px;border-bottom:1px solid #e3e9ee\">" + e(p.due) + "</td><td class=\"r\" style=\"padding:4px 6px;border-bottom:1px solid #e3e9ee\">" + m(p.amount) + "</td></tr>";
       }).join("") +
       "<tr><td style=\"padding:7px 6px;border-top:2px solid #0b5c8e;font-size:12pt;color:#0b5c8e\"><b>TOTAL OF ALL PAYMENTS</b></td><td style=\"border-top:2px solid #0b5c8e\"></td><td class=\"r\" style=\"padding:7px 6px;border-top:2px solid #0b5c8e;font-size:12pt;color:#0b5c8e\"><b>" + m(sumPay) + "</b></td></tr>" +
-      "</table><div style=\"font-size:8.5pt;color:#667;margin-top:4px\">Based on your current selection. If numbers change, the later payments change with them; the deposit counts towards the part payment.</div></div>";
+      "</table><div style=\"font-size:8.5pt;color:#4f5b66;margin-top:4px\">Based on your current selection. If numbers change, the later payments change with them; the deposit counts towards the part payment.</div></div>";
   }
   if (d.message || (d.schedule && d.schedule.length)) {
     h += "<div class=\"msg\">" + (d.message ? e(d.message).replace(/\n/g, "<br>") : "") +
@@ -5317,11 +5323,11 @@ function wslrDepositInvoiceHtml(d) {
     "Please quote <b>" + e(ref || "your quote number") + "</b> as the payment reference.<br>" +
     "<b>Card</b>: Payments can be taken over the phone on 02 4283 6999, and we can also send you a secure payment link.<br>" +
     (bill ? "" : "Due <b>" + e(d.due || "") + "</b>. ") + "Questions: " + e(biz.email) + " or " + e(biz.phone) + "." +
-    "<div style=\"font-size:8pt;color:#667;margin-top:4px\">We do not accept American Express.</div></div>";
+    "<div style=\"font-size:8pt;color:#4f5b66;margin-top:4px\">We do not accept American Express.</div></div>";
   if (bill) h += "<div class=\"terms\">This is not a tax invoice. It shows your whole booking as it stands today, priced from your current selection. The amounts due and their dates are in the payment plan above; the final account is prepared before arrival and may change if numbers change. Group bookings are held subject to our group booking terms, which were provided with your quote.</div>";
   else h += "<div class=\"terms\">Please pay by the due date and quote " + e(ref || "your quote number") + " as the payment reference. Your booking is held as unconfirmed until this deposit is received, and the deposit is credited to your final account. Group bookings are held subject to our group booking terms, which were provided with your quote.</div>";
-  h += "<div class=\"terms\" style=\"margin-top:6px\">" + (bill ? "Full current bill for" : "Deposit invoice") + (/\d/.test(String(d.number || "")) ? " " + e(d.number) : "") + (d.preparedBy ? ", prepared by " + e(d.preparedBy) : "") + ", " + e(d.date || "") + ". " + e(biz.name) + ".</div>";
-  h += "</body></html>";
+  h += "<div class=\"terms\" style=\"margin-top:6px\">" + (bill ? "Full current bill" + (d.quoteNum ? " for quote " + e(d.quoteNum) : "") : "Deposit invoice" + (/\d/.test(String(d.number || "")) ? " " + e(d.number) : "")) + (d.preparedBy ? ", prepared by " + e(d.preparedBy) : "") + ", " + e(d.date || "") + ". " + e(biz.name) + ".</div>";
+  h += "</div></body></html>";
   return h;
 }
 
@@ -5474,6 +5480,69 @@ function fullBillData(){
     message: "Your whole booking as it stands today. It updates whenever your selection changes."
   });
 }
+/* Print / save as PDF: page 1 the deposit invoice, page 2 the full current bill.
+   Each sheet is measured and scaled down if needed so it fills exactly one A4 page. */
+function depositPackHtml(){
+  const docs = [wslrDepositInvoiceHtml(depositInvoiceData()), wslrDepositInvoiceHtml(fullBillData())];
+  const style = (docs[0].match(/<style>([\s\S]*?)<\/style>/) || [])[1] || "";
+  const body = h => (h.match(/<body>([\s\S]*)<\/body>/) || [])[1] || "";
+  const dep = currentDeposit().dep;
+  const title = "Quote " + Q.num + (dep && dep.number ? " - " + dep.number : "") + " - deposit invoice and full bill";
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + style +
+    'body{padding:0!important;margin:0;background:#fff}' +
+    '.sheet{width:210mm;padding:11mm 13mm 9mm;box-sizing:border-box;overflow:hidden;position:relative}' +
+    '.sheet+.sheet{break-before:page;page-break-before:always}' +
+    '.pgno{position:absolute;right:13mm;bottom:5mm;font-size:8pt;color:#4f5b66}' +
+    '</style></head><body>' + docs.map(body).join('') + '</body></html>';
+}
+/* A4 at 96 px per inch */
+const A4_PX = {w: 793.7, h: 1122.5};
+function fitSheets(doc){
+  const sheets = Array.from(doc.querySelectorAll(".sheet"));
+  sheets.forEach((sh, i) => {
+    sh.style.zoom = "";
+    sh.style.width = "210mm";
+    sh.style.height = "auto";
+    const h = sh.scrollHeight;
+    const room = A4_PX.h - 4;
+    if(h > room){
+      const z = Math.max(0.55, Math.floor(room / h * 1000) / 1000);
+      sh.style.zoom = String(z);
+      sh.style.width = (210 / z) + "mm";
+      sh.style.height = (room / z) + "px";
+    } else sh.style.height = room + "px";
+    const n = doc.createElement("div");
+    n.className = "pgno";
+    n.textContent = "Page " + (i + 1) + " of " + sheets.length;
+    sh.appendChild(n);
+  });
+  return sheets.length;
+}
+function printDepositPack(){
+  let f = document.getElementById("depPrintFrame");
+  if(f) f.remove();
+  f = document.createElement("iframe");
+  f.id = "depPrintFrame";
+  f.setAttribute("aria-hidden", "true");
+  f.style.cssText = "position:fixed;left:-10000px;top:0;width:" + Math.ceil(A4_PX.w) + "px;height:" + Math.ceil(A4_PX.h) + "px;border:0;visibility:hidden";
+  f.onload = () => {
+    const w = f.contentWindow;
+    const go = () => {
+      fitSheets(w.document);
+      /* the saved PDF is named after the page title */
+      const was = document.title;
+      document.title = w.document.title;
+      try{ w.focus(); w.print(); }catch(e){ window.print(); }
+      setTimeout(() => { document.title = was; }, 1500);
+    };
+    /* wait for the logo so the measurement is right */
+    const imgs = Array.from(w.document.images).filter(im => !im.complete);
+    if(!imgs.length) go();
+    else { let left = imgs.length; imgs.forEach(im => { im.onload = im.onerror = () => { if(--left === 0) go(); }; }); }
+  };
+  document.body.appendChild(f);
+  f.srcdoc = depositPackHtml();
+}
 let DEP_VIEW = "deposit";
 function showDepView(view){
   DEP_VIEW = view === "bill" ? "bill" : "deposit";
@@ -5535,7 +5604,7 @@ function closeDepositScreen(){
     if(box){ box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash"); }
     showToast("Change anything you need, then press Submit changes at the bottom of the page.");
   });
-  if(pr) pr.addEventListener("click", () => { const f = document.getElementById("depFrame"); try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ window.print(); } });
+  if(pr) pr.addEventListener("click", printDepositPack);
 })();
 /* true when a submission books the units in RMS and raises the deposit invoice (house switch) */
 function bookingsOnSubmit(){
