@@ -8289,6 +8289,7 @@ function applyResBooking(g){
   Q.org = gu.org || "";
   Q.email = gu.email || "";
   Q.mobile = gu.mobile || "";
+  Q.event = gu.event || "";
   if(gu.address) Q.address = Object.assign({line1: "", town: "", state: "", postcode: ""}, gu.address);
   Q.dateStart = g.arrival || "";
   Q.dateEnd = g.departure || "";
@@ -8323,6 +8324,8 @@ function applyResBooking(g){
   /* live rates and availability for anything the booking does not already price */
   if(rmsWindow() && !(stayNightsList().slice(-1)[0] < isoDate(today))) pullRmsRates(false);
   const bits = [(g.accom || []).reduce((t, a) => t + a.qty, 0) + " cabins & sites", Object.keys(g.venues || {}).length + " room" + (Object.keys(g.venues || {}).length === 1 ? "" : "s")];
+  const noWho = ["contact", "org", "email", "mobile"].filter(k => !String(Q[k] || "").trim()).map(k => ({contact: "name", org: "group name", email: "email", mobile: "mobile"})[k]);
+  if(noWho.length) bits.push("RMS had no " + noWho.join(", ") + " for the organiser, so type " + (noWho.length === 1 ? "it" : "them") + " in");
   showToast("Started " + Q.num + " on RMS group " + g.groupId + ": " + bits.join(", ") + (g.paid > 0 ? ", " + money(g.paid) + " already paid" : "") +
     (skipped.length ? ". Not filled in: " + skipped.join(", ") : "") + "." +
     (g.paidError ? " Payments could not be checked (" + g.paidError + "), so nothing is credited yet." : "") + note);
