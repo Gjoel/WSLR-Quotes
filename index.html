@@ -218,6 +218,10 @@
 
   .topactions{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0 0 16px}
   .topactions select{width:auto; max-width:300px; padding:9px 10px; border-radius:9px; font-weight:600; font-size:14px; color:var(--ink2); background:var(--surface)}
+  .fromres{display:inline-flex; gap:0; align-items:stretch}
+  .fromres input{width:92px; border:1px solid var(--line, #c9d4dc); border-right:0; border-radius:8px 0 0 8px; padding:6px 8px; font:inherit}
+  .fromres .btn{border-radius:0 8px 8px 0}
+  .restorebar.reslink{background:#e8f0fb; border-color:#1f5fae}
   .restorebar{
     background:rgba(42,120,214,.08); border:1px solid rgba(42,120,214,.3); border-radius:10px;
     padding:10px 14px; margin:0 0 16px; font-size:13.5px;
@@ -857,12 +861,17 @@
 
     <div class="topactions">
       <button class="btn" id="newQuoteBtn">+ New quote</button>
+      <span class="fromres" id="fromResWrap" title="Start a quote from a group booking that is already in RMS: the organiser, cabins, sites, conference rooms and the rates already on those reservations are filled in, and accepting the quote updates that same group">
+        <input id="fromResNo" type="text" inputmode="numeric" placeholder="RMS res #" aria-label="RMS reservation number">
+        <button class="btn" id="fromResBtn" type="button">Quote on existing booking</button>
+      </span>
       <select id="tplSel" title="Start from a template"></select>
       <select id="prevSel" title="Copy a previous quote"></select>
       <span class="drophint">or drag any RMS report straight onto this page</span>
     </div>
     <div id="restoreBar" class="restorebar" style="display:none"></div>
     <div id="editBar" class="restorebar" style="display:none"></div>
+    <div id="resLinkBar" class="restorebar reslink" style="display:none"></div>
     <div id="importBar" class="restorebar" style="display:none"></div>
 
     <div class="grid2">
@@ -2149,7 +2158,7 @@ function fixedRateOn(id, iso){
 function applyFixedRates(){
   const rows = fixedRates().filter(r => r && Number(r.price) > 0);
   if(!Q.rateFixed) Q.rateFixed = {};
-  if(!rows.length) return 0;
+  if(!rows.length) return applyResRates();
   const w = ratesWindow();
   if(!w) return 0;
   let n = 0;
@@ -2165,6 +2174,26 @@ function applyFixedRates(){
       Q.rateFixed[r.id][iso] = true;
       n++;
     }
+  });
+  return n + applyResRates();
+}
+/* quoting on an existing RMS booking: the rates already on those reservations are
+   what was agreed, so they sit over the top of live rates and set prices alike */
+function applyResRates(){
+  const rr = Q.resRates || {};
+  let n = 0;
+  Object.keys(rr).forEach(id => {
+    if(!RATE[id]) return;
+    if(!Q.rates) Q.rates = {};
+    if(!Q.rates[id]) Q.rates[id] = {};
+    if(!Q.rateFixed[id]) Q.rateFixed[id] = {};
+    Object.keys(rr[id] || {}).forEach(iso => {
+      const v = Number(rr[id][iso]);
+      if(!(v > 0)) return;
+      Q.rates[id][iso] = v;
+      Q.rateFixed[id][iso] = true;
+      n++;
+    });
   });
   return n;
 }
@@ -2211,6 +2240,8 @@ function blankQuote(num){
     catalog: {},        // per-quote menu curation: {itemId: {on, price, avail}}
     rates: {},          // nightly tariffs for this quote: {itemId: {"2026-08-21": 770, ...}}
     rateFixed: {},      // which of those came from a set price rather than RMS
+    resRates: {},       // nightly rates already on an existing RMS booking: {itemId: {iso: rate}}
+    rmsLink: null,      // quoting on an existing RMS group: {groupId, askedFor, paid, unmapped, ...}
     availCal: {},       // per-date availability: {itemId: {"2026-08-21": 0, ...}}
     ratesInfo: null,    // {from, to, items, file}
     availInfo: null,
@@ -2247,6 +2278,8 @@ function normalizeQuote(q){
   if(!q.catalog) q.catalog = {};
   if(!q.rates) q.rates = {};
   if(!q.rateFixed) q.rateFixed = {};
+  if(!q.resRates || typeof q.resRates !== "object") q.resRates = {};
+  if(q.rmsLink === undefined) q.rmsLink = null;
   if(!q.availCal) q.availCal = {};
   if(!q.menu) q.menu = {};
   if(!q.secText || typeof q.secText !== "object") q.secText = {};
@@ -3349,6 +3382,8 @@ function snapshotQ(){
     menu: JSON.parse(JSON.stringify(Q.menu || {})),
     features: JSON.parse(JSON.stringify(Q.features || {perPerson: true, depositDates: true, kids: true, cheapest: true})),
     sel: JSON.parse(JSON.stringify(Q.sel || blankSel())),
+    resRates: JSON.parse(JSON.stringify(Q.resRates || {})),
+    rmsLink: Q.rmsLink ? JSON.parse(JSON.stringify(Q.rmsLink)) : null,
     submittedAt: Q.submittedAt || null,
     submittedSel: Q.submittedSel || null,
     lines: JSON.parse(JSON.stringify(Q.lines)),
@@ -5408,8 +5443,9 @@ function depositInvoiceData(){
   const short = iso => iso ? new Date(iso + "T12:00:00").toLocaleDateString("en-AU", {day: "numeric", month: "short", year: "numeric"}) : "";
   const lines = (dep && Array.isArray(dep.lines) && dep.lines.length) ? dep.lines : freshDepositLines();
   const depTotal = dep && dep.total ? Number(dep.total) : lines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+  const prePaid = Q.rmsLink && Number(Q.rmsLink.paid) > 0 ? Number(Q.rmsLink.paid) : 0;
   const credit = dep ? (dep.credit > 0 ? Number(dep.credit) : 0)
-    : (prev && prev.status === "paid" ? Math.min(depTotal, Number(prev.paid || prev.total || prev.amount) || 0) : 0);
+    : (prev && prev.status === "paid" ? Math.min(depTotal, Number(prev.paid || prev.total || prev.amount) || 0) : Math.min(depTotal, prePaid));
   const total = totals().total;
   const half = b.halfAmount || 0;
   const halfDue = Q.dateStart ? isoAddDays(Q.dateStart, -c.halfDays) : "";
@@ -5465,8 +5501,9 @@ function fullBillData(){
   if(t.church > 0) credits.push({label: "Church & not-for-profit discount (" + t.churchPct + "%)", amount: Math.round(t.church * 100) / 100});
   (t.discLines || []).forEach(x => credits.push({label: x.label, amount: Math.round(x.amount * 100) / 100}));
   const dep = cd.dep || cd.prev;
-  const paid = dep && dep.status === "paid" ? (Number(dep.paid) || Number(dep.total) || Number(dep.amount) || 0) : 0;
-  if(paid > 0) credits.push({label: "Less deposit received" + (dep.number ? " (" + dep.number + ")" : ""), amount: paid});
+  const paid = dep && dep.status === "paid" ? (Number(dep.paid) || Number(dep.total) || Number(dep.amount) || 0)
+    : (Q.rmsLink && Number(Q.rmsLink.paid) > 0 ? Number(Q.rmsLink.paid) : 0);
+  if(paid > 0) credits.push({label: (dep && dep.number ? "Less deposit received (" + dep.number + ")" : "Less payments already received"), amount: paid});
   return Object.assign({}, d, {
     kind: "bill",
     gst: t.gst,
@@ -6768,6 +6805,7 @@ function loadQuoteForEdit(src, haveRates, note){
     " Press Save changes (or Email quote) when you're done and the organiser's link shows the new version." + note);
 }
 function renderEditBar(){
+  renderResLink();
   const bar = document.getElementById("editBar");
   if(!bar || CLIENT_MODE) return;
   const known = SAVED.find(s => s.num === Q.num);
@@ -8122,7 +8160,113 @@ document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () =>
 
 /* ---------- form bindings ---------- */
 function softRefresh(){ autosaveDraft(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); }
-function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
+function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderResLink(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
+
+
+/* ---------- quoting on a booking already in RMS ----------
+   Staff type a group master (or any reservation in the group). The quote server reads
+   the group (?rms=existing) and this fills a new quote with the organiser, the dates,
+   the cabins and sites, the conference rooms by day and the rates already on those
+   reservations. The quote remembers the group (Q.rmsLink); the server links it when
+   the quote is first saved, so accepting it updates that same group instead of
+   making a new one, and money already paid comes off the deposit invoice. */
+let RES_LOADING = false;
+function quoteFromRes(){
+  if(CLIENT_MODE || RES_LOADING) return;
+  const inp = document.getElementById("fromResNo");
+  const res = String((inp && inp.value) || "").replace(/\D/g, "");
+  if(!res){ showToast("Type the RMS reservation number (the group master, or any reservation in the group) first.", true); if(inp) inp.focus(); return; }
+  if(!getRmsSettings().enabled) setRmsSettings({enabled: true});
+  const btn = document.getElementById("fromResBtn");
+  RES_LOADING = true;
+  if(btn){ btn.disabled = true; btn.textContent = "Reading RMS…"; }
+  const finish = () => { RES_LOADING = false; if(btn){ btn.disabled = false; btn.textContent = "Quote on existing booking"; } };
+  ensureRmsCatalog(false).then(() => rmsGet({rms: "existing", res: res})).then(g => {
+    finish();
+    if(g.linkedQuote && !confirm("RMS group " + g.groupId + " is already on quote " + g.linkedQuote + ". Make another quote on it anyway?")) return;
+    applyResBooking(g);
+    if(inp) inp.value = "";
+  }).catch(e => {
+    finish();
+    showToast("Could not read that booking from RMS: " + e.message, true);
+  });
+}
+function applyResBooking(g){
+  const note = keepCurrentQuote();
+  Q = blankQuote(nextQuoteNum());
+  lsDel(LS_DRAFT);
+  const gu = g.guest || {};
+  Q.contact = gu.contact || "";
+  Q.org = gu.org || "";
+  Q.email = gu.email || "";
+  Q.mobile = gu.mobile || "";
+  if(gu.address) Q.address = Object.assign({line1: "", town: "", state: "", postcode: ""}, gu.address);
+  Q.dateStart = g.arrival || "";
+  Q.dateEnd = g.departure || "";
+  if(Number(g.guests) > 0) Q.guests = Number(g.guests);
+  /* cabins and sites: one block per type and dates; a block covering the whole stay has no dates of its own */
+  const skipped = [];
+  Q.sel.accom = [];
+  (g.accom || []).forEach(a => {
+    if(!RATE[a.id]){ skipped.push(a.qty + " × " + a.id); return; }
+    const whole = a.from === Q.dateStart && a.to === Q.dateEnd;
+    Q.sel.accom.push(whole ? {id: a.id, qty: a.qty} : {id: a.id, qty: a.qty, from: a.from, to: a.to});
+    setCat(a.id, "on", true);
+  });
+  /* conference rooms by day */
+  Q.sel.venues = {}; Q.sel.venueDays = {};
+  Object.keys(g.venues || {}).forEach(key => {
+    const v = VENUES.find(x => x.key === key);
+    if(!v){ skipped.push(key); return; }
+    Q.sel.venueDays[key] = Object.assign({}, g.venues[key]);
+    setCat(v.fullId, "on", true);
+    syncVenueCount(key);
+  });
+  Q.resRates = JSON.parse(JSON.stringify(g.resRates || {}));
+  Q.rmsLink = {groupId: g.groupId, askedFor: g.askedFor, at: new Date().toISOString(), paid: Number(g.paid) || 0,
+               members: g.members || 0, unmapped: (g.unmapped || []).map(u => u.name + " (" + u.area + ")"),
+               priced: Object.keys(g.resRates || {}), rateSource: g.rateSource || "", status: g.masterStatus || ""};
+  normalizeQuote(Q);
+  applyFixedRates();
+  syncForm();
+  renderPrevOptions();
+  refresh();
+  /* live rates and availability for anything the booking does not already price */
+  if(rmsWindow() && !(stayNightsList().slice(-1)[0] < isoDate(today))) pullRmsRates(false);
+  const bits = [(g.accom || []).reduce((t, a) => t + a.qty, 0) + " cabins & sites", Object.keys(g.venues || {}).length + " room" + (Object.keys(g.venues || {}).length === 1 ? "" : "s")];
+  showToast("Started " + Q.num + " on RMS group " + g.groupId + ": " + bits.join(", ") + (g.paid > 0 ? ", " + money(g.paid) + " already paid" : "") +
+    (skipped.length ? ". Not filled in: " + skipped.join(", ") : "") + "." + note);
+}
+/* the blue bar on tab 1 while a quote sits on an existing RMS group */
+function renderResLink(){
+  const bar = document.getElementById("resLinkBar");
+  if(!bar || CLIENT_MODE) return;
+  const L = Q.rmsLink;
+  if(!L || !L.groupId){ bar.style.display = "none"; bar.innerHTML = ""; return; }
+  const h = Q.rmsHold && Q.rmsHold.kind === "existing" ? Q.rmsHold : null;
+  const saved = SAVED.some(x => x.num === Q.num);
+  const priced = (L.priced || []).map(id => (RATE[id] || {}).name || id);
+  bar.innerHTML = '<span><b>On existing RMS group ' + esc(L.groupId) + '</b>' + (L.askedFor && Number(L.askedFor) !== Number(L.groupId) ? ' (from reservation ' + esc(L.askedFor) + ')' : '') + '. ' +
+    (h || (saved && !L.error) ? 'Linked: accepting this quote updates that group (adds what is new, cancels what they take off while still unconfirmed). '
+       : (L.error ? '<b style="color:#8e1c1c">Not linked yet: ' + esc(L.error) + '</b> ' : 'It is linked to the group when you save or send the quote. ')) +
+    (L.paid > 0 ? money(L.paid) + ' already paid comes off the deposit invoice. ' : '') +
+    (priced.length ? 'Rates for ' + esc(priced.join(", ")) + ' are the ones already on the booking; anything else uses live RMS rates. ' : 'No rates came back from the booking, so live RMS rates are used. ') +
+    ((L.unmapped || []).length ? '<br>In the group but not in the quote tool (left as they are): ' + esc(L.unmapped.join(", ")) + '.' : '') + '</span>' +
+    (!saved && !h ? '<button type="button" id="resUnlink" class="dis">Unlink</button>' : '');
+  bar.style.display = "flex";
+  const u = document.getElementById("resUnlink");
+  if(u) u.addEventListener("click", () => {
+    Q.rmsLink = null; Q.resRates = {};
+    refresh();
+    showToast("This quote is no longer tied to the RMS group. Accepting it would make a new group. The rates already loaded stay until you press ↻ Live from RMS.");
+  });
+}
+(function(){
+  const b = document.getElementById("fromResBtn");
+  if(b) b.addEventListener("click", quoteFromRes);
+  const i = document.getElementById("fromResNo");
+  if(i) i.addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); quoteFromRes(); } });
+})();
 
 /* the discount tick box and its two rows */
 function syncDiscForm(){
