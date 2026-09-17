@@ -5328,7 +5328,26 @@ function currentDeposit(){
   const sent = Date.parse(dep.sentAt || dep.at || "") || 0;
   const subm = Date.parse(Q.submittedAt || "") || 0;
   if(subm && (!sent || sent < subm)) return {dep: null, prev: dep};
+  /* the quote was edited after this invoice went out (a staff save, say) and the
+     number of cabins, sites or rooms no longer matches: show the new selection */
+  if(dep.status !== "cancelled" && Array.isArray(dep.lines) && dep.lines.length && depLinesKey(dep.lines) !== depLinesKey(freshDepositLines())) return {dep: null, prev: dep};
   return {dep: dep, prev: null};
+}
+function depLinesKey(lines){
+  const m = {};
+  (lines || []).forEach(l => { const k = String(l.desc || ""); m[k] = (m[k] || 0) + (Number(l.qty) || 0); });
+  return Object.keys(m).filter(k => m[k] > 0).sort().map(k => k + "=" + m[k]).join("|");
+}
+/* the deposit lines for the selection as it stands now */
+function freshDepositLines(){
+  const b = depositBreakdown();
+  const typeMix = site => (Q.sel.accom || []).filter(x => catEntry(x.id).on && (Number(x.qty) || 0) > 0 && isSiteId(x.id) === site)
+    .map(x => x.qty + " x " + ((RATE[x.id] || {}).name || x.id)).join(", ");
+  const lines = [];
+  if(b.cabins) lines.push({desc: "Deposit per cabin", sub: typeMix(false), qty: b.cabins, unit: b.perCabin, amount: b.cabins * b.perCabin});
+  if(b.sites) lines.push({desc: "Deposit per campsite", sub: typeMix(true), qty: b.sites, unit: b.perSite, amount: b.sites * b.perSite});
+  if(b.rooms) lines.push({desc: "Deposit per conference room", sub: VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on && !venueIsFree(v)).map(v => v.name).join(", "), qty: b.rooms, unit: b.perRoom, amount: b.rooms * b.perRoom});
+  return lines.filter(l => l.amount > 0);
 }
 function depositInvoiceData(){
   const h = Q.rmsHold || {};
@@ -5339,17 +5358,7 @@ function depositInvoiceData(){
   const issued = dep && dep.sentAt ? isoDate(new Date(dep.sentAt)) : isoDate(Q.submittedAt ? new Date(Q.submittedAt) : today);
   const due = dep && dep.due ? dep.due : isoAddDays(issued, b.days);
   const short = iso => iso ? new Date(iso + "T12:00:00").toLocaleDateString("en-AU", {day: "numeric", month: "short", year: "numeric"}) : "";
-  const typeMix = site => (Q.sel.accom || []).filter(x => catEntry(x.id).on && (Number(x.qty) || 0) > 0 && isSiteId(x.id) === site)
-    .map(x => x.qty + " x " + ((RATE[x.id] || {}).name || x.id)).join(", ");
-  let lines;
-  if(dep && Array.isArray(dep.lines) && dep.lines.length) lines = dep.lines;
-  else {
-    lines = [];
-    if(b.cabins) lines.push({desc: "Deposit per cabin", sub: typeMix(false), qty: b.cabins, unit: b.perCabin, amount: b.cabins * b.perCabin});
-    if(b.sites) lines.push({desc: "Deposit per campsite", sub: typeMix(true), qty: b.sites, unit: b.perSite, amount: b.sites * b.perSite});
-    if(b.rooms) lines.push({desc: "Deposit per conference room", sub: VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on && !venueIsFree(v)).map(v => v.name).join(", "), qty: b.rooms, unit: b.perRoom, amount: b.rooms * b.perRoom});
-    lines = lines.filter(l => l.amount > 0);
-  }
+  const lines = (dep && Array.isArray(dep.lines) && dep.lines.length) ? dep.lines : freshDepositLines();
   const depTotal = dep && dep.total ? Number(dep.total) : lines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
   const credit = dep ? (dep.credit > 0 ? Number(dep.credit) : 0)
     : (prev && prev.status === "paid" ? Math.min(depTotal, Number(prev.paid || prev.total || prev.amount) || 0) : 0);
@@ -5396,7 +5405,7 @@ function openDepositScreen(){
     : (dep && dep.number
         ? "Our functions team emails this invoice to " + (Q.email || "you") + ". Please quote " + Q.num + " when you pay."
         : (cd.prev && cd.prev.number
-            ? "This is your updated deposit for the selection you just sent. It replaces invoice " + cd.prev.number + ", so please pay this amount instead. Our functions team will email the updated invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay."
+            ? "This is your updated deposit for your latest booking details. It replaces invoice " + cd.prev.number + ", so please pay this amount instead. Our functions team will email the updated invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay."
             : "Your invoice number and reservation number are being created now. Our functions team will email the invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay."));
   note.textContent = msg; note.style.display = "block";
   document.getElementById("depTitle").textContent = "Deposit invoice" + (dep && dep.number ? " " + dep.number : "") + " · Quote " + Q.num;
@@ -6259,7 +6268,7 @@ function renderClient(){
   const nb = document.getElementById("negoBook");
   if(nb) nb.addEventListener("click", doStaffResubmit);
   const ns = document.getElementById("negoSave");
-  if(ns) ns.addEventListener("click", doSaveQuote);
+  if(ns) ns.addEventListener("click", () => doSaveQuote({linkOnly: true}));
 
   /* ---------- staff-only in-place editing (never active on the organiser's page) ---------- */
   if(!CLIENT_MODE){
@@ -6603,7 +6612,7 @@ function renderEditBar(){
         '<button id="editBarEmail">Email quote again</button>') +
     '<button id="editBarClose" class="dis" title="Leave the quote as last saved and start a fresh one">Close without saving</button>';
   bar.style.display = "flex";
-  document.getElementById("editBarSave").addEventListener("click", doSaveQuote);
+  document.getElementById("editBarSave").addEventListener("click", () => doSaveQuote({linkOnly: !!document.getElementById("editBarBook")}));
   const eb = document.getElementById("editBarEmail");
   if(eb) eb.addEventListener("click", doEmail);
   const bk = document.getElementById("editBarBook");
@@ -6929,7 +6938,15 @@ function doSend(){
 }
 /* save the quote as it stands, without marking it sent or opening an email.
    For an already-sent quote this also refreshes what the client's link shows. */
-function doSaveQuote(){
+function doSaveQuote(opts){
+  const linkOnly = !!(opts && opts.linkOnly);
+  /* a booked quote whose cabins, venues, meals, dates or details changed: the RMS
+     booking and the organiser's deposit invoice must follow, so save it through the
+     staff update path instead */
+  if((isBookedStatus(Q.status) || Q.accepted) && Q.submittedSel && submitDirty()){
+    if(!linkOnly){ doStaffResubmit(); return; }
+    if(!confirm("You changed what " + (Q.org || Q.contact || "the group") + " booked. Saving to their link only leaves RMS and the deposit invoice as they are, and their deposit letter will say a new invoice is being issued.\n\nPress OK to save to their link only, or Cancel and use Save & update booking + invoice instead.")) return;
+  }
   /* this updates what the client's link shows, so a sent quote gets the same
      accommodation pricing check as Email quote and Mark as sent */
   if(Q.sentAt && !readyToSend()) return;
