@@ -515,6 +515,9 @@
   .depscreen .depbar b{flex:1 1 auto; font-size:15px}
   .depscreen .depbar button{appearance:none; border:1px solid rgba(255,255,255,.6); background:transparent; color:#fff; border-radius:7px; padding:7px 12px; font-size:13.5px; cursor:pointer}
   .depscreen .depbar button.solid{background:#fff; color:#0b5c8e; border-color:#fff; font-weight:700}
+  .depscreen .depbar button.billbtn{background:#fff; border:2px solid #0b5c8e; color:#0b5c8e; font-weight:700}
+  .depwarn{background:#fdecea; border:1.5px solid #c62828; color:#8e1c1c; border-radius:8px; padding:7px 10px; margin:6px 0; font-size:13px; line-height:1.6}
+  .depwarn button{margin-left:6px; padding:3px 10px; font-size:12.5px}
   .depscreen .depbar button.changebtn{background:#f28c28; border-color:#f28c28; color:#fff; font-weight:700; font-size:14.5px; padding:9px 16px}
   .depscreen .depbar button.changebtn:hover{background:#e07a14}
   .changebox.flash{animation:chflash 1.6s ease 2}
@@ -1222,6 +1225,7 @@
 <div class="depscreen" id="depScreen" role="dialog" aria-label="Deposit invoice">
   <div class="depbar"><b id="depTitle">Your deposit invoice</b>
     <button type="button" class="changebtn" id="depChange">✎ Need to make changes? Click here</button>
+    <button type="button" class="billbtn" id="depBill">Full current bill</button>
     <button type="button" id="depPrint">Print / save as PDF</button>
     <button type="button" id="depBack">View my quote</button>
   </div>
@@ -4655,7 +4659,7 @@ function renderKdRows(){
   if(a && a.isContentEditable && box.contains(a)) return;   /* a line is being typed in */
   const showPrices = (Q.priceMode || "full") !== "noprices";
   const on = !!(Q.features && Q.features.depositDates);
-  box.innerHTML = shortNoticeHTML() +
+  box.innerHTML = depRuleWarnHTML() + shortNoticeHTML() +
     keyDatesHTML(showPrices, true, true) +
     (on
       ? ''
@@ -4670,6 +4674,7 @@ function renderKdRows(){
     refresh();
     showToast("Money & key dates will now appear on the organiser's page and the PDF.");
   });
+  bindDepFix(box);
 }
 /* the house rules, shared with every computer through the tracker sheet */
 function renderKdDefaults(){
@@ -5234,6 +5239,9 @@ const INV_LOGO = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwM
         credits: [{label, amount}], message, schedule: [string], preparedBy, draft,
         plan: {quoteTotal, payments: [{label, due, amount, note}]}} */
 function wslrDepositInvoiceHtml(d) {
+  /* d.kind "bill": the whole booking as it stands (title, labels and terms change) */
+  var bill = d.kind === "bill";
+  var title = d.title || (bill ? "FULL CURRENT BILL" : "DEPOSIT INVOICE");
   var e = function (s) { return String(s === undefined || s === null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); };
   var m = function (n) { n = Math.round((Number(n) || 0) * 100) / 100; var neg = n < 0; var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); return (neg ? "-$" : "$") + s; };
   var biz = {name: "Wollongong Surf Leisure Resort", abn: "48 155 637 442", address: "201 Pioneer Road, Fairy Meadow NSW 2519",
@@ -5242,7 +5250,7 @@ function wslrDepositInvoiceHtml(d) {
   var groups = d.groups || [];
   var subtotal = 0;
   groups.forEach(function (g) { (g.lines || []).forEach(function (l) { subtotal += Number(l.amount) || 0; }); });
-  var gst = Math.round(subtotal / 11 * 100) / 100;
+  var gst = (d.gst !== undefined && d.gst !== null) ? Math.round(Number(d.gst) * 100) / 100 : Math.round(subtotal / 11 * 100) / 100;
   var balance = subtotal;
   (d.credits || []).forEach(function (c) { balance -= Number(c.amount) || 0; });
   var css = "body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;color:#1c2b36;margin:0;padding:24px 28px;background:#fff}" +
@@ -5257,15 +5265,15 @@ function wslrDepositInvoiceHtml(d) {
     ".pay{margin-top:16px;border:1px solid #c9d4dc;background:#f7fafc;padding:9px 12px;font-size:10pt;line-height:1.5}" +
     ".terms{margin-top:14px;font-size:8.5pt;color:#556;line-height:1.4}.msg{margin-top:12px;font-size:10pt;line-height:1.45;border-left:3px solid #f28c28;padding-left:10px}" +
     "tr{page-break-inside:avoid}@media (max-width:600px){body{padding:14px}.hdr td,.two>tbody>tr>td{display:block;width:auto!important;text-align:left}.biz{text-align:left;margin-top:8px}.two .box{margin-top:10px}}";
-  var h = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>" + e(d.number || "Deposit invoice") + "</title><style>" + css + "</style></head><body>";
+  var h = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>" + e(d.number || title) + "</title><style>" + css + "</style></head><body>";
   h += "<table class=\"hdr\" style=\"width:100%\"><tr><td style=\"width:55%\">" + (d.logo ? "<img src=\"" + d.logo + "\" alt=\"" + e(biz.name) + "\" style=\"height:92px;width:auto\">" : "<b style=\"font-size:16pt;color:#0b5c8e\">" + e(biz.name) + "</b>") + "</td>" +
     "<td class=\"biz\"><b>" + e(biz.name) + "</b><br>ABN " + e(biz.abn) + "<br>" + e(biz.address) + "<br>" + e(biz.phone) + " &nbsp;|&nbsp; " + e(biz.email) + " &nbsp;|&nbsp; " + e(biz.web) + "</td></tr></table>";
-  h += "<div class=\"title\">DEPOSIT INVOICE</div>";
+  h += "<div class=\"title\">" + e(title) + "</div>";
   var b = d.bill || {};
   h += "<table class=\"two\" style=\"width:100%\"><tr><td style=\"width:50%;padding-right:16px\"><table class=\"meta\">" +
-    "<tr><td class=\"k\">Invoice number</td><td><b>" + e(d.number || "") + "</b></td></tr>" +
-    "<tr><td class=\"k\">Invoice date</td><td>" + e(d.date || "") + "</td></tr>" +
-    "<tr><td class=\"k\">Due date</td><td><b>" + e(d.due || "") + "</b></td></tr>" +
+    (d.number ? "<tr><td class=\"k\">" + (bill ? "Deposit invoice" : "Invoice number") + "</td><td><b>" + e(d.number) + "</b></td></tr>" : "") +
+    "<tr><td class=\"k\">" + (bill ? "Date" : "Invoice date") + "</td><td>" + e(d.date || "") + "</td></tr>" +
+    "<tr><td class=\"k\">" + (bill ? "Payments due" : "Due date") + "</td><td><b>" + e(d.due || "") + "</b></td></tr>" +
     "<tr><td class=\"k\">Reservation</td><td>" + e(d.reservation || "") + (d.reservationNote ? " (" + e(d.reservationNote) + ")" : "") + "</td></tr>" +
     (d.stay ? "<tr><td class=\"k\">Stay</td><td>" + e(d.stay) + "</td></tr>" : "") +
     (d.quoteNum ? "<tr><td class=\"k\">Your reference</td><td>Quote " + e(d.quoteNum) + "</td></tr>" : "") +
@@ -5281,9 +5289,9 @@ function wslrDepositInvoiceHtml(d) {
   if (!groups.length) h += "<tr><td colspan=\"4\" style=\"color:#667\">No lines</td></tr>";
   h += "</table>";
   h += "<table class=\"tot\" style=\"width:100%;margin-top:6px\"><tr><td style=\"width:38%\"></td><td class=\"lbl\">Subtotal (includes GST)</td><td class=\"r\" style=\"width:110px\">" + m(subtotal) + "</td></tr>" +
-    "<tr><td></td><td class=\"lbl\" style=\"color:#667\">GST included</td><td class=\"r\" style=\"color:#667\">" + m(gst) + "</td></tr>";
+    "<tr><td></td><td class=\"lbl\" style=\"color:#667\">GST included" + (bill ? " (after discounts)" : "") + "</td><td class=\"r\" style=\"color:#667\">" + m(gst) + "</td></tr>";
   (d.credits || []).forEach(function (c) { h += "<tr><td></td><td class=\"lbl\">" + e(c.label) + "</td><td class=\"r\">" + m(-c.amount) + "</td></tr>"; });
-  h += "<tr class=\"big\"><td></td><td class=\"lbl\">BALANCE DUE</td><td class=\"r\">" + m(balance) + "</td></tr></table>";
+  h += "<tr class=\"big\"><td></td><td class=\"lbl\">" + e(d.balanceLabel || "BALANCE DUE") + "</td><td class=\"r\">" + m(balance) + "</td></tr></table>";
   /* the whole booking: the quoted total and every payment that makes it up */
   if (d.plan && d.plan.payments && d.plan.payments.length) {
     var sumPay = 0;
@@ -5308,10 +5316,11 @@ function wslrDepositInvoiceHtml(d) {
     "<b>Bank transfer</b>: " + e(bank.name) + ", BSB " + e(bank.bsb) + ", account " + e(bank.acc) + ". " +
     "Please quote <b>" + e(ref || "your quote number") + "</b> as the payment reference.<br>" +
     "<b>Card</b>: Payments can be taken over the phone on 02 4283 6999, and we can also send you a secure payment link.<br>" +
-    "Due <b>" + e(d.due || "") + "</b>. Questions: " + e(biz.email) + " or " + e(biz.phone) + "." +
+    (bill ? "" : "Due <b>" + e(d.due || "") + "</b>. ") + "Questions: " + e(biz.email) + " or " + e(biz.phone) + "." +
     "<div style=\"font-size:8pt;color:#667;margin-top:4px\">We do not accept American Express.</div></div>";
-  h += "<div class=\"terms\">Please pay by the due date and quote " + e(ref || "your quote number") + " as the payment reference. Your booking is held as unconfirmed until this deposit is received, and the deposit is credited to your final account. Group bookings are held subject to our group booking terms, which were provided with your quote.</div>";
-  h += "<div class=\"terms\" style=\"margin-top:6px\">Deposit invoice" + (/\d/.test(String(d.number || "")) ? " " + e(d.number) : "") + (d.preparedBy ? ", prepared by " + e(d.preparedBy) : "") + ", " + e(d.date || "") + ". " + e(biz.name) + ".</div>";
+  if (bill) h += "<div class=\"terms\">This is not a tax invoice. It shows your whole booking as it stands today, priced from your current selection. The amounts due and their dates are in the payment plan above; the final account is prepared before arrival and may change if numbers change. Group bookings are held subject to our group booking terms, which were provided with your quote.</div>";
+  else h += "<div class=\"terms\">Please pay by the due date and quote " + e(ref || "your quote number") + " as the payment reference. Your booking is held as unconfirmed until this deposit is received, and the deposit is credited to your final account. Group bookings are held subject to our group booking terms, which were provided with your quote.</div>";
+  h += "<div class=\"terms\" style=\"margin-top:6px\">" + (bill ? "Full current bill for" : "Deposit invoice") + (/\d/.test(String(d.number || "")) ? " " + e(d.number) : "") + (d.preparedBy ? ", prepared by " + e(d.preparedBy) : "") + ", " + e(d.date || "") + ". " + e(biz.name) + ".</div>";
   h += "</body></html>";
   return h;
 }
@@ -5335,8 +5344,41 @@ function currentDeposit(){
 }
 function depLinesKey(lines){
   const m = {};
-  (lines || []).forEach(l => { const k = String(l.desc || ""); m[k] = (m[k] || 0) + (Number(l.qty) || 0); });
+  (lines || []).forEach(l => { const k = String(l.desc || "") + "@" + (Number(l.unit) || 0); m[k] = (m[k] || 0) + (Number(l.qty) || 0); });
   return Object.keys(m).filter(k => m[k] > 0).sort().map(k => k + "=" + m[k]).join("|");
+}
+/* staff: a deposit that is not the standard $100 per cabin / $50 per site is flagged,
+   so a stray number (a sundry code typed in the wrong box, say) is caught before it is invoiced */
+function depRuleWarnHTML(){
+  if(CLIENT_MODE) return '';
+  const c = kdCfg(), u = unitsSplit();
+  const house = kdClean(getDefaults().keydates), mine = kdClean(Q.kdCfg);
+  const bits = [];
+  const chk = (k, label, n) => {
+    if(!n || c[k] === KD_DEFAULTS[k]) return;
+    const src = (mine[k] !== undefined && mine[k] !== null && mine[k] !== "") ? "this quote's settings" : "the house rules on the Settings tab";
+    bits.push(money0(c[k]) + ' per ' + label + ' (standard ' + money0(KD_DEFAULTS[k]) + ', set in ' + src + ')');
+  };
+  chk("depositPer", "cabin", u.cabins);
+  chk("depositSite", "campsite", u.sites);
+  if(!bits.length) return '';
+  const fixable = ["depositPer", "depositSite"].some(k => { const v = kdClean(Q.kdCfg)[k]; return v !== undefined && v !== null && v !== "" && Number(v) !== KD_DEFAULTS[k]; });
+  return '<div class="depwarn staffedit-ui">⚠ <b>Check the deposit:</b> ' + esc(bits.join('; ')) + '.' +
+    (fixable ? '<button type="button" class="btn ghost depFixStd">Use the standard deposit</button>' : '') + '</div>';
+}
+function bindDepFix(root){
+  (root || document).querySelectorAll(".depFixStd").forEach(b => b.addEventListener("click", () => {
+    if(Q.kdCfg){ delete Q.kdCfg.depositPer; delete Q.kdCfg.depositSite; }
+    autosaveDraft();
+    refresh();
+    showToast("Deposit set back to " + money0(KD_DEFAULTS.depositPer) + " per cabin and " + money0(KD_DEFAULTS.depositSite) + " per site. Save the quote to update their invoice.");
+  }));
+}
+/* the deposit issued no longer matches the rules on this quote (a per-cabin amount fixed, say) */
+function depositRulesChanged(){
+  const dep = (Q.rmsHold || {}).deposit;
+  if(!dep || dep.status === "cancelled" || dep.status === "paid" || !Array.isArray(dep.lines) || !dep.lines.length) return false;
+  return depLinesKey(dep.lines) !== depLinesKey(freshDepositLines());
 }
 /* the deposit lines for the selection as it stands now */
 function freshDepositLines(){
@@ -5395,7 +5437,67 @@ function depositInvoiceData(){
     preparedBy: "the WSLR quote tool"
   };
 }
+/* the whole booking as it stands: every line of the current selection, the
+   discounts, what has been paid and the payment plan */
+function fullBillData(){
+  const d = depositInvoiceData();
+  const t = totals();
+  const cd = currentDeposit();
+  const groups = [{label: "Accommodation", lines: []}, {label: "Conference rooms", lines: []}, {label: "Catering", lines: []}, {label: "Other items", lines: []}];
+  displayLines().forEach(l => {
+    const u = String(l.unit || "");
+    const g = /^per unit/.test(u) ? 0 : (u === "per day" || u === "per half day") ? 1 : (!l.fixed && /per (person|meal)/.test(u)) ? 2 : 3;
+    const qty = Number(l.qty) || 0;
+    const amount = Math.round((Number(l.total) || 0) * 100) / 100;
+    const bits = [];
+    if(g === 0) bits.push(u.replace(/^per unit for /, ""));
+    if(l.nights > 1) bits.push("× " + l.nights + " " + (l.nightsWord || "days"));
+    if(l.when) bits.push(l.when);
+    groups[g].lines.push({desc: l.name, sub: bits.join(" · "), qty: qty, unit: qty ? Math.round(amount / qty * 100) / 100 : amount, amount: amount});
+  });
+  const credits = [];
+  if(t.church > 0) credits.push({label: "Church & not-for-profit discount (" + t.churchPct + "%)", amount: Math.round(t.church * 100) / 100});
+  (t.discLines || []).forEach(x => credits.push({label: x.label, amount: Math.round(x.amount * 100) / 100}));
+  const dep = cd.dep || cd.prev;
+  const paid = dep && dep.status === "paid" ? (Number(dep.paid) || Number(dep.total) || Number(dep.amount) || 0) : 0;
+  if(paid > 0) credits.push({label: "Less deposit received" + (dep.number ? " (" + dep.number + ")" : ""), amount: paid});
+  return Object.assign({}, d, {
+    kind: "bill",
+    gst: t.gst,
+    plan: Object.assign({}, d.plan, {payments: (d.plan.payments || []).map((x, i) => i === 0 ? Object.assign({}, x, {label: String(x.label).replace("(this invoice, ", "(invoice ").replace("(this invoice)", "")}) : x)}),
+    number: cd.dep && cd.dep.number ? cd.dep.number : "",
+    date: new Date().toLocaleDateString("en-AU", {day: "numeric", month: "short", year: "numeric"}),
+    due: "As set out in the payment plan",
+    groups: groups.filter(g => g.lines.length),
+    credits: credits,
+    balanceLabel: paid > 0 ? "BALANCE OF BOOKING" : "TOTAL OF BOOKING",
+    message: "Your whole booking as it stands today. It updates whenever your selection changes."
+  });
+}
+let DEP_VIEW = "deposit";
+function showDepView(view){
+  DEP_VIEW = view === "bill" ? "bill" : "deposit";
+  const btn = document.getElementById("depBill");
+  if(btn) btn.textContent = DEP_VIEW === "bill" ? "Back to deposit invoice" : "Full current bill";
+  const frame = document.getElementById("depFrame");
+  if(DEP_VIEW === "bill"){
+    document.getElementById("depTitle").textContent = "Full current bill · Quote " + Q.num;
+    frame.srcdoc = wslrDepositInvoiceHtml(fullBillData());
+    const note = document.getElementById("depNote");
+    note.textContent = "Everything in your booking as it stands now. Pay the deposit invoice first; the later payments are in the payment plan.";
+    note.style.display = "block";
+  } else openDepositScreen();
+}
+/* a number box must not change when the page is scrolled over it (that is how a
+   deposit can quietly move from $100) */
+document.addEventListener("wheel", e => {
+  const t = e.target;
+  if(t && t.tagName === "INPUT" && t.type === "number" && document.activeElement === t) t.blur();
+}, {passive: true});
 function openDepositScreen(){
+  DEP_VIEW = "deposit";
+  const bb = document.getElementById("depBill");
+  if(bb) bb.textContent = "Full current bill";
   const scr = document.getElementById("depScreen");
   if(!scr) return;
   const cd = currentDeposit();
@@ -5421,6 +5523,8 @@ function closeDepositScreen(){
 (function(){
   const back = document.getElementById("depBack"), pr = document.getElementById("depPrint");
   if(back) back.addEventListener("click", closeDepositScreen);
+  const billBtn = document.getElementById("depBill");
+  if(billBtn) billBtn.addEventListener("click", () => showDepView(DEP_VIEW === "bill" ? "deposit" : "bill"));
   const chg = document.getElementById("depChange");
   if(chg) chg.addEventListener("click", () => {
     closeDepositScreen();
@@ -6035,7 +6139,7 @@ function renderClient(){
       '<button type="button" class="btn accept" id="negoBook">Save &amp; update booking + invoice</button> ' +
       '<button type="button" class="btn ghost" id="negoSave">Save to their link only</button></div>'
     : '';
-  document.getElementById("quotePage").innerHTML = staffNego +
+  document.getElementById("quotePage").innerHTML = (staffNego ? staffNego.replace(/<\/div>$/, depRuleWarnHTML() + '</div>') : '') +
     '<div class="qp-head">' +
       '<div class="qp-brand">' + LOGO_QP + '<div class="qp-tag">FUNCTIONS &amp; EVENTS</div>' +
         '<div class="qp-addr">' + VENUE_ADDR1 + '<br>' + VENUE_ADDR2 + '<br>' + VENUE_ABN + '</div></div>' +
@@ -6265,6 +6369,7 @@ function renderClient(){
   if(sb) sb.addEventListener("click", doSubmit);
   const dob = document.getElementById("depOpenBtn");
   if(dob) dob.addEventListener("click", openDepositScreen);
+  bindDepFix(document.getElementById("quotePage"));
   const nb = document.getElementById("negoBook");
   if(nb) nb.addEventListener("click", doStaffResubmit);
   const ns = document.getElementById("negoSave");
@@ -6943,7 +7048,7 @@ function doSaveQuote(opts){
   /* a booked quote whose cabins, venues, meals, dates or details changed: the RMS
      booking and the organiser's deposit invoice must follow, so save it through the
      staff update path instead */
-  if((isBookedStatus(Q.status) || Q.accepted) && Q.submittedSel && submitDirty()){
+  if((isBookedStatus(Q.status) || Q.accepted) && Q.submittedSel && (submitDirty() || depositRulesChanged())){
     if(!linkOnly){ doStaffResubmit(); return; }
     if(!confirm("You changed what " + (Q.org || Q.contact || "the group") + " booked. Saving to their link only leaves RMS and the deposit invoice as they are, and their deposit letter will say a new invoice is being issued.\n\nPress OK to save to their link only, or Cancel and use Save & update booking + invoice instead.")) return;
   }
