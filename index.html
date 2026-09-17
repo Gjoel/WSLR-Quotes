@@ -5311,9 +5311,22 @@ function wslrDepositInvoiceHtml(d) {
 
 /* the deposit invoice as the organiser sees it after submitting: the same layout,
    lines and schedule as the PDF the server emails (Deposit.gs) */
-function depositInvoiceData(){
+/* the deposit invoice that matches the LATEST submission. An invoice raised before the
+   organiser last submitted is out of date: the new one is on its way, so the screen is
+   built from the current selection and says which invoice it replaces. */
+function currentDeposit(){
   const h = Q.rmsHold || {};
   const dep = h.deposit || null;
+  if(!dep) return {dep: null, prev: null};
+  const sent = Date.parse(dep.sentAt || dep.at || "") || 0;
+  const subm = Date.parse(Q.submittedAt || "") || 0;
+  if(subm && (!sent || sent < subm)) return {dep: null, prev: dep};
+  return {dep: dep, prev: null};
+}
+function depositInvoiceData(){
+  const h = Q.rmsHold || {};
+  const cd = currentDeposit();
+  const dep = cd.dep, prev = cd.prev;
   const b = depositBreakdown();
   const c = kdCfg();
   const issued = dep && dep.sentAt ? isoDate(new Date(dep.sentAt)) : isoDate(Q.submittedAt ? new Date(Q.submittedAt) : today);
@@ -5331,7 +5344,8 @@ function depositInvoiceData(){
     lines = lines.filter(l => l.amount > 0);
   }
   const depTotal = dep && dep.total ? Number(dep.total) : lines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
-  const credit = dep && dep.credit > 0 ? Number(dep.credit) : 0;
+  const credit = dep ? (dep.credit > 0 ? Number(dep.credit) : 0)
+    : (prev && prev.status === "paid" ? Math.min(depTotal, Number(prev.paid || prev.total || prev.amount) || 0) : 0);
   const total = totals().total;
   const half = b.halfAmount || 0;
   const halfDue = Q.dateStart ? isoAddDays(Q.dateStart, -c.halfDays) : "";
@@ -5349,7 +5363,7 @@ function depositInvoiceData(){
   const units = b.cabins + b.sites;
   return {
     logo: INV_LOGO,
-    number: dep && dep.number ? dep.number : "Being issued",
+    number: dep && dep.number ? dep.number : (prev && prev.number ? "Being issued (replaces " + prev.number + ")" : "Being issued"),
     date: short(issued),
     due: short(due),
     reservation: h.groupId ? String(h.groupId) : "Being created",
@@ -5368,13 +5382,15 @@ function depositInvoiceData(){
 function openDepositScreen(){
   const scr = document.getElementById("depScreen");
   if(!scr) return;
-  const h = Q.rmsHold || {};
-  const dep = h.deposit || null;
+  const cd = currentDeposit();
+  const dep = cd.dep;
   const note = document.getElementById("depNote");
   const msg = dep && dep.status === "paid" ? "✓ Deposit received, thank you. Your booking is being confirmed."
     : (dep && dep.number
         ? "Our functions team emails this invoice to " + (Q.email || "you") + ". Please quote " + Q.num + " when you pay."
-        : "Your invoice number and reservation number are being created now. Our functions team will email the invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay.");
+        : (cd.prev && cd.prev.number
+            ? "This is your updated deposit for the selection you just sent. It replaces invoice " + cd.prev.number + ", so please pay this amount instead. Our functions team will email the updated invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay."
+            : "Your invoice number and reservation number are being created now. Our functions team will email the invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay."));
   note.textContent = msg; note.style.display = "block";
   document.getElementById("depTitle").textContent = "Deposit invoice" + (dep && dep.number ? " " + dep.number : "") + " · Quote " + Q.num;
   document.getElementById("depFrame").srcdoc = wslrDepositInvoiceHtml(depositInvoiceData());
