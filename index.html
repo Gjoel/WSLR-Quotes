@@ -221,6 +221,24 @@
   .fromres{display:inline-flex; gap:0; align-items:stretch}
   .fromres input{width:92px; border:1px solid var(--line, #c9d4dc); border-right:0; border-radius:8px 0 0 8px; padding:6px 8px; font:inherit}
   .fromres .btn{border-radius:0 8px 8px 0}
+  .resprog{background:#fff; border:1.5px solid #1f5fae; border-radius:10px; padding:10px 14px; margin:0 0 12px}
+  .resprog-top{display:flex; justify-content:space-between; gap:10px; font-size:14px; color:#0f2d4a}
+  .resprog-top span{color:#6b7580; font-variant-numeric:tabular-nums}
+  .resprog-bar{height:8px; background:#e8eef5; border-radius:6px; overflow:hidden; margin:8px 0}
+  .resprog-bar span{display:block; height:100%; width:0; border-radius:6px; transition:width .35s ease;
+    background:repeating-linear-gradient(45deg, #1f5fae 0 10px, #3b7dd0 10px 20px); background-size:28px 28px; animation:resprog 0.9s linear infinite}
+  @keyframes resprog{from{background-position:0 0} to{background-position:28px 0}}
+  .resprog.err .resprog-bar span{background:#c62828; animation:none}
+  .resprog-steps{margin:0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:4px 16px; font-size:12.5px; color:#6b7580}
+  .resprog-steps li::before{content:"○ "; }
+  .resprog-steps li.on{color:#1f5fae; font-weight:700}
+  .resprog-steps li.on::before{content:"◌ "; display:inline-block; animation:resspin 1s linear infinite}
+  .resprog-steps li.done{color:#2e7d32}
+  .resprog-steps li.done::before{content:"✓ "}
+  .resprog-steps li.bad{color:#c62828}
+  .resprog-steps li.bad::before{content:"✕ "}
+  @keyframes resspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){.resprog-bar span,.resprog-steps li.on::before{animation:none}}
   .restorebar.reslink{background:#e8f0fb; border-color:#1f5fae}
   .restorebar{
     background:rgba(42,120,214,.08); border:1px solid rgba(42,120,214,.3); border-radius:10px;
@@ -872,6 +890,11 @@
     <div id="restoreBar" class="restorebar" style="display:none"></div>
     <div id="editBar" class="restorebar" style="display:none"></div>
     <div id="resLinkBar" class="restorebar reslink" style="display:none"></div>
+    <div id="resProgress" class="resprog" role="status" aria-live="polite" hidden>
+      <div class="resprog-top"><b id="resProgTitle">Reading the booking from RMS</b><span id="resProgTime"></span></div>
+      <div class="resprog-bar"><span id="resProgFill"></span></div>
+      <ol class="resprog-steps" id="resProgSteps"></ol>
+    </div>
     <div id="importBar" class="restorebar" style="display:none"></div>
 
     <div class="grid2">
@@ -7693,12 +7716,25 @@ function rmsAsAt(iso){
 }
 let RMS_PULLING = false, RMS_PULL_TIMER = null, RMS_AUTO_SIG = "", RMS_CHECK = {}, RMS_CHECK_AT = 0, RMS_CHECK_BUSY = false;
 let RMS_CAT_BUSY = false;
+/* Google answers with its own HTML page when the script itself fails (not deployed as a
+   new version, a file that did not paste completely, or a run that took too long) */
+function googleErrorText(txt){
+  const plain = String(txt || "").replace(/<(style|script)[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+  const said = plain.replace(/^.*?(Google Apps Script|Error)\s*/i, "").slice(0, 220);
+  return "the quote server sent back a Google error page instead of an answer" + (said ? " (it says: " + said + ")" : "") +
+    ". Usually this means the Apps Script files were pasted but not deployed (Deploy > Manage deployments > edit > Version: New version), or one file did not paste completely";
+}
 function rmsGet(params){
   const url = sheetEndpoint();
   if(!url) return Promise.reject(new Error("no sheet endpoint"));
   const qs = Object.keys(params).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k])).join("&");
   return fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + qs + "&token=" + encodeURIComponent(SHEET_TOKEN))
-    .then(r => r.json())
+    .then(r => r.text())
+    .then(txt => {
+      try{ return JSON.parse(txt); }
+      catch(e){ throw new Error(googleErrorText(txt)); }
+    })
     .then(data => {
       if(!data || !data.ok) throw new Error((data && data.error) || "RMS request failed");
       return data;
@@ -8171,6 +8207,28 @@ function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVe
    the quote is first saved, so accepting it updates that same group instead of
    making a new one, and money already paid comes off the deposit invoice. */
 let RES_LOADING = false;
+/* the progress panel: steps light up in turn, the bar fills, a timer runs */
+const RES_STEPS = ["Connecting to RMS", "Reading the group and organiser", "Rates already on the booking", "Payments already received", "Filling in the quote"];
+let RES_TIMER = null;
+function resProgress(step, opts){
+  const box = document.getElementById("resProgress");
+  if(!box) return;
+  opts = opts || {};
+  if(step < 0){ box.hidden = true; clearInterval(RES_TIMER); return; }
+  box.hidden = false;
+  box.classList.toggle("err", !!opts.error);
+  if(opts.title) document.getElementById("resProgTitle").textContent = opts.title;
+  document.getElementById("resProgSteps").innerHTML = RES_STEPS.map((t, i) =>
+    '<li class="' + (opts.error && i === step ? 'bad' : i < step ? 'done' : i === step && !opts.done ? 'on' : opts.done ? 'done' : '') + '">' + esc(t) + '</li>').join('');
+  const pct = opts.done ? 100 : Math.round((step + 0.5) / RES_STEPS.length * 100);
+  document.getElementById("resProgFill").style.width = pct + "%";
+  if(step === 0 && !opts.done && !opts.error){
+    const t0 = Date.now();
+    const tick = () => { const el = document.getElementById("resProgTime"); if(el) el.textContent = Math.round((Date.now() - t0) / 1000) + "s"; };
+    clearInterval(RES_TIMER); tick(); RES_TIMER = setInterval(tick, 500);
+  }
+  if(opts.done || opts.error) clearInterval(RES_TIMER);
+}
 function quoteFromRes(){
   if(CLIENT_MODE || RES_LOADING) return;
   const inp = document.getElementById("fromResNo");
@@ -8179,17 +8237,48 @@ function quoteFromRes(){
   if(!getRmsSettings().enabled) setRmsSettings({enabled: true});
   const btn = document.getElementById("fromResBtn");
   RES_LOADING = true;
-  if(btn){ btn.disabled = true; btn.textContent = "Reading RMS…"; }
+  if(btn){ btn.disabled = true; btn.textContent = "Working…"; }
   const finish = () => { RES_LOADING = false; if(btn){ btn.disabled = false; btn.textContent = "Quote on existing booking"; } };
-  ensureRmsCatalog(false).then(() => rmsGet({rms: "existing", res: res})).then(g => {
-    finish();
-    if(g.linkedQuote && !confirm("RMS group " + g.groupId + " is already on quote " + g.linkedQuote + ". Make another quote on it anyway?")) return;
-    applyResBooking(g);
-    if(inp) inp.value = "";
-  }).catch(e => {
-    finish();
-    showToast("Could not read that booking from RMS: " + e.message, true);
-  });
+  let step = 0, g = null;
+  const go = n => { step = n; resProgress(n, {title: "Reading RMS booking " + res}); };
+  go(0);
+  ensureRmsCatalog(false)
+    .then(() => { go(1); return rmsGet({rms: "existing", part: "group", res: res}); })
+    .then(data => {
+      g = data;
+      if(g.linkedQuote && !confirm("RMS group " + g.groupId + " is already on quote " + g.linkedQuote + ". Make another quote on it anyway?")) throw new Error("__stop");
+      go(2);
+      const units = g.rateUnits || [];
+      if(!units.length) return {resRates: {}};
+      /* the rates matter less than the booking itself: a failure here falls back to live rates */
+      return rmsGet({rms: "existing", part: "rates", ids: units.map(u => u.id + ":" + u.itemId).join(",")})
+        .catch(e => ({resRates: {}, rateSource: "failed: " + e.message}));
+    })
+    .then(r => {
+      g.resRates = r.resRates || {};
+      g.rateSource = r.rateSource || "";
+      go(3);
+      const ids = g.memberIds || [];
+      return rmsGet({rms: "existing", part: "paid", res: String(g.groupId), ids: ids.join(",")})
+        .catch(e => ({paid: 0, paidError: e.message}));
+    })
+    .then(p => {
+      g.paid = Number(p.paid) || 0;
+      if(p.paidError) g.paidError = p.paidError;
+      go(4);
+      applyResBooking(g);
+      resProgress(4, {done: true, title: "Quote " + Q.num + " filled in from RMS group " + g.groupId});
+      setTimeout(() => resProgress(-1), 2500);
+      finish();
+      if(inp) inp.value = "";
+    })
+    .catch(e => {
+      finish();
+      if(e && e.message === "__stop"){ resProgress(-1); return; }
+      resProgress(step, {error: true, title: "Could not read RMS booking " + res});
+      setTimeout(() => resProgress(-1), 12000);
+      showToast("Could not read that booking from RMS: " + e.message, true);
+    });
 }
 function applyResBooking(g){
   const note = keepCurrentQuote();
@@ -8235,7 +8324,8 @@ function applyResBooking(g){
   if(rmsWindow() && !(stayNightsList().slice(-1)[0] < isoDate(today))) pullRmsRates(false);
   const bits = [(g.accom || []).reduce((t, a) => t + a.qty, 0) + " cabins & sites", Object.keys(g.venues || {}).length + " room" + (Object.keys(g.venues || {}).length === 1 ? "" : "s")];
   showToast("Started " + Q.num + " on RMS group " + g.groupId + ": " + bits.join(", ") + (g.paid > 0 ? ", " + money(g.paid) + " already paid" : "") +
-    (skipped.length ? ". Not filled in: " + skipped.join(", ") : "") + "." + note);
+    (skipped.length ? ". Not filled in: " + skipped.join(", ") : "") + "." +
+    (g.paidError ? " Payments could not be checked (" + g.paidError + "), so nothing is credited yet." : "") + note);
 }
 /* the blue bar on tab 1 while a quote sits on an existing RMS group */
 function renderResLink(){
