@@ -2658,9 +2658,9 @@ function schoolMealsOf(S){
     const meal = schoolAddon(id);
     if(!meal) return;
     const days = Array.isArray(m[id] && m[id].days) ? m[id].days.slice() : [];
-    if(!days.length) return;
-    /* the stay may have moved since the meal was picked: keep the days that still
-       exist, and if none do, the meal stays on for the whole of the new stay */
+    /* the stay may have moved since the meal was picked, or the template may have been
+       picked before the dates were typed in: keep the days that still exist, and if none
+       do, the meal stays on for the whole of the stay once there is one */
     const valid = schoolMealDays(meal.kind);
     const kept = days.filter(d => valid.indexOf(d) >= 0);
     out[id] = {days: (kept.length ? kept : valid).slice().sort()};
@@ -3880,7 +3880,8 @@ function selCaterSub(){
    6. catering numbers and final numbers due before arrival */
 const KD_VERSION = 3;
 const KD_DEFAULTS = {depositPer: 100, depositSite: 50, depositRoom: 0, depositDays: 7, halfPct: 50, halfDays: 90,
-  cateringDays: 10, finalDays: 10, bigUnits: 20, cancelPct: 20, cancelBigDays: 28, cancelDays: 10, holdDays: 14};
+  cateringDays: 10, finalDays: 10, bigUnits: 20, cancelPct: 20, cancelBigDays: 28, cancelDays: 10, holdDays: 14,
+  farMonths: 12, farDepositDays: 21};
 /* keys whose meaning changed with the 2026 rules: a value saved under the old rules is dropped */
 const KD_CHANGED = ["cateringDays", "finalDays", "bigUnits", "cancelDays"];
 function kdClean(o){
@@ -3906,7 +3907,25 @@ function kdCfg(){
     const n = Number(raw);
     out[k] = isNaN(n) ? KD_DEFAULTS[k] : n;
   });
+  /* an event a long way out is given longer to pay its deposit. A number typed on this
+     quote always wins; otherwise the far-out rule replaces the standard due date. */
+  const setHere = mine.depositDays !== undefined && mine.depositDays !== null && mine.depositDays !== "";
+  out.depositDaysBase = out.depositDays;
+  out.farApplied = false;
+  if(!setHere && out.farDepositDays > 0 && kdFarOut(out.farMonths)){
+    out.depositDays = out.farDepositDays;
+    out.farApplied = out.farDepositDays !== out.depositDaysBase;
+  }
   return out;
+}
+/* is the event further away than the far-out mark? (12 months by default) */
+function kdFarOut(months){
+  const m = Math.max(0, Number(months) || 0);
+  if(!m || !Q.dateStart) return false;
+  const mark = new Date(isoDate(today) + "T12:00:00");
+  mark.setMonth(mark.getMonth() + m);
+  const start = new Date(Q.dateStart + "T12:00:00");
+  return !isNaN(start) && start > mark;
 }
 function kdCfgEdited(){
   const mine = Q.kdCfg || {};
@@ -5477,6 +5496,7 @@ function kdFieldsHTML(c, cls, list){
     row("Per campsite", '<span class="kdu">$</span>' + f("depositSite", 10)) +
     row("Per conference room", '<span class="kdu">$</span>' + f("depositRoom", 10)) +
     row("Invoice due", f("depositDays") + '<span class="kdu">days after acceptance</span>') +
+    row("Events more than", f("farMonths") + '<span class="kdu">months away: due</span>' + f("farDepositDays") + '<span class="kdu">days after acceptance</span>', true) +
     grp("Part payment") +
     row("Share of accommodation", f("halfPct") + '<span class="kdu">%, due</span>' + f("halfDays") + '<span class="kdu">days before arrival</span>', true) +
     grp("Cancellation without penalty") +
@@ -5499,7 +5519,11 @@ function renderPrepKeyDates(){
   const wrap = document.getElementById("kdResetWrap");
   if(wrap) wrap.innerHTML = '<button type="button" class="pinreset kdcfgReset" style="display:' + (kdCfgEdited() ? 'inline' : 'none') + '; width:auto; padding:0">changed for this quote · back to the house rules</button>';
   host.innerHTML = '<div class="kdsplit">' +
-      '<div><div class="kdsublab">The rules</div>' + kdFieldsHTML(kdCfg(), "kdcfgInp", true) + '</div>' +
+      '<div><div class="kdsublab">The rules</div>' +
+        (kdCfg().farApplied
+          ? '<p class="hint" style="margin:0 0 8px">This event is more than ' + kdCfg().farMonths + ' months away, so the deposit invoice is given <b>' + leadPhrase(kdCfg().depositDays) + '</b> instead of the usual ' + leadPhrase(kdCfg().depositDaysBase) + '. Type over it to use a different number for this quote.</p>'
+          : '') +
+        kdFieldsHTML(kdCfg(), "kdcfgInp", true) + '</div>' +
       '<div id="kdRowsBox"></div>' +
     '</div>';
   host.querySelectorAll(".kdcfgInp").forEach(el => el.addEventListener("input", e => {
@@ -6595,15 +6619,18 @@ function changeZoneHTML(dirty, askBtn){
   const n = Array.isArray(Q.history) ? Q.history.length : 0;
   const last = Q.submittedAt ? new Date(Q.submittedAt) : null;
   const when = last && !isNaN(last) ? last.toLocaleDateString("en-AU", {day: "numeric", month: "short", year: "numeric"}) : "";
-  const block = !dirty ? ' disabled title="Change your rooms, days, meals or details above first"' : (miss.length ? ' disabled title="Add your postal address first"' : '');
+  const block = !dirty ? ' disabled title="Change your rooms, days, meals or details above first"'
+    : (schoolCallBlocks() ? ' disabled title="Please call us about your numbers first"'
+    : (miss.length ? ' disabled title="Add your postal address first"' : ''));
   return '<div class="changebox">' +
     '<b>Need to change something?</b> Change your rooms, days, meals, dates or details above, then press <b>Submit changes</b>. You can do this as many times as you need' +
     (bookingsOnSubmit() ? '; we update your booking and send you an updated deposit invoice' : '') + '.' +
     (Q.rmsHold && Q.rmsHold.deposit && Q.rmsHold.deposit.status === "paid" ? '<div class="changenote">Your deposit is paid. Reducing numbers may be subject to our cancellation conditions; we will confirm with you.</div>' : '') +
     (n || when ? '<div class="changemeta">' + (n ? 'Version ' + n : 'Submitted') + (when ? ' · last sent ' + esc(when) : '') + '</div>' : '') +
     '</div>' +
-    (dirty ? '<div class="tierwarn" style="text-align:center">You have made changes that we have not received yet.</div>' : '') +
-    (dirty && miss.length ? '<div class="tierwarn" style="text-align:center">Please add your postal address in <b>Your details</b> above (' + esc(miss.join(", ")) + ').</div>' : '') +
+    schoolCallBarHTML() +
+    (dirty && !schoolCallBlocks() ? '<div class="tierwarn" style="text-align:center">You have made changes that we have not received yet.</div>' : '') +
+    (dirty && miss.length && !schoolCallBlocks() ? '<div class="tierwarn" style="text-align:center">Please add your postal address in <b>Your details</b> above (' + esc(miss.join(", ")) + ').</div>' : '') +
     '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + block + '>Submit changes</button>' + askBtn + '</div>';
 }
 /* the versions the organiser has sent, newest first */
