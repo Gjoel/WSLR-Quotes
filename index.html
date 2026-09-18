@@ -2547,8 +2547,11 @@ const SCHOOL_TEACHER_ROOMS = ["acc_1br_std", "acc_motel_std", "acc_motel_bud"];
 const SCHOOL_PER_STUDENT = 4, SCHOOL_PER_TEACHER = 2;
 const SCHOOL_OFF = ["acc_4br_house", "acc_2br_ter", "acc_2br_bung", "acc_2br_std", "acc_1br_ter",
                     "camp_unpow", "camp_pow_wf", "camp_pow_dt"];
-/* the school prices for the extras the organiser can add on top of the package */
-const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, diet: 5};
+/* the school prices for the extras the organiser can add on top of the package.
+   Only the ones in SCHOOL_EXTRAS_ON are offered to start with; the rest keep their
+   school price for when staff tick them on by hand. */
+const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, din1: 30, diet: 5};
+const SCHOOL_EXTRAS_ON = ["bf_hot", "lunch_pack", "diet"];
 /* bed & breakfast is the base; every other meal is ticked on and priced per person for
    the days it is wanted, so a group can have dinner every night and one packed lunch. */
 const SCHOOL_BASE = {"Primary": 50, "High school": 55};
@@ -2718,7 +2721,7 @@ function schoolNumbers(sc, counts){
   const pack = Object.assign({}, sc, {counts: c});
   const pr = schoolPricing(pack, c);
   Q.lines = (Q.lines || []).filter(l => !/^School package|^School meal:/.test(String(l.desc || "")));
-  Q.lines.push({id: "custom", desc: schoolLineDesc(pack), qty: t.charged, price: pr.base, nights: pr.nights, unit: "per person per night", room: true});
+  Q.lines.push({id: "custom", desc: schoolLineDesc(pack), qty: t.charged, price: pr.base, nights: pr.nights, unit: "per person per night", room: true, noUnit: true});
   pr.rows.filter(r => r.id !== "base").forEach(r => {
     Q.lines.push({id: "custom", desc: "School meal: " + schoolMealLineDesc(r, t.free), qty: t.charged, price: r.per, nights: r.days, unit: "per person"});
   });
@@ -2978,7 +2981,11 @@ function buildSchoolQuote(sc, counts){
     if(Q.sel.cater) delete Q.sel.cater[id];
     setCat(id, "on", false);
   });
-  Object.keys(SCHOOL_EXTRAS).forEach(id => { if(RATE[id]){ setCat(id, "on", true); setCat(id, "price", SCHOOL_EXTRAS[id]); } });
+  Object.keys(SCHOOL_EXTRAS).forEach(id => {
+    if(!RATE[id]) return;
+    setCat(id, "price", SCHOOL_EXTRAS[id]);
+    setCat(id, "on", SCHOOL_EXTRAS_ON.indexOf(id) >= 0);
+  });
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: Number(sc.base) || schoolBaseRate(sc), meals: schoolMealsOf(sc),
     rates: sc.rates || null, packName: sc.packName || ""});
   /* the rooms, the meals, the price and the wording all follow the numbers */
@@ -3792,7 +3799,9 @@ function unitsSplit(){
   /* rooms imported from an RMS statement sit in the fixed extras, they are still
      rooms, so they count towards the deposit and the final-details rule */
   Q.lines.forEach(l => {
-    if(!isAccomLine(l)) return;
+    /* a line priced per person (a school package) counts towards the accommodation
+       money, but its quantity is people, not rooms, so it never adds to the deposit */
+    if(!isAccomLine(l) || l.noUnit) return;
     const n = Number(l.qty) || 0;
     if(isSiteId(l.id, l.desc)) sites += n; else cabins += n;
   });
