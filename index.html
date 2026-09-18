@@ -2372,7 +2372,7 @@ function blankQuote(num){
     ratesInfo: null,    // {from, to, items, file}
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
-    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false}, // toggleable organiser-page extras
+    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false}, // toggleable organiser-page extras
     sel: blankSel(),    // the organiser's (or staff-suggested) selections
     lines: [],          // fixed extras the organiser can't change
     status: "Draft",
@@ -2914,8 +2914,9 @@ function schoolPanelHTML(){
       '<input type="number" min="0" step="1" class="sgcIn" data-k="' + g.k + '" value="' + c[g.k] + '"' + (mealsFixed ? ' disabled' : '') + '></label>').join('') +
     '</div>' +
     '<table class="sgtable"><tr><th>Who</th><th>People</th><th>Rooms</th><th>Cabins we have set aside</th></tr>' +
-    plan.rows.map(r => '<tr><td>' + esc(r.label) + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('') +
+    plan.rows.map(r => '<tr><td>' + esc(r.label) + (r.free ? ' <span class="fmuted">(free of charge)</span>' : '') + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('') +
     (plan.rows.length ? '' : '<tr><td colspan="4" class="fmuted">No numbers yet</td></tr>') + '</table>' +
+    (plan.spare.length ? '<div class="sgnoteline">Also held for you: ' + esc(plan.spare.map(b => b.qty + ' × ' + ((RATE[b.id] || {}).name || b.id)).join(", ")) + '.</div>' : '') +
     '<h4 class="sgsub">Your meals</h4>' +
     '<p class="cb-hint">breakfast is included every morning. Tick anything else you would like and tap the days you want it on.</p>' +
     (mealsFixed ? '<div class="sgfixed">' + (pr.rows.filter(r => r.id !== "base").map(r => '✓ ' + esc(r.label) + ' · ' + r.days + ' ' + r.unit + (r.days === 1 ? '' : 's')).join('<br>') || 'Breakfast only') + '</div>'
@@ -2928,7 +2929,6 @@ function schoolPanelHTML(){
       : '<div class="sgtot"><b>' + t.people + '</b> staying' + (t.free ? ' · ' + t.free + ' free (bus driver' + (t.free === 1 ? '' : 's') + ')' : '') + '</div>') +
     (t.people && t.people < SCHOOL_MIN ? '<div class="sgwarn">The catered package needs at least ' + SCHOOL_MIN + ' people. Tell us your numbers and we will work something out with you.</div>' : '') +
     (plan.short ? '<div class="sgwarn">' + plan.short + ' more room' + (plan.short === 1 ? '' : 's') + ' ' + (plan.short === 1 ? 'is' : 'are') + ' needed for these numbers. We will confirm ' + (plan.short === 1 ? 'it' : 'them') + ' with you.</div>' : '') +
-    (plan.spare.length ? '<div class="sgnoteline">Also held for you: ' + esc(plan.spare.map(b => b.qty + ' × ' + ((RATE[b.id] || {}).name || b.id)).join(", ")) + '.</div>' : '') +
   '</div>';
 }
 /* "+ Add a school package…" in the template list */
@@ -3034,7 +3034,7 @@ function applySchoolTemplate(sc){
       paint();
     }));
     const c = read(), pr = schoolPricing(pack, c), t = pr.totals, plan = schoolPlan(c);
-    const bits = plan.rows.map(r => '<tr><td>' + esc(r.label) + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('');
+    const bits = plan.rows.map(r => '<tr><td>' + esc(r.label) + (r.free ? ' (free of charge)' : '') + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('');
     document.getElementById("sgSum").innerHTML = t.people
       ? '<table><tr><th>Who</th><th>People</th><th>Rooms</th><th>Units</th></tr>' + bits + '</table>' +
         '<table style="margin-top:10px"><tr><th>What</th><th>Per person</th><th>Days</th><th>Amount</th></tr>' +
@@ -4325,7 +4325,12 @@ function stepAccom(id, dir){
   let b = wholeStayBlock(id) || (Q.sel.accom || []).find(x => x.id === id);
   if(dir > 0){
     const nights = b ? blockNightsList(b) : stayNightsList();
-    if(!canAddOver(id, nights)){ availToast(id); return; }
+    if(!canAddOver(id, nights)){
+      /* the organiser is held to what RMS shows free; staff can go past it (an extra
+         room RMS has not released yet, a unit being held by hand) with a warning */
+      availToast(id);
+      if(CLIENT_MODE) return;
+    }
   }
   if(!b){
     if(dir <= 0) return;
@@ -5270,7 +5275,8 @@ function renderPrep(){
         (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') + '</div>' +
       priceCell +
       availCell +
-      stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canUp, upTitle: canUp ? "" : "No availability left on one or more nights"}) +
+      stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: true,
+        upTitle: canUp ? "" : "RMS shows nothing free on one or more nights; adding one anyway is up to you"}) +
       '<div class="pkgsub">' + (q > 0 ? money(sub) : '<span class="fmuted">-</span>') + '</div>' +
     '</div>';
   }).join("") || '<p class="hint">No accommodation items in the rate card. Add some on the Settings tab.</p>';
@@ -6304,7 +6310,7 @@ function depositInvoiceData(){
   const halfPay = Math.max(0, Math.round((half - depTotal) * 100) / 100);
   const balance = Math.max(0, Math.round((total - depTotal - halfPay) * 100) / 100);
   const payments = [{label: "Deposit (this invoice" + (dep && dep.number ? ", " + dep.number : "") + ")", due: short(due) + (dep && dep.status === "paid" ? " (paid)" : ""), amount: depTotal}];
-  if(c.halfPct > 0 && half > 0) payments.push({label: c.halfPct + "% of accommodation, less the deposit",
+  if(c.halfPct > 0 && half > 0 && halfPay > 0.5) payments.push({label: c.halfPct + "% of accommodation, less the deposit",
     due: halfDue && kdPassed(halfDue) ? "As soon as possible" : short(halfDue), amount: halfPay,
     note: c.halfPct + "% of accommodation is " + money(half) + "; the " + money(depTotal) + " deposit counts towards it"});
   if(Q.dateStart) payments.push({label: "Balance", due: "Before arrival, " + short(Q.dateStart), amount: balance, note: "Paid before keys are handed over"});
@@ -6692,9 +6698,13 @@ function keyDatesAutoRows(showPrices){
   if(kd){
     const at = (iso, text) => dated.push({iso: iso, row: [kdWhen(iso), text]});
     /* 3: part of the accommodation */
-    if(split.total > 0 && c.halfPct > 0){
-      const amt = accomShareBase() * c.halfPct / 100;
-      const depAmt = depositTotal(c);
+    const halfAmt = accomShareBase() * c.halfPct / 100;
+    const halfDep = depositTotal(c);
+    /* the deposit counts towards it: when it already covers the lot, there is nothing
+       to ask for and the line comes off the timeline */
+    if(split.total > 0 && c.halfPct > 0 && halfAmt - halfDep > 0.5){
+      const amt = halfAmt;
+      const depAmt = halfDep;
       const fig = (showPrices && amt > 0)
         ? (depAmt > 0 ? ' (about ' + money0(amt) + ', less your ' + money0(depAmt) + ' deposit: about ' + money0(Math.max(0, amt - depAmt)) + ' to pay)' : ' (about ' + money0(amt) + ')')
         : '';
@@ -6935,7 +6945,7 @@ function renderClient(){
           staffAccomPrice(it.id, showPrices) + '</div>' +
         (split
           ? '<div class="cb-avail" style="text-align:right">' + q + ' selected</div>'
-          : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canAddOver(it.id, stayNightsList()), lock: lockedItem(it.id, "accom")})) +
+          : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: CLIENT_MODE ? canAddOver(it.id, stayNightsList()) : true, lock: lockedItem(it.id, "accom")})) +
         '<div class="pkgsub">' + (q > 0 && showPrices ? (schoolIncludes(it.id) ? SCHOOL_INCL_WORD : money(sub)) : (q > 0 ? q + ' ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         blockHtml +
       '</div>';
