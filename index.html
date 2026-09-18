@@ -251,7 +251,23 @@
   .sgprice td.r, .sgprice th.r{text-align:right}
   .sgtotrow td{border-top:2px solid #0f2d4a}
   .sgfixed{font-size:13.5px; line-height:1.7; background:#f3f5f8; border-radius:8px; padding:8px 12px}
+  .schgrid{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px}
+  .schgrid label{display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:600}
+  .schgrid input{padding:7px 9px; font:inherit; border:1px solid var(--grid, #c9d4dc); border-radius:8px; max-width:120px}
+  .schdollar{display:flex; align-items:center; gap:4px; font-weight:400}
+  .schcols{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px}
+  .schrow{display:flex; align-items:center; gap:6px; padding:5px 0; border-bottom:1px solid #eef1f4; font-size:13.5px}
+  .schnum{width:18px; color:var(--ink2, #6b7580); font-size:12px}
+  .schname{flex:1}
+  .schbtn{appearance:none; border:1px solid var(--grid, #cfd6dd); background:#fff; border-radius:6px; padding:1px 7px; cursor:pointer; font-size:12px}
+  .schbtn:disabled{opacity:.35; cursor:default}
+  .schadd{margin-top:8px}
+  .schadd select{padding:6px 8px; font:inherit; border:1px solid var(--grid, #c9d4dc); border-radius:8px; max-width:100%}
   .schooldlg .sgmealbox{margin-top:12px}
+  .schooldlg .sgopt{display:flex; gap:10px; align-items:flex-start; margin:12px 0 0; padding:9px 12px; background:#f7f9fb; border-radius:8px; font-size:13.5px; cursor:pointer}
+  .schooldlg .sgopt input{width:auto; margin-top:3px}
+  .schooldlg .sgopt em{display:block; font-style:normal; color:var(--ink2, #6b7580); font-size:12px; margin-top:3px; line-height:1.5}
+  .schoolsec .sgnoteline{margin-top:8px; font-size:13px; color:var(--ink2, #6b7580)}
   .schoolsec .sgwarn{margin-top:8px; background:#fff4e0; border-left:4px solid #ef8f00; padding:7px 10px; border-radius:6px; font-size:13px}
   .lockBtn{appearance:none; border:1px solid var(--grid, #cfd6dd); background:#fff; border-radius:6px; padding:1px 5px; font-size:12px; cursor:pointer; margin-left:6px; line-height:1.4}
   .lockBtn.on{background:#fff4e0; border-color:#ef8f00}
@@ -1244,6 +1260,13 @@
       </div>
       <div id="kdDefaults"></div>
       <p class="hint" style="margin-top:8px">Changes here apply to new quotes and to any quote that has not been given its own numbers; quotes already sent keep what they were sent with. The information sections can use {deposit}, {depositsite}, {depositroom}, {depositdays}, {halfpct}, {halflead}, {holddays}, {cateringlead}, {finallead}, {bigunits}, {cancelpct}, {cancelbiglead} and {cancellead} so their wording follows these numbers too.</p>
+    </div>
+    <div class="card" id="schoolCard">
+      <div class="cardhead">
+        <h2>School groups</h2>
+        <span class="hint">the house rules behind the SCHOOL GROUPS templates: what a night costs per person, how many share a room, and which units are filled first. Shared with every computer; any one quote can still be changed when you build it.</span>
+      </div>
+      <div id="schoolDefaults"></div>
     </div>
     <div class="card">
       <h2>Code of conduct link</h2>
@@ -2533,18 +2556,60 @@ const TEMPLATES = [
   {name:"Conference day (room only)", venues:{fr13: 1}},
   {name:"Catered group stay (daily meals)", cater:["bf_cont", "din2"], caterAllDays: true},
   {name:"Auditorium event",           venues:{aud: 1}},
-  {name:"SCHOOL GROUPS · Primary (bed & breakfast $50pp, tick the meals you want)", school:{level:"Primary", base:50}},
-  {name:"SCHOOL GROUPS · High school (bed & breakfast $55pp, tick the meals you want)", school:{level:"High school", base:55}}
 ];
+/* the two standing school templates read their price from the Settings tab */
+function builtInSchoolTemplates(){
+  return ["Primary", "High school"].map(level => ({
+    name: "SCHOOL GROUPS · " + level + " (bed & breakfast " + money0(schoolBaseFor(level)) + "pp, tick the meals you want)",
+    school: {level: level, base: schoolBaseFor(level)}
+  }));
+}
 /* ---------- SCHOOL GROUPS (2027 packages) ----------
    Priced per person per night, so the package sits on the quote as one line and the
    cabins are shown as included. Rooms are filled to make the most of the cheaper
    units: students 4 to a room in the motel and 1 bedroom air conditioned units,
    teachers twin share. Everything bigger, and the campsites, are switched off. */
 const SCHOOL_MIN = 20;
-const SCHOOL_STUDENT_ROOMS = ["acc_motel_std", "acc_motel_bud", "acc_1br_std"];
-const SCHOOL_TEACHER_ROOMS = ["acc_1br_std", "acc_motel_std", "acc_motel_bud"];
-const SCHOOL_PER_STUDENT = 4, SCHOOL_PER_TEACHER = 2;
+/* the house rules for school rooming, shared with every computer (Settings tab).
+   The lists are in the order rooms are filled: the first type that RMS still has free
+   is used, then the next one down. */
+const SCHOOL_ROOMS_DEFAULT = {
+  perStudent: 4, perTeacher: 2, perDriver: 1,
+  studentTypes: ["acc_motel_std", "acc_motel_bud", "acc_1br_std"],
+  teacherTypes: ["acc_1br_std", "acc_motel_std", "acc_motel_bud"],
+  base: {"Primary": 50, "High school": 55}
+};
+function schoolCfg(){
+  const d = (getDefaults() || {}).school || {};
+  const out = {
+    perStudent: Number(d.perStudent) > 0 ? Number(d.perStudent) : SCHOOL_ROOMS_DEFAULT.perStudent,
+    perTeacher: Number(d.perTeacher) > 0 ? Number(d.perTeacher) : SCHOOL_ROOMS_DEFAULT.perTeacher,
+    perDriver: Number(d.perDriver) > 0 ? Number(d.perDriver) : SCHOOL_ROOMS_DEFAULT.perDriver,
+    studentTypes: (Array.isArray(d.studentTypes) && d.studentTypes.length ? d.studentTypes : SCHOOL_ROOMS_DEFAULT.studentTypes).filter(id => RATE[id]),
+    teacherTypes: (Array.isArray(d.teacherTypes) && d.teacherTypes.length ? d.teacherTypes : SCHOOL_ROOMS_DEFAULT.teacherTypes).filter(id => RATE[id]),
+    base: Object.assign({}, SCHOOL_ROOMS_DEFAULT.base, (d.base && typeof d.base === "object") ? d.base : {})
+  };
+  if(!out.studentTypes.length) out.studentTypes = SCHOOL_ROOMS_DEFAULT.studentTypes.filter(id => RATE[id]);
+  if(!out.teacherTypes.length) out.teacherTypes = out.studentTypes.slice();
+  return out;
+}
+function saveSchoolCfg(part){
+  saveDefaults({school: Object.assign({}, (getDefaults() || {}).school || {}, part || {})});
+}
+/* every unit type a school quote can use, students first */
+function schoolAllTypes(){
+  const c = schoolCfg();
+  const out = [];
+  c.studentTypes.concat(c.teacherTypes).forEach(id => { if(out.indexOf(id) < 0) out.push(id); });
+  return out;
+}
+/* teachers in their own type (1 bedroom units by default), or in with the students */
+function schoolTeacherTypes(){
+  const c = schoolCfg();
+  const own = !(Q.school && Q.school.teachersOwn === false);
+  return own ? c.teacherTypes.concat(c.studentTypes.filter(id => c.teacherTypes.indexOf(id) < 0))
+             : c.studentTypes.concat(c.teacherTypes.filter(id => c.studentTypes.indexOf(id) < 0));
+}
 const SCHOOL_OFF = ["acc_4br_house", "acc_2br_ter", "acc_2br_bung", "acc_2br_std", "acc_1br_ter",
                     "camp_unpow", "camp_pow_wf", "camp_pow_dt"];
 /* the school prices for the extras the organiser can add on top of the package.
@@ -2554,7 +2619,7 @@ const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, din1: 30, diet
 const SCHOOL_EXTRAS_ON = ["bf_hot", "lunch_pack", "diet"];
 /* bed & breakfast is the base; every other meal is ticked on and priced per person for
    the days it is wanted, so a group can have dinner every night and one packed lunch. */
-const SCHOOL_BASE = {"Primary": 50, "High school": 55};
+function schoolBaseFor(level){ return Number(schoolCfg().base[level]) || 0; }
 const SCHOOL_MEAL_ADDONS = [
   {id: "din2",       label: "Dinner, 2 courses", add: 14, kind: "night", note: "served in the private dining room"},
   {id: "lunch_pack", label: "Packed lunch",      add: 15, kind: "day",   note: "salad roll, juice and fruit, ready to take off site"}
@@ -2594,7 +2659,7 @@ function schoolBaseRate(S){
   if(Number(S.base) > 0) return Number(S.base);
   /* legacy: the old package rate less the dinner it included */
   const legacy = Number(S.rate) || 0;
-  return legacy > 0 ? Math.max(0, legacy - (S.meals === "dbb" ? 14 : 0)) : (SCHOOL_BASE[S.level] || 0);
+  return legacy > 0 ? Math.max(0, legacy - (S.meals === "dbb" ? 14 : 0)) : (schoolBaseFor(S.level));
 }
 /* what the group pays, broken down, for the panels and the quote lines */
 function schoolPricing(S, counts){
@@ -2648,6 +2713,39 @@ function schoolNotes(sc){
     "• Final numbers and catering numbers are due {finallead} before you arrive.";
 }
 /* fill rooms from the cheapest types out, capped by what RMS says is free */
+/* the rooms actually on the quote, handed out group by group. This is what the
+   organiser sees, so a mix staff changed by hand flows straight through. */
+function schoolAssign(c){
+  const cfg = schoolCfg();
+  const pool = {};
+  (Q.sel.accom || []).forEach(b => {
+    if(!catEntry(b.id).on) return;
+    pool[b.id] = (pool[b.id] || 0) + (Number(b.qty) || 0);
+  });
+  const rows = [];
+  let short = 0;
+  schoolGroups().forEach(g => {
+    if(!c[g.k]) return;
+    const need = Math.ceil(c[g.k] / g.per);
+    const prefer = g.kind === "student" ? cfg.studentTypes : schoolTeacherTypes();
+    const order = prefer.concat(Object.keys(pool).filter(id => prefer.indexOf(id) < 0));
+    const got = [];
+    let left = need;
+    order.forEach(id => {
+      if(left <= 0 || !(pool[id] > 0)) return;
+      const n = Math.min(left, pool[id]);
+      pool[id] -= n;
+      left -= n;
+      got.push({id: id, qty: n});
+    });
+    short += left;
+    rows.push({label: g.label, people: c[g.k], per: g.per, free: !!g.free, rooms: need, blocks: got,
+               words: got.map(b => b.qty + " × " + ((RATE[b.id] || {}).name || b.id)).join(", ") +
+                      (left ? (got.length ? ", plus " : "") + left + " still to add" : "")});
+  });
+  const spare = Object.keys(pool).filter(id => pool[id] > 0).map(id => ({id: id, qty: pool[id]}));
+  return {rows: rows, short: short, spare: spare};
+}
 function schoolRooms(people, per, types, taken){
   const out = [];
   let left = Math.ceil(Math.max(0, people) / per);
@@ -2665,31 +2763,37 @@ function schoolRooms(people, per, types, taken){
 }
 /* the numbers the rooming needs: boys and girls are never put in a room together,
    and neither are male and female teachers. Bus drivers stay and eat free. */
-const SCHOOL_GROUPS_IN = [
-  {k: "ms", label: "Male students", per: 4, kind: "student"},
-  {k: "fs", label: "Female students", per: 4, kind: "student"},
-  {k: "mt", label: "Male teachers", per: 2, kind: "teacher"},
-  {k: "ft", label: "Female teachers", per: 2, kind: "teacher"},
-  {k: "bd", label: "Bus drivers", per: 1, kind: "driver", free: true}
+const SCHOOL_GROUP_DEFS = [
+  {k: "ms", label: "Male students", kind: "student"},
+  {k: "fs", label: "Female students", kind: "student"},
+  {k: "mt", label: "Male teachers", kind: "teacher"},
+  {k: "ft", label: "Female teachers", kind: "teacher"},
+  {k: "bd", label: "Bus drivers", kind: "driver", free: true}
 ];
+function schoolGroups(){
+  const c = schoolCfg();
+  return SCHOOL_GROUP_DEFS.map(g => Object.assign({}, g, {
+    per: g.kind === "student" ? c.perStudent : (g.kind === "teacher" ? c.perTeacher : c.perDriver)
+  }));
+}
 function schoolCounts(o){
   const c = {};
-  SCHOOL_GROUPS_IN.forEach(g => { c[g.k] = Math.max(0, Math.round(Number((o || {})[g.k]) || 0)); });
+  schoolGroups().forEach(g => { c[g.k] = Math.max(0, Math.round(Number((o || {})[g.k]) || 0)); });
   return c;
 }
 function schoolTotals(c){
-  const people = SCHOOL_GROUPS_IN.reduce((s, g) => s + c[g.k], 0);
-  const free = SCHOOL_GROUPS_IN.filter(g => g.free).reduce((s, g) => s + c[g.k], 0);
+  const people = schoolGroups().reduce((s, g) => s + c[g.k], 0);
+  const free = schoolGroups().filter(g => g.free).reduce((s, g) => s + c[g.k], 0);
   return {people: people, free: free, charged: Math.max(0, people - free)};
 }
 /* rooms for each group on its own, filling the cheapest units RMS shows free first */
 function schoolPlan(c){
   const taken = {};
-  const types = SCHOOL_STUDENT_ROOMS.filter(id => RATE[id]);
-  const teacherTypes = SCHOOL_TEACHER_ROOMS.filter(id => RATE[id]);
+  const types = schoolCfg().studentTypes;
+  const teacherTypes = schoolTeacherTypes();
   const rows = [], merged = {};
   let short = 0;
-  SCHOOL_GROUPS_IN.forEach(g => {
+  schoolGroups().forEach(g => {
     if(!c[g.k]) return;
     const r = schoolRooms(c[g.k], g.per, g.kind === "student" ? types : teacherTypes, taken);
     r.blocks.forEach(b => { merged[b.id] = (merged[b.id] || 0) + b.qty; });
@@ -2700,6 +2804,9 @@ function schoolPlan(c){
                       (r.short ? (r.blocks.length ? ", plus " : "") + r.short + " more needed (nothing free in RMS)" : "")});
   });
   return {rows: rows, merged: merged, short: short};
+}
+function schoolTypeWords(ids){
+  return (ids || []).map(id => ((RATE[id] || {}).name || id).replace(/ Unit.*$/, "").replace(/Motel Style /, "Motel ")).join(", then ");
 }
 function schoolRoomWords(merged){
   return Object.keys(merged).map(id => merged[id] + " × " + ((RATE[id] || {}).name || id)).join(", ");
@@ -2712,7 +2819,7 @@ function schoolNumbers(sc, counts){
   const plan = schoolPlan(c);
   if(plan.short){
     /* RMS is short: the rooms still go on the quote so the numbers add up */
-    const fallback = SCHOOL_STUDENT_ROOMS.filter(id => RATE[id])[0];
+    const fallback = schoolCfg().studentTypes[0];
     if(fallback) plan.merged[fallback] = (plan.merged[fallback] || 0) + plan.short;
   }
   Q.sel.accom = Object.keys(plan.merged).map(id => ({id: id, qty: plan.merged[id]}));
@@ -2738,6 +2845,7 @@ function schoolNumbers(sc, counts){
     plan.rows.map(r => "• " + r.label + ": " + r.people + " in " + r.rooms + " room" + (r.rooms === 1 ? "" : "s") + (r.free ? " (free of charge)" : "")).join("\n") +
     "\nMale and female are roomed separately, students up to 4 to a room and teachers twin share.";
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: pr.base, meals: schoolMealsOf(sc), rates: sc.rates || null,
+    teachersOwn: sc.teachersOwn !== undefined ? sc.teachersOwn !== false : (Q.school ? Q.school.teachersOwn !== false : true),
     packName: sc.packName || (Q.school && Q.school.packName) || "", counts: c, people: t.people, charged: t.charged,
     rooms: plan.rows, short: plan.short, perNight: pr.perNight, at: new Date().toISOString()});
   return plan;
@@ -2796,12 +2904,12 @@ function schoolPanelHTML(){
   if(!S || !schoolBaseRate(S)) return '';
   const pr = schoolPricing(S, S.counts);
   const c = pr.counts, t = pr.totals;
-  const plan = schoolPlan(c);
+  const plan = schoolAssign(c);
   const showPrices = (Q.priceMode || "full") !== "noprices";
   const mealsFixed = CLIENT_MODE && (quoteLocked() || itemLockOn("schoolMeals"));
   return '<div class="cb-sec schoolsec"><h3>Your group</h3>' +
     '<p class="cb-hint">tell us how many are coming and the rooms work themselves out. Students share 4 to a room and teachers share a twin; boys and girls are never put in the same room. Bus drivers stay and eat free.</p>' +
-    '<div class="sgrid sgrid-c">' + SCHOOL_GROUPS_IN.map(g =>
+    '<div class="sgrid sgrid-c">' + schoolGroups().map(g =>
       '<label><span>' + esc(g.label) + '<em>' + (g.free ? 'free of charge · a room each' : g.per + ' per room') + '</em></span>' +
       '<input type="number" min="0" step="1" class="sgcIn" data-k="' + g.k + '" value="' + c[g.k] + '"' + (mealsFixed ? ' disabled' : '') + '></label>').join('') +
     '</div>' +
@@ -2819,7 +2927,8 @@ function schoolPanelHTML(){
           ' · about ' + money0(pr.perNight) + ' per person per night</td><td class="r"><b>' + money(pr.total) + '</b></td></tr></table>'
       : '<div class="sgtot"><b>' + t.people + '</b> staying' + (t.free ? ' · ' + t.free + ' free (bus driver' + (t.free === 1 ? '' : 's') + ')' : '') + '</div>') +
     (t.people && t.people < SCHOOL_MIN ? '<div class="sgwarn">The catered package needs at least ' + SCHOOL_MIN + ' people. Tell us your numbers and we will work something out with you.</div>' : '') +
-    (plan.short ? '<div class="sgwarn">' + plan.short + ' of these room' + (plan.short === 1 ? '' : 's') + ' still needs checking on your dates. We will confirm it with you.</div>' : '') +
+    (plan.short ? '<div class="sgwarn">' + plan.short + ' more room' + (plan.short === 1 ? '' : 's') + ' ' + (plan.short === 1 ? 'is' : 'are') + ' needed for these numbers. We will confirm ' + (plan.short === 1 ? 'it' : 'them') + ' with you.</div>' : '') +
+    (plan.spare.length ? '<div class="sgnoteline">Also held for you: ' + esc(plan.spare.map(b => b.qty + ' × ' + ((RATE[b.id] || {}).name || b.id)).join(", ")) + '.</div>' : '') +
   '</div>';
 }
 /* "+ Add a school package…" in the template list */
@@ -2827,7 +2936,7 @@ function newSchoolPack(){
   const nm = prompt("What is the new school package called?\n(e.g. High school 2028, or Primary negotiated)", "");
   if(nm === null || !String(nm).trim()) return;
   const level = confirm("Is it a primary school rate?\n\nOK = primary\nCancel = high school") ? "Primary" : "High school";
-  const r = prompt("Accommodation and breakfast, per person per night, in dollars.\nThe other meals are ticked on in the next screen.", String(SCHOOL_BASE[level] || ""));
+  const r = prompt("Accommodation and breakfast, per person per night, in dollars.\nThe other meals are ticked on in the next screen.", String(schoolBaseFor(level) || ""));
   const base = Math.max(0, Number(r) || 0);
   if(!(base > 0)){ showToast("No price given, so nothing was saved.", true); return; }
   saveSchoolPack({name: String(nm).trim(), level: level, base: base, meals: {}});
@@ -2857,7 +2966,7 @@ function removeSchoolPack(name){
   renderTplOptions();
 }
 function allTemplates(){
-  return TEMPLATES.concat(schoolPacks().map(p => ({name: "SCHOOL GROUPS · " + p.name + " (" + money0(p.base) + "pp + meals)",
+  return TEMPLATES.concat(builtInSchoolTemplates(), schoolPacks().map(p => ({name: "SCHOOL GROUPS · " + p.name + " (" + money0(p.base) + "pp + meals)",
     school: {level: p.level || "Primary", base: Number(p.base) || 0, meals: p.meals || {}, rates: p.rates || null, packName: p.name}, custom: true})));
 }
 function applySchoolTemplate(sc){
@@ -2866,8 +2975,11 @@ function applySchoolTemplate(sc){
   /* the meals carry over from the last time this quote was built, so re-picking the
      template does not throw away the group's choices */
   let pack = Object.assign({level: sc.level, base: Number(sc.base) > 0 ? Number(sc.base) : schoolBaseRate(sc),
-    packName: sc.packName || "", rates: Object.assign({}, sc.rates || {})},
+    packName: sc.packName || "", rates: Object.assign({}, sc.rates || {}),
+    teachersOwn: sc.teachersOwn !== undefined ? sc.teachersOwn : (prevS.teachersOwn !== undefined ? prevS.teachersOwn : true)},
     {meals: Object.keys(schoolMealsOf(sc)).length ? schoolMealsOf(sc) : schoolMealsOf(prevS)});
+  /* a school camp has dinner unless someone says otherwise */
+  if(!Object.keys(pack.meals).length && !prevS.level && schoolAddon("din2")) pack.meals = {din2: {days: schoolMealDays("night")}};
   const dlg = document.createElement("div");
   dlg.className = "histdlg";
   dlg.innerHTML = '<div class="histcard schooldlg"><h3 style="margin:0 0 2px">' + esc(pack.packName || (pack.level + ' school group')) + '</h3>' +
@@ -2876,10 +2988,13 @@ function applySchoolTemplate(sc){
       '<span class="hint">change it for this quote (a negotiated rate, a new year\'s price). ' +
       '<button type="button" class="btn ghost" id="sgSaveRate">＋ Save as a package</button> keeps it, with the meals you have ticked, in the template list for next time.' +
       (pack.packName ? ' <button type="button" class="btn ghost" id="sgDelPack">Delete this package</button>' : '') + '</span></div>' +
-    '<div class="sgrid">' + SCHOOL_GROUPS_IN.map(g =>
+    '<div class="sgrid">' + schoolGroups().map(g =>
       '<label><span>' + esc(g.label) + '<em>' + (g.free ? 'free of charge · a room each' : g.per + ' per room') + '</em></span>' +
       '<input type="number" min="0" step="1" class="sgIn" data-k="' + g.k + '" value="' + esc(prev[g.k] !== undefined ? prev[g.k] : "") + '" placeholder="0"></label>').join('') +
     '</div>' +
+    '<label class="sgopt"><input type="checkbox" id="sgTeachOwn"' + (pack.teachersOwn === false ? '' : ' checked') + '>' +
+      '<span><b>Put the teachers in ' + esc(schoolTypeWords(schoolCfg().teacherTypes)) + '</b>' +
+      '<em>Students fill ' + esc(schoolTypeWords(schoolCfg().studentTypes)) + ' in that order. Whatever a line needs, the next type on the list is used when RMS runs out. Untick this and the teachers are roomed from the students\' list instead. The order is set on the Settings tab.</em></span></label>' +
     '<div class="sgmealbox" id="sgMeals"></div>' +
     '<div class="sgsum" id="sgSum"></div>' +
     '<div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px">' +
@@ -2892,9 +3007,12 @@ function applySchoolTemplate(sc){
     return schoolCounts(o);
   };
   const rate = () => Math.max(0, Number((dlg.querySelector("#sgRate") || {}).value) || 0);
+  const teachOwn = () => !!(dlg.querySelector("#sgTeachOwn") || {}).checked;
   const close = () => dlg.remove();
   const paint = () => {
-    pack = Object.assign({}, pack, {base: rate(), counts: read()});
+    pack = Object.assign({}, pack, {base: rate(), counts: read(), teachersOwn: teachOwn()});
+    /* the preview rooms follow the tick box, so Q.school is kept in step while the form is open */
+    Q.school = Object.assign({}, Q.school, {teachersOwn: teachOwn()});
     document.getElementById("sgMeals").innerHTML = '<h4 class="sgsub">Meals</h4>' +
       '<p class="hint" style="margin:0 0 8px">breakfast is in the base price. Tick a meal and tap the days it is wanted on.</p>' +
       schoolMealsHTML(pack, "dlg");
@@ -2931,6 +3049,8 @@ function applySchoolTemplate(sc){
   dlg.querySelectorAll(".sgIn").forEach(el => el.addEventListener("input", paint));
   const rateIn = dlg.querySelector("#sgRate");
   if(rateIn) rateIn.addEventListener("input", paint);
+  const teachBox = dlg.querySelector("#sgTeachOwn");
+  if(teachBox) teachBox.addEventListener("change", paint);
   const saveBtn = dlg.querySelector("#sgSaveRate");
   if(saveBtn) saveBtn.addEventListener("click", () => {
     if(!(rate() > 0)){ showToast("Put a price per person per night in first.", true); return; }
@@ -2955,7 +3075,7 @@ function applySchoolTemplate(sc){
     if(!schoolTotals(c).people){ showToast("Type how many people are coming first.", true); return; }
     if(!(rate() > 0)){ showToast("Put a price per person per night in first.", true); return; }
     close();
-    buildSchoolQuote(Object.assign({}, pack, {base: rate()}), c);
+    buildSchoolQuote(Object.assign({}, pack, {base: rate(), teachersOwn: teachOwn()}), c);
   });
   paint();
   const first = dlg.querySelector(".sgIn");
@@ -2966,7 +3086,7 @@ function buildSchoolQuote(sc, counts){
   const t = schoolTotals(c);
   /* what is on offer */
   SCHOOL_OFF.forEach(id => { if(RATE[id]) setCat(id, "on", false); });
-  const onRooms = SCHOOL_STUDENT_ROOMS.filter(id => RATE[id]);
+  const onRooms = schoolCfg().studentTypes;
   onRooms.forEach(id => { setCat(id, "on", true); setCat(id, "price", 0); });   // the nightly rate is in the package
   SCHOOL_FREE_VENUES.forEach(k => {
     const v = VENUES.find(x => x.key === k);
@@ -2987,7 +3107,7 @@ function buildSchoolQuote(sc, counts){
     setCat(id, "on", SCHOOL_EXTRAS_ON.indexOf(id) >= 0);
   });
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: Number(sc.base) || schoolBaseRate(sc), meals: schoolMealsOf(sc),
-    rates: sc.rates || null, packName: sc.packName || ""});
+    rates: sc.rates || null, packName: sc.packName || "", teachersOwn: sc.teachersOwn !== false});
   /* the rooms, the meals, the price and the wording all follow the numbers */
   const plan = schoolNumbers(Q.school, c);
   const pr = schoolPricing(Q.school, c);
@@ -2999,7 +3119,7 @@ function buildSchoolQuote(sc, counts){
   }
   /* the cabins are ours to work out, so they are locked; the group's own numbers and
      meals stay theirs to change, and the rooms follow whatever they type */
-  SCHOOL_STUDENT_ROOMS.concat(SCHOOL_TEACHER_ROOMS).forEach(id => { if(RATE[id]) setCat(id, "lock", true); });
+  schoolAllTypes().forEach(id => { if(RATE[id]) setCat(id, "lock", true); });
   Q.locked = false;
   syncForm();
   refresh();
@@ -5374,6 +5494,72 @@ function renderKdRows(){
   bindDepFix(box);
 }
 /* the house rules, shared with every computer through the tracker sheet */
+/* Settings tab: the school group rooming rules and base rates */
+function renderSchoolDefaults(){
+  const host = document.getElementById("schoolDefaults");
+  if(!host) return;
+  const a = document.activeElement;
+  if(a && host.contains(a) && (a.tagName === "INPUT" || a.tagName === "SELECT")) return;
+  const c = schoolCfg();
+  const accom = accomItems().filter(it => !isSiteId(it.id));
+  const list = (kind, ids) => '<div class="schlist" data-kind="' + kind + '">' +
+    ids.map((id, i) => '<div class="schrow"><span class="schnum">' + (i + 1) + '</span>' +
+      '<span class="schname">' + esc((RATE[id] || {}).name || id) + '</span>' +
+      '<button type="button" class="schbtn schup" data-kind="' + kind + '" data-id="' + esc(id) + '" title="Fill this one earlier"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+      '<button type="button" class="schbtn schdown" data-kind="' + kind + '" data-id="' + esc(id) + '" title="Fill this one later"' + (i === ids.length - 1 ? ' disabled' : '') + '>↓</button>' +
+      '<button type="button" class="schbtn schx" data-kind="' + kind + '" data-id="' + esc(id) + '" title="Take it off this list">×</button></div>').join('') +
+    '<div class="schadd"><select class="schAdd" data-kind="' + kind + '"><option value="">+ add a unit type…</option>' +
+      accom.filter(it => ids.indexOf(it.id) < 0).map(it => '<option value="' + esc(it.id) + '">' + esc(it.name) + '</option>').join('') +
+      '</select></div></div>';
+  host.innerHTML = '<div class="schgrid">' +
+      '<label><span>Primary, per person per night</span><span class="schdollar">$<input type="number" class="schNum" data-k="basePrimary" min="0" step="0.5" value="' + esc(c.base["Primary"]) + '"></span></label>' +
+      '<label><span>High school, per person per night</span><span class="schdollar">$<input type="number" class="schNum" data-k="baseHigh" min="0" step="0.5" value="' + esc(c.base["High school"]) + '"></span></label>' +
+      '<label><span>Students per room</span><input type="number" class="schNum" data-k="perStudent" min="1" step="1" value="' + esc(c.perStudent) + '"></label>' +
+      '<label><span>Teachers per room</span><input type="number" class="schNum" data-k="perTeacher" min="1" step="1" value="' + esc(c.perTeacher) + '"></label>' +
+      '<label><span>Bus drivers per room</span><input type="number" class="schNum" data-k="perDriver" min="1" step="1" value="' + esc(c.perDriver) + '"></label>' +
+    '</div>' +
+    '<div class="schcols">' +
+      '<div><h4 class="sgsub">Students fill these, in order</h4>' + list("studentTypes", c.studentTypes) + '</div>' +
+      '<div><h4 class="sgsub">Teachers fill these, in order</h4>' + list("teacherTypes", c.teacherTypes) + '</div>' +
+    '</div>' +
+    '<p class="hint" style="margin-top:8px">A line takes the first type on its list that RMS still shows free, then the next one down. Bus drivers follow the teachers\' list. Everything not on either list (the bigger units and the campsites) is switched off on a school quote.</p>';
+  host.querySelectorAll(".schNum").forEach(el => el.addEventListener("change", e => {
+    const k = e.target.dataset.k, v = Math.max(0, Number(e.target.value) || 0);
+    if(k === "basePrimary" || k === "baseHigh"){
+      const base = Object.assign({}, schoolCfg().base);
+      base[k === "basePrimary" ? "Primary" : "High school"] = v;
+      saveSchoolCfg({base: base});
+    } else saveSchoolCfg({[k]: Math.max(1, v)});
+    renderSchoolDefaults();
+    renderTplOptions();
+    showToast("School group rules saved for every computer.");
+  }));
+  const move = (kind, id, dir) => {
+    const cur = schoolCfg()[kind].slice();
+    const i = cur.indexOf(id);
+    if(i < 0) return;
+    if(dir === 0) cur.splice(i, 1);
+    else {
+      const j = i + dir;
+      if(j < 0 || j >= cur.length) return;
+      cur.splice(i, 1); cur.splice(j, 0, id);
+    }
+    if(!cur.length){ showToast("Leave at least one unit type on the list.", true); return; }
+    saveSchoolCfg({[kind]: cur});
+    renderSchoolDefaults();
+  };
+  host.querySelectorAll(".schup").forEach(el => el.addEventListener("click", e => move(e.currentTarget.dataset.kind, e.currentTarget.dataset.id, -1)));
+  host.querySelectorAll(".schdown").forEach(el => el.addEventListener("click", e => move(e.currentTarget.dataset.kind, e.currentTarget.dataset.id, 1)));
+  host.querySelectorAll(".schx").forEach(el => el.addEventListener("click", e => move(e.currentTarget.dataset.kind, e.currentTarget.dataset.id, 0)));
+  host.querySelectorAll(".schAdd").forEach(el => el.addEventListener("change", e => {
+    const id = e.target.value, kind = e.target.dataset.kind;
+    if(!id) return;
+    const cur = schoolCfg()[kind].slice();
+    if(cur.indexOf(id) < 0) cur.push(id);
+    saveSchoolCfg({[kind]: cur});
+    renderSchoolDefaults();
+  }));
+}
 function renderKdDefaults(){
   const host = document.getElementById("kdDefaults");
   if(!host) return;
@@ -8375,6 +8561,7 @@ function renderSettings(){
   renderFixedRates();
   renderSecEditor();
   renderKdDefaults();
+  renderSchoolDefaults();
   renderRmsSettings();
 }
 
