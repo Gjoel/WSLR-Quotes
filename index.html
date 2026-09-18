@@ -222,9 +222,22 @@
   .schooldlg .sgrid label{display:flex; flex-direction:column; gap:4px; font-size:13.5px; font-weight:600}
   .schooldlg .sgrid em{display:block; font-style:normal; font-weight:400; font-size:11.5px; color:#6b7580}
   .schooldlg .sgrid input{padding:8px 10px; font:inherit; border:1px solid #c9d4dc; border-radius:8px}
+  .schooldlg .sgrate{margin:0 0 12px; padding:10px 12px; background:#f7f9fb; border-radius:8px}
+  .schooldlg .sgrate label{display:flex; gap:10px; align-items:center; font-weight:600; font-size:13.5px}
+  .schooldlg .sgdollar input{width:90px; padding:6px 8px; font:inherit; border:1px solid var(--grid, #c9d4dc); border-radius:8px; margin-left:4px}
+  .schooldlg .sgrate .hint{display:block; margin-top:6px}
   .schooldlg .sgsum{margin-top:14px}
   .schooldlg .sgtot{margin-top:8px; font-size:13.5px}
   .schooldlg .sgwarn{margin-top:8px; background:#fff4e0; border-left:4px solid #ef8f00; padding:6px 10px; border-radius:6px; font-size:13px}
+  .schoolsec .sgrid{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:12px}
+  .schoolsec .sgrid label{display:flex; flex-direction:column; gap:4px; font-size:13.5px; font-weight:600}
+  .schoolsec .sgrid em{display:block; font-style:normal; font-weight:400; font-size:11.5px; color:var(--ink2, #6b7580)}
+  .schoolsec .sgrid input{padding:8px 10px; font:inherit; border:1px solid var(--grid, #c9d4dc); border-radius:8px}
+  .schoolsec .sgtable{width:100%; border-collapse:collapse; font-size:13px}
+  .schoolsec .sgtable th, .schoolsec .sgtable td{text-align:left; padding:6px 8px; border-bottom:1px solid #e3e7ec}
+  .schoolsec .sgtable th{background:#f3f5f8; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:#4f5b66}
+  .schoolsec .sgtot{margin-top:8px; font-size:14px}
+  .schoolsec .sgwarn{margin-top:8px; background:#fff4e0; border-left:4px solid #ef8f00; padding:7px 10px; border-radius:6px; font-size:13px}
   .lockBtn{appearance:none; border:1px solid var(--grid, #cfd6dd); background:#fff; border-radius:6px; padding:1px 5px; font-size:12px; cursor:pointer; margin-left:6px; line-height:1.4}
   .lockBtn.on{background:#fff4e0; border-color:#ef8f00}
   .lockedqty{display:flex; align-items:center; justify-content:center; gap:6px; font-weight:700; font-size:15px}
@@ -233,9 +246,18 @@
   .lockbar b{display:inline}
   .lockstaff{display:block; margin-top:4px; color:#8e1c1c; font-size:12.5px}
   .inclpkg{color:#2e7d32; font-weight:600; font-size:12.5px}
+  .qp-coc{margin-top:10px; padding-top:8px; border-top:1px solid var(--grid, #dfe5ea); font-size:13px}
+  .qp-coc a{font-weight:700}
+  .qp-coc span{color:var(--ink2, #6b7580)}
+  .intcard{border-left:4px solid #b08900}
+  .intcard textarea{width:100%; min-height:64px; padding:9px 11px; font:inherit; border:1px solid var(--grid, #c9d4dc); border-radius:8px; background:#fffdf5}
+  .intpill{background:#fff4e0; color:#8a6a00; border:1px solid #e3c766; border-radius:20px; padding:1px 8px; font-size:11.5px; font-weight:700; margin-left:6px; vertical-align:middle}
+  .intcard.has h2 .intpill::after{content:" · in use"}
   .fromres{display:inline-flex; gap:0; align-items:stretch}
-  .fromres input{width:92px; border:1px solid var(--line, #c9d4dc); border-right:0; border-radius:8px 0 0 8px; padding:6px 8px; font:inherit}
-  .fromres .btn{border-radius:0 8px 8px 0}
+  .fromres{flex-wrap:wrap}
+  .fromres input#fromResNo{width:92px; border:1px solid var(--line, #c9d4dc); border-right:0; border-radius:8px 0 0 8px; padding:6px 8px; font:inherit}
+  .fromres .btn{border-radius:0}
+  .fromres input#fromResDate{width:150px; flex:0 0 auto; border:1px solid var(--line, #c9d4dc); border-left:0; border-radius:0 8px 8px 0; padding:6px 8px; font:inherit}
   .resprog{background:#fff; border:1.5px solid #1f5fae; border-radius:10px; padding:10px 14px; margin:0 0 12px}
   .resprog-top{display:flex; justify-content:space-between; gap:10px; font-size:14px; color:#0f2d4a}
   .resprog-top span{color:#6b7580; font-variant-numeric:tabular-nums}
@@ -897,6 +919,8 @@
       <span class="fromres" id="fromResWrap" title="Start a quote from a group booking that is already in RMS: the organiser, cabins, sites, conference rooms and the rates already on those reservations are filled in, and accepting the quote updates that same group">
         <input id="fromResNo" type="text" inputmode="numeric" placeholder="RMS res #" aria-label="RMS reservation number">
         <button class="btn" id="fromResBtn" type="button">Quote on existing booking</button>
+        <button class="btn" id="repeatResBtn" type="button" title="Use a booking they have had before as the starting point for a new quote: the organiser, the cabins and the rooms come across, nothing is written to that old group. Put the new arrival date in the box and everything shifts to the new dates.">Repeat a past booking</button>
+        <input id="fromResDate" type="date" title="The new arrival date. Leave it empty to keep the old dates." aria-label="New arrival date">
       </span>
       <select id="tplSel" title="Start from a template"></select>
       <select id="prevSel" title="Copy a previous quote"></select>
@@ -905,6 +929,13 @@
     <div id="restoreBar" class="restorebar" style="display:none"></div>
     <div id="editBar" class="restorebar" style="display:none"></div>
     <div id="resLinkBar" class="restorebar reslink" style="display:none"></div>
+    <div class="card intcard" id="intCard">
+      <div class="cardhead">
+        <h2>Internal notes <span class="intpill">staff only</span></h2>
+        <span class="hint">special arrangements and anything worth knowing next time: a conference room given at no charge, a rate we held, who to talk to. Kept with the quote, shown on the staff emails, and never sent to the organiser or shown on their page.</span>
+      </div>
+      <textarea id="f-internal" rows="3" placeholder="e.g. Rooms 1, 2 &amp; 3 given complimentary in 2026 because they booked 40 cabins · always ask for Kylie in the office · bus parks on the grass by the office"></textarea>
+    </div>
     <div id="resProgress" class="resprog" role="status" aria-live="polite" hidden>
       <div class="resprog-top"><b id="resProgTitle">Reading the booking from RMS</b><span id="resProgTime"></span></div>
       <div class="resprog-bar"><span id="resProgFill"></span></div>
@@ -1194,6 +1225,11 @@
       </div>
       <div id="kdDefaults"></div>
       <p class="hint" style="margin-top:8px">Changes here apply to new quotes and to any quote that has not been given its own numbers; quotes already sent keep what they were sent with. The information sections can use {deposit}, {depositsite}, {depositroom}, {depositdays}, {halfpct}, {halflead}, {holddays}, {cateringlead}, {finallead}, {bigunits}, {cancelpct}, {cancelbiglead} and {cancellead} so their wording follows these numbers too.</p>
+    </div>
+    <div class="card">
+      <h2>Code of conduct link</h2>
+      <p class="hint" style="margin:0 0 8px">The web address of the digital Code of Conduct page. When it is filled in, every quote and PDF carries a "Read our Code of Conduct" link, and the organiser can read it before they accept. Leave it empty and no link is shown.</p>
+      <input type="url" id="s-coc" placeholder="https://script.google.com/macros/s/..../exec" style="width:100%">
     </div>
     <div class="card">
       <h2>Cheapest dates search on new quotes</h2>
@@ -2160,6 +2196,8 @@ function getDefaults(){
     terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the accommodation is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
     bond: 2000,
     cheapest: true,
+    cocUrl: "",         // the digital Code of Conduct page; shown as a link on every quote when set
+    schoolPacks: [],    // school packages staff have added themselves
     accomRates: [],
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
     body: "Hi {contact},\n\nThank you for your enquiry. I have put a quote together for {event} that you can price up yourself here:\n\n{link}\n\n{stayline}\n{roomsline}\n{cateringline}\n{venueline}\n{churchline}\n\nAnything you change on that page comes straight back to us when you submit it, and there is a PDF copy to download for your records. If something needs adjusting, or you would rather talk it through, just reply to this email or call us on 02 4283 6999.\n\nWe look forward to working with you.\n\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999\n\nQuote {number} - Wollongong Surf Leisure Resort\n{link}"
@@ -2285,6 +2323,7 @@ function blankQuote(num){
     resRates: {},       // nightly rates already on an existing RMS booking: {itemId: {iso: rate}}
     school: null,       // the SCHOOL GROUPS package this quote was built from
     locked: false,      // "this is your quote": the organiser can look but not change it
+    internalNotes: "",  // staff only: special arrangements, what was agreed last time. Never served to the organiser.
     rmsLink: null,      // quoting on an existing RMS group: {groupId, askedFor, paid, unmapped, ...}
     availCal: {},       // per-date availability: {itemId: {"2026-08-21": 0, ...}}
     ratesInfo: null,    // {from, to, items, file}
@@ -2325,6 +2364,7 @@ function normalizeQuote(q){
   if(!q.resRates || typeof q.resRates !== "object") q.resRates = {};
   if(q.rmsLink === undefined) q.rmsLink = null;
   if(q.locked === undefined) q.locked = false;
+  if(typeof q.internalNotes !== "string") q.internalNotes = "";
   if(!q.availCal) q.availCal = {};
   if(!q.menu) q.menu = {};
   if(!q.secText || typeof q.secText !== "object") q.secText = {};
@@ -2575,14 +2615,106 @@ function schoolPlan(c){
 function schoolRoomWords(merged){
   return Object.keys(merged).map(id => merged[id] + " × " + ((RATE[id] || {}).name || id)).join(", ");
 }
+/* the numbers drive everything else: the rooms, the price line, the meal covers and the
+   rooming wording. Run whenever the group's make-up changes, by staff or by the school. */
+function schoolNumbers(sc, counts){
+  const c = schoolCounts(counts);
+  const t = schoolTotals(c);
+  const plan = schoolPlan(c);
+  if(plan.short){
+    /* RMS is short: the rooms still go on the quote so the numbers add up */
+    const fallback = SCHOOL_STUDENT_ROOMS.filter(id => RATE[id])[0];
+    if(fallback) plan.merged[fallback] = (plan.merged[fallback] || 0) + plan.short;
+  }
+  Q.sel.accom = Object.keys(plan.merged).map(id => ({id: id, qty: plan.merged[id]}));
+  Q.guests = t.people;
+  const nights = Math.max(1, nightsCount());
+  (SCHOOL_INCLUDED[sc.meals] || []).forEach(id => {
+    if(!RATE[id]) return;
+    if(!Q.sel.cater) Q.sel.cater = {};
+    Q.sel.cater[id] = {ppl: t.people, days: nights};
+  });
+  /* the package itself: one per person per night line, counted as accommodation so the
+     part payment before arrival still works. Bus drivers are not charged. */
+  Q.lines = (Q.lines || []).filter(l => !/^School package/.test(String(l.desc || "")));
+  Q.lines.push({id: "custom", desc: schoolLineDesc(sc), qty: t.charged, price: sc.rate, nights: nightsCount(), unit: "per person per night", room: true});
+  Q.notes = schoolNotes(sc) + "\n\nYour rooming:\n" +
+    plan.rows.map(r => "• " + r.label + ": " + r.people + " in " + r.rooms + " room" + (r.rooms === 1 ? "" : "s") + (r.free ? " (free of charge)" : "")).join("\n") +
+    "\nMale and female are roomed separately, students up to 4 to a room and teachers twin share.";
+  Q.school = Object.assign({}, Q.school, {level: sc.level, meals: sc.meals, rate: sc.rate, counts: c,
+    people: t.people, charged: t.charged, rooms: plan.rows, short: plan.short, at: new Date().toISOString()});
+  return plan;
+}
+/* the school's own numbers, on their page and on ours: change them and the rooms,
+   the meals and the price follow */
+function schoolPanelHTML(){
+  const S = Q.school;
+  if(!S || !S.rate) return '';
+  const c = schoolCounts(S.counts);
+  const t = schoolTotals(c);
+  const plan = schoolPlan(c);
+  const showPrices = (Q.priceMode || "full") !== "noprices";
+  const nights = Math.max(1, nightsCount());
+  return '<div class="cb-sec schoolsec"><h3>Your group</h3>' +
+    '<p class="cb-hint">tell us how many are coming and the rooms work themselves out. Students share 4 to a room and teachers share a twin; boys and girls are never put in the same room. Bus drivers stay and eat free.</p>' +
+    '<div class="sgrid sgrid-c">' + SCHOOL_GROUPS_IN.map(g =>
+      '<label><span>' + esc(g.label) + '<em>' + (g.free ? 'free of charge · a room each' : g.per + ' per room') + '</em></span>' +
+      '<input type="number" min="0" step="1" class="sgcIn" data-k="' + g.k + '" value="' + c[g.k] + '"></label>').join('') +
+    '</div>' +
+    '<table class="sgtable"><tr><th>Who</th><th>People</th><th>Rooms</th><th>Cabins we have set aside</th></tr>' +
+    plan.rows.map(r => '<tr><td>' + esc(r.label) + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('') +
+    (plan.rows.length ? '' : '<tr><td colspan="4" class="fmuted">No numbers yet</td></tr>') + '</table>' +
+    '<div class="sgtot"><b>' + t.people + '</b> staying' + (t.free ? ' · ' + t.free + ' free (bus driver' + (t.free === 1 ? '' : 's') + ')' : '') +
+      (showPrices ? ' · <b>' + t.charged + '</b> charged at ' + money0(S.rate) + ' per person per night · <b>' + money(t.charged * S.rate * nights) + '</b> over ' +
+        nights + ' night' + (nights === 1 ? '' : 's') : '') + '</div>' +
+    (t.people && t.people < SCHOOL_MIN ? '<div class="sgwarn">The catered package needs at least ' + SCHOOL_MIN + ' people. Tell us your numbers and we will work something out with you.</div>' : '') +
+    (plan.short ? '<div class="sgwarn">' + plan.short + ' of these room' + (plan.short === 1 ? '' : 's') + ' still needs checking on your dates. We will confirm it with you.</div>' : '') +
+  '</div>';
+}
+/* "+ Add a school package…" in the template list */
+function newSchoolPack(){
+  const nm = prompt("What is the new school package called?\n(e.g. High school DBB 2028, or Primary BB negotiated)", "");
+  if(nm === null || !String(nm).trim()) return;
+  const meals = confirm("Does it include dinner?\n\nOK = dinner, bed & breakfast\nCancel = bed & breakfast only") ? "dbb" : "bb";
+  const level = confirm("Is it a primary school rate?\n\nOK = primary\nCancel = high school") ? "Primary" : "High school";
+  const r = prompt("Price per person per night, in dollars:", "");
+  const rate = Math.max(0, Number(r) || 0);
+  if(!(rate > 0)){ showToast("No price given, so nothing was saved.", true); return; }
+  saveSchoolPack({name: String(nm).trim(), level: level, meals: meals, rate: rate});
+  showToast("Added \u201c" + String(nm).trim() + "\u201d at " + money0(rate) + " per person per night. It is in the template list on every computer.");
+  applySchoolTemplate({level: level, meals: meals, rate: rate, packName: String(nm).trim()});
+}
 /* tab 1: pick the package, then fill in who is coming */
+/* the packages staff have added themselves (Settings, shared with every computer) */
+function schoolPacks(){
+  const list = (getDefaults() || {}).schoolPacks;
+  return Array.isArray(list) ? list.filter(x => x && Number(x.rate) > 0) : [];
+}
+function saveSchoolPack(pack){
+  const list = schoolPacks().filter(x => String(x.name || "").toLowerCase() !== String(pack.name || "").toLowerCase());
+  list.push({name: String(pack.name || "").slice(0, 80), level: pack.level, meals: pack.meals, rate: Number(pack.rate) || 0});
+  saveDefaults({schoolPacks: list});
+  renderTplOptions();
+}
+function removeSchoolPack(name){
+  saveDefaults({schoolPacks: schoolPacks().filter(x => String(x.name) !== String(name))});
+  renderTplOptions();
+}
+function allTemplates(){
+  return TEMPLATES.concat(schoolPacks().map(p => ({name: "SCHOOL GROUPS · " + p.name + " (" + money0(p.rate) + "pp per night)",
+    school: {level: p.level || "Primary", meals: p.meals === "bb" ? "bb" : "dbb", rate: Number(p.rate) || 0, packName: p.name}, custom: true})));
+}
 function applySchoolTemplate(sc){
   const prev = (Q.school && Q.school.counts) ? Q.school.counts : {};
   const dlg = document.createElement("div");
   dlg.className = "histdlg";
-  dlg.innerHTML = '<div class="histcard schooldlg"><h3 style="margin:0 0 2px">' + esc(sc.level) + ' school group · ' +
-      (sc.meals === "dbb" ? 'dinner, bed &amp; breakfast' : 'bed &amp; breakfast') + ' · ' + money0(sc.rate) + ' per person per night</h3>' +
+  dlg.innerHTML = '<div class="histcard schooldlg"><h3 style="margin:0 0 2px">' + esc(sc.packName || (sc.level + ' school group')) + ' · ' +
+      (sc.meals === "dbb" ? 'dinner, bed &amp; breakfast' : 'bed &amp; breakfast') + '</h3>' +
     '<p class="hint" style="margin:0 0 12px">Students are filled 4 to a room and teachers share a twin. Male and female are never put in the same room, so each line is roomed on its own. Bus drivers stay and eat free.</p>' +
+    '<div class="sgrate"><label><span>Per person per night</span><span class="sgdollar">$<input type="number" id="sgRate" min="0" step="0.5" value="' + esc(sc.rate) + '"></span></label>' +
+      '<span class="hint">change it for this quote (a negotiated rate, a new year\'s price), then build the quote. ' +
+      '<button type="button" class="btn ghost" id="sgSaveRate">＋ Save as a package</button> keeps it in the template list for next time.' +
+      (sc.packName ? ' <button type="button" class="btn ghost" id="sgDelPack">Delete this package</button>' : '') + '</span></div>' +
     '<div class="sgrid">' + SCHOOL_GROUPS_IN.map(g =>
       '<label><span>' + esc(g.label) + '<em>' + (g.free ? 'free of charge · a room each' : g.per + ' per room') + '</em></span>' +
       '<input type="number" min="0" step="1" class="sgIn" data-k="' + g.k + '" value="' + esc(prev[g.k] !== undefined ? prev[g.k] : "") + '" placeholder="0"></label>').join('') +
@@ -2597,7 +2729,9 @@ function applySchoolTemplate(sc){
     dlg.querySelectorAll(".sgIn").forEach(el => { o[el.dataset.k] = el.value; });
     return schoolCounts(o);
   };
+  const rate = () => Math.max(0, Number((dlg.querySelector("#sgRate") || {}).value) || 0);
   const paint = () => {
+    sc = Object.assign({}, sc, {rate: rate()});
     const c = read(), t = schoolTotals(c), plan = schoolPlan(c);
     const nights = Math.max(1, nightsCount());
     const bits = plan.rows.map(r => '<tr><td>' + esc(r.label) + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('');
@@ -2611,14 +2745,34 @@ function applySchoolTemplate(sc){
       : '<div class="hint">Type how many are coming and the rooms work themselves out.</div>';
   };
   dlg.querySelectorAll(".sgIn").forEach(el => el.addEventListener("input", paint));
+  const rateIn = dlg.querySelector("#sgRate");
+  if(rateIn) rateIn.addEventListener("input", paint);
+  const saveBtn = dlg.querySelector("#sgSaveRate");
+  if(saveBtn) saveBtn.addEventListener("click", () => {
+    if(!(rate() > 0)){ showToast("Put a price per person per night in first.", true); return; }
+    const nm = prompt("Name this package, so you can pick it again from the template list:",
+      sc.packName || (sc.level + " " + (sc.meals === "dbb" ? "DBB" : "BB") + " " + money0(rate())));
+    if(nm === null || !String(nm).trim()) return;
+    saveSchoolPack({name: String(nm).trim(), level: sc.level, meals: sc.meals, rate: rate()});
+    sc = Object.assign({}, sc, {packName: String(nm).trim(), rate: rate()});
+    showToast("Saved \u201c" + String(nm).trim() + "\u201d to the template list at " + money0(rate()) + " per person per night.");
+  });
+  const delBtn = dlg.querySelector("#sgDelPack");
+  if(delBtn) delBtn.addEventListener("click", () => {
+    if(!confirm("Take \u201c" + sc.packName + "\u201d out of the template list? Quotes already made with it are not affected.")) return;
+    removeSchoolPack(sc.packName);
+    close();
+    showToast("\u201c" + sc.packName + "\u201d removed from the template list.");
+  });
   const close = () => dlg.remove();
   dlg.addEventListener("click", e => { if(e.target === dlg) close(); });
   dlg.querySelector("#sgCancel").addEventListener("click", close);
   dlg.querySelector("#sgGo").addEventListener("click", () => {
     const c = read();
     if(!schoolTotals(c).people){ showToast("Type how many people are coming first.", true); return; }
+    if(!(rate() > 0)){ showToast("Put a price per person per night in first.", true); return; }
     close();
-    buildSchoolQuote(sc, c);
+    buildSchoolQuote(Object.assign({}, sc, {rate: rate()}), c);
   });
   paint();
   const first = dlg.querySelector(".sgIn");
@@ -2652,32 +2806,19 @@ function buildSchoolQuote(sc, counts){
     setCat(id, "price", 0);
     Q.sel.cater[id] = {ppl: t.people, days: nightsN};
   });
-  /* the rooms, each group on its own */
-  const plan = schoolPlan(c);
-  if(plan.short){
-    /* RMS is short: the rooms still go on the quote so the numbers add up */
-    const fallback = onRooms[0];
-    if(fallback) plan.merged[fallback] = (plan.merged[fallback] || 0) + plan.short;
-  }
-  Q.sel.accom = Object.keys(plan.merged).map(id => ({id: id, qty: plan.merged[id]}));
-  Q.guests = t.people;
-  /* the package itself: one per person per night line, counted as accommodation
-     so the part payment before arrival still works. Bus drivers are not charged. */
-  Q.lines = (Q.lines || []).filter(l => !/^School package/.test(String(l.desc || "")));
-  Q.lines.push({id: "custom", desc: schoolLineDesc(sc), qty: t.charged, price: sc.rate, nights: nightsCount(), unit: "per person per night", room: true});
-  Q.notes = schoolNotes(sc) + "\n\nYour rooming:\n" +
-    plan.rows.map(r => "• " + r.label + ": " + r.people + " in " + r.rooms + " room" + (r.rooms === 1 ? "" : "s") + (r.free ? " (free of charge)" : "")).join("\n") +
-    "\nMale and female are roomed separately, students up to 4 to a room and teachers twin share.";
+  /* the rooms, the price and the rooming wording all follow the numbers */
+  const plan = schoolNumbers(sc, c);
   /* the standing wording quotes $10 for special diets; a school group pays $5 */
   const kids = (INFO_SECTIONS.find(x => x.id === "children") || {}).text || "";
   if(kids){
     if(!Q.secText) Q.secText = {};
     Q.secText.children = {text: kids.split("$10.00 per person per meal").join("$5.00 per person per meal")};
   }
-  Q.school = {level: sc.level, meals: sc.meals, rate: sc.rate, counts: c, people: t.people, charged: t.charged, at: new Date().toISOString()};
-  /* a school group is roomed by us, so the quote goes out locked; the switch on tab 1
-     unlocks it if a school wants to change things themselves */
-  Q.locked = true;
+  /* the cabins are ours to work out, so they are locked; the group's own numbers stay
+     theirs to change, and the rooming follows whatever they type */
+  SCHOOL_STUDENT_ROOMS.concat(SCHOOL_TEACHER_ROOMS).forEach(id => { if(RATE[id]) setCat(id, "lock", true); });
+  (SCHOOL_INCLUDED[sc.meals] || []).forEach(id => { if(RATE[id]) setCat(id, "lock", true); });
+  Q.locked = false;
   syncForm();
   refresh();
   const warn = [];
@@ -2691,7 +2832,7 @@ function buildSchoolQuote(sc, counts){
     (warn.length ? " Check: " + warn.join("; ") + "." : ""), warn.length > 0);
 }
 function applyTemplate(idx){
-  const t = TEMPLATES[idx];
+  const t = allTemplates()[idx];
   if(!t) return;
   if(t.school) return applySchoolTemplate(t.school);
   const g = Number(Q.guests) || 0;
@@ -3665,6 +3806,7 @@ function snapshotQ(){
     resRates: JSON.parse(JSON.stringify(Q.resRates || {})),
     school: Q.school ? JSON.parse(JSON.stringify(Q.school)) : null,
     locked: !!Q.locked,
+    internalNotes: String(Q.internalNotes || ""),
     rmsLink: Q.rmsLink ? JSON.parse(JSON.stringify(Q.rmsLink)) : null,
     submittedAt: Q.submittedAt || null,
     submittedSel: Q.submittedSel || null,
@@ -4721,6 +4863,11 @@ function lockedItem(id, kind){
   return true;
 }
 function lockedDates(){ return quoteLocked(); }
+/* every cabin on offer is locked: the organiser is being shown a rooming, not a menu */
+function accomAllLocked(){
+  const on = accomItems().filter(it => catEntry(it.id).on);
+  return on.length > 0 && on.every(it => lockedItem(it.id, "accom"));
+}
 function lockedWord(){ return '<span class="lockpill" title="Set by our team for this quote">set</span>'; }
 function lockBtnHTML(id, what){
   const on = itemLockOn(id);
@@ -6053,6 +6200,17 @@ function lockBannerHTML(){
     'Everything below is what we have put aside for you' + (Q.school ? ", including your rooming" : "") + '. ' +
     'If something needs changing, use the button at the foot of the page or call us on ' + esc(VENUE_PHONE) + ' and we will sort it out for you.' + staff + '</div>';
 }
+/* the digital Code of Conduct, when its address is set on the Settings tab */
+function cocUrl(){
+  const u = String((getDefaults() || {}).cocUrl || "").trim();
+  return /^https?:\/\//i.test(u) ? u : "";
+}
+function cocLinkHTML(){
+  const u = cocUrl();
+  if(!u) return '';
+  return '<div class="qp-coc">📋 <a href="' + esc(u) + '" target="_blank" rel="noopener">Read our Code of Conduct</a>' +
+    '<span> — everyone staying agrees to it, and we ask the group organiser to acknowledge it before arrival.</span></div>';
+}
 function submitZoneHTML(){
   const anySel = hasSel(Q) || Q.lines.some(l => (Number(l.qty) || 0) > 0);
   const askBtn = '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a>';
@@ -6392,7 +6550,7 @@ function renderClient(){
     const capHtml = capBarHTML();
 
     accomHtml = '<div class="cb-sec"><h3>Accommodation</h3>' +
-      '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + (quoteLocked() ? ' · the cabins we have set aside for your group ·' : ' · choose how many of each cabin type you\'d like ·') + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
+      '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ((quoteLocked() || accomAllLocked()) ? ' · the cabins we have set aside for your group ·' : ' · choose how many of each cabin type you\'d like ·') + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
       rmsLiveBanner() +
       (CLIENT_MODE && quoteLocked() ? ''
         : '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
@@ -6608,6 +6766,7 @@ function renderClient(){
         : 'Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.') + '</p>' +
       siteInviteHTML() +
       datesPanelHTML() +
+      schoolPanelHTML() +
       accomHtml + venueHtml + caterHtml + churchHtml + fixedHtml +
       '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
       keyDatesHTML(showPrices, true) +
@@ -6635,7 +6794,7 @@ function renderClient(){
     printSummary +
     '<div class="qp-notes"' + (CLIENT_MODE ? '' : ' contenteditable id="qpNotesBlk" title="Notes shown on the quote, click to edit for this quote"') + '>' + (CLIENT_MODE ? escLink(fillQuoteText(Q.notes)) : esc(fillQuoteText(Q.notes))) + '</div>' +
     '<div class="qp-pay"><b>Payment &amp; terms</b><br><span' + (CLIENT_MODE ? '' : ' contenteditable id="qpTermsBlk" title="Click to edit for this quote"') + '>' + (CLIENT_MODE ? escLink(fillQuoteText(Q.terms)) : esc(fillQuoteText(Q.terms))) + '</span>' +
-      '<div class="qp-bank">' + BANK_LINES.join('<br>') + '</div></div>' +
+      '<div class="qp-bank">' + BANK_LINES.join('<br>') + '</div>' + cocLinkHTML() + '</div>' +
     secHtml +
     submitBlock +
     '<div class="qp-print-note">' + esc(VENUE + ' · Quote ' + (Q.num || '')) +
@@ -6696,6 +6855,18 @@ function renderClient(){
     const id = e.currentTarget.dataset.id;
     MENU_OPEN[id] = !MENU_OPEN[id];
     renderClient();
+  }));
+  /* the school's own numbers: the rooms, meals and price follow whatever they type */
+  page.querySelectorAll(".sgcIn").forEach(el => el.addEventListener("change", e => {
+    const S = Q.school;
+    if(!S) return;
+    const c = schoolCounts(S.counts);
+    c[e.target.dataset.k] = Math.max(0, Math.round(Number(e.target.value) || 0));
+    schoolNumbers({level: S.level, meals: S.meals, rate: S.rate}, c);
+    refresh();
+    const t = schoolTotals(c);
+    showToast(t.people + " staying" + (t.free ? ", " + t.free + " free" : "") + ": your rooms have been worked out below." +
+      (t.people < SCHOOL_MIN ? " The catered package needs at least " + SCHOOL_MIN + " people, so we will be in touch." : ""), t.people < SCHOOL_MIN);
   }));
   page.querySelectorAll(".cbPpl").forEach(el => el.addEventListener("input", e => {
     const c = (Q.sel.cater || {})[e.target.dataset.id];
@@ -7641,7 +7812,8 @@ function renderPrevOptions(){
 function renderTplOptions(){
   const sel = document.getElementById("tplSel");
   sel.innerHTML = '<option value="">Start from a template...</option>' +
-    TEMPLATES.map((t, i) => '<option value="' + i + '">' + esc(t.name) + '</option>').join("");
+    allTemplates().map((t, i) => '<option value="' + i + '">' + esc(t.name) + '</option>').join("") +
+    '<option value="new">+ Add a school package…</option>';
 }
 
 /* ---------- draft restore ---------- */
@@ -7971,6 +8143,7 @@ function renderSettings(){
   document.getElementById("s-body").value = d.body;
   document.getElementById("s-emailvia").value = getEmailVia();
   document.getElementById("s-cheapest").checked = d.cheapest !== false;
+  document.getElementById("s-coc").value = d.cocUrl || "";
   renderRcEditor();
   renderFixedRates();
   renderSecEditor();
@@ -8561,7 +8734,7 @@ function resProgress(step, opts){
   }
   if(opts.done || opts.error) clearInterval(RES_TIMER);
 }
-function quoteFromRes(){
+function quoteFromRes(repeat){
   if(CLIENT_MODE || RES_LOADING) return;
   const inp = document.getElementById("fromResNo");
   const res = String((inp && inp.value) || "").replace(/\D/g, "");
@@ -8569,10 +8742,18 @@ function quoteFromRes(){
   if(!getRmsSettings().enabled) setRmsSettings({enabled: true});
   const btn = document.getElementById("fromResBtn");
   RES_LOADING = true;
-  if(btn){ btn.disabled = true; btn.textContent = "Working…"; }
-  const finish = () => { RES_LOADING = false; if(btn){ btn.disabled = false; btn.textContent = "Quote on existing booking"; } };
+  const btn2 = document.getElementById("repeatResBtn");
+  const was = btn ? btn.textContent : "", was2 = btn2 ? btn2.textContent : "";
+  if(btn){ btn.disabled = true; if(!repeat) btn.textContent = "Working…"; }
+  if(btn2){ btn2.disabled = true; if(repeat) btn2.textContent = "Working…"; }
+  const finish = () => {
+    RES_LOADING = false;
+    if(btn){ btn.disabled = false; btn.textContent = was; }
+    if(btn2){ btn2.disabled = false; btn2.textContent = was2; }
+  };
   let step = 0, g = null;
-  const go = n => { step = n; resProgress(n, {title: "Reading RMS booking " + res}); };
+  const newStart = String((document.getElementById("fromResDate") || {}).value || "");
+  const go = n => { step = n; resProgress(n, {title: (repeat ? "Reading past RMS booking " : "Reading RMS booking ") + res}); };
   go(0);
   ensureRmsCatalog(false)
     .then(() => { go(1); return rmsGet({rms: "existing", part: "group", res: res}); })
@@ -8580,7 +8761,8 @@ function quoteFromRes(){
       g = data;
       if(g.linkedQuote && !confirm("RMS group " + g.groupId + " is already on quote " + g.linkedQuote + ". Make another quote on it anyway?")) throw new Error("__stop");
       go(2);
-      const units = g.rateUnits || [];
+      /* a repeat is a fresh quote on new dates, so last time's rates are no help */
+      const units = repeat ? [] : (g.rateUnits || []);
       if(!units.length) return {resRates: {}};
       /* the rates matter less than the booking itself: a failure here falls back to live rates */
       return rmsGet({rms: "existing", part: "rates", ids: units.map(u => u.id + ":" + u.itemId).join(",")})
@@ -8591,6 +8773,7 @@ function quoteFromRes(){
       g.rateSource = r.rateSource || "";
       go(3);
       const ids = g.memberIds || [];
+      if(repeat) return {paid: 0};              // money on the old booking has nothing to do with the new one
       return rmsGet({rms: "existing", part: "paid", res: String(g.groupId), ids: ids.join(",")})
         .catch(e => ({paid: 0, paidError: e.message}));
     })
@@ -8598,8 +8781,8 @@ function quoteFromRes(){
       g.paid = Number(p.paid) || 0;
       if(p.paidError) g.paidError = p.paidError;
       go(4);
-      applyResBooking(g);
-      resProgress(4, {done: true, title: "Quote " + Q.num + " filled in from RMS group " + g.groupId});
+      applyResBooking(g, {repeat: !!repeat, newStart: newStart});
+      resProgress(4, {done: true, title: "Quote " + Q.num + (repeat ? " started from past booking " : " filled in from RMS group ") + g.groupId});
       setTimeout(() => resProgress(-1), 2500);
       finish();
       if(inp) inp.value = "";
@@ -8607,12 +8790,14 @@ function quoteFromRes(){
     .catch(e => {
       finish();
       if(e && e.message === "__stop"){ resProgress(-1); return; }
-      resProgress(step, {error: true, title: "Could not read RMS booking " + res});
+      resProgress(step, {error: true, title: "Could not read " + (repeat ? "past " : "") + "RMS booking " + res});
       setTimeout(() => resProgress(-1), 12000);
       showToast("Could not read that booking from RMS: " + e.message, true);
     });
 }
-function applyResBooking(g){
+function applyResBooking(g, opts){
+  opts = opts || {};
+  const repeat = !!opts.repeat;
   const note = keepCurrentQuote();
   Q = blankQuote(nextQuoteNum());
   lsDel(LS_DRAFT);
@@ -8623,16 +8808,20 @@ function applyResBooking(g){
   Q.mobile = gu.mobile || "";
   Q.event = gu.event || "";
   if(gu.address) Q.address = Object.assign({line1: "", town: "", state: "", postcode: ""}, gu.address);
-  Q.dateStart = g.arrival || "";
-  Q.dateEnd = g.departure || "";
+  /* a repeat moves the whole booking onto the new dates, keeping its shape */
+  const shiftDays = (repeat && /^\d{4}-\d{2}-\d{2}$/.test(String(opts.newStart || "")) && g.arrival) ? isoDiffDays(g.arrival, opts.newStart) : 0;
+  const mv = iso => (shiftDays && /^\d{4}-\d{2}-\d{2}$/.test(String(iso || ""))) ? isoAddDays(iso, shiftDays) : iso;
+  Q.dateStart = mv(g.arrival || "");
+  Q.dateEnd = mv(g.departure || "");
   if(Number(g.guests) > 0) Q.guests = Number(g.guests);
   /* cabins and sites: one block per type and dates; a block covering the whole stay has no dates of its own */
   const skipped = [];
   Q.sel.accom = [];
   (g.accom || []).forEach(a => {
     if(!RATE[a.id]){ skipped.push(a.qty + " × " + a.id); return; }
-    const whole = a.from === Q.dateStart && a.to === Q.dateEnd;
-    Q.sel.accom.push(whole ? {id: a.id, qty: a.qty} : {id: a.id, qty: a.qty, from: a.from, to: a.to});
+    const from = mv(a.from), to = mv(a.to);
+    const whole = from === Q.dateStart && to === Q.dateEnd;
+    Q.sel.accom.push(whole ? {id: a.id, qty: a.qty} : {id: a.id, qty: a.qty, from: from, to: to});
     setCat(a.id, "on", true);
   });
   /* conference rooms by day */
@@ -8640,14 +8829,26 @@ function applyResBooking(g){
   Object.keys(g.venues || {}).forEach(key => {
     const v = VENUES.find(x => x.key === key);
     if(!v){ skipped.push(key); return; }
-    Q.sel.venueDays[key] = Object.assign({}, g.venues[key]);
+    const days = {};
+    Object.keys(g.venues[key] || {}).forEach(iso => { days[mv(iso)] = g.venues[key][iso]; });
+    Q.sel.venueDays[key] = days;
     setCat(v.fullId, "on", true);
     syncVenueCount(key);
   });
-  Q.resRates = JSON.parse(JSON.stringify(g.resRates || {}));
-  Q.rmsLink = {groupId: g.groupId, askedFor: g.askedFor, at: new Date().toISOString(), paid: Number(g.paid) || 0,
-               members: g.members || 0, unmapped: (g.unmapped || []).map(u => u.name + " (" + u.area + ")"),
-               priced: Object.keys(g.resRates || {}), rateSource: g.rateSource || "", status: g.masterStatus || ""};
+  if(repeat){
+    /* nothing is written back to the old group: this is a brand new booking */
+    Q.resRates = {};
+    Q.rmsLink = null;
+    Q.internalNotes = [String(g.masterNotes || "").trim(),
+      "From RMS group " + g.groupId + " (" + shortDateY(g.arrival) + (g.departure && g.departure !== g.arrival ? " to " + shortDateY(g.departure) : "") + "), repeated on " + shortDateY(isoDate(today)) + "."]
+      .filter(Boolean).join("\n\n");
+  } else {
+    Q.resRates = JSON.parse(JSON.stringify(g.resRates || {}));
+    Q.rmsLink = {groupId: g.groupId, askedFor: g.askedFor, at: new Date().toISOString(), paid: Number(g.paid) || 0,
+                 members: g.members || 0, unmapped: (g.unmapped || []).map(u => u.name + " (" + u.area + ")"),
+                 priced: Object.keys(g.resRates || {}), rateSource: g.rateSource || "", status: g.masterStatus || ""};
+    if(String(g.masterNotes || "").trim()) Q.internalNotes = String(g.masterNotes).trim();
+  }
   normalizeQuote(Q);
   applyFixedRates();
   syncForm();
@@ -8658,10 +8859,20 @@ function applyResBooking(g){
   const bits = [(g.accom || []).reduce((t, a) => t + a.qty, 0) + " cabins & sites", Object.keys(g.venues || {}).length + " room" + (Object.keys(g.venues || {}).length === 1 ? "" : "s")];
   const noWho = ["contact", "org", "email", "mobile"].filter(k => !String(Q[k] || "").trim()).map(k => ({contact: "name", org: "group name", email: "email", mobile: "mobile"})[k]);
   if(noWho.length) bits.push("RMS had no " + noWho.join(", ") + " for the organiser, so type " + (noWho.length === 1 ? "it" : "them") + " in");
+  const past = Q.dateStart && Q.dateStart < isoDate(today);
+  if(repeat){
+    showToast("Started " + Q.num + " from RMS group " + g.groupId + ": " + bits.join(", ") + ". " +
+      (shiftDays ? "Moved to " + fmtRange(Q.dateStart, Q.dateEnd) + ", and prices are being loaded for the new dates." :
+        (past ? "It still has last time's dates (" + fmtRange(Q.dateStart, Q.dateEnd) + "), which have passed: set the new dates and the prices load themselves." :
+          "Dates kept as they were.")) +
+      " Nothing is written back to the old booking." + (skipped.length ? " Not filled in: " + skipped.join(", ") + "." : "") + note, past && !shiftDays);
+    return;
+  }
   showToast("Started " + Q.num + " on RMS group " + g.groupId + ": " + bits.join(", ") + (g.paid > 0 ? ", " + money(g.paid) + " already paid" : "") +
     (skipped.length ? ". Not filled in: " + skipped.join(", ") : "") + "." +
     (g.paidError ? " Payments could not be checked (" + g.paidError + "), so nothing is credited yet." : "") + note);
 }
+
 /* the blue bar on tab 1 while a quote sits on an existing RMS group */
 function renderResLink(){
   const bar = document.getElementById("resLinkBar");
@@ -8688,9 +8899,11 @@ function renderResLink(){
 }
 (function(){
   const b = document.getElementById("fromResBtn");
-  if(b) b.addEventListener("click", quoteFromRes);
+  if(b) b.addEventListener("click", () => quoteFromRes(false));
+  const rb = document.getElementById("repeatResBtn");
+  if(rb) rb.addEventListener("click", () => quoteFromRes(true));
   const i = document.getElementById("fromResNo");
-  if(i) i.addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); quoteFromRes(); } });
+  if(i) i.addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); quoteFromRes(false); } });
 })();
 
 /* the discount tick box and its two rows */
@@ -8724,7 +8937,7 @@ const BINDINGS = [
   ["f-date-start", "dateStart"], ["f-date-end", "dateEnd"], ["f-guests", "guests"],
   ["f-num", "num"], ["f-prepby", "prepBy"], ["f-prepemail", "prepEmail"], ["f-valid", "validDays"],
   ["f-pricemode", "priceMode"], ["f-bond", "bond"],
-  ["f-notes", "notes"], ["f-terms", "terms"]
+  ["f-notes", "notes"], ["f-terms", "terms"], ["f-internal", "internalNotes"]
 ];
 BINDINGS.forEach(pair => {
   const el = document.getElementById(pair[0]);
@@ -8760,6 +8973,8 @@ function syncForm(){
 /* the "Lock this quote" switch on tab 1 */
 function renderLockSwitch(){
   if(CLIENT_MODE) return;
+  const ic = document.getElementById("intCard");
+  if(ic) ic.classList.toggle("has", String(Q.internalNotes || "").trim() !== "");
   const box = document.getElementById("f-locked");
   if(!box) return;
   const on = quoteLocked();
@@ -8822,8 +9037,10 @@ document.getElementById("emailQuoteBtn2").addEventListener("click", doEmail);
 document.getElementById("saveQuoteBtn").addEventListener("click", doSaveQuote);
 document.getElementById("newQuoteBtn").addEventListener("click", startNewQuote);
 document.getElementById("tplSel").addEventListener("change", e => {
-  if(e.target.value !== "") applyTemplate(Number(e.target.value));
+  const v = e.target.value;
   e.target.value = "";
+  if(v === "new") newSchoolPack();
+  else if(v !== "") applyTemplate(Number(v));
 });
 document.getElementById("prevSel").addEventListener("change", e => {
   if(e.target.value !== "") copyFromQuote(e.target.value);
@@ -8876,6 +9093,7 @@ document.getElementById("prevSel").addEventListener("change", e => {
 /* settings bindings */
 document.getElementById("s-notes").addEventListener("input", e => saveDefaults({notes: e.target.value}));
 document.getElementById("s-terms").addEventListener("input", e => saveDefaults({terms: e.target.value}));
+document.getElementById("s-coc").addEventListener("input", e => { saveDefaults({cocUrl: String(e.target.value || "").trim()}); refresh(); });
 document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
 document.getElementById("s-body").addEventListener("input", e => saveDefaults({body: e.target.value}));
 document.getElementById("s-cheapest").addEventListener("change", e => {
