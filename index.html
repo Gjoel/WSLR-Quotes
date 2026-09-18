@@ -218,6 +218,21 @@
 
   .topactions{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0 0 16px}
   .topactions select{width:auto; max-width:300px; padding:9px 10px; border-radius:9px; font-weight:600; font-size:14px; color:var(--ink2); background:var(--surface)}
+  .schooldlg .sgrid{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px}
+  .schooldlg .sgrid label{display:flex; flex-direction:column; gap:4px; font-size:13.5px; font-weight:600}
+  .schooldlg .sgrid em{display:block; font-style:normal; font-weight:400; font-size:11.5px; color:#6b7580}
+  .schooldlg .sgrid input{padding:8px 10px; font:inherit; border:1px solid #c9d4dc; border-radius:8px}
+  .schooldlg .sgsum{margin-top:14px}
+  .schooldlg .sgtot{margin-top:8px; font-size:13.5px}
+  .schooldlg .sgwarn{margin-top:8px; background:#fff4e0; border-left:4px solid #ef8f00; padding:6px 10px; border-radius:6px; font-size:13px}
+  .lockBtn{appearance:none; border:1px solid var(--grid, #cfd6dd); background:#fff; border-radius:6px; padding:1px 5px; font-size:12px; cursor:pointer; margin-left:6px; line-height:1.4}
+  .lockBtn.on{background:#fff4e0; border-color:#ef8f00}
+  .lockedqty{display:flex; align-items:center; justify-content:center; gap:6px; font-weight:700; font-size:15px}
+  .lockpill{background:#eef3f7; color:#4f5b66; border-radius:20px; padding:1px 8px; font-size:11px; font-weight:600; letter-spacing:.02em}
+  .lockbar{background:#eef3f7; border:1.5px solid #1f5fae; border-radius:10px; padding:10px 14px; margin:0 0 14px; font-size:14px; line-height:1.6}
+  .lockbar b{display:inline}
+  .lockstaff{display:block; margin-top:4px; color:#8e1c1c; font-size:12.5px}
+  .inclpkg{color:#2e7d32; font-weight:600; font-size:12.5px}
   .fromres{display:inline-flex; gap:0; align-items:stretch}
   .fromres input{width:92px; border:1px solid var(--line, #c9d4dc); border-right:0; border-radius:8px 0 0 8px; padding:6px 8px; font:inherit}
   .fromres .btn{border-radius:0 8px 8px 0}
@@ -935,6 +950,10 @@
           </label>
           <label title="Appears in the deposit & payment information on the quote">Security bond ($)<input id="f-bond" type="number" min="0" step="50"></label>
         </div>
+        <label class="pencilsw lockrow" title="Off by default. When it is on, the organiser's page shows the quote exactly as you have built it: they can read it and accept it, but the dates, cabins and rooms are fixed. Paid catering extras stay open unless you padlock them below.">
+          <input type="checkbox" id="f-locked">
+          <span><b>Lock this quote (the organiser can't change it)</b><span class="hint" id="lockNote"></span></span>
+        </label>
         <label class="pencilsw" title="When an organiser presses submit, the cabins, sites and rooms they picked are written into RMS as an unconfirmed group reservation and the organiser is emailed a deposit invoice. This is a house setting: it applies to every quote, on every computer.">
           <input type="checkbox" id="f-pencils">
           <span><b>Book the units in RMS (unconfirmed) when an organiser submits</b><span class="hint" id="pencilNote"></span></span>
@@ -2264,6 +2283,8 @@ function blankQuote(num){
     rates: {},          // nightly tariffs for this quote: {itemId: {"2026-08-21": 770, ...}}
     rateFixed: {},      // which of those came from a set price rather than RMS
     resRates: {},       // nightly rates already on an existing RMS booking: {itemId: {iso: rate}}
+    school: null,       // the SCHOOL GROUPS package this quote was built from
+    locked: false,      // "this is your quote": the organiser can look but not change it
     rmsLink: null,      // quoting on an existing RMS group: {groupId, askedFor, paid, unmapped, ...}
     availCal: {},       // per-date availability: {itemId: {"2026-08-21": 0, ...}}
     ratesInfo: null,    // {from, to, items, file}
@@ -2303,6 +2324,7 @@ function normalizeQuote(q){
   if(!q.rateFixed) q.rateFixed = {};
   if(!q.resRates || typeof q.resRates !== "object") q.resRates = {};
   if(q.rmsLink === undefined) q.rmsLink = null;
+  if(q.locked === undefined) q.locked = false;
   if(!q.availCal) q.availCal = {};
   if(!q.menu) q.menu = {};
   if(!q.secText || typeof q.secText !== "object") q.secText = {};
@@ -2449,11 +2471,229 @@ const TEMPLATES = [
   {name:"Catered conference day",     venues:{fr13: 1}, cater:["lunch_sit"]},
   {name:"Conference day (room only)", venues:{fr13: 1}},
   {name:"Catered group stay (daily meals)", cater:["bf_cont", "din2"], caterAllDays: true},
-  {name:"Auditorium event",           venues:{aud: 1}}
+  {name:"Auditorium event",           venues:{aud: 1}},
+  {name:"SCHOOL GROUPS · Primary · dinner, bed & breakfast ($64pp per night)", school:{level:"Primary", meals:"dbb", rate:64}},
+  {name:"SCHOOL GROUPS · High school · dinner, bed & breakfast ($69pp per night)", school:{level:"High school", meals:"dbb", rate:69}},
+  {name:"SCHOOL GROUPS · Primary · bed & breakfast ($50pp per night)", school:{level:"Primary", meals:"bb", rate:50}},
+  {name:"SCHOOL GROUPS · High school · bed & breakfast ($55pp per night)", school:{level:"High school", meals:"bb", rate:55}}
 ];
+/* ---------- SCHOOL GROUPS (2027 packages) ----------
+   Priced per person per night, so the package sits on the quote as one line and the
+   cabins are shown as included. Rooms are filled to make the most of the cheaper
+   units: students 4 to a room in the motel and 1 bedroom air conditioned units,
+   teachers twin share. Everything bigger, and the campsites, are switched off. */
+const SCHOOL_MIN = 20;
+const SCHOOL_STUDENT_ROOMS = ["acc_motel_std", "acc_motel_bud", "acc_1br_std"];
+const SCHOOL_TEACHER_ROOMS = ["acc_1br_std", "acc_motel_std", "acc_motel_bud"];
+const SCHOOL_PER_STUDENT = 4, SCHOOL_PER_TEACHER = 2;
+const SCHOOL_OFF = ["acc_4br_house", "acc_2br_ter", "acc_2br_bung", "acc_2br_std", "acc_1br_ter",
+                    "camp_unpow", "camp_pow_wf", "camp_pow_dt"];
+/* the school prices for the extras the organiser can add on top of the package */
+const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 20, lunch_sit: 25, diet: 5};
+/* the meals the package covers: shown at no charge and filled in for every night, so
+   the kitchen still gets the covers and the organiser can see what is included */
+const SCHOOL_INCLUDED = {dbb: ["bf_cont", "din2"], bb: ["bf_cont"]};
+const SCHOOL_MEAL_IDS = ["bf_cont", "din2", "din1"];   // the package meals; anything not included is switched off
+const SCHOOL_FREE_VENUES = ["fr13", "fr1", "fr2", "fr3", "fr5", "aud"];
+function schoolLineDesc(sc){
+  return "School package · " + sc.level + " · " + (sc.meals === "dbb" ? "dinner, bed & breakfast" : "bed & breakfast") +
+    " · " + money0(sc.rate) + " per person per night";
+}
+function schoolNotes(sc){
+  return "SCHOOL GROUP PACKAGE " + (sc.meals === "dbb" ? "(dinner, bed & breakfast)" : "(bed & breakfast)") + " · " +
+    sc.level + " students & teachers · " + money0(sc.rate) + " per person per night. Minimum " + SCHOOL_MIN + " people for the catered package.\n\n" +
+    "Includes:\n" +
+    (sc.meals === "dbb" ? "• Dinner, 2 courses (main & dessert) in our private dining room with unlimited soft drink, iced water and tea/coffee\n" : "") +
+    "• Accommodation, triple/quad share for students and single/twin share for teachers. Every unit is self-contained with its own bathroom and all linen\n" +
+    "• Breakfast in our private dining room: cereals, fruit, yoghurt, toast, condiments, fresh juice and tea/coffee\n" +
+    "• Complimentary use of the conference rooms and auditorium (subject to availability) for meetings, study and activities\n" +
+    "• Complimentary use of the resort's activities: indoor heated pool, spa, steam room, tennis court, mini golf and basketball\n" +
+    "• Complimentary WiFi\n" +
+    "• The bus driver stays and eats free\n\n" +
+    "Good to know:\n" +
+    "• Available during NSW school terms, Monday to Thursday nights (negotiable).\n" +
+    "• We do not run organised programs; the onsite activities are there for you to use during your stay.\n" +
+    "• Groups over the dining room capacity (160 people) may need more than one meal sitting, or another dining area, subject to availability.\n" +
+    "• Catering is booked at least 1 month before your stay and is subject to availability.\n" +
+    "• Medical or special dietary meals (gluten free, vegetarian, intolerances) are $5.00 per person per meal.\n" +
+    "• Final numbers and catering numbers are due {finallead} before you arrive.";
+}
+/* fill rooms from the cheapest types out, capped by what RMS says is free */
+function schoolRooms(people, per, types, taken){
+  const out = [];
+  let left = Math.ceil(Math.max(0, people) / per);
+  types.forEach(id => {
+    if(left <= 0 || !RATE[id]) return;
+    const a = availDisplay(id);
+    const room = a === null ? left : Math.max(0, a - (taken[id] || 0));
+    const n = Math.min(left, room);
+    if(n <= 0) return;
+    out.push({id: id, qty: n});
+    taken[id] = (taken[id] || 0) + n;
+    left -= n;
+  });
+  return {blocks: out, short: left};
+}
+/* the numbers the rooming needs: boys and girls are never put in a room together,
+   and neither are male and female teachers. Bus drivers stay and eat free. */
+const SCHOOL_GROUPS_IN = [
+  {k: "ms", label: "Male students", per: 4, kind: "student"},
+  {k: "fs", label: "Female students", per: 4, kind: "student"},
+  {k: "mt", label: "Male teachers", per: 2, kind: "teacher"},
+  {k: "ft", label: "Female teachers", per: 2, kind: "teacher"},
+  {k: "bd", label: "Bus drivers", per: 1, kind: "driver", free: true}
+];
+function schoolCounts(o){
+  const c = {};
+  SCHOOL_GROUPS_IN.forEach(g => { c[g.k] = Math.max(0, Math.round(Number((o || {})[g.k]) || 0)); });
+  return c;
+}
+function schoolTotals(c){
+  const people = SCHOOL_GROUPS_IN.reduce((s, g) => s + c[g.k], 0);
+  const free = SCHOOL_GROUPS_IN.filter(g => g.free).reduce((s, g) => s + c[g.k], 0);
+  return {people: people, free: free, charged: Math.max(0, people - free)};
+}
+/* rooms for each group on its own, filling the cheapest units RMS shows free first */
+function schoolPlan(c){
+  const taken = {};
+  const types = SCHOOL_STUDENT_ROOMS.filter(id => RATE[id]);
+  const teacherTypes = SCHOOL_TEACHER_ROOMS.filter(id => RATE[id]);
+  const rows = [], merged = {};
+  let short = 0;
+  SCHOOL_GROUPS_IN.forEach(g => {
+    if(!c[g.k]) return;
+    const r = schoolRooms(c[g.k], g.per, g.kind === "student" ? types : teacherTypes, taken);
+    r.blocks.forEach(b => { merged[b.id] = (merged[b.id] || 0) + b.qty; });
+    short += r.short;
+    rows.push({label: g.label, people: c[g.k], per: g.per, free: !!g.free,
+               rooms: r.blocks.reduce((s, b) => s + b.qty, 0) + r.short,
+               words: r.blocks.map(b => b.qty + " × " + ((RATE[b.id] || {}).name || b.id)).join(", ") +
+                      (r.short ? (r.blocks.length ? ", plus " : "") + r.short + " more needed (nothing free in RMS)" : "")});
+  });
+  return {rows: rows, merged: merged, short: short};
+}
+function schoolRoomWords(merged){
+  return Object.keys(merged).map(id => merged[id] + " × " + ((RATE[id] || {}).name || id)).join(", ");
+}
+/* tab 1: pick the package, then fill in who is coming */
+function applySchoolTemplate(sc){
+  const prev = (Q.school && Q.school.counts) ? Q.school.counts : {};
+  const dlg = document.createElement("div");
+  dlg.className = "histdlg";
+  dlg.innerHTML = '<div class="histcard schooldlg"><h3 style="margin:0 0 2px">' + esc(sc.level) + ' school group · ' +
+      (sc.meals === "dbb" ? 'dinner, bed &amp; breakfast' : 'bed &amp; breakfast') + ' · ' + money0(sc.rate) + ' per person per night</h3>' +
+    '<p class="hint" style="margin:0 0 12px">Students are filled 4 to a room and teachers share a twin. Male and female are never put in the same room, so each line is roomed on its own. Bus drivers stay and eat free.</p>' +
+    '<div class="sgrid">' + SCHOOL_GROUPS_IN.map(g =>
+      '<label><span>' + esc(g.label) + '<em>' + (g.free ? 'free of charge · a room each' : g.per + ' per room') + '</em></span>' +
+      '<input type="number" min="0" step="1" class="sgIn" data-k="' + g.k + '" value="' + esc(prev[g.k] !== undefined ? prev[g.k] : "") + '" placeholder="0"></label>').join('') +
+    '</div>' +
+    '<div class="sgsum" id="sgSum"></div>' +
+    '<div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px">' +
+      '<button type="button" class="btn ghost" id="sgCancel">Cancel</button>' +
+      '<button type="button" class="btn accept" id="sgGo">Build the quote</button></div></div>';
+  document.body.appendChild(dlg);
+  const read = () => {
+    const o = {};
+    dlg.querySelectorAll(".sgIn").forEach(el => { o[el.dataset.k] = el.value; });
+    return schoolCounts(o);
+  };
+  const paint = () => {
+    const c = read(), t = schoolTotals(c), plan = schoolPlan(c);
+    const nights = Math.max(1, nightsCount());
+    const bits = plan.rows.map(r => '<tr><td>' + esc(r.label) + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('');
+    document.getElementById("sgSum").innerHTML = t.people
+      ? '<table><tr><th>Who</th><th>People</th><th>Rooms</th><th>Units</th></tr>' + bits + '</table>' +
+        '<div class="sgtot"><b>' + t.people + '</b> staying · <b>' + t.charged + '</b> charged at ' + money0(sc.rate) +
+        ' per person per night' + (t.free ? ' · ' + t.free + ' free (bus driver' + (t.free === 1 ? '' : 's') + ')' : '') +
+        ' · <b>' + money(t.charged * sc.rate * nights) + '</b> over ' + nights + ' night' + (nights === 1 ? '' : 's') + '</div>' +
+        (t.people < SCHOOL_MIN ? '<div class="sgwarn">Under ' + SCHOOL_MIN + " people, so the catered package price does not normally apply.</div>" : '') +
+        (plan.short ? '<div class="sgwarn">' + plan.short + ' room(s) more than RMS shows free on these dates. They are still added to the quote; check availability.</div>' : '')
+      : '<div class="hint">Type how many are coming and the rooms work themselves out.</div>';
+  };
+  dlg.querySelectorAll(".sgIn").forEach(el => el.addEventListener("input", paint));
+  const close = () => dlg.remove();
+  dlg.addEventListener("click", e => { if(e.target === dlg) close(); });
+  dlg.querySelector("#sgCancel").addEventListener("click", close);
+  dlg.querySelector("#sgGo").addEventListener("click", () => {
+    const c = read();
+    if(!schoolTotals(c).people){ showToast("Type how many people are coming first.", true); return; }
+    close();
+    buildSchoolQuote(sc, c);
+  });
+  paint();
+  const first = dlg.querySelector(".sgIn");
+  if(first) first.focus();
+}
+function buildSchoolQuote(sc, counts){
+  const c = schoolCounts(counts);
+  const t = schoolTotals(c);
+  /* what is on offer */
+  SCHOOL_OFF.forEach(id => { if(RATE[id]) setCat(id, "on", false); });
+  const onRooms = SCHOOL_STUDENT_ROOMS.filter(id => RATE[id]);
+  onRooms.forEach(id => { setCat(id, "on", true); setCat(id, "price", 0); });   // the nightly rate is in the package
+  SCHOOL_FREE_VENUES.forEach(k => {
+    const v = VENUES.find(x => x.key === k);
+    if(!v) return;
+    setCat(v.fullId, "on", true);                 // free with the package: venueIsFree() prices them at nothing
+    if(RATE[v.halfId]) setCat(v.halfId, "on", true);
+  });
+  SCHOOL_MEAL_IDS.forEach(id => {
+    if(!RATE[id]) return;
+    if(Q.sel.cater) delete Q.sel.cater[id];                                    // a package picked earlier
+    if((SCHOOL_INCLUDED[sc.meals] || []).indexOf(id) < 0) setCat(id, "on", false);
+  });
+  Object.keys(SCHOOL_EXTRAS).forEach(id => { if(RATE[id]){ setCat(id, "on", true); setCat(id, "price", SCHOOL_EXTRAS[id]); } });
+  /* the meals in the package: no charge, every night, everyone (the driver eats free too) */
+  const nightsN = Math.max(1, nightsCount());
+  if(!Q.sel.cater) Q.sel.cater = {};
+  (SCHOOL_INCLUDED[sc.meals] || []).forEach(id => {
+    if(!RATE[id]) return;
+    setCat(id, "on", true);
+    setCat(id, "price", 0);
+    Q.sel.cater[id] = {ppl: t.people, days: nightsN};
+  });
+  /* the rooms, each group on its own */
+  const plan = schoolPlan(c);
+  if(plan.short){
+    /* RMS is short: the rooms still go on the quote so the numbers add up */
+    const fallback = onRooms[0];
+    if(fallback) plan.merged[fallback] = (plan.merged[fallback] || 0) + plan.short;
+  }
+  Q.sel.accom = Object.keys(plan.merged).map(id => ({id: id, qty: plan.merged[id]}));
+  Q.guests = t.people;
+  /* the package itself: one per person per night line, counted as accommodation
+     so the part payment before arrival still works. Bus drivers are not charged. */
+  Q.lines = (Q.lines || []).filter(l => !/^School package/.test(String(l.desc || "")));
+  Q.lines.push({id: "custom", desc: schoolLineDesc(sc), qty: t.charged, price: sc.rate, nights: nightsCount(), unit: "per person per night", room: true});
+  Q.notes = schoolNotes(sc) + "\n\nYour rooming:\n" +
+    plan.rows.map(r => "• " + r.label + ": " + r.people + " in " + r.rooms + " room" + (r.rooms === 1 ? "" : "s") + (r.free ? " (free of charge)" : "")).join("\n") +
+    "\nMale and female are roomed separately, students up to 4 to a room and teachers twin share.";
+  /* the standing wording quotes $10 for special diets; a school group pays $5 */
+  const kids = (INFO_SECTIONS.find(x => x.id === "children") || {}).text || "";
+  if(kids){
+    if(!Q.secText) Q.secText = {};
+    Q.secText.children = {text: kids.split("$10.00 per person per meal").join("$5.00 per person per meal")};
+  }
+  Q.school = {level: sc.level, meals: sc.meals, rate: sc.rate, counts: c, people: t.people, charged: t.charged, at: new Date().toISOString()};
+  /* a school group is roomed by us, so the quote goes out locked; the switch on tab 1
+     unlocks it if a school wants to change things themselves */
+  Q.locked = true;
+  syncForm();
+  refresh();
+  const warn = [];
+  if(t.people < SCHOOL_MIN) warn.push("under " + SCHOOL_MIN + " people, so the catered package price does not normally apply");
+  if(plan.short) warn.push(plan.short + " room(s) more than RMS shows free on these dates, so check availability");
+  const nights = stayNightsList();
+  if(nights.some(d => [4, 5, 6].indexOf(new Date(d + "T12:00:00").getDay()) >= 0)) warn.push("the package covers Monday to Thursday nights (negotiable), and this stay includes a Friday, Saturday or Sunday night");
+  showToast(sc.level + " " + (sc.meals === "dbb" ? "dinner/bed/breakfast" : "bed/breakfast") + " package at " + money0(sc.rate) + "pp per night · " +
+    t.people + " staying, " + t.charged + " charged" + (t.free ? " (" + t.free + " bus driver" + (t.free === 1 ? "" : "s") + " free)" : "") + " · " +
+    (schoolRoomWords(plan.merged) || "no rooms could be suggested") + ". Bigger units and campsites are switched off, and the conference rooms are on at no charge." +
+    (warn.length ? " Check: " + warn.join("; ") + "." : ""), warn.length > 0);
+}
 function applyTemplate(idx){
   const t = TEMPLATES[idx];
   if(!t) return;
+  if(t.school) return applySchoolTemplate(t.school);
   const g = Number(Q.guests) || 0;
   Object.keys(t.venues || {}).forEach(k => {
     Q.sel.venues[k] = Math.max(Number(Q.sel.venues[k]) || 0, t.venues[k]);
@@ -2490,7 +2730,7 @@ function mealsSummary(){
     if(kidsOn() && id === "diet") return;
     add(id, (RATE[id] || {}).name, caterRowPeople(id) * (Number(c.days) || 0));
   });
-  Q.lines.forEach(l => add(l.id, lineItem(l).custom ? (l.desc || "") : lineItem(l).name, (Number(l.qty) || 0) * lineNights(l)));
+  Q.lines.forEach(l => { if(isAccomLine(l)) return; add(l.id, lineItem(l).custom ? (l.desc || "") : lineItem(l).name, (Number(l.qty) || 0) * lineNights(l)); });
   return m;
 }
 function roomsSummary(){
@@ -2575,7 +2815,8 @@ function displayLines(){
       dietMeals += b.diet * days;
     });
     if(dietMeals > 0){
-      out.push({name: "Special dietary surcharge (medically diagnosed)", qty: dietMeals, nights: 0, nightsWord: "meals", beds: "", price: 10, disc: 0, unit: "per meal", when: "", total: dietMeals * 10});
+      const dietRate = dietPerMeal();
+      if(dietRate > 0) out.push({name: "Special dietary surcharge (medically diagnosed)", qty: dietMeals, nights: 0, nightsWord: "meals", beds: "", price: dietRate, disc: 0, unit: "per meal", when: "", total: dietMeals * dietRate});
     }
   } else {
     caterItems().forEach(it => {
@@ -2629,6 +2870,13 @@ function lineTotal(l){
   return (Number(l.qty)||0) * lineNights(l) * (Number(l.price)||0) * (1 - lineDiscPct(l)/100);
 }
 /* ---------- selection maths ---------- */
+/* the dietary surcharge for this quote: the rate card's $10, or whatever the quote
+   sets (a school package is $5) */
+function dietPerMeal(){
+  const c = (Q.catalog && Q.catalog.diet) || {};
+  if(c.price !== undefined && c.price !== null && c.price !== "") return Number(c.price) || 0;
+  return Number((RATE.diet || {}).price) || 0;
+}
 function catEntry(id){
   const it = RATE[id] || {};
   const c = (Q.catalog && Q.catalog[id]) || {};
@@ -2799,8 +3047,14 @@ function mealServiceWords(){
   if(words.length === 1) return "your " + words[0] + " service";
   return "your " + words.slice(0, -1).join(", ") + " and " + words[words.length - 1] + " service";
 }
+/* a SCHOOL GROUPS quote: the nightly rate is in the per person package price, and the
+   conference rooms and auditorium come with it */
+function schoolOn(){ return !!(Q.school && Q.school.rate); }
+function schoolIncludes(id){ return schoolOn() && manualPrice(id) === 0; }
+const SCHOOL_INCL_WORD = '<span class="inclpkg">included in your package</span>';
 function venueIsFree(v){
   if(!v) return false;
+  if(schoolOn() && SCHOOL_FREE_VENUES.indexOf(v.key) >= 0) return true;
   if(v.key === DINING_KEY) return diningIsFree();
   if(v.key === MARQUEE_KEY) return marqueeIsFree();
   return false;
@@ -2808,6 +3062,7 @@ function venueIsFree(v){
 /* why it is free, in words, so every surface says the same thing */
 function venueFreeReason(v){
   if(!v) return "";
+  if(schoolOn() && SCHOOL_FREE_VENUES.indexOf(v.key) >= 0) return "with your school package";
   if(v.key === DINING_KEY) return "with " + mealServiceWords();
   if(v.key === MARQUEE_KEY) return "with your stay";
   return "";
@@ -2869,6 +3124,7 @@ function venueDaysWords(key){
 function cycleVenueDay(key, iso){
   const v = VENUES.find(x => x.key === key);
   if(!v) return;
+  if(lockStop(v.fullId, "venue")) return;
   if(!Q.sel.venueDays) Q.sel.venueDays = {};
   const cur = (Q.sel.venueDays[key] || {})[iso] || "";
   const next = VDAY_NEXT[cur];
@@ -2895,13 +3151,14 @@ function venueDaysHTML(v){
   const legacy = !venueDayMap(v.key) && venueDaysSel(v.key) > 0;
   const shared = venueSharedRooms(v);
   return '<div class="vdays" data-key="' + esc(v.key) + '">' +
-    '<span class="vdlab">' + (legacy ? 'Which days? Tap each day you need it' : 'Tap a day: full day, then morning, then afternoon, then off') + '</span>' +
+    '<span class="vdlab">' + (CLIENT_MODE && lockedItem(v.fullId, "venue") ? 'The days we have set aside for you'
+      : (legacy ? 'Which days? Tap each day you need it' : 'Tap a day: full day, then morning, then afternoon, then off')) + '</span>' +
     days.map(iso => {
       const st = m[iso] || "";
       const a = venueDayAvail(v, iso);
       const taken = !shared && a !== null && Number(a) <= 0;
       const tight = shared && a !== null && Number(a) < shared;
-      const lockOut = CLIENT_MODE && taken && !st;
+      const lockOut = CLIENT_MODE && ((taken && !st) || lockedItem(v.fullId, "venue"));
       const word = taken && !st ? "Booked" : (tight && !st ? "Shared" : VDAY_WORD[st]);
       return '<button type="button" class="vday' + (st ? ' ' + st : '') + (taken ? ' taken' : '') + (tight ? ' tight' : '') + '" data-key="' + esc(v.key) + '" data-iso="' + iso + '"' +
         (lockOut ? ' disabled' : '') + ' title="' + esc(shortDate(iso) + ': ' + (taken ? 'already booked in RMS' : (tight ? 'another group is in, tell us your meal times' : VDAY_WORD[st]))) + '">' +
@@ -3406,6 +3663,8 @@ function snapshotQ(){
     features: JSON.parse(JSON.stringify(Q.features || {perPerson: true, depositDates: true, kids: true, cheapest: true})),
     sel: JSON.parse(JSON.stringify(Q.sel || blankSel())),
     resRates: JSON.parse(JSON.stringify(Q.resRates || {})),
+    school: Q.school ? JSON.parse(JSON.stringify(Q.school)) : null,
+    locked: !!Q.locked,
     rmsLink: Q.rmsLink ? JSON.parse(JSON.stringify(Q.rmsLink)) : null,
     submittedAt: Q.submittedAt || null,
     submittedSel: Q.submittedSel || null,
@@ -3606,7 +3865,13 @@ function availToast(id){
 function wholeStayBlock(id){
   return (Q.sel.accom || []).find(x => x.id === id && !x.from && !x.to);
 }
+function lockStop(id, kind){
+  if(!CLIENT_MODE || !lockedItem(id, kind)) return false;
+  showToast("This quote is set for your group, so this cannot be changed here. Press \u201cNeed to make changes?\u201d or call us on " + VENUE_PHONE + " and we will update it for you.", true);
+  return true;
+}
 function stepAccom(id, dir){
+  if(lockStop(id, "accom")) return;
   let b = wholeStayBlock(id) || (Q.sel.accom || []).find(x => x.id === id);
   if(dir > 0){
     const nights = b ? blockNightsList(b) : stayNightsList();
@@ -3676,6 +3941,8 @@ function setSplit(v){
   refresh();
 }
 function stepVenue(key, dir){
+  const v0 = VENUES.find(x => x.key === key);
+  if(v0 && lockStop(v0.fullId, "venue")) return;
   const cur = Number((Q.sel.venues || {})[key]) || 0;
   if(dir > 0){
     const v = VENUES.find(x => x.key === key);
@@ -3713,6 +3980,7 @@ function stepVenue(key, dir){
   refresh();
 }
 function stepCaterDays(id, dir){
+  if(lockStop(id, "cater")) return;
   const c = (Q.sel.cater || {})[id];
   const cur = c ? (Number(c.days) || 0) : 0;
   const next = Math.max(0, cur + dir);
@@ -4436,8 +4704,33 @@ function prepLight(){
   renderClient();
   renderPipeline();
 }
+/* ---------- locking ----------
+   Off by default. A locked quote is "this is what you will receive": the organiser sees
+   the selection but cannot change the dates, the cabins or the rooms. Single items can
+   be locked on their own instead (the padlock beside each row on tab 1), which is how a
+   school group's rooming, or one held conference room, is fixed while the rest of the
+   quote stays open. Staff can always change everything. */
+function quoteLocked(){ return !!Q.locked; }
+function itemLockOn(id){ return !!((Q.catalog && Q.catalog[id] && Q.catalog[id].lock) === true); }
+/* a paid catering extra stays open under a whole-quote lock, so a group can still add
+   a packed lunch; anything included at no charge is part of what they were promised */
+function lockedItem(id, kind){
+  if(itemLockOn(id)) return true;
+  if(!quoteLocked()) return false;
+  if(kind === "cater") return (catEntry(id).price || 0) === 0;
+  return true;
+}
+function lockedDates(){ return quoteLocked(); }
+function lockedWord(){ return '<span class="lockpill" title="Set by our team for this quote">set</span>'; }
+function lockBtnHTML(id, what){
+  const on = itemLockOn(id);
+  return '<button type="button" class="lockBtn' + (on ? ' on' : '') + '" data-id="' + esc(id) + '" title="' +
+    (on ? 'Locked: the organiser cannot change ' + esc(what) + ' on their page. Click to unlock.' : 'Lock ' + esc(what) + ' so the organiser cannot change it') +
+    '">' + (on ? '🔒 locked' : '🔓') + '</button>';
+}
 function stepperHTML(kind, id, val, opts){
   opts = opts || {};
+  if(CLIENT_MODE && opts.lock) return '<div class="lockedqty">' + val + ' ' + lockedWord() + '</div>';
   return '<div class="stepper" data-kind="' + kind + '" data-id="' + esc(String(id)) + '">' +
     '<button class="stDown"' + (opts.canDown === false ? " disabled" : "") + '>−</button>' +
     '<span class="stepval">' + val + '</span>' +
@@ -4518,7 +4811,7 @@ function renderPrep(){
     }
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="accom" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this cabin type on this quote">' +
-      '<div><span class="pkgname">' + esc(it.name) + '</span>' + sleepsPill(it) +
+      '<div><span class="pkgname">' + esc(it.name) + '</span>' + lockBtnHTML(it.id, "these cabins") + sleepsPill(it) +
         (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') + '</div>' +
       priceCell +
       availCell +
@@ -4537,7 +4830,7 @@ function renderPrep(){
     const can = venueCanAdd(v);
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="venue" data-id="' + esc(v.key) + '"' + (c.on ? ' checked' : '') + ' title="Offer this venue on this quote">' +
-      '<div><span class="pkgname">' + esc(v.name) + '</span>' +
+      '<div><span class="pkgname">' + esc(v.name) + '</span>' + lockBtnHTML(v.fullId, "this room") +
         '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
         (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') +
         venueAvailNote(v) + '</div>' +
@@ -4560,7 +4853,7 @@ function renderPrep(){
     const sub = (selc && d > 0) ? (kidsOn() ? d * bandCost(mealBands(it.id), c.price) : (Number(selc.ppl) || 0) * d * c.price) : 0;
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="cater" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this meal on this quote">' +
-      '<div><span class="pkgname">' + esc(it.name) + '</span></div>' +
+      '<div><span class="pkgname">' + esc(it.name) + '</span>' + lockBtnHTML(it.id, "this meal") + '</div>' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + c.price + '" title="Per-person price on this quote">' +
       '<span></span>' +
       '<div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; flex-wrap:wrap">' +
@@ -4590,6 +4883,17 @@ function renderPrep(){
       prepLight();
     });
     el.addEventListener("change", () => refreshWhenDone("#prepAccom, #prepVenues, #prepCater"));
+  });
+  document.querySelectorAll(".lockBtn").forEach(el => {
+    el.addEventListener("click", e => {
+      const id = e.currentTarget.dataset.id;
+      const on = !itemLockOn(id);
+      setCat(id, "lock", on);
+      refresh();
+      showToast(on
+        ? ((RATE[id] || {}).name || id) + " is locked: the organiser sees it but cannot change it."
+        : ((RATE[id] || {}).name || id) + " is unlocked: the organiser can change it again.");
+    });
   });
   host.querySelectorAll(".prepAvail").forEach(el => el.addEventListener("change", e => {
     setCat(e.target.dataset.id, "avail", e.target.value === "" ? "" : Number(e.target.value));
@@ -5104,6 +5408,7 @@ function cheapestResultsHTML(){
 }
 function cheapestPanelHTML(){
   if(!(Q.features && Q.features.cheapest)) return '';
+  if(CLIENT_MODE && lockedDates()) return '';
   const haveCabins = selectedAccomIds().length > 0;
   const n = Math.max(1, nightsCount());
   const span = tariffSpan();
@@ -5142,10 +5447,12 @@ function datesPanelHTML(){
   const unp = unpricedNights();
   return '<div class="cb-sec datesec">' +
     '<h3>Your dates</h3>' +
-    '<p class="cb-hint">move the arrival date or the number of nights to see what other dates would cost, nothing is held until our team confirms it</p>' +
+    '<p class="cb-hint">' + (CLIENT_MODE && lockedDates()
+        ? 'these are the dates we have set aside for your group'
+        : 'move the arrival date or the number of nights to see what other dates would cost, nothing is held until our team confirms it') + '</p>' +
     '<div class="daterow">' +
-      '<label class="dlab">Arrive<input type="date" id="dpFrom" value="' + esc(from) + '"></label>' +
-      '<div class="dlab">Nights' + stepperHTML("nights", "n", n, {canDown: n > 1}) + '</div>' +
+      '<label class="dlab">Arrive<input type="date" id="dpFrom" value="' + esc(from) + '"' + (CLIENT_MODE && lockedDates() ? ' disabled' : '') + '></label>' +
+      '<div class="dlab">Nights' + stepperHTML("nights", "n", n, {canDown: n > 1, lock: lockedDates()}) + '</div>' +
       '<div class="dlab">Leave<span class="dpout">' + (to ? esc(fmtDate(to)) : '-') + '</span></div>' +
     '</div>' +
     (from
@@ -5738,6 +6045,14 @@ function historyListHTML(){
     '</details>';
 }
 /* the accept/submit area at the foot of the organiser page */
+/* the strip at the top of a locked quote */
+function lockBannerHTML(){
+  if(!quoteLocked()) return '';
+  const staff = !CLIENT_MODE ? '<span class="lockstaff">Staff: this is locked, the organiser can only accept it. Unlock it in Quote settings on tab 1.</span>' : '';
+  return '<div class="lockbar">🔒 <b>This is your quote, set by our team.</b> ' +
+    'Everything below is what we have put aside for you' + (Q.school ? ", including your rooming" : "") + '. ' +
+    'If something needs changing, use the button at the foot of the page or call us on ' + esc(VENUE_PHONE) + ' and we will sort it out for you.' + staff + '</div>';
+}
 function submitZoneHTML(){
   const anySel = hasSel(Q) || Q.lines.some(l => (Number(l.qty) || 0) > 0);
   const askBtn = '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a>';
@@ -5756,12 +6071,15 @@ function submitZoneHTML(){
     const miss = addressMissing();
     const block = !anySel ? ' disabled title="Choose at least one item first"' : (miss.length ? ' disabled title="Add your postal address first"' : '');
     return (miss.length && anySel ? '<div class="tierwarn" style="text-align:center">Please add your postal address in <b>Your details</b> above (' + esc(miss.join(", ")) + ') so we can make your booking.</div>' : '') +
-      '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + block + '>Accept quote &amp; book</button>' + askBtn + '</div>' +
+      '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + block + '>Accept ' + (quoteLocked() ? 'this quote' : 'quote') + ' &amp; book</button>' + askBtn + '</div>' +
       '<p class="qp-aud" style="text-align:center; margin-top:6px">Accepting makes an unconfirmed booking for what you have picked and emails you a deposit invoice' +
       (d > 0 && (Q.priceMode || "full") !== "noprices" ? ' for ' + money0(d) : '') + ', due within ' + leadPhrase(kdCfg().depositDays) + '. Your booking is confirmed once the deposit is paid.</p>';
   }
-  return '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>Submit my selection for confirmation</button>' + askBtn + '</div>' +
-    '<p class="qp-aud" style="text-align:center; margin-top:6px">Submitting doesn\'t lock anything in. Our team confirms availability and final pricing with you first.</p>';
+  return '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? '' : ' disabled title="Choose at least one item first"') + '>' +
+      (quoteLocked() ? 'Accept this quote' : 'Submit my selection for confirmation') + '</button>' + askBtn + '</div>' +
+    '<p class="qp-aud" style="text-align:center; margin-top:6px">' + (quoteLocked()
+      ? 'Accepting tells us you are happy with the quote above. Our team then confirms it with you.'
+      : 'Submitting doesn\'t lock anything in. Our team confirms availability and final pricing with you first.') + '</p>';
 }
 /* refresh just the submit area (typing-safe: never rebuilds the inputs around it) */
 function updateSubmitState(){
@@ -6012,7 +6330,9 @@ function staffAccomPrice(id, showPrices){
       ? ' <button class="pinreset spReset" data-id="' + esc(id) + '" title="Go back to the loaded nightly rates">typed · use ' + srcWord.replace(/^from /, "") + '</button>'
       : (hasCal
           ? ' <span class="pinsub" style="padding:0">' + srcWord + '</span>'
-          : ' <span class="pinsub pinwarn" style="padding:0">no price yet</span>')) +
+          : (m !== null
+              ? ' <span class="pinsub" style="padding:0">' + (schoolOn() && m === 0 ? 'in the package' : 'typed') + '</span>'
+              : ' <span class="pinsub pinwarn" style="padding:0">no price yet</span>'))) +
   '</div>';
 }
 function renderClient(){
@@ -6043,15 +6363,15 @@ function renderClient(){
             const bn = blockNights(x.b);
             const whole = !x.b.from && !x.b.to;
             return '<div class="blockrow">' +
-              stepperHTML("blockqty", x.i, x.b.qty) + ' unit' + (Number(x.b.qty) === 1 ? '' : 's') +
-              ' <span class="blkmeta">arrive</span> <input type="date" class="blkFrom" data-i="' + x.i + '" value="' + esc(r ? r.from : '') + '"' + (evFrom ? ' min="' + evFrom + '" max="' + isoAddDays(evTo, -1) + '"' : '') + '>' +
-              ' <span class="blkmeta">leave</span> <input type="date" class="blkTo" data-i="' + x.i + '" value="' + esc(r ? r.to : '') + '"' + (evFrom ? ' min="' + isoAddDays(evFrom, 1) + '" max="' + evTo + '"' : '') + '>' +
+              stepperHTML("blockqty", x.i, x.b.qty, {lock: lockedItem(it.id, "accom")}) + ' unit' + (Number(x.b.qty) === 1 ? '' : 's') +
+              ' <span class="blkmeta">arrive</span> <input type="date" class="blkFrom" data-i="' + x.i + '" value="' + esc(r ? r.from : '') + '"' + (evFrom ? ' min="' + evFrom + '" max="' + isoAddDays(evTo, -1) + '"' : '') + (CLIENT_MODE && lockedItem(it.id, "accom") ? ' disabled' : '') + '>' +
+              ' <span class="blkmeta">leave</span> <input type="date" class="blkTo" data-i="' + x.i + '" value="' + esc(r ? r.to : '') + '"' + (evFrom ? ' min="' + isoAddDays(evFrom, 1) + '" max="' + evTo + '"' : '') + (CLIENT_MODE && lockedItem(it.id, "accom") ? ' disabled' : '') + '>' +
               ' <span class="cb-avail">' + bn + ' night' + (bn === 1 ? '' : 's') + (whole ? ' · whole stay' : '') + '</span>' +
-              (showPrices ? '<span class="pkgsub">' + money(blockTotal(x.b)) + '</span>' : '') +
-              (blocks.length > 1 || !whole ? '<button class="blkx" data-i="' + x.i + '" title="Remove these cabins">×</button>' : '') +
+              (showPrices ? '<span class="pkgsub">' + (schoolIncludes(it.id) ? SCHOOL_INCL_WORD : money(blockTotal(x.b))) + '</span>' : '') +
+              ((blocks.length > 1 || !whole) && !(CLIENT_MODE && lockedItem(it.id, "accom")) ? '<button class="blkx" data-i="' + x.i + '" title="Remove these cabins">×</button>' : '') +
             '</div>';
           }).join('') +
-          ((avail === null || avail > 0 || blocks.length)
+          ((avail === null || avail > 0 || blocks.length) && !(CLIENT_MODE && lockedItem(it.id, "accom"))
             ? '<button class="addblock" data-id="' + esc(it.id) + '">+ add ' + esc(it.name) + ' for different dates</button>'
             : '') +
         '</div>';
@@ -6063,8 +6383,8 @@ function renderClient(){
           staffAccomPrice(it.id, showPrices) + '</div>' +
         (split
           ? '<div class="cb-avail" style="text-align:right">' + q + ' selected</div>'
-          : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canAddOver(it.id, stayNightsList())})) +
-        '<div class="pkgsub">' + (q > 0 && showPrices ? money(sub) : (q > 0 ? q + ' ✓' : '<span class="fmuted">-</span>')) + '</div>' +
+          : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: canAddOver(it.id, stayNightsList()), lock: lockedItem(it.id, "accom")})) +
+        '<div class="pkgsub">' + (q > 0 && showPrices ? (schoolIncludes(it.id) ? SCHOOL_INCL_WORD : money(sub)) : (q > 0 ? q + ' ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         blockHtml +
       '</div>';
     }).join('');
@@ -6072,11 +6392,12 @@ function renderClient(){
     const capHtml = capBarHTML();
 
     accomHtml = '<div class="cb-sec"><h3>Accommodation</h3>' +
-      '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ' · choose how many of each cabin type you\'d like ·' + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
+      '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + (quoteLocked() ? ' · the cabins we have set aside for your group ·' : ' · choose how many of each cabin type you\'d like ·') + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
       rmsLiveBanner() +
-      '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
-        '<span><b>Some cabins are only needed for part of the stay</b><br>' +
-        '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin, you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>' +
+      (CLIENT_MODE && quoteLocked() ? ''
+        : '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
+          '<span><b>Some cabins are only needed for part of the stay</b><br>' +
+          '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin, you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>') +
       rows + capHtml + '</div>';
   }
 
@@ -6111,7 +6432,7 @@ function renderClient(){
                 '" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">';
             })() : '') +
           '</div>' +
-          stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0, canUp: can.ok, upTitle: can.why}) +
+          stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0, canUp: can.ok, upTitle: can.why, lock: lockedItem(v.fullId, "venue")}) +
           '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : money(venueDayTotal(v, d))) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         '</div>';
       }).join('') + '</div>'
@@ -6129,7 +6450,7 @@ function renderClient(){
       '<label>Children 4–12 <span class="whonote">half price</span><input type="number" class="whoInp" data-w="k412" min="0" value="' + esc(w.k412) + '"></label>' +
       '<label>Over 1 to 3 years <span class="whonote">$5 per meal</span><input type="number" class="whoInp" data-w="k13" min="0" value="' + esc(w.k13) + '"></label>' +
       '<label>12 months &amp; under <span class="whonote">free</span><input type="number" class="whoInp" data-w="babies" min="0" value="' + esc(w.babies) + '"></label>' +
-      '<label>Special dietary <span class="whonote">medically diagnosed · +$10 per meal</span><input type="number" class="whoInp" data-w="diet" min="0" value="' + esc(w.diet) + '"></label>' +
+      '<label>Special dietary <span class="whonote">medically diagnosed · +' + money0(dietPerMeal()) + ' per meal</span><input type="number" class="whoInp" data-w="diet" min="0" value="' + esc(w.diet) + '"></label>' +
       '</div>'
     : '';
   const caterHtml = caterOn.length
@@ -6156,7 +6477,7 @@ function renderClient(){
           : '';
         return '<div class="cb-row" data-cid="' + esc(it.id) + '">' +
           '<div><span class="pkgname">' + esc(it.name) + '</span>' +
-            (showPrices ? '<div class="cb-price">' + money(c.price) + ' per person</div>' +
+            (showPrices ? '<div class="cb-price">' + (schoolOn() && c.price === 0 ? SCHOOL_INCL_WORD : money(c.price) + ' per person') + '</div>' +
               (CLIENT_MODE ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(it.id) + '" step="0.5" min="0" value="' + c.price + '" title="Per-person price for this quote"> per person</div>') : '') +
             menuBtn + '</div>' +
           '<div style="display:flex; align-items:center; gap:6px; justify-content:flex-end; flex-wrap:wrap">' +
@@ -6165,7 +6486,7 @@ function renderClient(){
                   ? '<span class="ppl"><b class="eatTot">' + mealEaters(it.id) + '</b>&nbsp;eating ×</span>'
                   : '<span class="ppl"><input type="number" class="cbEat" data-id="' + esc(it.id) + '" min="0" value="' + (mealEaters(it.id) || '') + '"' + (d > 0 ? '' : ' disabled') + ' title="How many are eating this meal, defaults to your whole group"> eating ×</span>')
               : '<span class="ppl"><input type="number" class="cbPpl" data-id="' + esc(it.id) + '" min="1" value="' + esc(ppl) + '"' + (d > 0 ? '' : ' disabled') + '> people ×</span>') +
-            stepperHTML("cater", it.id, d, {canDown: d > 0}) +
+            stepperHTML("cater", it.id, d, {canDown: d > 0, lock: lockedItem(it.id, "cater")}) +
             '<span class="pkgmeta">day' + (d === 1 ? '' : 's') + '</span>' +
           '</div>' +
           '<div class="pkgsub">' + (d > 0 && showPrices ? money(sub) : (d > 0 ? '✓' : '<span class="fmuted">-</span>')) + '</div>' +
@@ -6278,10 +6599,13 @@ function renderClient(){
         (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
         '<div class="qp-contactlines">Phone: ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>' + VENUE_WEB_LINK + '</div></div>' +
     '</div>' +
+    lockBannerHTML() +
     '<div class="qp-for" id="qpFor">' + qpForHTML() + '</div>' +
     '<div class="qp-event" id="qpEvent">' + qpEventHTML() + '</div>' +
     '<div class="cb-live">' +
-      '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.</p>' +
+      '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">' + (quoteLocked()
+        ? 'Everything below is what we have put together for your group. Have a read, and accept it at the foot of the page when you are happy.'
+        : 'Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.') + '</p>' +
       siteInviteHTML() +
       datesPanelHTML() +
       accomHtml + venueHtml + caterHtml + churchHtml + fixedHtml +
@@ -8013,6 +8337,14 @@ document.getElementById("rms-pencils").addEventListener("change", e => setPencil
 (function(){
   const fp = document.getElementById("f-pencils");
   if(fp) fp.addEventListener("change", e => setPencils(e.target.checked, e.target));
+  const fl = document.getElementById("f-locked");
+  if(fl) fl.addEventListener("change", e => {
+    Q.locked = e.target.checked;
+    refresh();
+    showToast(Q.locked
+      ? "Locked. The organiser's page now says this is their quote, and they can only accept it or ask for a change."
+      : "Unlocked. The organiser can change their selection again.");
+  });
 })();
 document.getElementById("rms-adults").addEventListener("change", e => { setRmsSettings({adults: Math.max(1, Number(e.target.value) || 2)}); renderRmsSettings(); });
 document.getElementById("rms-property").addEventListener("change", e => { setRmsSettings({propertyId: Number(e.target.value) || 0}); renderRmsSettings(); });
@@ -8196,7 +8528,7 @@ document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () =>
 
 /* ---------- form bindings ---------- */
 function softRefresh(){ autosaveDraft(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); }
-function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderResLink(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
+function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
 
 
 /* ---------- quoting on a booking already in RMS ----------
@@ -8423,6 +8755,23 @@ function syncForm(){
   document.getElementById("f-feat-deposit").checked = !!(Q.features && Q.features.depositDates);
   document.getElementById("f-feat-kids").checked = !!(Q.features && Q.features.kids);
   document.getElementById("f-feat-cheap").checked = !!(Q.features && Q.features.cheapest);
+  renderLockSwitch();
+}
+/* the "Lock this quote" switch on tab 1 */
+function renderLockSwitch(){
+  if(CLIENT_MODE) return;
+  const box = document.getElementById("f-locked");
+  if(!box) return;
+  const on = quoteLocked();
+  box.checked = on;
+  const wrap = box.closest(".pencilsw");
+  if(wrap) wrap.classList.toggle("on", on);
+  const locks = Object.keys(Q.catalog || {}).filter(id => itemLockOn(id));
+  const note = document.getElementById("lockNote");
+  if(note) note.innerHTML = (on
+    ? '<span class="swstate">ON</span>The organiser sees this quote as you built it: the dates, cabins and rooms are fixed and they can only accept it, or ask for a change. Paid catering extras stay open.'
+    : '<span class="swstate">OFF</span>The organiser can change the dates, cabins, rooms and catering on their page before they submit.') +
+    (locks.length ? '<br>Locked on their own: ' + esc(locks.map(id => (RATE[id] || {}).name || id).join(", ")) + '.' : '');
 }
 [["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"]].forEach(pair => {
   document.getElementById(pair[0]).addEventListener("change", e => {
@@ -8718,7 +9067,9 @@ if(CLIENT_MODE){
     setTimeout(openDepositScreen, 50);
   }
   const sideNote = document.querySelector(".sidecard p");
-  if(sideNote) sideNote.textContent = "Adjust anything below, availability and totals update as you go. Submit when you're ready; nothing is locked in until our team confirms it with you.";
+  if(sideNote) sideNote.textContent = quoteLocked()
+    ? "This quote is set by our team: read it through and accept it at the foot of the page, or ask us for a change and we will update it for you."
+    : "Adjust anything below, availability and totals update as you go. Submit when you're ready; nothing is locked in until our team confirms it with you.";
 } else {
   Q = blankQuote(nextQuoteNum());
   renderTplOptions();
