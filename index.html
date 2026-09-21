@@ -815,6 +815,19 @@
 
   /* ---------- client quote: info sections & price modes ---------- */
   .qp-sechead{margin:26px 0 4px; font-size:12px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink2); border-top:1.5px solid var(--ink); padding-top:14px}
+  /* the "read it on the website" block: printed in place of the sections it covers,
+     never shown on the organiser's own page */
+  .qp-weblinks{display:none}
+  .pdflink{display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:9px 12px; background:#f7f9fb; border-radius:8px; font-size:13px; line-height:1.5}
+  .pdflink>span{font-weight:600; flex:0 0 auto}
+  .pdflink select{width:auto; max-width:100%; flex:0 1 auto}
+  .pdflink em{flex:1 1 100%; font-style:normal; color:var(--ink2, #6b7580); font-size:12px}
+  .qp-wlintro{margin:14px 0 10px; font-size:13px; color:var(--ink2); line-height:1.55}
+  .qp-wl{margin:0 0 11px; padding:9px 12px; border:1px solid var(--grid, #cfd6dd); border-radius:8px; break-inside:avoid}
+  .qp-wl b{display:block; font-size:13.5px; color:var(--ink)}
+  .qp-wlurl{font-size:12.5px; color:#1f5fae; word-break:break-all; margin-top:2px}
+  .qp-wlwhat{font-size:12.5px; color:var(--ink2, #6b7580); line-height:1.5; margin-top:3px}
+  .qp-wlnote{margin:10px 0 0; font-size:12.5px; color:var(--ink2, #6b7580)}
   .qp-sec{margin-top:12px; font-size:13px; color:var(--ink2); line-height:1.55}
   .qp-sec h4{margin:0 0 3px; font-size:13px; color:var(--ink); letter-spacing:.2px}
   .qp-pricenote{
@@ -950,6 +963,9 @@
     .acceptrow{display:none !important}
     .staffedit-ui{display:none !important}
     .qp-print-note{display:block; margin-top:24px; text-align:center; font-size:13px; color:#52514e}
+    /* short PDFs: the sections the website covers step aside for the link block */
+    .qp-sec.weblinked{display:none !important}
+    .qp-weblinks{display:block}
   }
 </style>
 </head>
@@ -1204,6 +1220,7 @@
       <button class="btn" id="sendBtn">Mark as sent (no email)</button>
       <button class="btn ghost" id="pdfBtn2">Download PDF</button>
     </div>
+    <div class="pdflink"><span>PDF length</span><select class="pdfModeSel"><option value="full">Full &mdash; everything printed</option><option value="links">Short &mdash; link to the code of conduct &amp; group information</option><option value="onepage">One page &mdash; the quote on a single sheet</option></select><em id="pdfLinkWhy"></em></div>
     <p class="hint">Email quote opens Outlook addressed to the client with the subject and message filled in ready to send (download the PDF if you want to attach it), and logs the quote as sent in the pipeline and the tracker sheet. Whether it opens Outlook on the web or the computer's mail app is set per computer on the Settings tab. Tip: the Organiser's page tab now lets you edit wording and prices in place and save or email from there.</p>
 
   </section>
@@ -1217,7 +1234,8 @@
         <button class="btn primary staffedit-ui" id="saveQuoteBtn" style="width:100%; margin-bottom:8px">Save changes</button>
         <button class="btn staffedit-ui" id="emailQuoteBtn2" style="width:100%; margin-bottom:8px">Email quote →</button>
         <button class="btn primary" id="pdfBtn" style="width:100%">Download PDF</button>
-        <p class="hint" style="margin-top:8px">Opens your browser's print box: choose "Save as PDF". The PDF captures the selection as it stands.</p>
+        <div class="pdflink" style="margin-top:8px; flex-direction:column; align-items:stretch"><span>PDF length</span><select class="pdfModeSel" style="width:100%"><option value="full">Full &mdash; everything printed</option><option value="links">Short &mdash; link to the information</option><option value="onepage">One page &mdash; a single sheet</option></select><em id="pdfLinkWhy2"></em></div>
+        <p class="hint" style="margin-top:8px">Opens your browser's print box: choose "Save as PDF". The PDF captures the selection as it stands. This page always shows the full wording; only the PDF is shortened.</p>
       </aside>
     </div>
   </section>
@@ -1309,7 +1327,22 @@
     <div class="card">
       <h2>Code of conduct link</h2>
       <p class="hint" style="margin:0 0 8px">The web address of the digital Code of Conduct page. When it is filled in, every quote and PDF carries a "Read our Code of Conduct" link, and the organiser can read it before they accept. Leave it empty and no link is shown.</p>
-      <input type="url" id="s-coc" placeholder="https://script.google.com/macros/s/..../exec" style="width:100%">
+      <input type="url" id="s-coc" placeholder="https://www.wslr.com.au/wslr-code-of-conduct/" style="width:100%">
+    </div>
+    <div class="card">
+      <h2>Short PDFs: link to the information instead of printing it</h2>
+      <p class="hint" style="margin:0 0 8px">The information sections at the foot of a quote also live on the website. Switch this on and a downloaded PDF prints a short block of links to those pages instead of pages of text. The organiser's own web page always shows the full wording, and the sections carrying this quote's money (deposit, cancellation, the church discount conditions, how to proceed) are always printed in full.</p>
+      <label class="secitem" style="padding:0; display:block"><span class="sectitle">New quotes start with</span>
+        <select id="s-pdfmode" style="margin-top:6px; width:100%; max-width:460px">
+          <option value="full">Full PDF &mdash; every information section printed</option>
+          <option value="links">Short PDF &mdash; link to the code of conduct &amp; group information</option>
+          <option value="onepage">One page &mdash; the whole quote on a single sheet</option>
+        </select>
+        <span class="secwhy" style="display:block; margin-top:6px">any one quote can still be changed beside its Download PDF button</span></label>
+      <div class="kdcfg" style="margin-top:10px">
+        <label class="kdwide"><span class="kdlab">Important group information</span><span class="kdrow"><input type="url" id="s-infourl" placeholder="https://www.wslr.com.au/important-group-information/" style="width:100%"></span></label>
+      </div>
+      <p class="hint" style="margin-top:8px">The Code of Conduct link above is used for the code of conduct section. Leave either address empty and those sections are printed in full as before.</p>
     </div>
     <div class="card">
       <h2>Cheapest dates search on new quotes</h2>
@@ -6739,6 +6772,240 @@ function cocUrl(){
   const u = String((getDefaults() || {}).cocUrl || "").trim();
   return /^https?:\/\//i.test(u) ? u : "";
 }
+/* ---------- short PDFs: link to the website instead of printing the information ----------
+   The information sections at the foot of a quote are, word for word, the two pages on
+   wslr.com.au. A quote can print a short block of links to them instead, which turns a
+   six page PDF into two. The organiser's own web page is never shortened: this is a
+   print-time swap only, and the sections carrying this quote's own money are always
+   printed in full. */
+const GUEST_INFO_URL_DEFAULT = "https://www.wslr.com.au/important-group-information/";
+const WEB_SECTIONS = {
+  conduct: "coc",
+  accom_notes: "info", venue_info: "info", menu: "info", catering_info: "info",
+  children: "info", checkin: "info", final_conf: "info", site_visit: "info", other: "info"
+};
+function guestInfoUrl(){
+  const d = getDefaults() || {};
+  const u = String(d.infoUrl === undefined ? GUEST_INFO_URL_DEFAULT : d.infoUrl).trim();
+  return /^https?:\/\//i.test(u) ? u : "";
+}
+const PDF_MODES = ["full", "links", "onepage"];
+function pdfMode(){
+  const f = (Q && Q.features) || {};
+  if(PDF_MODES.indexOf(f.pdfMode) >= 0) return f.pdfMode;
+  /* quotes saved while this was a yes/no tick */
+  if(f.pdfLinks !== undefined && f.pdfLinks !== null) return f.pdfLinks ? "links" : "full";
+  const d = getDefaults() || {};
+  if(PDF_MODES.indexOf(d.pdfMode) >= 0) return d.pdfMode;
+  return d.pdfLinks ? "links" : "full";
+}
+function pdfLinksOn(){ return pdfMode() !== "full"; }
+/* which page, if any, covers a section well enough to link to it instead */
+function webSectionKind(s){
+  if(!pdfLinksOn()) return "";
+  const kind = WEB_SECTIONS[s.id];
+  if(!kind) return "";
+  /* wording changed for this group is not what the website says, so it prints */
+  if(s.edited) return "";
+  /* a curated menu is this quote's own list, not the website's */
+  if(s.id === "menu" && Q.menu && Object.keys(Q.menu).length) return "";
+  return (kind === "coc" ? cocUrl() : guestInfoUrl()) ? kind : "";
+}
+/* the block that replaces them in the PDF. Only names a page that actually replaced
+   something, so a quote never points at a page for no reason. */
+function webLinksHTML(secs){
+  if(!pdfLinksOn()) return '';
+  const kinds = {};
+  (secs || []).forEach(s => { const k = webSectionKind(s); if(k) kinds[k] = true; });
+  if(!Object.keys(kinds).length) return '';
+  const rows = [];
+  if(kinds.info) rows.push({url: guestInfoUrl(), name: "Important group information",
+    what: "your accommodation, the conference rooms, catering and the menu, children's pricing, check-in and check-out, and final numbers"});
+  if(kinds.coc) rows.push({url: cocUrl(), name: "Code of conduct",
+    what: "what we ask of your group while you are with us, and what the group manager looks after"});
+  return '<div class="qp-weblinks">' +
+    '<p class="qp-wlintro">The rest of the information for your stay is on our website, and forms part of this quote. Please read ' +
+      (rows.length > 1 ? 'both pages' : 'it') + ' before you arrive:</p>' +
+    rows.map(r => '<div class="qp-wl"><b>' + esc(r.name) + '</b>' +
+      '<div class="qp-wlurl">' + esc(r.url) + '</div>' +
+      '<div class="qp-wlwhat">' + esc(r.what) + '</div></div>').join('') +
+    '<p class="qp-wlnote">Would you rather have these on paper, or need them in another format? Tell us and we will send them to you.</p>' +
+  '</div>';
+}
+/* =========================================================================
+   ONE PAGE PDF
+   -------------------------------------------------------------------------
+   The quote as a single A4 sheet: who it is for, what they are getting, what
+   it costs, when the money is due, and where the rest of the information
+   lives. Everything else (the information sections, the standing terms, the
+   menu) is on the website, so the sheet carries the links instead.
+
+   It is built as its own document in a hidden frame, the same way the deposit
+   pack is, rather than by hiding parts of the organiser's page. That way the
+   sheet is measured and shrunk to fit exactly one page. A very long selection
+   is allowed to run onto a second page rather than being cut off, and staff
+   are told when that happens.
+   ========================================================================= */
+function onePageRows(showPrices){
+  return displayLines().map(l => {
+    const bits = [];
+    if(l.unit && l.unit !== "flat") bits.push(l.unit);
+    if(l.nights > 1) bits.push("× " + l.nights + " " + String(l.nightsWord || "nights").replace(/s$/, "") + (l.nights === 1 ? "" : "s"));
+    if(l.when) bits.push(l.when);
+    return '<tr><td><b>' + esc(l.name) + '</b>' +
+        (bits.length ? '<div class="sub">' + esc(bits.join(" · ")) + '</div>' : '') + '</td>' +
+      '<td class="n">' + l.qty + '</td>' +
+      (showPrices ? '<td class="n">' + money(l.price) + '</td><td class="n">' + money(l.total) + '</td>' : '') +
+    '</tr>';
+  }).join("");
+}
+function onePageTotals(t, showPrices, pm){
+  if(!showPrices) return '<div class="onepricenote">Pricing for this package is available from our functions team, contact us any time.</div>';
+  const line = (lab, val, cls) => '<div class="' + (cls || "") + '"><span>' + lab + '</span><span>' + val + '</span></div>';
+  return '<div class="onetot">' +
+    line("Subtotal", money(t.sub)) +
+    (t.church > 0 ? line("Church discount − " + t.churchPct + "% (accommodation &amp; venue hire)", "−" + money(t.church), "cred") : "") +
+    (t.discLines || []).map(x => line(esc(x.label), "−" + money(x.amount), "cred")).join("") +
+    (pm === "nototal" ? "" : line("<b>Total (inc GST)</b>", "<b>" + money(t.total) + "</b>", "grand")) +
+    (pm === "nototal" ? "" : line("Includes GST (" + GST_PCT + "%)", money(t.gst), "gst")) +
+  '</div>';
+}
+function onePageLinksHTML(){
+  const rows = [];
+  if(guestInfoUrl()) rows.push(["Important group information", guestInfoUrl()]);
+  if(cocUrl()) rows.push(["Code of conduct", cocUrl()]);
+  if(!rows.length) return '';
+  return '<div class="onelinks"><b>The rest of your information is on our website, and forms part of this quote:</b>' +
+    rows.map(r => '<div class="onelink"><span>' + esc(r[0]) + '</span><span class="u">' + esc(r[1]) + '</span></div>').join('') +
+    '<div class="onenote">Your accommodation and the conference rooms, catering and the menu, children’s pricing, check-in and check-out, final numbers, the deposit and cancellation conditions, and what we ask of your group. Would you rather have these on paper? Tell us and we will send them.</div>' +
+  '</div>';
+}
+function onePageQuoteHtml(){
+  const t = totals();
+  const pm = Q.priceMode || "full";
+  const showPrices = pm !== "noprices";
+  const kd = keyDatesRows(showPrices);
+  const issued = fmtDate(today);
+  const valid = fmtDate(plusDays(today, Number(Q.validDays) || 14));
+  const title = "WSLR Quote " + Q.num + (Q.org ? " - " + Q.org : (Q.contact ? " - " + Q.contact : ""));
+  const notes = String(Q.sel && Q.sel.message || "").trim();
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
+    '*{box-sizing:border-box}' +
+    'body{margin:0;padding:0;background:#fff;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c1c1a;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.sheet{width:210mm;padding:11mm 13mm 8mm;box-sizing:border-box;position:relative;overflow:hidden}' +
+    '.hd{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1.5px solid #1c1c1a;padding-bottom:9px}' +
+    '.hd img{max-width:150px;height:auto;display:block}' +
+    '.tag{font-size:8.5px;letter-spacing:2.4px;color:#6b7580;margin-top:3px}' +
+    '.addr{font-size:9px;color:#6b7580;line-height:1.5;margin-top:5px}' +
+    '.meta{text-align:right;font-size:9.5px;color:#6b7580;line-height:1.55}' +
+    '.meta .qn{font-size:14px;font-weight:700;color:#1c1c1a;letter-spacing:.2px}' +
+    '.for{margin-top:11px;font-size:13px}' +
+    '.for b{font-size:14px}' +
+    '.ev{font-size:11px;color:#6b7580;margin-top:2px}' +
+    'table.it{width:100%;border-collapse:collapse;margin-top:12px;font-size:10.5px}' +
+    'table.it th{text-align:left;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#6b7580;border-bottom:1px solid #cfd6dd;padding:0 6px 4px 0;font-weight:700}' +
+    'table.it td{padding:5px 6px 5px 0;border-bottom:1px solid #eef1f4;vertical-align:top}' +
+    'table.it .n{text-align:right;white-space:nowrap}' +
+    'table.it .sub{font-size:9px;color:#6b7580;margin-top:1px;line-height:1.4}' +
+    '.onetot{margin:9px 0 0;margin-left:auto;width:62%;font-size:10.5px}' +
+    '.onetot>div{display:flex;justify-content:space-between;gap:12px;padding:2.5px 0}' +
+    '.onetot .cred{color:#54963a}' +
+    '.onetot .grand{border-top:1.5px solid #1c1c1a;margin-top:3px;padding-top:5px;font-size:13px}' +
+    '.onetot .gst{color:#6b7580;font-size:9.5px}' +
+    '.onepricenote{margin-top:10px;font-size:10.5px;color:#6b7580}' +
+    '.aud{font-size:8.5px;color:#6b7580;text-align:right;margin-top:3px}' +
+    '.box{margin-top:11px;border:1px solid #cfd6dd;border-radius:7px;padding:8px 11px}' +
+    '.box>b{display:block;font-size:10.5px;margin-bottom:4px}' +
+    'table.kd{width:100%;border-collapse:collapse;font-size:9.5px}' +
+    'table.kd td{padding:2.5px 8px 2.5px 0;vertical-align:top;line-height:1.45}' +
+    'table.kd td:first-child{white-space:nowrap;font-weight:700;width:118px;color:#1c1c1a}' +
+    'table.kd td:last-child{color:#4f5b66}' +
+    '.msg{margin-top:9px;font-size:9.5px;color:#4f5b66;line-height:1.5}' +
+    '.onelinks{margin-top:11px;border:1px solid #cfd6dd;border-radius:7px;padding:8px 11px;background:#f7f9fb}' +
+    '.onelinks>b{display:block;font-size:10px;margin-bottom:5px}' +
+    '.onelink{display:flex;justify-content:space-between;gap:12px;font-size:9.5px;padding:1.5px 0}' +
+    '.onelink .u{color:#1f5fae;word-break:break-all}' +
+    '.onenote{font-size:8.5px;color:#6b7580;line-height:1.45;margin-top:5px}' +
+    '.foot{margin-top:10px;padding-top:7px;border-top:1px solid #cfd6dd;font-size:8.5px;color:#6b7580;line-height:1.5;text-align:center}' +
+    '.pgno{position:absolute;right:13mm;bottom:4mm;font-size:7.5px;color:#6b7580}' +
+    '@page{size:A4;margin:0}' +
+    '@media print{body{padding:0!important}}' +
+  '</style></head><body><div class="sheet">' +
+    '<div class="hd"><div>' + (HAVE_LOGO ? '<img src="' + LOGO_DATA + '" alt="Wollongong Surf Leisure Resort">' : '<b>Wollongong Surf Leisure Resort</b>') +
+      '<div class="tag">FUNCTIONS &amp; EVENTS</div>' +
+      '<div class="addr">' + VENUE_ADDR1 + '<br>' + VENUE_ADDR2 + '<br>' + VENUE_ABN + '</div></div>' +
+      '<div class="meta"><div class="qn">Quote ' + esc(Q.num) + '</div>' +
+        '<div>Issued ' + issued + '</div><div>Valid until ' + valid + '</div>' +
+        (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
+        '<div style="margin-top:4px">Phone ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>www.wslr.com.au</div></div></div>' +
+    '<div class="for">Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : '') + '</div>' +
+    '<div class="ev">' + esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests</div>' +
+    (displayLines().length
+      ? '<table class="it"><thead><tr><th>Item</th><th class="n">Qty</th>' +
+          (showPrices ? '<th class="n">Unit</th><th class="n">Total</th>' : '') + '</tr></thead><tbody>' +
+          onePageRows(showPrices) + '</tbody></table>'
+      : '<div class="msg">Nothing has been selected on this quote yet.</div>') +
+    onePageTotals(t, showPrices, pm) +
+    (showPrices ? '<div class="aud">All prices are in Australian dollars (AUD) and include GST</div>' : '') +
+    (kd.length ? '<div class="box"><b>Money &amp; key dates for your event</b><table class="kd">' +
+      kd.map(r => '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>').join('') + '</table></div>' : '') +
+    (notes ? '<div class="msg"><b>You told us:</b> ' + esc(notes) + '</div>' : '') +
+    onePageLinksHTML() +
+    '<div class="foot">' + VENUE + ' · ' + VENUE_ADDR1 + ', ' + VENUE_ADDR2 + ' · ' + VENUE_ABN +
+      ' · Phone ' + VENUE_PHONE + ' · ' + VENUE_EMAIL + '<br>' +
+      'To accept this quote, reply to the email it came with and we will take care of the rest.</div>' +
+    '<div class="pgno">Quote ' + esc(Q.num) + '</div>' +
+  '</div></body></html>';
+}
+/* one A4 page if it can be done without making the type too small; otherwise it
+   runs on rather than losing content off the bottom */
+function fitOneSheet(doc){
+  const sh = doc.querySelector(".sheet");
+  if(!sh) return true;
+  const MIN_ZOOM = 0.62;
+  sh.style.zoom = "";
+  sh.style.width = "210mm";
+  sh.style.height = "auto";
+  const room = A4_PX.h - 4;
+  const h = sh.scrollHeight;
+  if(h <= room){ sh.style.height = room + "px"; return true; }
+  const z = Math.floor(room / h * 1000) / 1000;
+  if(z >= MIN_ZOOM){
+    sh.style.zoom = String(z);
+    sh.style.width = (210 / z) + "mm";
+    sh.style.height = (room / z) + "px";
+    return true;
+  }
+  sh.style.zoom = String(MIN_ZOOM);
+  sh.style.width = (210 / MIN_ZOOM) + "mm";
+  sh.style.height = "auto";
+  sh.style.overflow = "visible";
+  return false;
+}
+function printOnePageQuote(){
+  let f = document.getElementById("onePageFrame");
+  if(f) f.remove();
+  f = document.createElement("iframe");
+  f.id = "onePageFrame";
+  f.setAttribute("aria-hidden", "true");
+  f.style.cssText = "position:fixed;left:-10000px;top:0;width:" + Math.ceil(A4_PX.w) + "px;height:" + Math.ceil(A4_PX.h) + "px;border:0;visibility:hidden";
+  f.onload = () => {
+    const w = f.contentWindow;
+    const go = () => {
+      const fitted = fitOneSheet(w.document);
+      const was = document.title;
+      document.title = w.document.title;
+      try{ w.focus(); w.print(); }catch(e){ window.print(); }
+      setTimeout(() => { document.title = was; }, 1500);
+      if(!fitted && !CLIENT_MODE) showToast("There is too much on this quote to fit one page and still be readable, so it runs onto a second. Take a line or two off, or use the short PDF instead.", true);
+    };
+    const imgs = Array.from(w.document.images).filter(im => !im.complete);
+    if(!imgs.length) go();
+    else { let left = imgs.length; imgs.forEach(im => { im.onload = im.onerror = () => { if(--left === 0) go(); }; }); }
+  };
+  document.body.appendChild(f);
+  f.srcdoc = onePageQuoteHtml();
+}
 function cocLinkHTML(){
   const u = cocUrl();
   if(!u) return '';
@@ -7270,14 +7537,18 @@ function renderClient(){
 
   /* --- info sections, submit, print summary --- */
   const secs = resolvedSections();
+  /* a section the website covers is marked, so the PDF can drop it and print the link
+     block instead. On screen everything still shows, whatever the setting. */
+  const webCls = s => webSectionKind(s) ? ' weblinked' : '';
   const secHtml = secs.length
     ? '<div class="qp-sechead">Important information</div>' +
       secs.map(s => CLIENT_MODE
-        ? '<div class="qp-sec"><h4>' + esc(s.title) + '</h4>' + escLink(s.text) + '</div>'
-        : '<div class="qp-sec" data-sec="' + esc(s.id) + '"><h4 contenteditable data-sece="title" title="Click to edit this heading for this quote">' + esc(s.title) + '</h4>' +
+        ? '<div class="qp-sec' + webCls(s) + '"><h4>' + esc(s.title) + '</h4>' + escLink(s.text) + '</div>'
+        : '<div class="qp-sec' + webCls(s) + '" data-sec="' + esc(s.id) + '"><h4 contenteditable data-sece="title" title="Click to edit this heading for this quote">' + esc(s.title) + '</h4>' +
           '<div class="sectext" contenteditable data-sece="text" title="Click to edit this wording for this quote">' + esc(s.text) + '</div>' +
           (s.edited ? '<button class="pinreset secreset staffedit-ui" data-sec="' + esc(s.id) + '">edited for this quote · back to standard</button>' : '') +
-          '</div>').join('')
+          '</div>').join('') +
+      webLinksHTML(secs)
     : '';
 
   const submitBlock = '<div id="submitZone" data-sig="' + esc(submitStateSig()) + '">' + submitZoneHTML() + '</div>';
@@ -9031,6 +9302,8 @@ function renderSettings(){
   document.getElementById("s-emailvia").value = getEmailVia();
   document.getElementById("s-cheapest").checked = d.cheapest !== false;
   document.getElementById("s-coc").value = d.cocUrl || "";
+  document.getElementById("s-infourl").value = (d.infoUrl === undefined ? GUEST_INFO_URL_DEFAULT : d.infoUrl) || "";
+  document.getElementById("s-pdfmode").value = PDF_MODES.indexOf(d.pdfMode) >= 0 ? d.pdfMode : (d.pdfLinks ? "links" : "full");
   renderRcEditor();
   renderFixedRates();
   renderSecEditor();
@@ -9879,8 +10152,33 @@ function syncForm(){
   renderLockSwitch();
 }
 /* the "Lock this quote" switch on tab 1 */
+/* the two "short PDF" tick boxes (one beside each Download PDF button) and what
+   they say is happening to this quote */
+function renderPdfLinks(){
+  if(CLIENT_MODE) return;
+  const mode = pdfMode();
+  document.querySelectorAll(".pdfModeSel").forEach(el => { el.value = mode; });
+  const secs = resolvedSections();
+  const n = secs.filter(s => webSectionKind(s)).length;
+  const kept = secs.length - n;
+  let why;
+  if(mode === "onepage"){
+    why = "the whole quote on one A4 sheet: who it is for, the items and the total, the key dates, and links to the rest. It shrinks to fit, and says so if a very long selection will not.";
+  } else if(mode === "full"){
+    why = "the PDF prints every information section in full";
+  } else if(n){
+    why = n + " section" + (n === 1 ? "" : "s") + " become " + (cocUrl() && guestInfoUrl() ? "two links" : "a link") + " in the PDF, " + kept +
+      " still printed in full (deposit, cancellation and anything you have reworded for this group)";
+  } else {
+    why = (cocUrl() || guestInfoUrl())
+      ? "nothing on this quote can be linked, so the PDF is unchanged"
+      : "put the web addresses on the Settings tab first, or the PDF is unchanged";
+  }
+  ["pdfLinkWhy", "pdfLinkWhy2"].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = why; });
+}
 function renderLockSwitch(){
   if(CLIENT_MODE) return;
+  renderPdfLinks();
   const ic = document.getElementById("intCard");
   if(ic) ic.classList.toggle("has", String(Q.internalNotes || "").trim() !== "");
   const box = document.getElementById("f-locked");
@@ -10002,6 +10300,20 @@ document.getElementById("prevSel").addEventListener("change", e => {
 document.getElementById("s-notes").addEventListener("input", e => saveDefaults({notes: e.target.value}));
 document.getElementById("s-terms").addEventListener("input", e => saveDefaults({terms: e.target.value}));
 document.getElementById("s-coc").addEventListener("input", e => { saveDefaults({cocUrl: String(e.target.value || "").trim()}); refresh(); });
+document.getElementById("s-infourl").addEventListener("input", e => { saveDefaults({infoUrl: String(e.target.value || "").trim()}); refresh(); });
+document.getElementById("s-pdfmode").addEventListener("change", e => { saveDefaults({pdfMode: PDF_MODES.indexOf(e.target.value) >= 0 ? e.target.value : "full", pdfLinks: undefined}); refresh(); });
+document.querySelectorAll(".pdfModeSel").forEach(el => el.addEventListener("change", e => {
+  const m = PDF_MODES.indexOf(e.target.value) >= 0 ? e.target.value : "full";
+  if(!Q.features) Q.features = {};
+  Q.features.pdfMode = m;
+  delete Q.features.pdfLinks;
+  refresh();
+  showToast(m === "onepage"
+    ? "Download PDF now gives you this quote on a single A4 sheet, with links to the code of conduct and the group information."
+    : m === "links"
+      ? "This quote's PDF will link to the code of conduct and the important group information instead of printing them. The organiser's page still shows everything."
+      : "This quote's PDF prints every information section in full again.");
+}));
 document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
 document.getElementById("s-body").addEventListener("input", e => saveDefaults({body: e.target.value}));
 document.getElementById("s-cheapest").addEventListener("change", e => {
@@ -10074,6 +10386,8 @@ function commitEdits(){
 }
 function downloadPDF(){
   commitEdits();
+  /* the one page sheet is its own document, built and measured in a hidden frame */
+  if(pdfMode() === "onepage"){ printOnePageQuote(); return; }
   switchTab("client");
   setPrintFooter();
   const prevTitle = document.title;
