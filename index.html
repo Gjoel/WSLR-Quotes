@@ -275,6 +275,25 @@
   .sgcall a{color:#a01a1a; font-weight:700}
   .sgcall .sgcallsm{margin-top:5px; font-size:12.5px; color:var(--ink2, #6b7580)}
   .callbar{background:#fdecec; border:1.5px solid #c62828; border-radius:10px; padding:10px 14px; margin:0 0 12px; font-size:14px; line-height:1.6; text-align:center}
+  /* ---------- website enquiries on the pipeline ---------- */
+  .eiall{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink2,#6b7580); margin-left:14px; cursor:pointer}
+  .eiall input{width:auto; margin:0}
+  .eilist{display:flex; flex-direction:column; gap:10px}
+  .eicard{border:1px solid var(--grid,#cfd6dd); border-left:4px solid #1f5fae; border-radius:10px; padding:11px 14px; background:#fbfdff}
+  .eicard.worked{border-left-color:#9aa5b1; background:#fff; opacity:.82}
+  .eihead{display:flex; flex-wrap:wrap; align-items:baseline; gap:8px}
+  .eihead b{font-size:15px}
+  .eiref{font-size:12px; font-weight:700; letter-spacing:.03em; color:#1f5fae; background:#e8f3fb; border-radius:20px; padding:1px 9px}
+  .eicard.worked .eiref{color:#4f5b66; background:#eef1f4}
+  .eiwhen{font-size:12px; color:var(--ink2,#6b7580); margin-left:auto}
+  .eifacts{display:flex; flex-wrap:wrap; gap:3px 18px; margin-top:7px; font-size:13.5px}
+  .eifacts span b{font-weight:700}
+  .eimsg{margin-top:8px; font-size:13.5px; background:#fff; border:1px solid var(--grid,#cfd6dd); border-radius:8px; padding:8px 10px; white-space:pre-wrap; line-height:1.55}
+  .eimore{appearance:none; border:0; background:none; color:#1f5fae; font-size:13px; padding:0; cursor:pointer; text-decoration:underline; margin-top:6px}
+  .eiact{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px}
+  .eiact .hint{margin:0}
+  .eidone{font-size:13px; color:var(--ink2,#6b7580)}
+  .eiempty{font-size:13.5px; color:var(--ink2,#6b7580); padding:6px 0}
   .callbar b{color:#a01a1a}
   .lockBtn{appearance:none; border:1px solid var(--grid, #cfd6dd); background:#fff; border-radius:6px; padding:1px 5px; font-size:12px; cursor:pointer; margin-left:6px; line-height:1.4}
   .lockBtn.on{background:#fff4e0; border-color:#ef8f00}
@@ -1207,6 +1226,17 @@
   <section id="tab-pipeline" class="panel">
 
     <div class="tiles" id="tiles"></div>
+
+    <div class="card" id="interestCard">
+      <div class="cardhead">
+        <h2>Website enquiries</h2>
+        <span class="hint" id="interestSync"></span>
+        <label class="eiall"><input type="checkbox" id="eiShowAll"> show ones already worked</label>
+        <button class="btn ghost" id="eiRefresh" title="Check the External interest tab for new enquiries" style="margin-left:auto">↻ Check for new</button>
+      </div>
+      <div id="interestBox"></div>
+      <p class="hint" style="margin-top:10px">These come from the <b>Get an estimate</b> form on the public Functions Package Guide and land on the <b>External interest</b> tab of the tracker sheet. <b>Build a quote from this</b> opens a new quote on tab 1 with their dates, cabins, conference rooms, meals and discount already filled in, and everything they told us in the internal notes. The enquiry is then marked <b>Quoted</b> with the quote number against it, so nobody quotes it twice. Nothing is held or promised until you send the quote and they accept it.</p>
+    </div>
 
     <div class="card">
       <div class="cardhead">
@@ -2380,6 +2410,7 @@ function blankQuote(num){
     locked: false,      // "this is your quote": the organiser can look but not change it
     cocAgreed: null,    // {at, by} once the organiser ticks the code of conduct box
     internalNotes: "",  // staff only: special arrangements, what was agreed last time. Never served to the organiser.
+    fromInterest: null, // {ref, at, estimate} when this quote was started from a website enquiry
     rmsLink: null,      // quoting on an existing RMS group: {groupId, askedFor, paid, unmapped, ...}
     availCal: {},       // per-date availability: {itemId: {"2026-08-21": 0, ...}}
     ratesInfo: null,    // {from, to, items, file}
@@ -2628,8 +2659,10 @@ const SCHOOL_OFF = ["acc_4br_house", "acc_2br_ter", "acc_2br_bung", "acc_2br_std
 /* the school prices for the extras the organiser can add on top of the package.
    Only the ones in SCHOOL_EXTRAS_ON are offered to start with; the rest keep their
    school price for when staff tick them on by hand. */
-const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, din1: 30, diet: 5};
-const SCHOOL_EXTRAS_ON = ["bf_hot", "lunch_pack", "diet"];
+const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, din1: 30, din2: 14, diet: 5};
+/* packed lunch and the 2 course dinner are ticked in "Your meals" at the package price,
+   so they are not offered a second time as paid extras */
+const SCHOOL_EXTRAS_ON = ["bf_hot", "diet"];
 /* bed & breakfast is the base; every other meal is ticked on and priced per person for
    the days it is wanted, so a group can have dinner every night and one packed lunch. */
 function schoolBaseFor(level){ return Number(schoolCfg().base[level]) || 0; }
@@ -2843,17 +2876,41 @@ function schoolNumbers(sc, counts){
   Q.lines = (Q.lines || []).filter(l => !/^School package|^School meal:/.test(String(l.desc || "")));
   Q.lines.push({id: "custom", desc: schoolLineDesc(pack), qty: t.charged, price: pr.base, nights: pr.nights, unit: "per person per night", room: true, noUnit: true});
   pr.rows.filter(r => r.id !== "base").forEach(r => {
-    Q.lines.push({id: "custom", desc: "School meal: " + schoolMealLineDesc(r, t.free), qty: t.charged, price: r.per, nights: r.days, unit: "per person"});
+    /* pkgMeal: the money for this meal is on this line, but the COVERS the kitchen
+       cooks for are on the catering row beside it (which includes the free bus
+       drivers). mealsSummary reads the row and skips this line, so nobody is fed twice. */
+    Q.lines.push({id: "custom", desc: "School meal: " + schoolMealLineDesc(r, t.free), qty: t.charged, price: r.per, nights: r.days, unit: "per person", pkgMeal: true});
   });
-  /* breakfast is in the room rate: no charge, every morning, so the kitchen has it */
+  /* The catering list and the package have to agree, or a meal is either invisible or
+     charged twice. So every school meal is rebuilt from scratch here:
+       - breakfast is in the room rate: on, no charge, every morning
+       - a meal they have ticked (dinner, packed lunch) is already in the package price,
+         so it shows in the list at no extra charge with the covers and days the kitchen
+         needs, and its money stays on the package line
+       - a meal they have not ticked goes back to being an extra at the school price,
+         switched off, ready for staff to add if they ask for it later */
   if(!Q.sel.cater) Q.sel.cater = {};
-  SCHOOL_MEAL_IDS.forEach(id => { if(Q.sel.cater[id]) delete Q.sel.cater[id]; });
+  SCHOOL_MEAL_IDS.forEach(id => {
+    if(!RATE[id]) return;
+    if(Q.sel.cater[id]) delete Q.sel.cater[id];
+    if(id === "bf_cont") return;
+    setCat(id, "on", false);
+    setCat(id, "lock", false);
+    if(SCHOOL_EXTRAS[id] !== undefined) setCat(id, "price", SCHOOL_EXTRAS[id]);
+  });
   if(RATE.bf_cont){
     setCat("bf_cont", "on", true);
     setCat("bf_cont", "price", 0);
     setCat("bf_cont", "lock", true);
     Q.sel.cater.bf_cont = {ppl: t.people, days: pr.nights};
   }
+  pr.rows.forEach(r => {
+    if(r.id === "base" || !RATE[r.id]) return;
+    setCat(r.id, "on", true);
+    setCat(r.id, "price", 0);
+    setCat(r.id, "lock", true);
+    Q.sel.cater[r.id] = {ppl: t.people, days: r.days};
+  });
   Q.notes = schoolNotes(pack) + "\n\nYour rooming:\n" +
     plan.rows.map(r => "• " + r.label + ": " + r.people + " in " + r.rooms + " room" + (r.rooms === 1 ? "" : "s") + (r.free ? " (free of charge)" : "")).join("\n") +
     "\nMale and female are roomed separately, students up to 4 to a room and teachers twin share.";
@@ -3222,7 +3279,12 @@ function mealsSummary(){
     if(kidsOn() && id === "diet") return;
     add(id, (RATE[id] || {}).name, caterRowPeople(id) * (Number(c.days) || 0));
   });
-  Q.lines.forEach(l => { if(isAccomLine(l)) return; add(l.id, lineItem(l).custom ? (l.desc || "") : lineItem(l).name, (Number(l.qty) || 0) * lineNights(l)); });
+  Q.lines.forEach(l => {
+    if(isAccomLine(l)) return;
+    /* a school package meal: its covers are on the catering row, not here */
+    if(l.pkgMeal) return;
+    add(l.id, lineItem(l).custom ? (l.desc || "") : lineItem(l).name, (Number(l.qty) || 0) * lineNights(l));
+  });
   return m;
 }
 function roomsSummary(){
@@ -3859,6 +3921,13 @@ function caterRowCost(id){
   if(!days) return 0;
   if(kidsOn()) return days * bandCost(mealBands(id), catEntry(id).price);
   return (Number(c.ppl) || 0) * days * catEntry(id).price;
+}
+/* how many days a meal runs over the stay if nobody says otherwise: breakfast and
+   dinner follow the nights, a lunch includes the day they leave (the bus lunch) */
+function defaultMealDays(id){
+  const days = eventDays();
+  if(!days.length) return 0;
+  return String(id).indexOf("lunch") === 0 ? days.length : Math.max(1, days.length - 1);
 }
 function selCaterSub(){
   return caterItems().reduce((s, it) => {
@@ -5400,6 +5469,18 @@ function renderPrep(){
       if(v){ setCat(v.fullId, "on", on); setCat(v.halfId, "on", on); }
     } else {
       setCat(id, "on", on);
+      /* Ticking a meal on used to only OFFER it: the days stayed at 0, so the price
+         stayed at nothing until someone also pressed +. Ticking it now fills in the
+         obvious answer (everyone, every day of the stay) so the charge lands straight
+         away, and the numbers can still be changed beside it. An existing selection is
+         never touched, and unticking takes the charge back off. */
+      if(on && !((Q.sel.cater || {})[id] || {}).days){
+        const d = defaultMealDays(id);
+        if(d > 0){
+          if(!Q.sel.cater) Q.sel.cater = {};
+          Q.sel.cater[id] = {ppl: Number(Q.guests) || "", days: d};
+        }
+      }
     }
     refresh();
   }));
@@ -7870,6 +7951,293 @@ function renderEditBar(){
     showToast("Closed " + old + " without saving; it stays as last saved. Started " + Q.num + ".");
   });
 }
+/* =========================================================================
+   WEBSITE ENQUIRIES
+   -------------------------------------------------------------------------
+   Someone prices a stay on the public Functions Package Guide and presses
+   "get an estimate". The quote server writes it to the External interest tab
+   of the tracker sheet. This reads those rows back and turns one into a real
+   quote in one press, so nothing is retyped and nothing is lost between the
+   website and here.
+
+   The enquiry is their guess, not our quote: the prices are RMS rates as at
+   the moment they looked, no room is held, and the conference rooms they
+   ticked may well be gone. So everything lands on a DRAFT quote for staff to
+   price and check, and the rates are pulled fresh from RMS on the way in.
+   ========================================================================= */
+let INTEREST = [];          /* what the server last handed us, newest first */
+let INTEREST_AT = 0;        /* when, so the tab does not re-ask on every visit */
+let INTEREST_ERR = "";
+let INTEREST_BUSY = false;
+let INTEREST_ALL = false;   /* show the ones already worked as well */
+const INTEREST_OPEN = {};   /* ref -> their message is expanded */
+const INTEREST_FRESH_MS = 120000;
+
+function interestUnworked(e){
+  const s = String((e && e.status) || "New").toLowerCase();
+  return s === "new" || s === "contacted";
+}
+function interestShown(){
+  return (INTEREST || []).filter(e => INTEREST_ALL || interestUnworked(e));
+}
+/* the pipeline badge: how many nobody has picked up yet */
+function interestNewCount(){
+  return (INTEREST || []).filter(interestUnworked).length;
+}
+function fetchInterest(force, done){
+  const url = sheetEndpoint();
+  if(!url){ INTEREST_ERR = "no quote server address is set (Settings tab)"; if(done) done(); return; }
+  if(INTEREST_BUSY){ if(done) done(); return; }
+  if(!force && INTEREST_AT && Date.now() - INTEREST_AT < INTEREST_FRESH_MS){ if(done) done(); return; }
+  INTEREST_BUSY = true;
+  renderInterest();
+  fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "interest=list&token=" + encodeURIComponent(SHEET_TOKEN))
+    .then(r => r.text())
+    .then(txt => {
+      let data = null;
+      try{ data = JSON.parse(txt); }catch(e){ throw new Error(googleErrorText(txt) || "the server did not answer with data"); }
+      if(!data || !data.ok || !Array.isArray(data.interest)) throw new Error((data && data.error) || "the server could not read the enquiries");
+      INTEREST = data.interest;
+      INTEREST_AT = Date.now();
+      INTEREST_ERR = "";
+    })
+    .catch(err => { INTEREST_ERR = String((err && err.message) || err); })
+    .then(() => { INTEREST_BUSY = false; renderInterest(); if(done) done(); });
+}
+
+/* ---------- matching what they picked to our rate card ---------- */
+/* the website names cabins the way RMS does ("Motel Style Air-Conditioned Cabin")
+   and the rate card names them its own way ("Motel Style Air Conditioned Unit"),
+   so both are boiled down to the words that actually distinguish them */
+function typeKey(s){
+  return String(s || "").toLowerCase()
+    .replace(/\(.*?\)/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(unit|units|cabin|cabins|apartment|apartments|site|sites|campsite|campsites|style|room|rooms|the|and|a)\b/g, " ")
+    .replace(/\s+/g, " ").trim();
+}
+function matchAccomId(name){
+  const want = typeKey(name);
+  if(!want) return "";
+  const items = accomItems();
+  const exact = items.find(it => typeKey(it.name) === want);
+  if(exact) return exact.id;
+  /* nothing matched word for word: score on the words they share, and only accept
+     a clear winner so a wrong cabin type never creeps onto a quote silently */
+  const wt = want.split(" ").filter(Boolean);
+  let best = null, bestScore = 0;
+  items.forEach(it => {
+    const ht = typeKey(it.name).split(" ").filter(Boolean);
+    if(!ht.length) return;
+    const hit = wt.filter(w => ht.indexOf(w) >= 0).length;
+    const score = (2 * hit) / (wt.length + ht.length);
+    if(score > bestScore){ bestScore = score; best = it; }
+  });
+  return (best && bestScore >= 0.7) ? best.id : "";
+}
+/* their meal choices are free text inside a known slot, so the slot does the work */
+function matchCaterId(slot, text){
+  const t = String(text || "").toLowerCase();
+  if(!t.trim()) return "";
+  if(slot === "breakfast") return /hot/.test(t) ? "bf_hot" : (/cont/.test(t) ? "bf_cont" : "");
+  if(slot === "lunch")     return /pack|take|bag/.test(t) ? "lunch_pack" : (/sit|plated|served/.test(t) ? "lunch_sit" : "");
+  if(slot === "dinner")    return /\b2\b|two|second/.test(t) ? "din2" : (/\b1\b|one/.test(t) ? "din1" : "");
+  return "";
+}
+/* a day count from the website spread over the event days, a full day at a time */
+function interestVenueDays(key, count){
+  const days = eventDays();
+  let left = Number(count) || 0;
+  if(!days.length || left <= 0) return 0;
+  const m = {};
+  for(let i = 0; i < days.length && left > 0.001; i++){
+    if(left >= 1){ m[days[i]] = "full"; left -= 1; }
+    else { m[days[i]] = "am"; left = 0; }
+  }
+  if(!Q.sel.venueDays) Q.sel.venueDays = {};
+  Q.sel.venueDays[key] = m;
+  syncVenueCount(key);
+  return Object.keys(m).length;
+}
+/* Room 1, 2 and 3 carry the same number when they priced the combined space */
+function interestVenuePlan(v){
+  const n = k => Number((v || {})[k]) || 0;
+  const out = [];
+  const r1 = n("Room 1"), r2 = n("Room 2"), r3 = n("Room 3");
+  if(r1 > 0 && r1 === r2 && r2 === r3) out.push({key: "fr13", days: r1});
+  else {
+    if(r1 > 0) out.push({key: "fr1", days: r1});
+    if(r2 > 0) out.push({key: "fr2", days: r2});
+    if(r3 > 0) out.push({key: "fr3", days: r3});
+  }
+  if(n("Room 5") > 0)     out.push({key: "fr5",  days: n("Room 5")});
+  if(n("Auditorium") > 0) out.push({key: "aud",  days: n("Auditorium")});
+  if(n("Marquee") > 0)    out.push({key: "marq", days: n("Marquee")});
+  if(n("Dining") > 0)     out.push({key: "din",  days: n("Dining")});
+  return out;
+}
+
+/* ---------- the staff-only notes that travel with the quote ---------- */
+function interestNotesText(e, missed){
+  const L = [];
+  L.push("FROM THE WEBSITE · " + e.ref + (e.received ? " · received " + e.received : ""));
+  if(e.event) L.push("They called it: " + e.event);
+  if(e.firm) L.push("How firm the dates are: " + e.firm);
+  const t = e.totals || {};
+  if(Number(t.grand)) L.push("Their own estimate on the website: " + money(t.grand) +
+    (Number(t.discountPct) ? " (after the " + t.discountPct + "% church/charitable discount they ticked)" : "") +
+    " · accommodation " + money(t.accommodation) + ", venue hire " + money(t.venue) + ", catering " + money(t.meals));
+  if(e.mix) L.push("Cabins they picked: " + String(e.mix).split("\n").join(" · "));
+  if(e.choices) L.push("Meals they picked: " + String(e.choices).split("\n").join(" · "));
+  if(e.restrictions) L.push("The booking system told them: " + e.restrictions);
+  if(e.search) L.push("They also searched: " + e.search);
+  if(missed && missed.length) L.push("COULD NOT BE MATCHED, add by hand: " + missed.join("; "));
+  if(e.message) L.push("", "THEIR MESSAGE", e.message);
+  L.push("", "Their prices were live RMS rates at the moment they looked and nothing was held, so check availability and pricing before this goes out.");
+  return L.join("\n");
+}
+
+/* ---------- the button ---------- */
+function buildQuoteFromInterest(ref){
+  const e = (INTEREST || []).find(x => x && x.ref === ref);
+  if(!e){ showToast("That enquiry is no longer in the list, press Check for new.", true); return; }
+  if(!interestUnworked(e) && !confirm(e.ref + " is already marked “" + e.status + "”" +
+      (e.quote ? " against " + e.quote : "") + ".\n\nBuild another quote from it anyway?")) return;
+
+  const note = keepCurrentQuote();
+  Q = blankQuote(nextQuoteNum());
+  lsDel(LS_DRAFT);
+
+  Q.contact = e.contact || "";
+  Q.org = e.group || "";
+  Q.email = e.email || "";
+  Q.mobile = e.mobile || "";
+  Q.event = e.event || "";
+  Q.dateStart = e.arrival || "";
+  Q.dateEnd = e.departure || "";
+  Q.guests = Number(e.guests) || "";
+
+  const missed = [];
+  /* the cabins */
+  const accom = [];
+  (e.cabinTypes || []).forEach(c => {
+    const id = matchAccomId(c.type);
+    if(id) accom.push({id: id, qty: Math.max(0, Math.round(Number(c.qty) || 0)), from: null, to: null});
+    else missed.push(c.qty + " x " + c.type);
+  });
+  Q.sel.accom = accom.filter(b => b.qty > 0);
+
+  /* the conference rooms, on the days they asked for */
+  interestVenuePlan(e.venues).forEach(p => { interestVenueDays(p.key, p.days); });
+
+  /* the meals */
+  const covers = Number(e.guests) || 0;
+  const nights = Math.max(1, (e.nights ? Number(e.nights) : 0) || nightsCount());
+  ["breakfast", "lunch", "dinner"].forEach(slot => {
+    const text = String(((e.meals || {})[slot] !== undefined ? (e.meals || {})[slot] : "") || "");
+    const picked = text || (Number((e.covers || {})[slot]) > 0 ? slot : "");
+    if(!picked) return;
+    const id = matchCaterId(slot, text);
+    if(!id || !RATE[id]){ missed.push(slot + (text ? ": " + text : "")); return; }
+    setCat(id, "on", true);
+    if(!Q.sel.cater) Q.sel.cater = {};
+    Q.sel.cater[id] = {ppl: covers || "", days: slot === "lunch" ? nights + 1 : nights};
+  });
+
+  /* the church / not-for-profit rate they ticked on the website */
+  const pct = Number((e.totals || {}).discountPct) || 0;
+  if(pct === 20 || pct === 50){ Q.acnc = true; Q.sel.church = pct; }
+
+  Q.internalNotes = interestNotesText(e, missed);
+  Q.fromInterest = {ref: e.ref, at: new Date().toISOString(), estimate: Number((e.totals || {}).grand) || 0};
+
+  syncForm();
+  renderPrevOptions();
+  refresh();
+  switchTab("staff");
+  if(typeof scheduleRmsPull === "function") scheduleRmsPull(400);
+
+  /* the sheet is told straight away, so the next person to look sees it is taken */
+  postToSheet({action: "interestClaim", ref: e.ref, quote: Q.num, status: "Quoted"});
+  e.status = "Quoted";
+  e.quote = Q.num;
+  renderInterest();
+
+  showToast(Q.num + " started from " + e.ref + " (" + (e.group || e.contact || "the enquiry") + ")." +
+    (missed.length ? " " + missed.length + " thing" + (missed.length === 1 ? " they picked is" : "s they picked are") + " in the internal notes to add by hand." : "") +
+    " Prices are being pulled from RMS now, check them before you send." + note,
+    missed.length > 0);
+}
+
+/* ---------- drawing it ---------- */
+function interestFactsHTML(e){
+  const bits = [];
+  const t = e.totals || {};
+  if(e.arrival) bits.push("<span><b>" + esc(shortDate(e.arrival)) + (e.departure && e.departure !== e.arrival ? " – " + esc(shortDate(e.departure)) : "") + "</b>" +
+    (Number(e.nights) ? " · " + e.nights + " night" + (Number(e.nights) === 1 ? "" : "s") : "") + "</span>");
+  if(Number(e.guests)) bits.push("<span>" + e.guests + " guest" + (Number(e.guests) === 1 ? "" : "s") + "</span>");
+  if(Number(e.cabins)) bits.push("<span>" + e.cabins + " cabin" + (Number(e.cabins) === 1 ? "" : "s") + "</span>");
+  const rooms = interestVenuePlan(e.venues).map(p => {
+    const v = VENUES.find(x => x.key === p.key);
+    return (v ? v.name : p.key) + " × " + (p.days === 0.5 ? "half day" : p.days + (p.days === 1 ? " day" : " days"));
+  });
+  if(rooms.length) bits.push("<span>" + esc(rooms.join(", ")) + "</span>");
+  if(Number(t.grand)) bits.push("<span>their estimate <b>" + money0(t.grand) + "</b>" +
+    (Number(t.discountPct) ? " (" + t.discountPct + "% discount ticked)" : "") + "</span>");
+  if(e.firm) bits.push("<span>" + esc(e.firm) + "</span>");
+  return '<div class="eifacts">' + bits.join("") + '</div>';
+}
+function interestCardHTML(e){
+  const worked = !interestUnworked(e);
+  const who = e.group || e.contact || "Someone";
+  const msg = String(e.message || "");
+  const open = !!INTEREST_OPEN[e.ref];
+  const short = msg.length > 220 && !open ? msg.slice(0, 220).replace(/\s+\S*$/, "") + "…" : msg;
+  const contact = [e.contact, e.email, e.mobile].filter(Boolean).join(" · ");
+  return '<div class="eicard' + (worked ? ' worked' : '') + '">' +
+    '<div class="eihead"><span class="eiref">' + esc(e.ref) + '</span><b>' + esc(who) + '</b>' +
+      (e.group && e.contact ? '<span class="eidone">' + esc(e.contact) + '</span>' : '') +
+      '<span class="eiwhen">' + esc(e.received || "") + '</span></div>' +
+    interestFactsHTML(e) +
+    (contact ? '<div class="eifacts"><span>' + esc(contact) + '</span></div>' : '') +
+    (msg ? '<div class="eimsg">' + esc(short) + '</div>' +
+      (msg.length > 220 ? '<button type="button" class="eimore" data-ref="' + esc(e.ref) + '">' + (open ? 'show less' : 'read the rest') + '</button>' : '') : '') +
+    '<div class="eiact">' +
+      '<button type="button" class="btn accept eiBuild" data-ref="' + esc(e.ref) + '">Build a quote from this</button>' +
+      (e.email ? '<a class="btn ghost" href="mailto:' + esc(e.email) + '?subject=' + encodeURIComponent("Your enquiry with Wollongong Surf Leisure Resort (" + e.ref + ")") + '">Email them</a>' : '') +
+      (worked ? '<span class="eidone">' + esc(e.status) + (e.quote ? ' · ' + esc(e.quote) : '') + '</span>' : '') +
+    '</div>' +
+  '</div>';
+}
+function renderInterest(){
+  const box = document.getElementById("interestBox");
+  if(!box) return;
+  const sync = document.getElementById("interestSync");
+  if(sync){
+    sync.textContent = INTEREST_BUSY ? "checking…"
+      : INTEREST_ERR ? "could not be read"
+      : INTEREST_AT ? (interestNewCount() ? interestNewCount() + " waiting" : "nothing waiting")
+      : "";
+  }
+  if(INTEREST_ERR && !INTEREST.length){
+    box.innerHTML = '<div class="eiempty">The enquiries could not be read: ' + esc(INTEREST_ERR) +
+      '. They are still safe on the <b>External interest</b> tab of the tracker sheet.</div>';
+    return;
+  }
+  const list = interestShown();
+  if(!list.length){
+    box.innerHTML = '<div class="eiempty">' + (INTEREST_BUSY ? "Checking the tracker sheet…"
+      : INTEREST.length ? "Nothing waiting. Tick <b>show ones already worked</b> to see the " + INTEREST.length + " you have dealt with."
+      : "No website enquiries yet. They arrive here when someone uses the estimate form on the Functions Package Guide.") + '</div>';
+    return;
+  }
+  box.innerHTML = '<div class="eilist">' + list.map(interestCardHTML).join("") + '</div>';
+  box.querySelectorAll(".eiBuild").forEach(b => b.addEventListener("click", () => buildQuoteFromInterest(b.dataset.ref)));
+  box.querySelectorAll(".eimore").forEach(b => b.addEventListener("click", () => {
+    INTEREST_OPEN[b.dataset.ref] = !INTEREST_OPEN[b.dataset.ref];
+    renderInterest();
+  }));
+}
 function renderPipeline(){
   renderEditBar();   // tab 1's "editing a sent quote" bar follows the same events the pipeline does
   const rows = pipelineRows();
@@ -9214,7 +9582,10 @@ function switchTab(name){
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + name));
   window.scrollTo({top:0, behavior:"instant"});
   updateStickySubmit();
-  if(name === "pipeline") pullPipeline(false);   // opening the pipeline refreshes it from the sheet
+  if(name === "pipeline"){
+    pullPipeline(false);                         // opening the pipeline refreshes it from the sheet
+    fetchInterest(false);                        // and looks for new website enquiries
+  }
   if(name === "settings") ensureRmsCatalog(false).then(() => renderRmsSettings());
 }
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
@@ -9839,7 +10210,13 @@ if(CLIENT_MODE){
   /* the shared pipeline: pull now, when this tab regains focus, and every few minutes */
   pullPipeline(true);
   const syncBtn = document.getElementById("syncNowBtn");
-  if(syncBtn) syncBtn.addEventListener("click", () => pullPipeline(true));
+  if(syncBtn) syncBtn.addEventListener("click", () => { pullPipeline(true); fetchInterest(true); });
+  /* website enquiries: read once on load, then whenever the pipeline is opened */
+  fetchInterest(true);
+  const eiBtn = document.getElementById("eiRefresh");
+  if(eiBtn) eiBtn.addEventListener("click", () => fetchInterest(true));
+  const eiAll = document.getElementById("eiShowAll");
+  if(eiAll) eiAll.addEventListener("change", e => { INTEREST_ALL = !!e.target.checked; renderInterest(); });
   window.addEventListener("focus", () => pullPipeline(false));
   document.addEventListener("visibilitychange", () => { if(!document.hidden) pullPipeline(false); });
   window.addEventListener("online", () => flushOutbox());
