@@ -264,6 +264,11 @@
   .schadd{margin-top:8px}
   .schadd select{padding:6px 8px; font:inherit; border:1px solid var(--grid, #c9d4dc); border-radius:8px; max-width:100%}
   .schooldlg .sgmealbox{margin-top:12px}
+  .schooldlg .sgper{display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px 14px; margin:12px 0 0; padding:9px 12px; background:#f7f9fb; border-radius:8px}
+  .schooldlg .sgperlab{font-weight:700; font-size:13.5px; flex:0 0 auto; align-self:center}
+  .schooldlg .sgper label{display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--ink2, #6b7580); flex:0 0 auto}
+  .schooldlg .sgper input{width:72px; padding:5px 7px; font:inherit; border:1px solid var(--grid, #cfd6dd); border-radius:6px}
+  .schooldlg .sgper .hint{flex:1 1 100%; margin:0; font-size:12px}
   .schooldlg .sgopt{display:flex; gap:10px; align-items:flex-start; margin:12px 0 0; padding:9px 12px; background:#f7f9fb; border-radius:8px; font-size:13.5px; cursor:pointer}
   .schooldlg .sgopt input{width:auto; margin-top:3px}
   .schooldlg .sgopt em{display:block; font-style:normal; color:var(--ink2, #6b7580); font-size:12px; margin-top:3px; line-height:1.5}
@@ -2711,6 +2716,23 @@ const SCHOOL_EXTRAS_ON = ["bf_hot", "diet"];
 /* bed & breakfast is the base; every other meal is ticked on and priced per person for
    the days it is wanted, so a group can have dinner every night and one packed lunch. */
 function schoolBaseFor(level){ return Number(schoolCfg().base[level]) || 0; }
+/* "Primary school group" / "High school group": the level already says "school" on one
+   of them, so it is not said twice */
+function schoolLevelWords(level){
+  const s = String(level || "School").trim();
+  return /school/i.test(s) ? s + " group" : s + " school group";
+}
+/* how many share a room. The house rules are on the Settings tab; a quote can change
+   them for itself (a year with bigger cabins, teachers in singles), and the dialog
+   previews a change before it is applied. */
+let SCHOOL_PER_TMP = null;
+function schoolPerRoom(){
+  if(SCHOOL_PER_TMP) return SCHOOL_PER_TMP;
+  const c = schoolCfg();
+  const p = (Q.school && Q.school.per) || {};
+  const n = (v, d) => { const x = Math.round(Number(v) || 0); return x > 0 ? x : d; };
+  return {perStudent: n(p.student, c.perStudent), perTeacher: n(p.teacher, c.perTeacher), perDriver: n(p.driver, c.perDriver)};
+}
 const SCHOOL_MEAL_ADDONS = [
   {id: "din2",       label: "Dinner, 2 courses", add: 14, kind: "night", note: "served in the private dining room"},
   {id: "lunch_pack", label: "Packed lunch",      add: 15, kind: "day",   note: "salad roll, juice and fruit, ready to take off site"}
@@ -2862,7 +2884,7 @@ const SCHOOL_GROUP_DEFS = [
   {k: "bd", label: "Bus drivers", kind: "driver", free: true}
 ];
 function schoolGroups(){
-  const c = schoolCfg();
+  const c = schoolPerRoom();
   return SCHOOL_GROUP_DEFS.map(g => Object.assign({}, g, {
     per: g.kind === "student" ? c.perStudent : (g.kind === "teacher" ? c.perTeacher : c.perDriver)
   }));
@@ -2995,7 +3017,7 @@ function schoolNumbers(sc, counts){
     plan.rows.map(r => "• " + r.label + ": " + r.people + " in " + r.rooms + " room" + (r.rooms === 1 ? "" : "s") + (r.free ? " (free of charge)" : "")).join("\n") +
     "\nMale and female are roomed separately, students up to 4 to a room and teachers twin share.";
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: pr.base, meals: schoolMealsOf(sc), rates: sc.rates || null,
-    keepRooms: keep,
+    keepRooms: keep, per: (sc && sc.per) || ((Q.school || {}).per || null),
     teachersOwn: sc.teachersOwn !== undefined ? sc.teachersOwn !== false : (Q.school ? Q.school.teachersOwn !== false : true),
     packName: sc.packName || (Q.school && Q.school.packName) || "", counts: c, people: t.people, charged: t.charged,
     rooms: plan.rows, short: plan.short, perNight: pr.perNight, at: new Date().toISOString()});
@@ -3164,24 +3186,28 @@ function applySchoolTemplate(sc){
   const canKeep = roomsHere > 0;
   const keepDefault = canKeep && (sc.keepRooms !== undefined ? !!sc.keepRooms
     : (prevS.keepRooms !== undefined ? !!prevS.keepRooms : cameFromBooking()));
+  const perNow = schoolPerRoom();
   let pack = Object.assign({level: sc.level, base: Number(sc.base) > 0 ? Number(sc.base) : schoolBaseRate(sc),
     packName: sc.packName || "", rates: Object.assign({}, sc.rates || {}), keepRooms: keepDefault,
+    per: {student: perNow.perStudent, teacher: perNow.perTeacher, driver: perNow.perDriver},
     teachersOwn: sc.teachersOwn !== undefined ? sc.teachersOwn : (prevS.teachersOwn !== undefined ? prevS.teachersOwn : true)},
     {meals: Object.keys(schoolMealsOf(sc)).length ? schoolMealsOf(sc) : schoolMealsOf(prevS)});
   /* a school camp has dinner unless someone says otherwise */
   if(!Object.keys(pack.meals).length && !prevS.level && schoolAddon("din2")) pack.meals = {din2: {days: schoolMealDays("night")}};
   const dlg = document.createElement("div");
   dlg.className = "histdlg";
-  dlg.innerHTML = '<div class="histcard schooldlg"><h3 style="margin:0 0 2px">' + esc(pack.packName || (pack.level + ' school group')) + '</h3>' +
-    '<p class="hint" style="margin:0 0 12px">Accommodation and breakfast are the base price. Tick any other meals and pick the days. Students are filled 4 to a room and teachers share a twin; male and female are never put in the same room. Bus drivers stay and eat free.</p>' +
+  dlg.innerHTML = '<div class="histcard schooldlg"><h3 style="margin:0 0 2px">' + esc(pack.packName || schoolLevelWords(pack.level)) + '</h3>' +
+    '<p class="hint" style="margin:0 0 12px" id="sgIntro"></p>' +
     '<div class="sgrate"><label><span>Accommodation &amp; breakfast, per person per night</span><span class="sgdollar">$<input type="number" id="sgRate" min="0" step="0.5" value="' + esc(pack.base) + '"></span></label>' +
       '<span class="hint">change it for this quote (a negotiated rate, a new year\'s price). ' +
       '<button type="button" class="btn ghost" id="sgSaveRate">＋ Save as a package</button> keeps it, with the meals you have ticked, in the template list for next time.' +
       (pack.packName ? ' <button type="button" class="btn ghost" id="sgDelPack">Delete this package</button>' : '') + '</span></div>' +
-    '<div class="sgrid">' + schoolGroups().map(g =>
-      '<label><span>' + esc(g.label) + '<em>' + (g.free ? 'free of charge · a room each' : g.per + ' per room') + '</em></span>' +
-      '<input type="number" min="0" step="1" class="sgIn" data-k="' + g.k + '" value="' + esc(prev[g.k] !== undefined ? prev[g.k] : "") + '" placeholder="0"></label>').join('') +
-    '</div>' +
+    '<div class="sgper"><span class="sgperlab">How many share a room</span>' +
+      '<label>Students<input type="number" class="sgPer" data-p="student" min="1" step="1" value="' + esc(pack.per.student) + '"></label>' +
+      '<label>Teachers<input type="number" class="sgPer" data-p="teacher" min="1" step="1" value="' + esc(pack.per.teacher) + '"></label>' +
+      '<label>Bus drivers<input type="number" class="sgPer" data-p="driver" min="1" step="1" value="' + esc(pack.per.driver) + '"></label>' +
+      '<span class="hint">for this quote only. The numbers every new school quote starts with are on the <b>Settings</b> tab under School groups.</span></div>' +
+    '<div class="sgrid" id="sgGrid"></div>' +
     (canKeep
       ? '<label class="sgopt"><input type="checkbox" id="sgKeepRooms"' + (keepDefault ? ' checked' : '') + '>' +
         '<span><b>Keep the ' + roomsHere + ' cabin' + (roomsHere === 1 ? '' : 's') + ' already on this quote</b>' +
@@ -3198,6 +3224,17 @@ function applySchoolTemplate(sc){
       '<button type="button" class="btn ghost" id="sgCancel">Cancel</button>' +
       '<button type="button" class="btn accept" id="sgGo">Build the quote</button></div></div>';
   document.body.appendChild(dlg);
+  /* the who-is-coming boxes are built once so nothing anyone is typing is thrown away;
+     only the "4 per room" notes under them follow the per-room boxes */
+  const grid = dlg.querySelector("#sgGrid");
+  grid.innerHTML = SCHOOL_GROUP_DEFS.map(g =>
+    '<label><span>' + esc(g.label) + '<em data-per="' + g.k + '"></em></span>' +
+    '<input type="number" min="0" step="1" class="sgIn" data-k="' + g.k + '" value="' + esc(prev[g.k] !== undefined ? prev[g.k] : "") + '" placeholder="0"></label>').join('');
+  const perOf = () => {
+    const o = {};
+    dlg.querySelectorAll(".sgPer").forEach(el => { const n = Math.round(Number(el.value) || 0); o[el.dataset.p] = n > 0 ? n : 1; });
+    return {perStudent: o.student || 1, perTeacher: o.teacher || 1, perDriver: o.driver || 1};
+  };
   const read = () => {
     const o = {};
     dlg.querySelectorAll(".sgIn").forEach(el => { o[el.dataset.k] = el.value; });
@@ -3206,7 +3243,7 @@ function applySchoolTemplate(sc){
   const rate = () => Math.max(0, Number((dlg.querySelector("#sgRate") || {}).value) || 0);
   const teachOwn = () => !!(dlg.querySelector("#sgTeachOwn") || {}).checked;
   const keepRooms = () => canKeep && !!(dlg.querySelector("#sgKeepRooms") || {}).checked;
-  const close = () => dlg.remove();
+  const close = () => { SCHOOL_PER_TMP = null; dlg.remove(); };
   const paint = () => {
     pack = Object.assign({}, pack, {base: rate(), counts: read(), teachersOwn: teachOwn()});
     /* the preview rooms follow the tick box, so Q.school is kept in step while the form is open */
@@ -3231,6 +3268,16 @@ function applySchoolTemplate(sc){
       pack = Object.assign({}, pack, {meals: meals});
       paint();
     }));
+    SCHOOL_PER_TMP = perOf();
+    const pr0 = SCHOOL_PER_TMP;
+    const intro = dlg.querySelector("#sgIntro");
+    if(intro) intro.textContent = "Accommodation and breakfast are the base price. Tick any other meals and pick the days. Students are filled " +
+      pr0.perStudent + " to a room and teachers " + (pr0.perTeacher === 1 ? "have one each" : pr0.perTeacher === 2 ? "share a twin" : "share " + pr0.perTeacher + " to a room") +
+      "; male and female are never put in the same room. Bus drivers stay and eat free.";
+    dlg.querySelectorAll("#sgGrid em[data-per]").forEach(el => {
+      const g = schoolGroups().filter(x => x.k === el.dataset.per)[0];
+      el.textContent = g ? (g.free ? "free of charge · a room each" : g.per + " per room") : "";
+    });
     const c = read(), pr = schoolPricing(pack, c), t = pr.totals;
     /* keeping the booking's cabins: the summary shows those handed out group by group */
     const kept = keepRooms();
@@ -3252,8 +3299,10 @@ function applySchoolTemplate(sc){
           ? '<div class="sgnoteline">Spare on the booking: ' + esc(plan.spare.map(b => b.qty + ' × ' + ((RATE[b.id] || {}).name || b.id)).join(', ')) + '.</div>'
           : '')
       : '<div class="hint">Type how many are coming and the rooms work themselves out.</div>';
+    SCHOOL_PER_TMP = null;
   };
   dlg.querySelectorAll(".sgIn").forEach(el => el.addEventListener("input", paint));
+  dlg.querySelectorAll(".sgPer").forEach(el => el.addEventListener("input", paint));
   const rateIn = dlg.querySelector("#sgRate");
   if(rateIn) rateIn.addEventListener("input", paint);
   const teachBox = dlg.querySelector("#sgTeachOwn");
@@ -3284,7 +3333,9 @@ function applySchoolTemplate(sc){
     if(!schoolTotals(c).people){ showToast("Type how many people are coming first.", true); return; }
     if(!(rate() > 0)){ showToast("Put a price per person per night in first.", true); return; }
     close();
-    buildSchoolQuote(Object.assign({}, pack, {base: rate(), teachersOwn: teachOwn(), keepRooms: keepRooms()}), c);
+    const pr2 = perOf();
+    buildSchoolQuote(Object.assign({}, pack, {base: rate(), teachersOwn: teachOwn(), keepRooms: keepRooms(),
+      per: {student: pr2.perStudent, teacher: pr2.perTeacher, driver: pr2.perDriver}}), c);
   });
   paint();
   const first = dlg.querySelector(".sgIn");
@@ -3320,8 +3371,11 @@ function buildSchoolQuote(sc, counts){
     setCat(id, "price", SCHOOL_EXTRAS[id]);
     setCat(id, "on", SCHOOL_EXTRAS_ON.indexOf(id) >= 0);
   });
+  /* the per-room numbers are set BEFORE the rooming is worked out, so schoolGroups()
+     and everything under it uses this quote's own numbers from here on */
+  const per = (sc.per && typeof sc.per === "object") ? sc.per : ((Q.school || {}).per || null);
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: Number(sc.base) || schoolBaseRate(sc), meals: schoolMealsOf(sc),
-    rates: sc.rates || null, packName: sc.packName || "", teachersOwn: sc.teachersOwn !== false, keepRooms: keep});
+    rates: sc.rates || null, packName: sc.packName || "", teachersOwn: sc.teachersOwn !== false, keepRooms: keep, per: per});
   /* the rooms, the meals, the price and the wording all follow the numbers */
   const plan = schoolNumbers(Q.school, c);
   const pr = schoolPricing(Q.school, c);
@@ -3343,7 +3397,7 @@ function buildSchoolQuote(sc, counts){
   const nights = stayNightsList();
   if(nights.some(d => [4, 5, 6].indexOf(new Date(d + "T12:00:00").getDay()) >= 0)) warn.push("the package covers Monday to Thursday nights (negotiable), and this stay includes a Friday, Saturday or Sunday night");
   const mealWords = pr.rows.filter(r => r.id !== "base").map(r => r.label.toLowerCase() + " × " + r.days).join(", ");
-  showToast(sc.level + " school group · " + money0(pr.base) + "pp per night for accommodation & breakfast" +
+  showToast(schoolLevelWords(sc.level) + " · " + money0(pr.base) + "pp per night for accommodation & breakfast" +
     (mealWords ? " plus " + mealWords : ", no other meals") + " · " +
     t.people + " staying, " + t.charged + " charged" + (t.free ? " (" + t.free + " bus driver" + (t.free === 1 ? "" : "s") + " free)" : "") + " · " +
     money(pr.total) + " · " + (schoolRoomWords(plan.merged) || "no rooms could be suggested") + "." +
@@ -8553,7 +8607,8 @@ function buildQuoteFromInterest(ref){
 function interestFactsHTML(e){
   const bits = [];
   const t = e.totals || {};
-  if(e.arrival) bits.push("<span><b>" + esc(shortDate(e.arrival)) + (e.departure && e.departure !== e.arrival ? " – " + esc(shortDate(e.departure)) : "") + "</b>" +
+  /* these stays are often a year or more out, so the year is always shown */
+  if(e.arrival) bits.push("<span><b>" + esc(e.departure && e.departure !== e.arrival ? fmtRange(e.arrival, e.departure) : shortDateY(e.arrival)) + "</b>" +
     (Number(e.nights) ? " · " + e.nights + " night" + (Number(e.nights) === 1 ? "" : "s") : "") + "</span>");
   if(Number(e.guests)) bits.push("<span>" + e.guests + " guest" + (Number(e.guests) === 1 ? "" : "s") + "</span>");
   if(Number(e.cabins)) bits.push("<span>" + e.cabins + " cabin" + (Number(e.cabins) === 1 ? "" : "s") + "</span>");
