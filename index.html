@@ -1010,6 +1010,7 @@
     <div id="restoreBar" class="restorebar" style="display:none"></div>
     <div id="editBar" class="restorebar" style="display:none"></div>
     <div id="resLinkBar" class="restorebar reslink" style="display:none"></div>
+    <div id="resSchoolBar" class="restorebar reslink" style="display:none"></div>
     <div class="card intcard" id="intCard">
       <div class="cardhead">
         <h2>Internal notes <span class="intpill">staff only</span></h2>
@@ -2454,6 +2455,7 @@ function blankQuote(num){
     cocAgreed: null,    // {at, by} once the organiser ticks the code of conduct box
     internalNotes: "",  // staff only: special arrangements, what was agreed last time. Never served to the organiser.
     fromInterest: null, // {ref, at, estimate} when this quote was started from a website enquiry
+    fromRes: null,      // {groupId, repeat, ...} when it was filled in from an RMS booking
     rmsLink: null,      // quoting on an existing RMS group: {groupId, askedFor, paid, unmapped, ...}
     availCal: {},       // per-date availability: {itemId: {"2026-08-21": 0, ...}}
     ratesInfo: null,    // {from, to, items, file}
@@ -2865,6 +2867,27 @@ function schoolGroups(){
     per: g.kind === "student" ? c.perStudent : (g.kind === "teacher" ? c.perTeacher : c.perDriver)
   }));
 }
+/* the cabins already on this quote, if there are any */
+function quoteRoomCount(){
+  return (Q.sel.accom || []).reduce((n, b) => n + (Number(b.qty) || 0), 0);
+}
+/* "11 × Motel Style Air Conditioned Unit, 5 × 1 Bedroom Air Conditioned Unit" */
+function quoteRoomWords(){
+  const n = {};
+  (Q.sel.accom || []).forEach(b => {
+    const q = Number(b.qty) || 0;
+    if(q > 0) n[b.id] = (n[b.id] || 0) + q;
+  });
+  return Object.keys(n).map(id => n[id] + " × " + ((RATE[id] || {}).name || id)).join(", ");
+}
+/* is this school package built on the rooms the quote already has? */
+function schoolKeepsRooms(sc){
+  return !!((sc || {}).keepRooms) && quoteRoomCount() > 0;
+}
+/* a quote that was filled in from a booking in RMS, or from a stay being repeated */
+function cameFromBooking(){
+  return !!((Q.fromRes && Q.fromRes.groupId) || (Q.rmsLink && Q.rmsLink.groupId));
+}
 function schoolCounts(o){
   const c = {};
   schoolGroups().forEach(g => { c[g.k] = Math.max(0, Math.round(Number((o || {})[g.k]) || 0)); });
@@ -2905,13 +2928,27 @@ function schoolRoomWords(merged){
 function schoolNumbers(sc, counts){
   const c = schoolCounts(counts);
   const t = schoolTotals(c);
-  const plan = schoolPlan(c);
-  if(plan.short){
-    /* RMS is short: the rooms still go on the quote so the numbers add up */
-    const fallback = schoolCfg().studentTypes[0];
-    if(fallback) plan.merged[fallback] = (plan.merged[fallback] || 0) + plan.short;
+  /* Converting a booking (one already in RMS, or a stay being repeated) into a school
+     group: the cabins are the ones the booking actually has, so they are handed out
+     group by group rather than planned from scratch. Everything else is the same. */
+  const keep = schoolKeepsRooms(sc);
+  let plan;
+  if(keep){
+    const a = schoolAssign(c);
+    plan = {rows: a.rows, merged: {}, short: a.short, kept: true};
+    (Q.sel.accom || []).forEach(b => {
+      const n = Number(b.qty) || 0;
+      if(n > 0) plan.merged[b.id] = (plan.merged[b.id] || 0) + n;
+    });
+  } else {
+    plan = schoolPlan(c);
+    if(plan.short){
+      /* RMS is short: the rooms still go on the quote so the numbers add up */
+      const fallback = schoolCfg().studentTypes[0];
+      if(fallback) plan.merged[fallback] = (plan.merged[fallback] || 0) + plan.short;
+    }
+    Q.sel.accom = Object.keys(plan.merged).map(id => ({id: id, qty: plan.merged[id]}));
   }
-  Q.sel.accom = Object.keys(plan.merged).map(id => ({id: id, qty: plan.merged[id]}));
   Q.guests = t.people;
   /* keep the package on the quote: what they pay, and what the kitchen cooks */
   const pack = Object.assign({}, sc, {counts: c});
@@ -2958,6 +2995,7 @@ function schoolNumbers(sc, counts){
     plan.rows.map(r => "• " + r.label + ": " + r.people + " in " + r.rooms + " room" + (r.rooms === 1 ? "" : "s") + (r.free ? " (free of charge)" : "")).join("\n") +
     "\nMale and female are roomed separately, students up to 4 to a room and teachers twin share.";
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: pr.base, meals: schoolMealsOf(sc), rates: sc.rates || null,
+    keepRooms: keep,
     teachersOwn: sc.teachersOwn !== undefined ? sc.teachersOwn !== false : (Q.school ? Q.school.teachersOwn !== false : true),
     packName: sc.packName || (Q.school && Q.school.packName) || "", counts: c, people: t.people, charged: t.charged,
     rooms: plan.rows, short: plan.short, perNight: pr.perNight, at: new Date().toISOString()});
@@ -3120,8 +3158,14 @@ function applySchoolTemplate(sc){
   const prev = prevS.counts || {};
   /* the meals carry over from the last time this quote was built, so re-picking the
      template does not throw away the group's choices */
+  /* a quote filled in from an RMS booking already has the real cabins on it, so the
+     package is built on those rather than planning a fresh mix */
+  const roomsHere = quoteRoomCount();
+  const canKeep = roomsHere > 0;
+  const keepDefault = canKeep && (sc.keepRooms !== undefined ? !!sc.keepRooms
+    : (prevS.keepRooms !== undefined ? !!prevS.keepRooms : cameFromBooking()));
   let pack = Object.assign({level: sc.level, base: Number(sc.base) > 0 ? Number(sc.base) : schoolBaseRate(sc),
-    packName: sc.packName || "", rates: Object.assign({}, sc.rates || {}),
+    packName: sc.packName || "", rates: Object.assign({}, sc.rates || {}), keepRooms: keepDefault,
     teachersOwn: sc.teachersOwn !== undefined ? sc.teachersOwn : (prevS.teachersOwn !== undefined ? prevS.teachersOwn : true)},
     {meals: Object.keys(schoolMealsOf(sc)).length ? schoolMealsOf(sc) : schoolMealsOf(prevS)});
   /* a school camp has dinner unless someone says otherwise */
@@ -3138,6 +3182,13 @@ function applySchoolTemplate(sc){
       '<label><span>' + esc(g.label) + '<em>' + (g.free ? 'free of charge · a room each' : g.per + ' per room') + '</em></span>' +
       '<input type="number" min="0" step="1" class="sgIn" data-k="' + g.k + '" value="' + esc(prev[g.k] !== undefined ? prev[g.k] : "") + '" placeholder="0"></label>').join('') +
     '</div>' +
+    (canKeep
+      ? '<label class="sgopt"><input type="checkbox" id="sgKeepRooms"' + (keepDefault ? ' checked' : '') + '>' +
+        '<span><b>Keep the ' + roomsHere + ' cabin' + (roomsHere === 1 ? '' : 's') + ' already on this quote</b>' +
+        '<em>' + esc(quoteRoomWords()) + '.' +
+        (cameFromBooking() ? ' They came from RMS group ' + esc(String((Q.fromRes || Q.rmsLink || {}).groupId || '')) + ', so this keeps the booking as it is and just prices it as a school package.' : '') +
+        ' Untick this and the rooms are planned again from scratch for the numbers below.</em></span></label>'
+      : '') +
     '<label class="sgopt"><input type="checkbox" id="sgTeachOwn"' + (pack.teachersOwn === false ? '' : ' checked') + '>' +
       '<span><b>Put the teachers in ' + esc(schoolTypeWords(schoolCfg().teacherTypes)) + '</b>' +
       '<em>Students fill ' + esc(schoolTypeWords(schoolCfg().studentTypes)) + ' in that order. Whatever a line needs, the next type on the list is used when RMS runs out. Untick this and the teachers are roomed from the students\' list instead. The order is set on the Settings tab.</em></span></label>' +
@@ -3154,6 +3205,7 @@ function applySchoolTemplate(sc){
   };
   const rate = () => Math.max(0, Number((dlg.querySelector("#sgRate") || {}).value) || 0);
   const teachOwn = () => !!(dlg.querySelector("#sgTeachOwn") || {}).checked;
+  const keepRooms = () => canKeep && !!(dlg.querySelector("#sgKeepRooms") || {}).checked;
   const close = () => dlg.remove();
   const paint = () => {
     pack = Object.assign({}, pack, {base: rate(), counts: read(), teachersOwn: teachOwn()});
@@ -3179,7 +3231,10 @@ function applySchoolTemplate(sc){
       pack = Object.assign({}, pack, {meals: meals});
       paint();
     }));
-    const c = read(), pr = schoolPricing(pack, c), t = pr.totals, plan = schoolPlan(c);
+    const c = read(), pr = schoolPricing(pack, c), t = pr.totals;
+    /* keeping the booking's cabins: the summary shows those handed out group by group */
+    const kept = keepRooms();
+    const plan = kept ? schoolAssign(c) : schoolPlan(c);
     const bits = plan.rows.map(r => '<tr><td>' + esc(r.label) + (r.free ? ' (free of charge)' : '') + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('');
     document.getElementById("sgSum").innerHTML = t.people
       ? '<table><tr><th>Who</th><th>People</th><th>Rooms</th><th>Units</th></tr>' + bits + '</table>' +
@@ -3189,7 +3244,13 @@ function applySchoolTemplate(sc){
         (t.free ? ' · ' + t.free + ' free (bus driver' + (t.free === 1 ? '' : 's') + ')' : '') +
         ' · about ' + money0(pr.perNight) + ' per person per night · <b>' + money(pr.total) + '</b> over ' + pr.nights + ' night' + (pr.nights === 1 ? '' : 's') + '</div>' +
         (t.people < SCHOOL_MIN ? '<div class="sgwarn">Under ' + SCHOOL_MIN + " people, so the catered package price does not normally apply.</div>" : '') +
-        (plan.short ? '<div class="sgwarn">' + plan.short + ' room(s) more than RMS shows free on these dates. They are still added to the quote; check availability.</div>' : '')
+        (plan.short
+          ? '<div class="sgwarn">' + plan.short + ' room(s) more than ' + (kept ? 'the booking has' : 'RMS shows free on these dates') + '. ' +
+            (kept ? 'Add them to the quote by hand, or untick "keep the cabins" and let it plan the rooms again.' : 'They are still added to the quote; check availability.') + '</div>'
+          : '') +
+        (kept && plan.spare && plan.spare.length
+          ? '<div class="sgnoteline">Spare on the booking: ' + esc(plan.spare.map(b => b.qty + ' × ' + ((RATE[b.id] || {}).name || b.id)).join(', ')) + '.</div>'
+          : '')
       : '<div class="hint">Type how many are coming and the rooms work themselves out.</div>';
   };
   dlg.querySelectorAll(".sgIn").forEach(el => el.addEventListener("input", paint));
@@ -3197,6 +3258,8 @@ function applySchoolTemplate(sc){
   if(rateIn) rateIn.addEventListener("input", paint);
   const teachBox = dlg.querySelector("#sgTeachOwn");
   if(teachBox) teachBox.addEventListener("change", paint);
+  const keepBox = dlg.querySelector("#sgKeepRooms");
+  if(keepBox) keepBox.addEventListener("change", paint);
   const saveBtn = dlg.querySelector("#sgSaveRate");
   if(saveBtn) saveBtn.addEventListener("click", () => {
     if(!(rate() > 0)){ showToast("Put a price per person per night in first.", true); return; }
@@ -3221,7 +3284,7 @@ function applySchoolTemplate(sc){
     if(!schoolTotals(c).people){ showToast("Type how many people are coming first.", true); return; }
     if(!(rate() > 0)){ showToast("Put a price per person per night in first.", true); return; }
     close();
-    buildSchoolQuote(Object.assign({}, pack, {base: rate(), teachersOwn: teachOwn()}), c);
+    buildSchoolQuote(Object.assign({}, pack, {base: rate(), teachersOwn: teachOwn(), keepRooms: keepRooms()}), c);
   });
   paint();
   const first = dlg.querySelector(".sgIn");
@@ -3230,10 +3293,15 @@ function applySchoolTemplate(sc){
 function buildSchoolQuote(sc, counts){
   const c = schoolCounts(counts);
   const t = schoolTotals(c);
+  /* converting a booking: whatever cabins it already has stay on the quote and stay on
+     offer, even the bigger units a school package would normally switch off */
+  const keep = schoolKeepsRooms(sc);
+  const inUse = {};
+  if(keep) (Q.sel.accom || []).forEach(b => { if((Number(b.qty) || 0) > 0) inUse[b.id] = true; });
   /* what is on offer */
-  SCHOOL_OFF.forEach(id => { if(RATE[id]) setCat(id, "on", false); });
-  const onRooms = schoolCfg().studentTypes;
-  onRooms.forEach(id => { setCat(id, "on", true); setCat(id, "price", 0); });   // the nightly rate is in the package
+  SCHOOL_OFF.forEach(id => { if(RATE[id] && !inUse[id]) setCat(id, "on", false); });
+  const onRooms = schoolCfg().studentTypes.concat(Object.keys(inUse).filter(id => schoolCfg().studentTypes.indexOf(id) < 0));
+  onRooms.forEach(id => { if(RATE[id]){ setCat(id, "on", true); setCat(id, "price", 0); } });   // the nightly rate is in the package
   SCHOOL_FREE_VENUES.forEach(k => {
     const v = VENUES.find(x => x.key === k);
     if(!v) return;
@@ -3253,7 +3321,7 @@ function buildSchoolQuote(sc, counts){
     setCat(id, "on", SCHOOL_EXTRAS_ON.indexOf(id) >= 0);
   });
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: Number(sc.base) || schoolBaseRate(sc), meals: schoolMealsOf(sc),
-    rates: sc.rates || null, packName: sc.packName || "", teachersOwn: sc.teachersOwn !== false});
+    rates: sc.rates || null, packName: sc.packName || "", teachersOwn: sc.teachersOwn !== false, keepRooms: keep});
   /* the rooms, the meals, the price and the wording all follow the numbers */
   const plan = schoolNumbers(Q.school, c);
   const pr = schoolPricing(Q.school, c);
@@ -3265,7 +3333,7 @@ function buildSchoolQuote(sc, counts){
   }
   /* the cabins are ours to work out, so they are locked; the group's own numbers and
      meals stay theirs to change, and the rooms follow whatever they type */
-  schoolAllTypes().forEach(id => { if(RATE[id]) setCat(id, "lock", true); });
+  schoolAllTypes().concat(Object.keys(inUse)).forEach(id => { if(RATE[id]) setCat(id, "lock", true); });
   Q.locked = false;
   syncForm();
   refresh();
@@ -10073,6 +10141,11 @@ function applyResBooking(g, opts){
                  priced: Object.keys(g.resRates || {}), rateSource: g.rateSource || "", status: g.masterStatus || ""};
     Q.internalNotes = [String(g.masterNotes || "").trim(), pastRatesNote(g)].filter(Boolean).join("\n\n");
   }
+  /* where this quote came from, so it can be turned into a school group later with the
+     rooms the booking actually has rather than a fresh plan */
+  Q.fromRes = {groupId: g.groupId, askedFor: g.askedFor, repeat: !!repeat, past: !!g.past,
+               arrival: g.arrival || "", departure: g.departure || "", guests: Number(g.guests) || 0,
+               at: new Date().toISOString()};
   normalizeQuote(Q);
   applyFixedRates();
   syncForm();
@@ -10120,7 +10193,52 @@ function pastRatesNote(g){
   return out.join("\n");
 }
 /* the blue bar on tab 1 while a quote sits on an existing RMS group */
+/* ---------- turning a booking into a school group ----------
+   A quote filled in from RMS (an existing group, or a stay being repeated) is an
+   ordinary quote: cabins, conference rooms and nightly rates. Schools are priced per
+   person instead, with the rooming worked out by gender. This offers the swap, keeping
+   the cabins the booking actually has rather than planning a fresh mix. */
+function schoolFromBooking(){
+  if(CLIENT_MODE) return;
+  if(!quoteRoomCount()){ showToast("There are no cabins on this quote yet, so there is nothing to convert. Read a booking in first.", true); return; }
+  const packs = schoolPacks();
+  const built = builtInSchoolTemplates();
+  const all = built.concat(packs.map(p => ({name: p.name + " (" + money0(p.base) + "pp + meals)",
+    school: {level: p.level || "Primary", base: Number(p.base) || 0, meals: p.meals || {}, rates: p.rates || null, packName: p.name}})));
+  const lines = all.map((t, i) => (i + 1) + ". " + String(t.name).replace(/^SCHOOL GROUPS · /, ""));
+  const pick = prompt("Price this booking as a school group.\n\nWhich package?\n\n" + lines.join("\n"), "1");
+  if(pick === null) return;
+  const i = Math.round(Number(pick)) - 1;
+  if(!(i >= 0 && i < all.length)){ showToast("No package picked, so nothing was changed.", true); return; }
+  /* the numbers the booking was made for are the starting guess; staff split them by
+     gender in the dialog that opens next */
+  const guessed = Number(Q.guests) || Number((Q.fromRes || {}).guests) || 0;
+  if(guessed > 0 && !((Q.school || {}).counts || {}).ms){
+    Q.school = Object.assign({}, Q.school || {}, {counts: {ms: Math.ceil(guessed / 2), fs: Math.floor(guessed / 2), mt: 0, ft: 0, bd: 0}});
+  }
+  applySchoolTemplate(Object.assign({}, all[i].school, {keepRooms: true}));
+}
+function renderResSchoolBar(){
+  const bar = document.getElementById("resSchoolBar");
+  if(!bar || CLIENT_MODE) return;
+  const show = cameFromBooking() && quoteRoomCount() > 0;
+  if(!show){ bar.style.display = "none"; bar.innerHTML = ""; return; }
+  const from = Q.fromRes || {};
+  const isSchool = !!(Q.school && schoolBaseRate(Q.school));
+  bar.innerHTML = isSchool
+    ? '<span>Priced as a <b>' + esc(Q.school.level || "school") + ' school group</b>' +
+        ((Q.school.keepRooms) ? ' on the ' + quoteRoomCount() + ' cabins from the booking' : ' on a freshly planned room mix') +
+        '. Use the template list above to change the package, or the numbers on the organiser\'s page to change who is coming.</span>'
+    : '<span>This quote came from RMS group <b>' + esc(String(from.groupId || (Q.rmsLink || {}).groupId || "")) + '</b>' +
+        (from.repeat ? ' (repeated as a new booking)' : '') +
+        '. Is it a school camp? It can be priced per person instead, keeping the ' + quoteRoomCount() + ' cabin' + (quoteRoomCount() === 1 ? '' : 's') + ' it already has.</span>' +
+      '<button type="button" id="resSchoolBtn">Make this a school group</button>';
+  bar.style.display = "flex";
+  const b = document.getElementById("resSchoolBtn");
+  if(b) b.addEventListener("click", schoolFromBooking);
+}
 function renderResLink(){
+  renderResSchoolBar();
   const bar = document.getElementById("resLinkBar");
   if(!bar || CLIENT_MODE) return;
   const L = Q.rmsLink;
