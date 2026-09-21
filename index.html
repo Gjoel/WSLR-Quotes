@@ -1640,6 +1640,13 @@ function isoAddDays(iso, n){
   d.setDate(d.getDate() + n);
   return isoDate(d);
 }
+/* the same date a year on, for repeating an annual booking */
+function isoAddYears(iso, n){
+  const d = new Date(iso + "T12:00:00");
+  if(isNaN(d)) return iso;
+  d.setFullYear(d.getFullYear() + n);
+  return isoDate(d);
+}
 function isoDiffDays(a, b){
   const da = new Date(a + "T12:00:00"), db = new Date(b + "T12:00:00");
   if(isNaN(da) || isNaN(db)) return 0;
@@ -9958,6 +9965,16 @@ function quoteFromRes(repeat){
     .then(data => {
       g = data;
       if(g.linkedQuote && !confirm("RMS group " + g.groupId + " is already on quote " + g.linkedQuote + ". Make another quote on it anyway?")) throw new Error("__stop");
+      /* a booking that has already happened: quoting "on" it would put past dates on a
+         new quote and, if accepted, try to add rooms to a finished group. Repeating it
+         is what staff almost always mean, so offer that instead. */
+      if(g.past && !repeat){
+        if(!confirm("RMS group " + g.groupId + " has already been and gone (" + shortDateY(g.departure) + ").\n\n" +
+            "Quoting on it would put its old dates on this quote and, if it were accepted, try to add rooms to a finished booking.\n\n" +
+            "OK to use it as a template for a NEW booking instead (nothing is written to the old group).\n" +
+            "Cancel to stop.")) throw new Error("__stop");
+        repeat = true;
+      }
       go(2);
       const units = g.rateUnits || [];
       if(!units.length) return {resRates: {}};
@@ -9978,7 +9995,17 @@ function quoteFromRes(repeat){
       g.paid = Number(p.paid) || 0;
       if(p.paidError) g.paidError = p.paidError;
       go(4);
-      applyResBooking(g, {repeat: !!repeat, newStart: newStart});
+      /* repeating a booking that has been and gone, with no new arrival date typed in:
+         move it on a year at a time until it lands ahead of us, which is what an annual
+         school camp or church weekend wants. Staff can change the dates afterwards. */
+      let start = newStart;
+      let rolled = 0;
+      if(repeat && !start && g.arrival){
+        let s = g.arrival;
+        while(s <= isoDate(today) && rolled < 12){ s = isoAddYears(s, 1); rolled++; }
+        if(rolled) start = s;
+      }
+      applyResBooking(g, {repeat: !!repeat, newStart: start, rolledYears: rolled});
       resProgress(4, {done: true, title: "Quote " + Q.num + (repeat ? " started from past booking " : " filled in from RMS group ") + g.groupId});
       setTimeout(() => resProgress(-1), 2500);
       finish();
@@ -10057,9 +10084,13 @@ function applyResBooking(g, opts){
   const noWho = ["contact", "org", "email", "mobile"].filter(k => !String(Q[k] || "").trim()).map(k => ({contact: "name", org: "group name", email: "email", mobile: "mobile"})[k]);
   if(noWho.length) bits.push("RMS had no " + noWho.join(", ") + " for the organiser, so type " + (noWho.length === 1 ? "it" : "them") + " in");
   const past = Q.dateStart && Q.dateStart < isoDate(today);
+  const rolledYears = Math.max(0, Number(opts.rolledYears) || 0);
   if(repeat){
     showToast("Started " + Q.num + " from RMS group " + g.groupId + ": " + bits.join(", ") + ". " +
-      (shiftDays ? "Moved to " + fmtRange(Q.dateStart, Q.dateEnd) + ", and prices are being loaded for the new dates." :
+      (rolledYears ? "That booking was " + shortDateY(g.arrival) + ", so it has been moved on " +
+          (rolledYears === 1 ? "a year" : rolledYears + " years") + " to " + fmtRange(Q.dateStart, Q.dateEnd) +
+          ". Change the dates at the top if they should be different." :
+        shiftDays ? "Moved to " + fmtRange(Q.dateStart, Q.dateEnd) + ", and prices are being loaded for the new dates." :
         (past ? "It still has last time's dates (" + fmtRange(Q.dateStart, Q.dateEnd) + "), which have passed: set the new dates and the prices load themselves." :
           "Dates kept as they were.")) +
       " Nothing is written back to the old booking." + (skipped.length ? " Not filled in: " + skipped.join(", ") + "." : "") + note, past && !shiftDays);
