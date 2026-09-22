@@ -10822,6 +10822,28 @@ if(CLIENT_MODE){
   loadSharedSettings();
   /* the shared pipeline: pull now, when this tab regains focus, and every few minutes */
   pullPipeline(true);
+  /* ?edit=Q-1038 on the address (the Invoice List and the Functions Dashboard link here):
+     open that quote for editing on tab 1 once the tracker sheet has been read, exactly as
+     the pipeline's Edit button does. The parameter is then dropped from the address so a
+     reload does not reopen it. */
+  (function(){
+    let want = "";
+    try{ want = String(new URLSearchParams(location.search).get("edit") || "").trim().toUpperCase(); }catch(e){}
+    if(!want || CLIENT_MODE || !/^Q-\d+/.test(want)) return;
+    let tries = 0;
+    const attempt = () => {
+      tries++;
+      const have = SAVED.find(s => String(s.num || "").toUpperCase() === want);
+      if(have || PIPE_STATE === "ok" || PIPE_STATE === "offline" || tries > 60){
+        if(have) openQuoteForEdit(have.num);
+        else showToast("Quote " + want + " is not in the pipeline" + (PIPE_STATE === "offline" ? " and the tracker sheet could not be reached" : "") + ".", true);
+        try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e2){}
+        return;
+      }
+      setTimeout(attempt, 250);
+    };
+    setTimeout(attempt, 250);
+  })();
   const syncBtn = document.getElementById("syncNowBtn");
   if(syncBtn) syncBtn.addEventListener("click", () => { pullPipeline(true); fetchInterest(true); });
   /* website enquiries: read once on load, then whenever the pipeline is opened */
