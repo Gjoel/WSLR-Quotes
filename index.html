@@ -660,6 +660,10 @@
   .changebox.flash{animation:chflash 1.6s ease 2}
   @keyframes chflash{0%,100%{box-shadow:none} 50%{box-shadow:0 0 0 4px rgba(242,140,40,.45)}}
   .depscreen .depnote{padding:8px 16px; background:#fff6e0; color:#6b4b00; font-size:13px}
+  .depscreen .depwait{flex:1 1 auto; overflow:auto; padding:40px 16px}
+  .depscreen .depwait .resprog{max-width:520px; margin:0 auto; padding:20px 22px; box-shadow:0 2px 14px rgba(0,0,0,.1)}
+  .depscreen .depwait p{margin:12px 0 0; font-size:13.5px; color:#44505c}
+  .depscreen.waiting .depwrap, .depscreen.waiting .depnote, .depscreen.waiting .depbar button{display:none !important}
   .depscreen .depwrap{flex:1 1 auto; overflow:auto; padding:16px}
   .depscreen iframe{display:block; width:100%; max-width:820px; min-height:1100px; margin:0 auto; border:0; background:#fff; box-shadow:0 2px 14px rgba(0,0,0,.15)}
   @media (max-width:600px){ .depscreen .depwrap{padding:0} .depscreen iframe{min-height:1400px} }
@@ -1451,6 +1455,14 @@
     <button type="button" id="depBack">View my quote</button>
   </div>
   <div class="depnote" id="depNote" style="display:none"></div>
+  <div class="depwait" id="depWait" hidden>
+    <div class="resprog" role="status" aria-live="polite">
+      <div class="resprog-top"><b id="depWaitTitle">Making your booking</b><span id="depWaitTime"></span></div>
+      <div class="resprog-bar"><span id="depWaitFill"></span></div>
+      <ol class="resprog-steps" id="depWaitSteps"></ol>
+      <p>This usually takes 10 to 20 seconds. Please keep this page open.</p>
+    </div>
+  </div>
   <div class="depwrap"><iframe id="depFrame" title="Deposit invoice"></iframe></div>
 </div>
 <script>
@@ -1837,7 +1849,7 @@ const INFO_SECTIONS = [
   {id:"booking_info", title:"To proceed with a booking", why:"on for every quote",
    text:"To proceed with a booking we require: your group name, contact person, postal address and mobile number; arrival and departure dates; the number of rooms and each type of room you wish to book; all meals you wish to have included as part of your package; and the dates and times of use of the conference rooms. Once you accept your quote online we make an unconfirmed booking for you straight away and email you an invoice for the deposit. Reservations stay unconfirmed until the deposit is received."},
   {id:"deposit", title:"Deposit, payment & security bond", why:"on for every quote",
-   text:"1. Once your quote is accepted we make an unconfirmed booking and email you a deposit invoice. 2. The deposit is {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room, payable within {depositdays} of the invoice, to secure your reservation and any church discount. If it is not received we will be in touch, and an unconfirmed booking can be cancelled. 3. Once the deposit is paid, {halfpct} of the accommodation is due {halflead} prior to arrival (as soon as possible if you book inside that time). 4. The remaining balance must be paid prior to arrival, before keys are handed over, and is payable by EFT, cash, EFTPOS, Mastercard or Visa. A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
+   text:"1. Once your quote is accepted we make an unconfirmed booking and email you a deposit invoice. 2. The deposit is {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room, payable within {depositdays} of the invoice, to secure your reservation and any church discount. If it is not received we will be in touch, and an unconfirmed booking can be cancelled. 3. Once the deposit is paid, {halfpct} of the total is due {halflead} prior to arrival (as soon as possible if you book inside that time). 4. The remaining balance must be paid prior to arrival, before keys are handed over, and is payable by EFT, cash, EFTPOS, Mastercard or Visa. A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
   {id:"cancel", title:"Cancellation conditions", why:"on for every quote",
    text:"Groups of more than {bigunits} cabins and campsites may cancel more than {cancelpct} of their cabins and campsites without penalty up to {cancelbiglead} prior to arrival, and up to {cancelpct} of them without penalty up to {cancellead} prior to arrival. Groups of {bigunits} cabins and campsites or fewer may cancel without penalty up to {cancellead} prior to arrival. Within {cancellead} of arrival nothing can be cancelled without penalty: cabins and campsites cancelled from then on are charged at the full rate, so all numbers must be final {cancellead} before your event."},
   {id:"conduct", title:"Code of conduct", why:"auto for group stays",
@@ -1916,6 +1928,7 @@ function fillQuoteText(t){
     .split("{depositdue}").join(leadPhrase(k.depositDays))
     .split("{depositwhen}").join(depositWhenPhrase(k))
     .split("{deposit}").join(money0(k.depositPer))
+    .replace(/\{halfpct\} of (the |your )?accommodation/g, (m, p) => "{halfpct} of " + (p || "the ") + "total")
     .split("{halfpct}").join(k.halfPct + "%")
     .split("{halflead}").join(leadPhrase(k.halfDays))
     .split("{depositlead}").join(leadPhrase(k.halfDays))
@@ -2339,7 +2352,7 @@ function dropGroupMappings(rms){
 function getDefaults(){
   return Object.assign({
     notes: "Room hire includes setup and pack-down. Final guest numbers, dietary requirements and catering numbers are due {finallead} before the event. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
-    terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the accommodation is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
+    terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
     bond: 2000,
     cheapest: true,
     cocUrl: "",         // the digital Code of Conduct page; shown as a link on every quote when set
@@ -4118,7 +4131,7 @@ function selCaterSub(){
 /* The group booking rules (Sept 2026):
    1. accepted quote -> unconfirmed booking in RMS and a deposit invoice
    2. deposit per cabin / campsite / conference room, due N days after the invoice
-   3. then a share of the accommodation, due a set time before arrival
+   3. then a share of the total bill, due a set time before arrival
    4. more than bigUnits cabins+sites: more than cancelPct may be cancelled free until
       cancelBigDays out, up to cancelPct until cancelDays out; smaller groups can
       cancel anything free until cancelDays out; nothing free inside cancelDays
@@ -4251,20 +4264,14 @@ function depositBreakdown(){
   const c = kdCfg(), u = unitsSplit(), rooms = venuesSelected();
   return {cabins: u.cabins, sites: u.sites, rooms: rooms, perCabin: c.depositPer, perSite: c.depositSite,
           perRoom: c.depositRoom, total: depositTotal(c), days: c.depositDays,
-          halfPct: c.halfPct, halfDays: c.halfDays, halfAmount: Math.round(accomShareBase() * c.halfPct) / 100};
+          halfPct: c.halfPct, halfDays: c.halfDays, halfAmount: Math.round(partShareBase() * c.halfPct) / 100};
 }
-/* the accommodation part of the quote, after the church discount and any extra discount */
-function accomShareBase(){
-  let a = 0;
-  try{ a = selAccomSub() + Q.lines.filter(isAccomLine).reduce((s, l) => s + lineTotal(l), 0); }catch(e){ a = 0; }
-  const church = Number(Q.sel && Q.sel.church) || 0;
-  a = a * (1 - church / 100);
-  const d = Q.disc || {};
-  if(d.on){
-    a -= discAmount(d.accom, a);
-    if(Number(d.all) > 0) a *= (1 - Number(d.all) / 100);
-  }
-  return Math.max(0, a);
+/* what the part payment is a share of: the whole bill, after the church discount and
+   any other discount (24 Sept 2026; it used to be the accommodation only) */
+function partShareBase(){
+  let t = 0;
+  try{ t = totals().total; }catch(e){ t = 0; }
+  return Math.max(0, Number(t) || 0);
 }
 function venuesSelected(){
   /* a room that comes free with catering or with the stay does not attract a room deposit */
@@ -5756,7 +5763,7 @@ function kdFieldsHTML(c, cls, list){
     row("Invoice due", f("depositDays") + '<span class="kdu">days after acceptance</span>') +
     row("Events more than", f("farMonths") + '<span class="kdu">months away: due</span>' + f("farDepositDays") + '<span class="kdu">days after acceptance</span>', true) +
     grp("Part payment") +
-    row("Share of accommodation", f("halfPct") + '<span class="kdu">%, due</span>' + f("halfDays") + '<span class="kdu">days before arrival</span>', true) +
+    row("Share of the total bill", f("halfPct") + '<span class="kdu">%, due</span>' + f("halfDays") + '<span class="kdu">days before arrival</span>', true) +
     grp("Cancellation without penalty") +
     row("A bigger group is more than", f("bigUnits") + '<span class="kdu">cabins &amp; sites</span>') +
     row("Bigger groups: more than", f("cancelPct") + '<span class="kdu">% until</span>' + f("cancelBigDays") + '<span class="kdu">days out</span>', true) +
@@ -6638,9 +6645,9 @@ function depositInvoiceData(){
   const halfPay = Math.max(0, Math.round((half - depTotal) * 100) / 100);
   const balance = Math.max(0, Math.round((total - depTotal - halfPay) * 100) / 100);
   const payments = [{label: "Deposit (this invoice" + (dep && dep.number ? ", " + dep.number : "") + ")", due: short(due) + (dep && dep.status === "paid" ? " (paid)" : ""), amount: depTotal}];
-  if(c.halfPct > 0 && half > 0 && halfPay > 0.5) payments.push({label: c.halfPct + "% of accommodation, less the deposit",
+  if(c.halfPct > 0 && half > 0 && halfPay > 0.5) payments.push({label: c.halfPct + "% of the total, less the deposit",
     due: halfDue && kdPassed(halfDue) ? "As soon as possible" : short(halfDue), amount: halfPay,
-    note: c.halfPct + "% of accommodation is " + money(half) + "; the " + money(depTotal) + " deposit counts towards it"});
+    note: c.halfPct + "% of the total is " + money(half) + "; the " + money(depTotal) + " deposit counts towards it"});
   if(Q.dateStart) payments.push({label: "Balance", due: "Before arrival, " + short(Q.dateStart), amount: balance, note: "Paid before keys are handed over"});
   const schedule = [];
   if(Q.dateStart && c.finalDays > 0) schedule.push("Final numbers & catering numbers due " + short(isoAddDays(Q.dateStart, -Math.max(c.finalDays, c.cateringDays))));
@@ -6807,9 +6814,90 @@ function openDepositScreen(){
   scr.classList.add("open");
   document.body.style.overflow = "hidden";
 }
+/* After the organiser accepts, the server books RMS and raises the deposit invoice,
+   which takes 10 to 20 seconds. Rather than show "Being issued" and "Being created",
+   the deposit screen shows a short progress panel and asks the server (every 2.5 s)
+   until the stored quote says it is finished (submitDone = this submission), then
+   shows the invoice with its real invoice and reservation numbers. After a minute it
+   gives up waiting and shows the invoice as before, so nobody is ever stuck. */
+let DEP_WAIT = null;
+function bookingStatus(cb){
+  const tok = Q.token;
+  if(!tok){ cb(null); return; }
+  try{
+    if(window.google && google.script && google.script.run){
+      google.script.run.withSuccessHandler(r => cb(r || null)).withFailureHandler(() => cb({failed: true})).quoteBookingStatus(tok);
+      return;
+    }
+  }catch(e){}
+  const url = sheetEndpoint();
+  if(!url){ cb(null); return; }
+  fetch(url + "?booking=" + encodeURIComponent(tok)).then(r => r.json()).then(r => cb(r && r.ok ? r : null)).catch(() => cb({failed: true}));
+}
+function waitForBooking(){
+  const scr = document.getElementById("depScreen"), box = document.getElementById("depWait");
+  if(!scr || !box){ openDepositScreen(); return; }
+  if(DEP_WAIT) clearInterval(DEP_WAIT.timer);
+  const mine = Q.submittedAt, start = Date.now(), LIMIT = 60000;
+  const steps = ["Selection received", "Booking your cabins and rooms", "Creating your deposit invoice"];
+  const st = {booked: false, done: false, busy: false, fails: 0};
+  DEP_WAIT = st;
+  document.getElementById("depTitle").textContent = "Quote " + Q.num + " · making your booking";
+  scr.classList.add("open", "waiting");
+  box.hidden = false;
+  document.body.style.overflow = "hidden";
+  const draw = () => {
+    const secs = Math.round((Date.now() - start) / 1000);
+    document.getElementById("depWaitTime").textContent = secs + "s";
+    /* eases towards 90% over about 20 s; the last bit fills when the server says done */
+    const pct = st.done ? 100 : Math.min(90, Math.round(90 * (1 - Math.exp(-(Date.now() - start) / 9000))));
+    document.getElementById("depWaitFill").style.width = pct + "%";
+    const at = st.done ? 3 : st.booked ? 2 : 1;
+    document.getElementById("depWaitSteps").innerHTML = steps.map((t, i) =>
+      '<li class="' + (i < at ? "done" : i === at ? "on" : "") + '">' + esc(t) + '</li>').join("");
+  };
+  const finish = () => {
+    clearInterval(st.timer);
+    if(DEP_WAIT !== st) return;
+    DEP_WAIT = null;
+    scr.classList.remove("waiting");
+    box.hidden = true;
+    renderClient();
+    openDepositScreen();
+  };
+  const poll = () => {
+    if(DEP_WAIT !== st) { clearInterval(st.timer); return; }
+    draw();
+    /* the submission bounced (no connection): doSubmit has already put things back */
+    if(Q.submittedAt !== mine){ clearInterval(st.timer); DEP_WAIT = null; scr.classList.remove("open", "waiting"); box.hidden = true; document.body.style.overflow = ""; return; }
+    if(Date.now() - start > LIMIT){ finish(); return; }
+    if(st.busy) return;
+    st.busy = true;
+    bookingStatus(r => {
+      st.busy = false;
+      if(DEP_WAIT !== st || !r) return;
+      /* the server cannot be asked (an older server, say): show the invoice as it stands */
+      if(r.failed){ if(++st.fails >= 2) finish(); return; }
+      const h = r.rmsHold || null;
+      if(h && h.groupId && (h.at || "") >= mine) st.booked = true;
+      if(r.submitDone && r.submitDone === mine){
+        st.done = true;
+        if(h) Q.rmsHold = h;
+        draw();
+        setTimeout(finish, 400);
+      }
+    });
+  };
+  draw();
+  st.timer = setInterval(poll, 2500);
+  setTimeout(poll, 4000);
+}
 function closeDepositScreen(){
+  if(DEP_WAIT){ clearInterval(DEP_WAIT.timer); DEP_WAIT = null; }
+  const w = document.getElementById("depWait");
+  if(w) w.hidden = true;
   const scr = document.getElementById("depScreen");
-  if(scr) scr.classList.remove("open");
+  if(scr) scr.classList.remove("open", "waiting");
   document.body.style.overflow = "";
 }
 (function(){
@@ -6868,7 +6956,7 @@ function depositPayHTML(){
       '<b>Reference</b><span>' + esc(ref) + '</span>' +
     '</div>' +
     '<div>Card payments can be taken over the phone on ' + VENUE_PHONE + ', or ask us for a payment link.</div>' +
-    (b.halfPct > 0 ? '<div class="paysmall">After the deposit, ' + b.halfPct + '% of the accommodation is due ' + leadPhrase(b.halfDays) + ' before arrival, and the balance before keys are handed over.</div>' : '') +
+    (b.halfPct > 0 ? '<div class="paysmall">After the deposit, ' + b.halfPct + '% of the total is due ' + leadPhrase(b.halfDays) + ' before arrival, and the balance before keys are handed over.</div>' : '') +
     '<div class="paysmall">We do not accept American Express.</div>' +
     '</div>';
 }
@@ -7271,8 +7359,8 @@ function keyDatesAutoRows(showPrices){
   }
   if(kd){
     const at = (iso, text) => dated.push({iso: iso, row: [kdWhen(iso), text]});
-    /* 3: part of the accommodation */
-    const halfAmt = accomShareBase() * c.halfPct / 100;
+    /* 3: part of the total bill */
+    const halfAmt = partShareBase() * c.halfPct / 100;
     const halfDep = depositTotal(c);
     /* the deposit counts towards it: when it already covers the lot, there is nothing
        to ask for and the line comes off the timeline */
@@ -7283,8 +7371,8 @@ function keyDatesAutoRows(showPrices){
         ? (depAmt > 0 ? ' (about ' + money0(amt) + ', less your ' + money0(depAmt) + ' deposit: about ' + money0(Math.max(0, amt - depAmt)) + ' to pay)' : ' (about ' + money0(amt) + ')')
         : '';
       at(kd.half, kdPassed(kd.half)
-        ? c.halfPct + '% of your accommodation' + fig + ' due as soon as possible after the deposit (normally ' + leadPhrase(c.halfDays) + ' before arrival)'
-        : c.halfPct + '% of your accommodation' + fig + ' due, ' + leadPhrase(c.halfDays) + ' before arrival');
+        ? c.halfPct + '% of your total' + fig + ' due as soon as possible after the deposit (normally ' + leadPhrase(c.halfDays) + ' before arrival)'
+        : c.halfPct + '% of your total' + fig + ' due, ' + leadPhrase(c.halfDays) + ' before arrival');
     }
     /* 4: cancellation, which depends on the size of the group */
     const n = split.total;
@@ -9121,7 +9209,7 @@ function doSubmit(){
   renderClient();
   renderPrevOptions();
   renderPipeline();
-  if(CLIENT_MODE && bookingsOnSubmit() && depositTotal() > 0) setTimeout(openDepositScreen, 300);
+  if(CLIENT_MODE && bookingsOnSubmit() && depositTotal() > 0) setTimeout(waitForBooking, 300);
   showToast(CLIENT_MODE
     ? (bookingsOnSubmit()
         ? "Thank you! Your unconfirmed booking is being made and your deposit invoice is on its way to " + (Q.email || "your email") + "."
