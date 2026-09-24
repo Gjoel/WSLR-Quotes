@@ -685,21 +685,23 @@
   .cabmap-inner img{display:block; width:100%; height:auto}
   .cabbox{position:absolute; transform:translate(-50%,-50%); width:clamp(9px, 1.5%, 22px); aspect-ratio:1; padding:0; border-radius:3px;
     border:2px solid #1b5e20; background:#43a047; cursor:pointer; box-shadow:0 0 0 1px #fff, 0 1px 3px rgba(0,0,0,.45)}
-  .cabfull{position:fixed; inset:0; z-index:9100; background:#e9eef2; display:none; flex-direction:column}
-  .cabfull.open{display:flex}
-  .cabfull-bar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 16px; background:#0b5c8e; color:#fff}
-  .cabfull-bar b{flex:1 1 auto; font-size:15px}
-  .cabfull-bar button{appearance:none; border:1px solid #fff; background:#fff; color:#0b5c8e; border-radius:7px; padding:7px 12px; font-weight:700; cursor:pointer}
-  .cabfull-body{flex:1 1 auto; overflow:auto}
-  .cabfull .cablegend{padding:8px 16px 0}
-  .cabfull .cabmap-inner{width:1500px; margin:8px 16px 16px}
-  .cabfull .cabbox{width:22px; font:700 9px/1 Arial, sans-serif; color:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden}
-  .cabfull .cabbox.taken{color:#4f5b66}
-  .cabfull .cabbox.unknown{color:#174a87}
-  .cabbox.taken{background:rgba(255,255,255,.35); border-color:#6b7580; cursor:not-allowed; box-shadow:none}
-  .cabbox.unknown{background:rgba(255,255,255,.85); border-color:#1f5fae}
-  .cabbox.req{border-color:#0f2d4a; box-shadow:0 0 0 2px #fff, 0 0 0 4px #0f2d4a; z-index:2}
-  .cabbox.yours{background:#1f5fae; border-color:#174a87}
+  .cabmap-wrap.opener{cursor:zoom-in; position:relative}
+  .cabmap-wrap.opener .cabbox{pointer-events:none}
+  .cabmap-open{position:absolute; left:50%; bottom:10px; transform:translateX(-50%); background:#0b5c8e; color:#fff; border:0; border-radius:20px;
+    padding:8px 16px; font:700 13.5px/1.2 inherit; box-shadow:0 2px 8px rgba(0,0,0,.3); cursor:pointer; white-space:nowrap}
+  .cabpop{position:fixed; inset:0; z-index:9100; background:rgba(15,45,74,.55); display:none; align-items:center; justify-content:center; padding:16px}
+  .cabpop.open{display:flex}
+  .cabpop-card{background:#fff; border-radius:12px; width:min(1100px, 100%); height:min(760px, 100%); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .cabpop-bar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 14px; background:#0b5c8e; color:#fff}
+  .cabpop-bar b{flex:1 1 220px; font-size:14.5px}
+  .cabpop-bar button{appearance:none; border:1px solid #fff; background:transparent; color:#fff; border-radius:7px; padding:6px 11px; font-weight:700; cursor:pointer; min-width:34px}
+  .cabpop-bar button.solid{background:#fff; color:#0b5c8e}
+  .cabpop .cablegend{padding:8px 14px 0; margin:0}
+  .cabpop-body{flex:1 1 auto; overflow:auto; background:#eef2f5}
+  .cabpop .cabmap-inner{margin:8px}
+  .cabpop .cabbox{display:flex; align-items:center; justify-content:center; overflow:hidden; font-family:Arial, sans-serif; font-weight:700; color:#fff}
+  .cabpop .cabbox.taken{color:#4f5b66}
+  .cabpop .cabbox.unknown{color:#174a87}
   .cabtype{margin:0 0 12px}
   .cabtype-head{font-size:13.5px; margin:0 0 6px}
   .cabchips{display:flex; flex-wrap:wrap; gap:6px}
@@ -1241,6 +1243,7 @@
           <label class="secitem"><input type="checkbox" id="f-feat-deposit"> <span><span class="sectitle">Deposit &amp; key dates</span><span class="secwhy">their deposit, bond and deadline dates worked out from the selection</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-kids"> <span><span class="sectitle">Children's &amp; dietary pricing</span><span class="secwhy">adults / 4–12 (half) / 1–3 ($5) / under 1 (free) + dietary (+$10) priced properly per meal</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-cheap"> <span><span class="sectitle">Cheapest dates search</span><span class="secwhy">lets them price their cabins across other dates, untick when the dates are already held</span></span></label>
+          <label class="secitem"><input type="checkbox" id="f-feat-cabmap"> <span><span class="sectitle">Cabin map</span><span class="secwhy">lets them request particular cabins on the site plan (requests only), untick to hide it from them</span></span></label>
         </div>
         <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission, that part is built in.</p>
       </div>
@@ -1412,6 +1415,11 @@
         <label class="kdwide"><span class="kdlab">Important group information</span><span class="kdrow"><input type="url" id="s-infourl" placeholder="https://www.wslr.com.au/important-group-information/" style="width:100%"></span></label>
       </div>
       <p class="hint" style="margin-top:8px">The Code of Conduct link above is used for the code of conduct section. Leave either address empty and those sections are printed in full as before.</p>
+    </div>
+    <div class="card">
+      <h2>Cabin map on new quotes</h2>
+      <label class="secitem" style="padding:0"><input type="checkbox" id="s-cabmap"> <span><span class="sectitle">Show the cabin map to organisers</span><span class="secwhy">the site plan under Accommodation where a group can request particular cabins (requests only, never promised)</span></span></label>
+      <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Any single quote can still be changed on the Prepare tab, under "Extras on the organiser's page".</p>
     </div>
     <div class="card">
       <h2>Cheapest dates search on new quotes</h2>
@@ -2537,7 +2545,7 @@ function blankQuote(num){
     ratesInfo: null,    // {from, to, items, file}
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
-    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false}, // toggleable organiser-page extras
+    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap !== false}, // toggleable organiser-page extras
     sel: blankSel(),    // the organiser's (or staff-suggested) selections
     lines: [],          // fixed extras the organiser can't change
     status: "Draft",
@@ -2603,6 +2611,7 @@ function normalizeQuote(q){
   }
   if(!q.features) q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
   if(q.features.cheapest === undefined) q.features.cheapest = true;
+  if(q.features.cabinMap === undefined) q.features.cabinMap = true;
   if(q.sel){
     if(q.sel.who === undefined) q.sel.who = null;
     if(!q.sel.venueTimes) q.sel.venueTimes = {};
@@ -9756,6 +9765,7 @@ function renderSettings(){
   document.getElementById("s-body").value = d.body;
   document.getElementById("s-emailvia").value = getEmailVia();
   document.getElementById("s-cheapest").checked = d.cheapest !== false;
+  document.getElementById("s-cabmap").checked = d.cabinMap !== false;
   document.getElementById("s-coc").value = d.cocUrl || "";
   document.getElementById("s-infourl").value = (d.infoUrl === undefined ? GUEST_INFO_URL_DEFAULT : d.infoUrl) || "";
   document.getElementById("s-pdfmode").value = PDF_MODES.indexOf(d.pdfMode) >= 0 ? d.pdfMode : (d.pdfLinks ? "links" : "full");
@@ -10302,10 +10312,16 @@ function cabinPrefs(){
   }
   return out;
 }
+/* is the map on for this quote? Staff switch it per quote under "Extras on the organiser's
+   page"; new quotes start from the house setting on the Settings tab */
+function cabinMapShown(){ return !(Q.features && Q.features.cabinMap === false); }
 function cabinMapHTML(){
   const want = cabinWants();
   const ids = Object.keys(want);
   if(!ids.length || !Q.dateStart) return '';
+  if(!cabinMapShown()){
+    return CLIENT_MODE ? '' : '<div class="cb-sec cabmap" id="cabinMap"><p class="hint" style="margin:0"><span class="pinwarn">Cabin map hidden from the organiser on this quote.</span> Tick “Cabin map” under “Extras on the organiser’s page” on tab 1 to show it.</p></div>';
+  }
   const m = cabinMapNow();
   const prefs = cabinPrefs();
   const name = id => (RATE[id] || {}).name || id;
@@ -10319,9 +10335,8 @@ function cabinMapHTML(){
       if(st === "free" || st === "yours") free++;
       const cls = st + (req ? ' req' : '');
       const title = 'Cabin ' + u[1] + ' · ' + name(id) + ' · ' + (st === "free" ? 'free on your dates' : st === "taken" ? 'already taken on your dates' : st === "yours" ? 'already booked for you' : 'not checked yet') + (req ? ' · requested' : '');
-      const data = st === "taken" ? ' disabled' : ' data-unitreq="' + esc(id) + '|' + esc(k) + '"';
-      if(u.length > 3) boxes.push('<button type="button" class="cabbox ' + cls + '" style="left:' + u[2] + '%;top:' + u[3] + '%"' + data + ' title="' + esc(title) + '" aria-label="' + esc(title) + '"></button>');
-      return '<button type="button" class="cabchip ' + cls + '"' + data + ' title="' + esc(title) + '">' + esc(u[1]) + '</button>';
+      if(u.length > 3) boxes.push('<span class="cabbox ' + cls + '" style="left:' + u[2] + '%;top:' + u[3] + '%"></span>');
+      return '<button type="button" class="cabchip ' + cls + '"' + (st === "taken" ? ' disabled' : ' data-unitreq="' + esc(id) + '|' + esc(k) + '"') + ' title="' + esc(title) + '">' + esc(u[1]) + '</button>';
     });
     lists.push('<div class="cabtype"><div class="cabtype-head"><b>' + esc(name(id)) + '</b> · you picked ' + want[id] +
       ' · <b>' + mine.length + '</b> of ' + want[id] + ' requested' + (m ? ' · ' + free + ' of ' + (CABIN_UNITS[id] || []).length + ' free on your dates' : '') + '</div>' +
@@ -10335,53 +10350,79 @@ function cabinMapHTML(){
     (m ? '' : '<p class="cb-hint">' + (CLIENT_MODE
         ? 'We could not check which cabins are free just now, so every cabin is shown. Request any you like and our team will check them.'
         : 'Availability for single cabins has not been checked yet. <button type="button" class="btn ghost" id="cabLoad">Check which cabins are free in RMS</button>') + '</p>') +
-    '<div class="cablegend"><span><i class="cabkey"></i>free on your dates</span><span><i class="cabkey taken"></i>already taken</span><span><i class="cabkey req"></i>your request</span>' +
-      (anyYours ? '<span><i class="cabkey yours"></i>already booked for you</span>' : '') + '</div>' +
-    '<div class="cabmap-wrap"><div class="cabmap-inner"><img src="' + CABIN_MAP_IMG + '" alt="Site plan of the resort" loading="lazy" onerror="this.closest(\'.cabmap-wrap\').style.display=\'none\'">' + boxes.join('') + '</div></div>' +
-    '<p class="cb-hint" style="margin:-4px 0 12px"><button type="button" class="btn ghost" id="cabFullBtn">View the map full size</button> to see each cabin\'s number, or tap the numbers below.</p>' +
+    cabinLegendHTML(anyYours) +
+    '<div class="cabmap-wrap opener" id="cabOpen" role="button" tabindex="0" aria-label="Open the site plan"><div class="cabmap-inner"><img src="' + CABIN_MAP_IMG + '" alt="Site plan of the resort" loading="lazy" onerror="this.closest(\'.cabmap-wrap\').style.display=\'none\'">' + boxes.join('') + '</div>' +
+      '<button type="button" class="cabmap-open">Open the map to pick cabins</button></div>' +
     lists.join('') + '</div>';
 }
-/* the site plan at its real size (1500 px wide, scrolls inside its own window), with the
-   cabin numbers on the boxes, the way the Final Confirmation builder shows it */
-function cabinFullHTML(){
+function cabinLegendHTML(anyYours){
+  return '<div class="cablegend"><span><i class="cabkey"></i>free on your dates</span><span><i class="cabkey taken"></i>already taken</span><span><i class="cabkey req"></i>your request</span>' +
+    (anyYours ? '<span><i class="cabkey yours"></i>already booked for you</span>' : '') + '</div>';
+}
+/* the site plan in a pop-up window over the page, with the cabin numbers on the boxes.
+   It opens at its real size (1500 px across) centred on their cabins; − and + zoom. */
+let CAB_ZOOM = 1;
+const CAB_ZOOMS = [0.6, 0.8, 1, 1.3, 1.6];
+function cabinPopHTML(){
   const want = cabinWants(), m = cabinMapNow(), prefs = cabinPrefs();
+  const z = CAB_ZOOM, box = Math.round(22 * z), font = Math.max(7, Math.round(9 * z));
   const boxes = [];
   Object.keys(want).forEach(id => (CABIN_UNITS[id] || []).forEach(u => {
     if(u.length < 4) return;
     const st = cabinState(id, u[0], m), k = normUnit(u[0]);
     const req = (prefs[id] || []).indexOf(k) >= 0;
     const title = 'Cabin ' + u[1] + ' · ' + ((RATE[id] || {}).name || id) + ' · ' + (st === "free" ? 'free on your dates' : st === "taken" ? 'already taken' : st === "yours" ? 'already booked for you' : 'not checked yet') + (req ? ' · requested' : '');
-    boxes.push('<button type="button" class="cabbox ' + st + (req ? ' req' : '') + '" style="left:' + u[2] + '%;top:' + u[3] + '%"' +
+    boxes.push('<button type="button" class="cabbox ' + st + (req ? ' req' : '') + '" style="left:' + u[2] + '%;top:' + u[3] + '%;width:' + box + 'px;font-size:' + font + 'px"' +
       (st === "taken" ? ' disabled' : ' data-unitreq="' + esc(id) + '|' + esc(k) + '"') + ' title="' + esc(title) + '">' + esc(u[1]) + '</button>');
   }));
-  const done = Object.keys(want).map(id => ((RATE[id] || {}).name || id).replace(/ Unit.*$/, "") + ': ' + (prefs[id] || []).length + ' of ' + want[id]).join(' · ');
-  return '<div class="cabfull-bar"><b>Request your cabins · ' + esc(done) + '</b><button type="button" id="cabFullClose">Done</button></div>' +
-    '<div class="cabfull-body"><div class="cablegend"><span><i class="cabkey"></i>free on your dates</span><span><i class="cabkey taken"></i>already taken</span><span><i class="cabkey req"></i>your request</span>' +
-    '<span>Requests only: our team confirms the final cabins.</span></div>' +
-    '<div class="cabmap-inner"><img src="' + CABIN_MAP_IMG + '" alt="Site plan of the resort">' + boxes.join('') + '</div></div>';
+  const done = Object.keys(want).map(id => ((RATE[id] || {}).name || id).replace(/ Unit.*$/, "").replace(/Motel Style /, "Motel ") + ' ' + (prefs[id] || []).length + '/' + want[id]).join(' · ');
+  const anyYours = Object.keys(want).some(id => ((m && m.held) || {})[id] && m.held[id].length);
+  return '<div class="cabpop-card" role="dialog" aria-modal="true" aria-label="Site plan">' +
+    '<div class="cabpop-bar"><b>Request your cabins · ' + esc(done) + '</b>' +
+      '<button type="button" id="cabZoomOut" title="Zoom out" aria-label="Zoom out"' + (z <= CAB_ZOOMS[0] ? ' disabled' : '') + '>−</button>' +
+      '<button type="button" id="cabZoomIn" title="Zoom in" aria-label="Zoom in"' + (z >= CAB_ZOOMS[CAB_ZOOMS.length - 1] ? ' disabled' : '') + '>+</button>' +
+      '<button type="button" class="solid" id="cabPopClose">Done</button></div>' +
+    cabinLegendHTML(anyYours).replace('</div>', '<span>Requests only: our team confirms the final cabins.</span></div>') +
+    '<div class="cabpop-body"><div class="cabmap-inner" style="width:' + Math.round(1500 * z) + 'px"><img src="' + CABIN_MAP_IMG + '" alt="Site plan of the resort">' + boxes.join('') + '</div></div></div>';
 }
-function cabinFullOpen(){
-  let el = document.getElementById("cabFull");
-  if(!el){ el = document.createElement("div"); el.id = "cabFull"; el.className = "cabfull"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Site plan"); document.body.appendChild(el); }
-  const body = el.querySelector(".cabfull-body");
-  const pos = body ? [body.scrollLeft, body.scrollTop] : null;
-  el.innerHTML = cabinFullHTML();
+function cabinPopOpen(keepView){
+  let el = document.getElementById("cabPop");
+  if(!el){
+    el = document.createElement("div"); el.id = "cabPop"; el.className = "cabpop";
+    /* a click on the dark backdrop closes it, like Done */
+    el.addEventListener("click", e => { if(e.target === el) cabinPopClose(); });
+    document.body.appendChild(el);
+  }
+  const old = el.querySelector(".cabpop-body");
+  const view = (keepView && old) ? {x: (old.scrollLeft + old.clientWidth / 2) / old.scrollWidth, y: (old.scrollTop + old.clientHeight / 2) / old.scrollHeight} : null;
+  el.innerHTML = cabinPopHTML();
   el.classList.add("open");
   document.body.style.overflow = "hidden";
-  const nb = el.querySelector(".cabfull-body");
-  if(pos){ nb.scrollLeft = pos[0]; nb.scrollTop = pos[1]; }
+  const body = el.querySelector(".cabpop-body");
+  const centre = (fx, fy) => { body.scrollLeft = Math.max(0, fx * body.scrollWidth - body.clientWidth / 2); body.scrollTop = Math.max(0, fy * body.scrollHeight - body.clientHeight / 2); };
+  if(view) centre(view.x, view.y);
   else {
-    /* start centred on the first cabin of the types they picked */
-    const first = el.querySelector(".cabbox");
-    if(first) setTimeout(() => { nb.scrollLeft = Math.max(0, first.offsetLeft - nb.clientWidth / 2); nb.scrollTop = Math.max(0, first.offsetTop - nb.clientHeight / 2); }, 50);
+    /* start centred on the cabins of the types they picked */
+    const bs = [...el.querySelectorAll(".cabbox")];
+    if(bs.length) setTimeout(() => {
+      const inner = el.querySelector(".cabmap-inner");
+      const xs = bs.map(b => b.offsetLeft), ys = bs.map(b => b.offsetTop);
+      centre((Math.min(...xs) + Math.max(...xs)) / 2 / inner.offsetWidth, (Math.min(...ys) + Math.max(...ys)) / 2 / inner.offsetHeight);
+    }, 30);
   }
+  const closeBtn = el.querySelector("#cabPopClose");
+  if(closeBtn && !keepView) closeBtn.focus();
 }
-function cabinFullClose(){
-  const el = document.getElementById("cabFull");
+function cabinPopClose(){
+  const el = document.getElementById("cabPop");
   if(el) el.classList.remove("open");
   document.body.style.overflow = "";
 }
-/* one listener for every map box and chip, whichever render drew them */
+document.addEventListener("keydown", e => {
+  const el = document.getElementById("cabPop");
+  if(el && el.classList.contains("open") && e.key === "Escape") cabinPopClose();
+  if((e.key === "Enter" || e.key === " ") && e.target && e.target.id === "cabOpen"){ e.preventDefault(); cabinPopOpen(false); }
+});
 document.addEventListener("click", e => {
   const load = e.target.closest && e.target.closest("#cabLoad");
   if(load){
@@ -10393,8 +10434,15 @@ document.addEventListener("click", e => {
     }).catch(err => { load.disabled = false; load.textContent = "Check which cabins are free in RMS"; showToast("RMS could not be checked: " + err.message, true); });
     return;
   }
-  if(e.target.closest && e.target.closest("#cabFullBtn")){ cabinFullOpen(); return; }
-  if(e.target.closest && e.target.closest("#cabFullClose")){ cabinFullClose(); return; }
+  if(e.target.closest && e.target.closest("#cabOpen")){ cabinPopOpen(false); return; }
+  if(e.target.closest && e.target.closest("#cabPopClose")){ cabinPopClose(); return; }
+  const zb = e.target.closest && e.target.closest("#cabZoomIn, #cabZoomOut");
+  if(zb){
+    const i = CAB_ZOOMS.indexOf(CAB_ZOOM);
+    CAB_ZOOM = CAB_ZOOMS[Math.max(0, Math.min(CAB_ZOOMS.length - 1, (i < 0 ? 2 : i) + (zb.id === "cabZoomIn" ? 1 : -1)))];
+    cabinPopOpen(true);
+    return;
+  }
   const b = e.target.closest && e.target.closest("[data-unitreq]");
   if(!b) return;
   const parts = String(b.dataset.unitreq).split("|"), id = parts[0], k = parts[1];
@@ -10414,8 +10462,8 @@ document.addEventListener("click", e => {
   if(!list.length) delete next[id];
   if(Object.keys(next).length) Q.sel.prefUnits = next; else delete Q.sel.prefUnits;
   refresh();
-  const full = document.getElementById("cabFull");
-  if(full && full.classList.contains("open")) cabinFullOpen();
+  const pop = document.getElementById("cabPop");
+  if(pop && pop.classList.contains("open")) cabinPopOpen(true);
 });
 /* ---- the organiser's page: what the server checked when the page opened ---- */
 function rmsLiveBanner(){
@@ -10865,6 +10913,7 @@ function syncForm(){
   document.getElementById("f-feat-deposit").checked = !!(Q.features && Q.features.depositDates);
   document.getElementById("f-feat-kids").checked = !!(Q.features && Q.features.kids);
   document.getElementById("f-feat-cheap").checked = !!(Q.features && Q.features.cheapest);
+  document.getElementById("f-feat-cabmap").checked = cabinMapShown();
   renderLockSwitch();
 }
 /* the "Lock this quote" switch on tab 1 */
@@ -10910,7 +10959,7 @@ function renderLockSwitch(){
     : '<span class="swstate">OFF</span>The organiser can change the dates, cabins, rooms and catering on their page before they submit.') +
     (locks.length ? '<br>Locked on their own: ' + esc(locks.map(id => (RATE[id] || {}).name || id).join(", ")) + '.' : '');
 }
-[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"]].forEach(pair => {
+[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"], ["f-feat-cabmap", "cabinMap"]].forEach(pair => {
   document.getElementById(pair[0]).addEventListener("change", e => {
     if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
     Q.features[pair[1]] = e.target.checked;
@@ -11032,6 +11081,12 @@ document.querySelectorAll(".pdfModeSel").forEach(el => el.addEventListener("chan
 }));
 document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
 document.getElementById("s-body").addEventListener("input", e => saveDefaults({body: e.target.value}));
+document.getElementById("s-cabmap").addEventListener("change", e => {
+  saveDefaults({cabinMap: e.target.checked});
+  showToast(e.target.checked
+    ? "New quotes will show the cabin map to the organiser."
+    : "New quotes will not show the cabin map. Quotes already made keep their own setting.");
+});
 document.getElementById("s-cheapest").addEventListener("change", e => {
   saveDefaults({cheapest: e.target.checked});
   showToast(e.target.checked
