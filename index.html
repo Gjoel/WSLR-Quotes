@@ -237,6 +237,9 @@
   .schoolsec .sgtable th, .schoolsec .sgtable td{text-align:left; padding:6px 8px; border-bottom:1px solid #e3e7ec}
   .schoolsec .sgtable th{background:#f3f5f8; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:#4f5b66}
   .schoolsec .sgtot{margin-top:8px; font-size:14px}
+  .sgsubrow td{background:#f7f9fb}
+  .sgtable tr.sgtotrow td, .schooldlg .sgsum tr.sgtotrow td{border-top:1.5px solid #c9d4dc}
+  .qp-school{margin-top:3px; color:var(--ink, #1b2a38); font-weight:600}
   .sgmeals{display:flex; flex-direction:column; gap:8px; margin:6px 0 12px}
   .sgmeal{border:1px solid var(--grid, #dfe5ea); border-radius:10px; padding:8px 12px}
   .sgmeal.on{border-color:#1f5fae; background:#f5f9ff}
@@ -256,6 +259,10 @@
   .schgrid input{padding:7px 9px; font:inherit; border:1px solid var(--grid, #c9d4dc); border-radius:8px; max-width:120px}
   .schdollar{display:flex; align-items:center; gap:4px; font-weight:400}
   .schcols{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:16px}
+  .schcap{border-collapse:collapse; font-size:13.5px; width:100%; max-width:560px}
+  .schcap th, .schcap td{text-align:left; padding:5px 8px; border-bottom:1px solid #e3e7ec}
+  .schcap th{font-size:12px; color:#4f5b66; text-transform:uppercase; letter-spacing:.04em}
+  .schcap input{width:72px; padding:5px 7px; font:inherit; border:1px solid var(--grid, #c9d4dc); border-radius:6px}
   .schrow{display:flex; align-items:center; gap:6px; padding:5px 0; border-bottom:1px solid #eef1f4; font-size:13.5px}
   .schnum{width:18px; color:var(--ink2, #6b7580); font-size:12px}
   .schname{flex:1}
@@ -665,6 +672,43 @@
   .depscreen .depwait p{margin:12px 0 0; font-size:13.5px; color:#44505c}
   .depscreen.waiting .depwrap, .depscreen.waiting .depnote, .depscreen.waiting .depbar button{display:none !important}
   .depscreen .depwrap{flex:1 1 auto; overflow:auto; padding:16px}
+  /* cabin requests on the site plan (Sept 2026) */
+  .cabnote{background:#fff8e6; border:1px solid #e3c766; border-radius:10px; padding:10px 14px; font-size:13.5px; line-height:1.5; margin:0 0 12px}
+  .cablegend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12.5px; color:var(--ink2, #4f5b66); margin:0 0 10px}
+  .cablegend span{display:inline-flex; align-items:center; gap:6px}
+  .cabkey{display:inline-block; width:14px; height:14px; border-radius:3px; border:2px solid #2e7d32; background:#43a047}
+  .cabkey.taken{background:transparent; border-color:#9aa5b1}
+  .cabkey.req{background:#43a047; border-color:#0f2d4a; box-shadow:0 0 0 2px #0f2d4a}
+  .cabkey.yours{background:#1f5fae; border-color:#174a87}
+  .cabmap-wrap{border:1px solid #d8dee4; border-radius:10px; overflow:hidden; background:#eef2f5; margin:0 0 12px}
+  .cabmap-inner{position:relative; width:100%}
+  .cabmap-inner img{display:block; width:100%; height:auto}
+  .cabbox{position:absolute; transform:translate(-50%,-50%); width:clamp(9px, 1.5%, 22px); aspect-ratio:1; padding:0; border-radius:3px;
+    border:2px solid #1b5e20; background:#43a047; cursor:pointer; box-shadow:0 0 0 1px #fff, 0 1px 3px rgba(0,0,0,.45)}
+  .cabfull{position:fixed; inset:0; z-index:9100; background:#e9eef2; display:none; flex-direction:column}
+  .cabfull.open{display:flex}
+  .cabfull-bar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 16px; background:#0b5c8e; color:#fff}
+  .cabfull-bar b{flex:1 1 auto; font-size:15px}
+  .cabfull-bar button{appearance:none; border:1px solid #fff; background:#fff; color:#0b5c8e; border-radius:7px; padding:7px 12px; font-weight:700; cursor:pointer}
+  .cabfull-body{flex:1 1 auto; overflow:auto}
+  .cabfull .cablegend{padding:8px 16px 0}
+  .cabfull .cabmap-inner{width:1500px; margin:8px 16px 16px}
+  .cabfull .cabbox{width:22px; font:700 9px/1 Arial, sans-serif; color:#fff; display:flex; align-items:center; justify-content:center; overflow:hidden}
+  .cabfull .cabbox.taken{color:#4f5b66}
+  .cabfull .cabbox.unknown{color:#174a87}
+  .cabbox.taken{background:rgba(255,255,255,.35); border-color:#6b7580; cursor:not-allowed; box-shadow:none}
+  .cabbox.unknown{background:rgba(255,255,255,.85); border-color:#1f5fae}
+  .cabbox.req{border-color:#0f2d4a; box-shadow:0 0 0 2px #fff, 0 0 0 4px #0f2d4a; z-index:2}
+  .cabbox.yours{background:#1f5fae; border-color:#174a87}
+  .cabtype{margin:0 0 12px}
+  .cabtype-head{font-size:13.5px; margin:0 0 6px}
+  .cabchips{display:flex; flex-wrap:wrap; gap:6px}
+  .cabchip{min-width:44px; padding:6px 8px; border-radius:7px; border:2px solid #2e7d32; background:#e8f5e9; color:#1b5e20; font:600 13px/1 inherit; cursor:pointer}
+  .cabchip.taken{background:transparent; border-color:#c3cbd3; color:#9aa5b1; border-style:dashed; cursor:not-allowed}
+  .cabchip.unknown{background:#fff; border-color:#1f5fae; color:#174a87}
+  .cabchip.req{background:#43a047; color:#fff; border-color:#0f2d4a}
+  .cabchip.req::before{content:"✓ "}
+  .cabchip.yours{background:#e8f0fb; border-color:#1f5fae; color:#174a87}
   .depscreen iframe{display:block; width:100%; max-width:820px; min-height:1100px; margin:0 auto; border:0; background:#fff; box-shadow:0 2px 14px rgba(0,0,0,.15)}
   @media (max-width:600px){ .depscreen .depwrap{padding:0} .depscreen iframe{min-height:1400px} }
   .depopen{margin-top:12px}
@@ -2079,6 +2123,8 @@ const LS_DRAFT    = "wslr_draft_v1";
 const LS_PREPBY   = "wslr_prepby";
 const LS_PREPEMAIL = "wslr_prepemail";
 const DEFAULT_PREP_EMAIL = "functions@wslr.com.au";
+/* every email the tool writes for staff to send is blind-copied here, for the record (24 Sept 2026) */
+const CORRO_BCC = "WSLRfunctions@gmail.com";
 const LS_RATECARD = "wslr_ratecard_v1";
 const LS_DEFAULTS = "wslr_defaults_v1";
 const LS_RMS      = "wslr_rms_v1";          // the RMS link settings (shared via the tracker sheet)
@@ -2706,7 +2752,10 @@ function schoolCfg(){
     perDriver: Number(d.perDriver) > 0 ? Number(d.perDriver) : SCHOOL_ROOMS_DEFAULT.perDriver,
     studentTypes: (Array.isArray(d.studentTypes) && d.studentTypes.length ? d.studentTypes : SCHOOL_ROOMS_DEFAULT.studentTypes).filter(id => RATE[id]),
     teacherTypes: (Array.isArray(d.teacherTypes) && d.teacherTypes.length ? d.teacherTypes : SCHOOL_ROOMS_DEFAULT.teacherTypes).filter(id => RATE[id]),
-    base: Object.assign({}, SCHOOL_ROOMS_DEFAULT.base, (d.base && typeof d.base === "object") ? d.base : {})
+    base: Object.assign({}, SCHOOL_ROOMS_DEFAULT.base, (d.base && typeof d.base === "object") ? d.base : {}),
+    /* people per cabin for one unit type, beating the general number above:
+       {"acc_1br_std": {student: 5, teacher: 2}} (blank = use the general number) */
+    perCabin: (d.perCabin && typeof d.perCabin === "object") ? d.perCabin : {}
   };
   if(!out.studentTypes.length) out.studentTypes = SCHOOL_ROOMS_DEFAULT.studentTypes.filter(id => RATE[id]);
   if(!out.teacherTypes.length) out.teacherTypes = out.studentTypes.slice();
@@ -2864,50 +2913,67 @@ function schoolAssign(c){
   let short = 0;
   schoolGroups().forEach(g => {
     if(!c[g.k]) return;
-    const need = Math.ceil(c[g.k] / g.per);
     const prefer = g.kind === "student" ? cfg.studentTypes : schoolTeacherTypes();
     const order = prefer.concat(Object.keys(pool).filter(id => prefer.indexOf(id) < 0));
     const got = [];
-    let left = need;
+    let people = c[g.k];                    // still to put in a room
     order.forEach(id => {
-      if(left <= 0 || !(pool[id] > 0)) return;
-      const n = Math.min(left, pool[id]);
+      if(people <= 0 || !(pool[id] > 0)) return;
+      const cap = schoolCap(id, g.kind, g.per);
+      const n = Math.min(Math.ceil(people / cap), pool[id]);
       pool[id] -= n;
-      left -= n;
+      people -= n * cap;
       got.push({id: id, qty: n});
     });
+    const left = people > 0 ? Math.ceil(people / g.per) : 0;
     short += left;
-    rows.push({label: g.label, people: c[g.k], per: g.per, free: !!g.free, rooms: need, blocks: got,
+    rows.push({label: g.label, people: c[g.k], per: g.per, free: !!g.free, rooms: got.reduce((s, b) => s + b.qty, 0) + left, blocks: got,
                words: got.map(b => b.qty + " × " + ((RATE[b.id] || {}).name || b.id)).join(", ") +
                       (left ? (got.length ? ", plus " : "") + left + " still to add" : "")});
   });
   const spare = Object.keys(pool).filter(id => pool[id] > 0).map(id => ({id: id, qty: pool[id]}));
   return {rows: rows, short: short, spare: spare};
 }
-function schoolRooms(people, per, types, taken){
+function schoolRooms(people, per, types, taken, kind){
   const out = [];
-  let left = Math.ceil(Math.max(0, people) / per);
+  let left = Math.max(0, people);           // people still to put in a room
   types.forEach(id => {
     if(left <= 0 || !RATE[id]) return;
+    const cap = schoolCap(id, kind, per);
+    const want = Math.ceil(left / cap);
     const a = availDisplay(id);
-    const room = a === null ? left : Math.max(0, a - (taken[id] || 0));
-    const n = Math.min(left, room);
+    const room = a === null ? want : Math.max(0, a - (taken[id] || 0));
+    const n = Math.min(want, room);
     if(n <= 0) return;
     out.push({id: id, qty: n});
     taken[id] = (taken[id] || 0) + n;
-    left -= n;
+    left -= n * cap;
   });
-  return {blocks: out, short: left};
+  return {blocks: out, short: left > 0 ? Math.ceil(left / per) : 0};
 }
-/* the numbers the rooming needs: boys and girls are never put in a room together,
-   and neither are male and female teachers. Bus drivers stay and eat free. */
+/* the numbers the rooming needs: male, female and non-binary students each have rooms
+   of their own, and so do male, female and non-binary teachers. Bus drivers stay and
+   eat free. */
 const SCHOOL_GROUP_DEFS = [
   {k: "ms", label: "Male students", kind: "student"},
   {k: "fs", label: "Female students", kind: "student"},
+  {k: "xs", label: "Non-binary students", kind: "student"},
   {k: "mt", label: "Male teachers", kind: "teacher"},
   {k: "ft", label: "Female teachers", kind: "teacher"},
+  {k: "xt", label: "Non-binary teachers", kind: "teacher"},
   {k: "bd", label: "Bus drivers", kind: "driver", free: true}
 ];
+/* how many of this kind go in one of these cabins. A number this quote has set for
+   itself (the school dialog) wins; otherwise the cabin's own rule on the Settings
+   tab; otherwise the general number for the kind. Bus drivers always use theirs. */
+function schoolCap(id, kind, per){
+  if(kind !== "student" && kind !== "teacher") return per;
+  const c = schoolCfg();
+  const house = kind === "student" ? c.perStudent : c.perTeacher;
+  if(per !== house) return per;
+  const own = Math.round(Number(((c.perCabin || {})[id] || {})[kind]) || 0);
+  return own > 0 ? own : per;
+}
 function schoolGroups(){
   const c = schoolPerRoom();
   return SCHOOL_GROUP_DEFS.map(g => Object.assign({}, g, {
@@ -2945,6 +3011,54 @@ function schoolTotals(c){
   const free = schoolGroups().filter(g => g.free).reduce((s, g) => s + c[g.k], 0);
   return {people: people, free: free, charged: Math.max(0, people - free)};
 }
+/* students, teachers and bus drivers added up, male and female kept apart */
+function schoolSubtotals(c){
+  c = schoolCounts(c);
+  return {ms: c.ms, fs: c.fs, xs: c.xs, students: c.ms + c.fs + c.xs, mt: c.mt, ft: c.ft, xt: c.xt, teachers: c.mt + c.ft + c.xt,
+          drivers: c.bd, total: c.ms + c.fs + c.xs + c.mt + c.ft + c.xt + c.bd};
+}
+/* "Students 40 (22 male, 18 female) · Teachers 4 (2 male, 2 female) · 1 bus driver · 45 in total" */
+function schoolBreakdownText(c){
+  const s = schoolSubtotals(c);
+  if(!s.total) return "";
+  const mf = (m, f, x) => {
+    const parts = [m ? m + " male" : "", f ? f + " female" : "", x ? x + " non-binary" : ""].filter(Boolean);
+    return parts.length > 1 ? " (" + parts.join(", ") + ")" : parts.length ? " (all " + parts[0].replace(/^\d+ /, "") + ")" : "";
+  };
+  const bits = [];
+  if(s.students) bits.push("Students " + s.students + mf(s.ms, s.fs, s.xs));
+  if(s.teachers) bits.push("Teachers " + s.teachers + mf(s.mt, s.ft, s.xt));
+  if(s.drivers) bits.push(s.drivers + " bus driver" + (s.drivers === 1 ? "" : "s"));
+  bits.push(s.total + " in total");
+  return bits.join(" · ");
+}
+/* the school breakdown for the first page of the quote, or "" when it is not a school quote */
+function schoolFirstPageText(){
+  const S = Q.school;
+  if(!S || !schoolBaseRate(S)) return "";
+  return schoolBreakdownText(S.counts);
+}
+/* the Who / People / Rooms rows, with a subtotal after the students and after the
+   teachers and a total at the foot. cells(r) gives the cells after the label. */
+function schoolWhoRowsHTML(rows, freeWords, cols){
+  const kindOf = r => (SCHOOL_GROUP_DEFS.find(g => g.label === r.label) || {}).kind || "";
+  const sub = (label, list, cls) => {
+    const people = list.reduce((n, r) => n + (Number(r.people) || 0), 0);
+    const rooms = list.reduce((n, r) => n + (Number(r.rooms) || 0), 0);
+    return '<tr class="' + cls + '"><td><b>' + label + '</b></td><td><b>' + people + '</b></td><td><b>' + rooms + '</b></td>' + (cols > 3 ? '<td></td>' : '') + '</tr>';
+  };
+  const line = r => '<tr><td>' + esc(r.label) + (r.free ? freeWords : '') + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>';
+  let html = '';
+  ["student", "teacher", "driver"].forEach(k => {
+    const list = rows.filter(r => kindOf(r) === k);
+    if(!list.length) return;
+    html += list.map(line).join('');
+    if(k !== "driver" && list.length > 1) html += sub(k === "student" ? "Students subtotal" : "Teachers subtotal", list, "sgsubrow");
+  });
+  html += rows.filter(r => !kindOf(r)).map(line).join('');
+  if(rows.length > 1) html += sub("Total", rows, "sgtotrow");
+  return html;
+}
 /* rooms for each group on its own, filling the cheapest units RMS shows free first */
 function schoolPlan(c){
   const taken = {};
@@ -2954,7 +3068,7 @@ function schoolPlan(c){
   let short = 0;
   schoolGroups().forEach(g => {
     if(!c[g.k]) return;
-    const r = schoolRooms(c[g.k], g.per, g.kind === "student" ? types : teacherTypes, taken);
+    const r = schoolRooms(c[g.k], g.per, g.kind === "student" ? types : teacherTypes, taken, g.kind);
     r.blocks.forEach(b => { merged[b.id] = (merged[b.id] || 0) + b.qty; });
     short += r.short;
     rows.push({label: g.label, people: c[g.k], per: g.per, free: !!g.free,
@@ -3040,7 +3154,7 @@ function schoolNumbers(sc, counts){
   });
   Q.notes = schoolNotes(pack) + "\n\nYour rooming:\n" +
     plan.rows.map(r => "• " + r.label + ": " + r.people + " in " + r.rooms + " room" + (r.rooms === 1 ? "" : "s") + (r.free ? " (free of charge)" : "")).join("\n") +
-    "\nMale and female are roomed separately, students up to 4 to a room and teachers twin share.";
+    "\nMale, female and non-binary are roomed separately, students up to " + schoolPerRoom().perStudent + " to a room and teachers up to " + schoolPerRoom().perTeacher + ".";
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: pr.base, meals: schoolMealsOf(sc), rates: sc.rates || null,
     keepRooms: keep, per: (sc && sc.per) || ((Q.school || {}).per || null),
     teachersOwn: sc.teachersOwn !== undefined ? sc.teachersOwn !== false : (Q.school ? Q.school.teachersOwn !== false : true),
@@ -3139,13 +3253,13 @@ function schoolPanelHTML(){
   const showPrices = (Q.priceMode || "full") !== "noprices";
   const mealsFixed = CLIENT_MODE && (quoteLocked() || itemLockOn("schoolMeals"));
   return '<div class="cb-sec schoolsec"><h3>Your group</h3>' +
-    '<p class="cb-hint">tell us how many are coming and the rooms work themselves out. Students share 4 to a room and teachers share a twin; boys and girls are never put in the same room. Bus drivers stay and eat free.</p>' +
+    '<p class="cb-hint">tell us how many are coming and the rooms work themselves out. Students share up to ' + schoolPerRoom().perStudent + ' to a room and teachers up to ' + schoolPerRoom().perTeacher + '; male, female and non-binary each have rooms of their own. Bus drivers stay and eat free.</p>' +
     '<div class="sgrid sgrid-c">' + schoolGroups().map(g =>
       '<label><span>' + esc(g.label) + '<em>' + (g.free ? 'free of charge · a room each' : g.per + ' per room') + '</em></span>' +
       '<input type="number" min="0" step="1" class="sgcIn" data-k="' + g.k + '" value="' + c[g.k] + '"' + (mealsFixed ? ' disabled' : '') + '></label>').join('') +
     '</div>' +
     '<table class="sgtable"><tr><th>Who</th><th>People</th><th>Rooms</th><th>Cabins we have set aside</th></tr>' +
-    plan.rows.map(r => '<tr><td>' + esc(r.label) + (r.free ? ' <span class="fmuted">(free of charge)</span>' : '') + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('') +
+    schoolWhoRowsHTML(plan.rows, ' <span class="fmuted">(free of charge)</span>', 4) +
     (plan.rows.length ? '' : '<tr><td colspan="4" class="fmuted">No numbers yet</td></tr>') + '</table>' +
     (plan.spare.length ? '<div class="sgnoteline">Also held for you: ' + esc(plan.spare.map(b => b.qty + ' × ' + ((RATE[b.id] || {}).name || b.id)).join(", ")) + '.</div>' : '') +
     '<h4 class="sgsub">Your meals</h4>' +
@@ -3298,7 +3412,8 @@ function applySchoolTemplate(sc){
     const intro = dlg.querySelector("#sgIntro");
     if(intro) intro.textContent = "Accommodation and breakfast are the base price. Tick any other meals and pick the days. Students are filled " +
       pr0.perStudent + " to a room and teachers " + (pr0.perTeacher === 1 ? "have one each" : pr0.perTeacher === 2 ? "share a twin" : "share " + pr0.perTeacher + " to a room") +
-      "; male and female are never put in the same room. Bus drivers stay and eat free.";
+      "; male, female and non-binary each have rooms of their own. Bus drivers stay and eat free." +
+      (Object.keys(schoolCfg().perCabin || {}).length ? " Some cabin types have their own numbers (Settings tab)." : "");
     dlg.querySelectorAll("#sgGrid em[data-per]").forEach(el => {
       const g = schoolGroups().filter(x => x.k === el.dataset.per)[0];
       el.textContent = g ? (g.free ? "free of charge · a room each" : g.per + " per room") : "";
@@ -3307,7 +3422,7 @@ function applySchoolTemplate(sc){
     /* keeping the booking's cabins: the summary shows those handed out group by group */
     const kept = keepRooms();
     const plan = kept ? schoolAssign(c) : schoolPlan(c);
-    const bits = plan.rows.map(r => '<tr><td>' + esc(r.label) + (r.free ? ' (free of charge)' : '') + '</td><td>' + r.people + '</td><td>' + r.rooms + '</td><td>' + esc(r.words) + '</td></tr>').join('');
+    const bits = schoolWhoRowsHTML(plan.rows, ' (free of charge)', 4);
     document.getElementById("sgSum").innerHTML = t.people
       ? '<table><tr><th>Who</th><th>People</th><th>Rooms</th><th>Units</th></tr>' + bits + '</table>' +
         '<table style="margin-top:10px"><tr><th>What</th><th>Per person</th><th>Days</th><th>Amount</th></tr>' +
@@ -5863,7 +5978,27 @@ function renderSchoolDefaults(){
       '<div><h4 class="sgsub">Students fill these, in order</h4>' + list("studentTypes", c.studentTypes) + '</div>' +
       '<div><h4 class="sgsub">Teachers fill these, in order</h4>' + list("teacherTypes", c.teacherTypes) + '</div>' +
     '</div>' +
-    '<p class="hint" style="margin-top:8px">A line takes the first type on its list that RMS still shows free, then the next one down. Bus drivers follow the teachers\' list. Everything not on either list (the bigger units and the campsites) is switched off on a school quote.</p>';
+    '<p class="hint" style="margin-top:8px">A line takes the first type on its list that RMS still shows free, then the next one down. Bus drivers follow the teachers\' list. Everything not on either list (the bigger units and the campsites) is switched off on a school quote.</p>' +
+    '<h4 class="sgsub" style="margin-top:14px">People per cabin, by cabin type</h4>' +
+    '<table class="schcap"><tr><th>Cabin type</th><th>Students</th><th>Teachers</th></tr>' +
+      schoolAllTypes().map(id => {
+        const own = (c.perCabin || {})[id] || {};
+        const cell = kind => '<td><input type="number" class="schCap" data-id="' + esc(id) + '" data-kind="' + kind + '" min="1" step="1" placeholder="' +
+          (kind === "student" ? c.perStudent : c.perTeacher) + '" value="' + (Number(own[kind]) > 0 ? esc(own[kind]) : '') + '"></td>';
+        return '<tr><td>' + esc((RATE[id] || {}).name || id) + '</td>' + cell("student") + cell("teacher") + '</tr>';
+      }).join('') + '</table>' +
+    '<p class="hint" style="margin-top:6px">Leave a box empty to use the general number above (shown faded). A number here is used for that cabin type only. Non-binary students and teachers follow the student and teacher numbers, in rooms of their own. If a quote has its own number set in the school dialog, that quote uses its number.</p>';
+  host.querySelectorAll(".schCap").forEach(el => el.addEventListener("change", e => {
+    const id = e.target.dataset.id, kind = e.target.dataset.kind;
+    const v = Math.round(Number(e.target.value) || 0);
+    const all = JSON.parse(JSON.stringify(schoolCfg().perCabin || {}));
+    const one = Object.assign({}, all[id] || {});
+    if(v > 0) one[kind] = v; else delete one[kind];
+    if(Object.keys(one).length) all[id] = one; else delete all[id];
+    saveSchoolCfg({perCabin: all});
+    renderSchoolDefaults();
+    showToast("People per cabin saved for every computer. New school quotes, and any school quote whose numbers change, use it.");
+  }));
   host.querySelectorAll(".schNum").forEach(el => el.addEventListener("change", e => {
     const k = e.target.dataset.k, v = Math.max(0, Number(e.target.value) || 0);
     if(k === "basePrimary" || k === "baseHigh"){
@@ -6400,7 +6535,11 @@ function capBarHTML(){
 }
 /* the "Prepared for" and event header lines, refreshed in place as details are edited */
 function qpForHTML(){ return 'Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : ''); }
-function qpEventHTML(){ return esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests'; }
+function qpEventHTML(){
+  const sch = schoolFirstPageText();
+  return esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests' +
+    (sch ? '<div class="qp-school">' + esc(sch) + '</div>' : '');
+}
 
 /* ---- what was submitted vs what's on screen (drives the resubmit offer) ---- */
 function addressText(){
@@ -7176,6 +7315,7 @@ function onePageQuoteHtml(){
         '<div style="margin-top:4px">Phone ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>www.wslr.com.au</div></div></div>' +
     '<div class="for">Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : '') + '</div>' +
     '<div class="ev">' + esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests</div>' +
+    (schoolFirstPageText() ? '<div class="ev" style="color:#1b2a38;font-weight:600">' + esc(schoolFirstPageText()) + '</div>' : '') +
     (pricedLines().length
       ? '<table class="it"><thead><tr><th>Item</th><th class="n">Qty</th>' +
           (showPrices ? '<th class="n">Unit</th><th class="n">Total</th>' : '') + '</tr></thead><tbody>' +
@@ -7863,7 +8003,7 @@ function renderClient(){
       siteInviteHTML() +
       datesPanelHTML() +
       schoolPanelHTML() +
-      accomHtml + venueHtml + caterHtml + churchHtml + fixedHtml +
+      accomHtml + cabinMapHTML() + venueHtml + caterHtml + churchHtml + fixedHtml +
       '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
       keyDatesHTML(showPrices, true) +
       '<div class="cb-sec" id="yourDetails"><h3>Your details</h3>' +
@@ -8758,7 +8898,7 @@ function interestCardHTML(e){
     (msg ? '<div class="eimsg">' + esc(msg) + '</div>' : '') +
     '<div class="eiact">' +
       '<button type="button" class="btn accept eiBuild" data-ref="' + esc(e.ref) + '">Build a quote from this</button>' +
-      (e.email ? '<a class="btn ghost" href="mailto:' + esc(e.email) + '?subject=' + encodeURIComponent("Your enquiry with Wollongong Surf Leisure Resort (" + e.ref + ")") + '">Email them</a>' : '') +
+      (e.email ? '<a class="btn ghost" href="mailto:' + esc(e.email) + '?bcc=' + encodeURIComponent(CORRO_BCC) + '&subject=' + encodeURIComponent("Your enquiry with Wollongong Surf Leisure Resort (" + e.ref + ")") + '">Email them</a>' : '') +
       (worked ? '' : '<button type="button" class="btn ghost eiHide" data-ref="' + esc(e.ref) + '" title="Take it off this list. The row stays on the External interest tab, marked as not proceeding.">Not proceeding</button>') +
       '<button type="button" class="eiDel" data-ref="' + esc(e.ref) + '" title="Spam or a test entry: remove the row from the External interest tab for good">Delete</button>' +
     '</div>' +
@@ -9106,7 +9246,8 @@ function doEmail(){
        standardised on classic Outlook (see Settings). */
     showToast("Email opened for " + to + " with the acceptance link included. Quote " + Q.num + " logged as sent." + linkWarn);
     window.location.href = "mailto:" + to +
-      "?subject=" + encodeURIComponent(subject) +
+      "?bcc=" + encodeURIComponent(CORRO_BCC) +
+      "&subject=" + encodeURIComponent(subject) +
       "&body=" + encodeURIComponent(body);
     return;
   }
@@ -9116,6 +9257,7 @@ function doEmail(){
      whether the computer has new Outlook, classic Outlook, or neither. */
   const url = "https://outlook.office.com/mail/deeplink/compose" +
     "?to=" + encodeURIComponent(to) +
+    "&bcc=" + encodeURIComponent(CORRO_BCC) +
     "&subject=" + encodeURIComponent(subject) +
     "&body=" + encodeURIComponent(body);
   const win = window.open(url, "_blank");
@@ -10105,6 +10247,176 @@ function autoRmsBoot(){
   scheduleRmsPull(1400);
 }
 
+const CABIN_UNITS = {"acc_4br_house":[["2002","2002",53.53,38.25]],"acc_2br_ter":[["001","1",54.39,46.04],["002","2",53.06,47.13],["003","3",51.6,48.5]],"acc_2br_bung":[["201","201",48.54,65.85],["202","202",49.73,63.52],["203","203",51.0,62.57],["204","204",51.93,60.93],["205","205",53.26,58.88]],"acc_2br_std":[["007","7",46.21,28.69],["008","8",47.0,31.28],["009","9",47.94,34.97],["010","10",48.6,37.7],["011","11",49.33,40.85],["012","12",50.2,43.72],["031","31",38.28,25.96],["032","32",37.42,23.22]],"acc_1br_ter":[["017","17",44.87,52.73],["018","18",44.27,50.82],["019","19",44.01,48.91],["020","20",43.28,46.45],["021","21",42.81,44.67],["022","22",42.21,42.49]],"acc_1br_std":[["004","4",44.27,21.86],["005","5",45.14,23.91],["006","6",45.34,26.09],["049","49",36.15,45.49],["050","50",36.75,46.99],["051","51",37.35,49.86],["053","53",30.63,53.14],["054","54",30.23,51.23],["055","55",29.63,49.45],["056","56",29.09,46.86],["057","57",28.36,45.22],["058","58",28.23,43.31],["059","59",27.5,40.44],["060","60",27.16,38.25],["061","61",26.3,37.02],["062","62",26.03,34.15],["063","63",25.3,32.51],["064","64",24.7,29.92],["093","93",19.91,33.47],["094","94",20.04,35.79],["095","95",20.51,37.7],["096","96",20.91,40.3],["097","97",21.04,42.35],["098","98",21.37,44.54],["099","99",21.64,47.13],["100","100",21.84,49.45],["101","101",22.37,51.09],["102","102",22.77,54.1],["103","103",22.97,56.42],["104","104",23.24,58.61],["105","105",26.5,56.83],["106","106",27.36,56.69],["107","107",28.5,55.74]],"acc_motel_std":[["023","23",41.88,39.89],["024","24",40.95,38.8],["025","25",41.21,37.16],["026","26",40.28,36.48],["027","27",40.48,34.15],["028","28",39.61,33.06],["029","29",39.81,31.28],["030","30",38.75,30.46],["033","33",28.63,18.99],["034","34",30.09,20.22],["035","35",29.36,22.27],["036","36",30.89,22.95],["037","37",30.43,25.82],["038","38",31.69,26.09],["039","39",30.96,28.42],["040","40",32.36,29.1],["041","41",32.02,32.1],["042","42",33.36,32.92],["043","43",32.69,35.25],["044","44",34.09,36.75],["045","45",33.75,39.21],["046","46",35.15,40.03],["047","47",34.55,42.08],["048","48",35.82,42.62],["065","65",24.57,27.6],["066","66",23.3,27.05],["067","67",24.03,24.86],["068","68",22.57,24.18],["085","85",18.58,18.44],["086","86",17.44,20.63],["087","87",18.97,22.4],["088","88",18.11,24.45],["089","89",19.51,25.96],["090","90",18.64,28.55],["091","91",19.71,29.64],["092","92",19.04,31.56]],"acc_motel_bud":[["069","69",18.44,7.51],["070","70",17.24,5.19],["071","71",15.91,5.74],["072","72",14.91,3.69],["073","73",13.18,4.37],["074","74",12.32,3.14],["075","75",11.12,3.55],["076","76",9.99,2.19],["077","77",9.05,8.06],["078","78",8.19,11.34],["079","79",9.59,12.57],["080","80",9.19,15.3],["081","81",10.72,18.31],["082","82",9.65,21.58],["083","83",11.19,23.09],["084","84",10.72,26.5]]};
+/* ---------- cabin requests (Sept 2026) ----------
+   The same site plan and cabin positions as the Final Confirmation builder (its
+   unit-groups.php, x/y as a % of the 1500 x 730 map). For each cabin type the group
+   has picked, every cabin of that type is drawn: green = free on their dates, empty =
+   already taken, blue = already booked for them. They can request up to as many as
+   they have picked. It is a request only: staff allocate the cabins, and the booking
+   takes the requested ones first when they are still free (RMS.gs rmsPick_). */
+const CABIN_MAP_IMG = CLIENT_MODE ? "https://gjoel.github.io/WSLR-Quotes/map.jpg" : "map.jpg";
+function normUnit(name){
+  const t = String(name || "").toLowerCase().trim();
+  const m = /(\d+)\s*([a-z]?)\b/.exec(t);
+  if(m){ const n = m[1].replace(/^0+/, ""); return (n === "" ? "0" : n) + m[2]; }
+  return t;
+}
+/* how many of each mapped cabin type the group has picked */
+function cabinWants(){
+  const want = {};
+  ((Q.sel && Q.sel.accom) || []).forEach(b => {
+    const n = Number(b.qty) || 0;
+    if(n > 0 && CABIN_UNITS[b.id] && catEntry(b.id).on) want[b.id] = (want[b.id] || 0) + n;
+  });
+  return want;
+}
+/* the free / held lists, only when they are for the dates now on the quote */
+function cabinMapNow(){
+  const m = Q.unitMap;
+  if(!m || m.error || !m.free) return null;
+  if(m.from && (m.from !== Q.dateStart || (m.to && m.to !== (Q.dateEnd || Q.dateStart)))) return null;
+  return m;
+}
+function cabinState(id, unitId, m){
+  const k = normUnit(unitId);
+  if(m && ((m.held || {})[id] || []).indexOf(k) >= 0) return "yours";
+  if(!m) return "unknown";
+  return ((m.free || {})[id] || []).indexOf(k) >= 0 ? "free" : "taken";
+}
+/* requests tidied to the cabins still picked: a type taken off, or fewer of it, loses the extras */
+function cabinPrefs(){
+  const want = cabinWants(), m = cabinMapNow();
+  const p = (Q.sel.prefUnits && typeof Q.sel.prefUnits === "object") ? Q.sel.prefUnits : {};
+  const out = {};
+  Object.keys(p).forEach(id => {
+    if(!want[id] || !Array.isArray(p[id])) return;
+    const ok = p[id].map(normUnit).filter((k, i, a) => a.indexOf(k) === i &&
+      (CABIN_UNITS[id] || []).some(u => normUnit(u[0]) === k) && cabinState(id, k, m) !== "taken");
+    if(ok.length) out[id] = ok.slice(0, want[id]);
+  });
+  /* only touch the quote when something really changed, so a submitted quote does not look edited */
+  const had = (Q.sel.prefUnits && typeof Q.sel.prefUnits === "object") ? Q.sel.prefUnits : {};
+  if(JSON.stringify(had) !== JSON.stringify(out)){
+    if(Object.keys(out).length) Q.sel.prefUnits = out; else delete Q.sel.prefUnits;
+  }
+  return out;
+}
+function cabinMapHTML(){
+  const want = cabinWants();
+  const ids = Object.keys(want);
+  if(!ids.length || !Q.dateStart) return '';
+  const m = cabinMapNow();
+  const prefs = cabinPrefs();
+  const name = id => (RATE[id] || {}).name || id;
+  const boxes = [], lists = [];
+  ids.forEach(id => {
+    const mine = prefs[id] || [];
+    let free = 0;
+    const chips = (CABIN_UNITS[id] || []).map(u => {
+      const st = cabinState(id, u[0], m), k = normUnit(u[0]);
+      const req = mine.indexOf(k) >= 0;
+      if(st === "free" || st === "yours") free++;
+      const cls = st + (req ? ' req' : '');
+      const title = 'Cabin ' + u[1] + ' · ' + name(id) + ' · ' + (st === "free" ? 'free on your dates' : st === "taken" ? 'already taken on your dates' : st === "yours" ? 'already booked for you' : 'not checked yet') + (req ? ' · requested' : '');
+      const data = st === "taken" ? ' disabled' : ' data-unitreq="' + esc(id) + '|' + esc(k) + '"';
+      if(u.length > 3) boxes.push('<button type="button" class="cabbox ' + cls + '" style="left:' + u[2] + '%;top:' + u[3] + '%"' + data + ' title="' + esc(title) + '" aria-label="' + esc(title) + '"></button>');
+      return '<button type="button" class="cabchip ' + cls + '"' + data + ' title="' + esc(title) + '">' + esc(u[1]) + '</button>';
+    });
+    lists.push('<div class="cabtype"><div class="cabtype-head"><b>' + esc(name(id)) + '</b> · you picked ' + want[id] +
+      ' · <b>' + mine.length + '</b> of ' + want[id] + ' requested' + (m ? ' · ' + free + ' of ' + (CABIN_UNITS[id] || []).length + ' free on your dates' : '') + '</div>' +
+      '<div class="cabchips">' + chips.join('') + '</div></div>');
+  });
+  const anyYours = ids.some(id => ((m && m.held) || {})[id] && m.held[id].length);
+  return '<div class="cb-sec cabmap" id="cabinMap"><h3>Where you would like to stay <span class="fmuted" style="font-weight:400">(optional)</span></h3>' +
+    '<div class="cabnote"><b>These are requests only, not a guarantee.</b> If your group has a preference, tap the cabins you would like, up to the number you have picked above. ' +
+      'We do our best to give you the cabins you request, but our team confirms the final cabin allocation closer to your stay, and it can change (for example if a cabin needs maintenance or other bookings move). ' +
+      'Your price is the same whichever cabins you are given.</div>' +
+    (m ? '' : '<p class="cb-hint">' + (CLIENT_MODE
+        ? 'We could not check which cabins are free just now, so every cabin is shown. Request any you like and our team will check them.'
+        : 'Availability for single cabins has not been checked yet. <button type="button" class="btn ghost" id="cabLoad">Check which cabins are free in RMS</button>') + '</p>') +
+    '<div class="cablegend"><span><i class="cabkey"></i>free on your dates</span><span><i class="cabkey taken"></i>already taken</span><span><i class="cabkey req"></i>your request</span>' +
+      (anyYours ? '<span><i class="cabkey yours"></i>already booked for you</span>' : '') + '</div>' +
+    '<div class="cabmap-wrap"><div class="cabmap-inner"><img src="' + CABIN_MAP_IMG + '" alt="Site plan of the resort" loading="lazy" onerror="this.closest(\'.cabmap-wrap\').style.display=\'none\'">' + boxes.join('') + '</div></div>' +
+    '<p class="cb-hint" style="margin:-4px 0 12px"><button type="button" class="btn ghost" id="cabFullBtn">View the map full size</button> to see each cabin\'s number, or tap the numbers below.</p>' +
+    lists.join('') + '</div>';
+}
+/* the site plan at its real size (1500 px wide, scrolls inside its own window), with the
+   cabin numbers on the boxes, the way the Final Confirmation builder shows it */
+function cabinFullHTML(){
+  const want = cabinWants(), m = cabinMapNow(), prefs = cabinPrefs();
+  const boxes = [];
+  Object.keys(want).forEach(id => (CABIN_UNITS[id] || []).forEach(u => {
+    if(u.length < 4) return;
+    const st = cabinState(id, u[0], m), k = normUnit(u[0]);
+    const req = (prefs[id] || []).indexOf(k) >= 0;
+    const title = 'Cabin ' + u[1] + ' · ' + ((RATE[id] || {}).name || id) + ' · ' + (st === "free" ? 'free on your dates' : st === "taken" ? 'already taken' : st === "yours" ? 'already booked for you' : 'not checked yet') + (req ? ' · requested' : '');
+    boxes.push('<button type="button" class="cabbox ' + st + (req ? ' req' : '') + '" style="left:' + u[2] + '%;top:' + u[3] + '%"' +
+      (st === "taken" ? ' disabled' : ' data-unitreq="' + esc(id) + '|' + esc(k) + '"') + ' title="' + esc(title) + '">' + esc(u[1]) + '</button>');
+  }));
+  const done = Object.keys(want).map(id => ((RATE[id] || {}).name || id).replace(/ Unit.*$/, "") + ': ' + (prefs[id] || []).length + ' of ' + want[id]).join(' · ');
+  return '<div class="cabfull-bar"><b>Request your cabins · ' + esc(done) + '</b><button type="button" id="cabFullClose">Done</button></div>' +
+    '<div class="cabfull-body"><div class="cablegend"><span><i class="cabkey"></i>free on your dates</span><span><i class="cabkey taken"></i>already taken</span><span><i class="cabkey req"></i>your request</span>' +
+    '<span>Requests only: our team confirms the final cabins.</span></div>' +
+    '<div class="cabmap-inner"><img src="' + CABIN_MAP_IMG + '" alt="Site plan of the resort">' + boxes.join('') + '</div></div>';
+}
+function cabinFullOpen(){
+  let el = document.getElementById("cabFull");
+  if(!el){ el = document.createElement("div"); el.id = "cabFull"; el.className = "cabfull"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Site plan"); document.body.appendChild(el); }
+  const body = el.querySelector(".cabfull-body");
+  const pos = body ? [body.scrollLeft, body.scrollTop] : null;
+  el.innerHTML = cabinFullHTML();
+  el.classList.add("open");
+  document.body.style.overflow = "hidden";
+  const nb = el.querySelector(".cabfull-body");
+  if(pos){ nb.scrollLeft = pos[0]; nb.scrollTop = pos[1]; }
+  else {
+    /* start centred on the first cabin of the types they picked */
+    const first = el.querySelector(".cabbox");
+    if(first) setTimeout(() => { nb.scrollLeft = Math.max(0, first.offsetLeft - nb.clientWidth / 2); nb.scrollTop = Math.max(0, first.offsetTop - nb.clientHeight / 2); }, 50);
+  }
+}
+function cabinFullClose(){
+  const el = document.getElementById("cabFull");
+  if(el) el.classList.remove("open");
+  document.body.style.overflow = "";
+}
+/* one listener for every map box and chip, whichever render drew them */
+document.addEventListener("click", e => {
+  const load = e.target.closest && e.target.closest("#cabLoad");
+  if(load){
+    if(!Q.dateStart) return;
+    load.disabled = true; load.textContent = "Checking RMS…";
+    rmsGet({rms: "units", from: Q.dateStart, to: Q.dateEnd || isoAddDays(Q.dateStart, 1)}).then(d => {
+      Q.unitMap = {asAt: d.asAt, from: d.from, to: d.to, free: d.free || {}, held: {}};
+      refresh();
+    }).catch(err => { load.disabled = false; load.textContent = "Check which cabins are free in RMS"; showToast("RMS could not be checked: " + err.message, true); });
+    return;
+  }
+  if(e.target.closest && e.target.closest("#cabFullBtn")){ cabinFullOpen(); return; }
+  if(e.target.closest && e.target.closest("#cabFullClose")){ cabinFullClose(); return; }
+  const b = e.target.closest && e.target.closest("[data-unitreq]");
+  if(!b) return;
+  const parts = String(b.dataset.unitreq).split("|"), id = parts[0], k = parts[1];
+  const prefs = cabinPrefs();
+  const list = (prefs[id] || []).slice();
+  const i = list.indexOf(k);
+  if(i >= 0) list.splice(i, 1);
+  else {
+    const want = cabinWants()[id] || 0;
+    if(list.length >= want){
+      showToast("You have picked " + want + " of the " + ((RATE[id] || {}).name || id) + ", so you can request " + want + ". Tap one of your requests to take it off first, or add another cabin above.", true);
+      return;
+    }
+    list.push(k);
+  }
+  const next = Object.assign({}, prefs, {[id]: list});
+  if(!list.length) delete next[id];
+  if(Object.keys(next).length) Q.sel.prefUnits = next; else delete Q.sel.prefUnits;
+  refresh();
+  const full = document.getElementById("cabFull");
+  if(full && full.classList.contains("open")) cabinFullOpen();
+});
 /* ---- the organiser's page: what the server checked when the page opened ---- */
 function rmsLiveBanner(){
   if(!CLIENT_MODE || !Q.availLive) return '';
@@ -10113,15 +10425,32 @@ function rmsLiveBanner(){
   const sf = Array.isArray(L.shortfalls) ? L.shortfalls : [];
   if(sf.length){
     const isVenue = x => !!VENUES.find(v => v.fullId === x.itemId || v.halfId === x.itemId) || x.venue === true;
-    return '<div class="rmsbanner short"><b>Availability has changed since this quote was prepared.</b> ' +
-      sf.map(x => isVenue(x)
+    return '<div class="rmsbanner short"><b>Some of what you picked is no longer free.</b>' +
+      sf.map(x => '<div style="margin-top:6px">' + (isVenue(x)
         ? '<b>' + esc(x.name) + '</b> is no longer free for ' + esc(fmtRange(x.from, x.to)) + '.'
-        : 'Only <b>' + x.available + '</b> of the ' + x.selected + ' × ' + esc(x.name) + ' selected ' + (x.available === 1 ? 'is' : 'are') + ' still free for ' + esc(fmtRange(x.from, x.to)) + '.').join(' ') +
-      ' Please adjust the numbers below, or tell us in the message box and we will find an alternative.</div>';
+        : shortfallWords(x, true)) + '</div>').join('') +
+      '<div style="margin-top:6px">Please adjust the numbers below, or tell us in the message box and we will find an alternative.</div></div>';
   }
   return '<div class="rmsbanner ok">Availability checked live at ' + esc(rmsAsAt(L.asAt)) + '. The numbers you can pick are what is really free right now' + (Q.rmsHold && Q.rmsHold.status === "held" ? ', including the units already held for you' : '') + '.</div>';
 }
 
+/* one short cabin or site line, in words: how many there are, how many are this
+   group's, how many other guests have, and so the most this quote can have. Older
+   servers only send selected and available, so that is the fallback. */
+function shortfallWords(x, organiser){
+  const when = x.from && x.to ? esc(fmtRange(x.from, x.to)) : '';
+  const night = x.night && x.from && x.to && x.to > isoAddDays(x.from, 1) ? ' (the busiest night is ' + esc(fmtDate(x.night)) + ')' : '';
+  const you = organiser ? 'you' : 'they';
+  const your = organiser ? 'your group' : 'this group';
+  if(x.stop) return '<b>' + esc(x.name) + '</b> is not on sale for ' + when + '. ' + (organiser ? 'You' : 'They') + ' picked ' + x.selected + '; ' + (x.yours ? x.yours + ' ' + (x.yours === 1 ? 'is' : 'are') + ' already held for ' + your + '.' : 'none can be booked.');
+  if(!(x.total > 0)) return 'Only <b>' + x.available + '</b> of the ' + x.selected + ' × ' + esc(x.name) + ' selected ' + (x.available === 1 ? 'is' : 'are') + ' still free for ' + when + '.';
+  const bits = ['we have ' + x.total + ' in total'];
+  if(x.yours > 0) bits.push(x.yours + ' ' + (x.yours === 1 ? 'is' : 'are') + ' already held for ' + your);
+  if(x.others > 0) bits.push(x.others + ' ' + (x.others === 1 ? 'is' : 'are') + ' booked by other guests');
+  bits.push((x.free > 0 ? x.free : 'none') + (x.yours > 0 ? ' more' : '') + ' ' + ((x.free || 0) === 1 ? 'is' : 'are') + ' free');
+  return '<b>' + esc(x.name) + '</b>, ' + when + night + ': ' + bits.join(', ') + '. ' +
+    (organiser ? 'You' : 'They') + ' picked ' + x.selected + (x.available > 0 ? ', so the most ' + you + ' can have is <b>' + x.available + '</b>.' : ', so we cannot book any of these for ' + (organiser ? 'you' : 'them') + '.');
+}
 /* ---- the Pipeline: a live check across open quotes ---- */
 function pullRmsCheck(fresh){
   if(CLIENT_MODE || !rmsOn() || RMS_CHECK_BUSY) return;
@@ -10154,7 +10483,7 @@ function rmsPipeChip(r){
   }
   if(chk.checked){
     const sf = chk.shortfalls || [];
-    if(sf.length) bits.push('<span class="rmschip short" title="' + esc(sf.map(x => x.name + ': ' + x.available + ' of ' + x.selected + ' free, ' + fmtRange(x.from, x.to)).join('; ')) + '">⚠ short ' + esc(sf.length === 1 ? (sf[0].available + '/' + sf[0].selected) : (sf.length + ' lines')) + '</span>');
+    if(sf.length) bits.push('<span class="rmschip short" title="' + esc(sf.map(x => shortfallWords(x, false).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&')).join('\n')) + '">⚠ short ' + esc(sf.length === 1 ? (sf[0].available + '/' + sf[0].selected) : (sf.length + ' lines')) + '</span>');
     else if(!hold || hold.status !== "held") bits.push('<span class="rmschip muted" title="Every unit on this quote is still free in RMS">ok</span>');
   } else if(chk.error){
     bits.push('<span class="rmschip warn" title="' + esc(chk.error) + '">check failed</span>');
