@@ -175,6 +175,11 @@
   .totals .grand{border-top:1.5px solid var(--ink); margin-top:6px; padding-top:8px; font-weight:700; font-size:16.5px}
   .totals .grand span{color:var(--ink)}
 
+  /* the staff key bar (28 Sept 2026) */
+  .staffkeybar{position:sticky; top:0; z-index:9999; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; background:#fff4e0; border-bottom:2px solid #ef8f00; color:#5a3a00; padding:10px 16px; font-size:13.5px; line-height:1.45}
+  .staffkeybar b{flex:1 0 100%}
+  .staffkeybar .skrow{display:flex; gap:8px; flex-wrap:wrap}
+  .staffkeybar input{padding:6px 10px; border:1px solid #c9a36a; border-radius:7px; min-width:220px; font-size:14px}
   .btn{
     appearance:none; font:inherit; font-weight:600; font-size:14.5px; cursor:pointer;
     border-radius:9px; padding:10px 18px; border:1px solid var(--border);
@@ -1271,6 +1276,7 @@
           <label class="secitem"><input type="checkbox" id="f-feat-kids"> <span><span class="sectitle">Children's &amp; dietary pricing</span><span class="secwhy">adults / 4–12 (half) / 1–3 ($5) / under 1 (free) + dietary (+$10) priced properly per meal</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-cheap"> <span><span class="sectitle">Cheapest dates search</span><span class="secwhy">lets them price their cabins across other dates, untick when the dates are already held</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-cabmap"> <span><span class="sectitle">Cabin map</span><span class="secwhy">lets them request particular cabins on the site plan (requests only), untick to hide it from them</span></span></label>
+          <label class="secitem"><input type="checkbox" id="f-feat-freerooms"> <span><span class="sectitle">Free conference room per 5 cabins</span><span class="secwhy">one conference room at no charge for every 5 cabins, from 6 cabins (6-10 = 1, 11-15 = 2), the same rule as the website calculator</span></span></label>
         </div>
         <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission, that part is built in.</p>
       </div>
@@ -1451,6 +1457,11 @@
       <h2>Cabin map on new quotes</h2>
       <label class="secitem" style="padding:0"><input type="checkbox" id="s-cabmap"> <span><span class="sectitle">Show the cabin map to organisers</span><span class="secwhy">the site plan under Accommodation where a group can request particular cabins (requests only, never promised)</span></span></label>
       <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Any single quote can still be changed on the Prepare tab, under "Extras on the organiser's page".</p>
+    </div>
+    <div class="card">
+      <h2>Free conference rooms on new quotes</h2>
+      <label class="secitem" style="padding:0"><input type="checkbox" id="s-freerooms"> <span><span class="sectitle">One conference room free for every 5 cabins</span><span class="secwhy">from 6 cabins (6-10 cabins = 1 room, 11-15 = 2 ...), for every day it is booked: Conference Rooms 1, 2 &amp; 3 first, then Rooms 1, 2, 3 on their own, Room 5, the Auditorium. The website calculator gives the same.</span></span></label>
+      <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Quotes made before 28 Sept 2026 keep their prices unless it is ticked on the Prepare tab.</p>
     </div>
     <div class="card">
       <h2>Cheapest dates search on new quotes</h2>
@@ -2063,7 +2074,40 @@ function resolvedSections(){
 
 /* ---------- sheet logging (Google Apps Script web app) ---------- */
 const DEFAULT_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwH01LNaO8ifVNqXUugTT6WcHReneXZvMN4Aro3AIB9hu-sPyN5jvjhEKT4liMXbYhJ/exec";
-const SHEET_TOKEN = "wslr-quotes-2026";
+/* The staff key (28 Sept 2026). It used to be written here, and this page is public on
+   GitHub, so anyone could read every quote and enquiry with it. Now each computer types
+   it once and it stays in that browser. The organiser's page never needs it: it proves an
+   acceptance with its own quote's secret. */
+const STAFF_KEY_LS = "wslr_staff_key";
+function staffKey(){ try{ return (localStorage.getItem(STAFF_KEY_LS) || "").trim(); }catch(e){ return ""; } }
+function setStaffKey(v){ try{ localStorage.setItem(STAFF_KEY_LS, String(v || "").trim()); }catch(e){} }
+/* the organiser's own quote secret, for their acceptance */
+function organiserToken(){
+  return String((BOOT && BOOT.quote && BOOT.quote.token) || (typeof Q !== "undefined" && Q && Q.token) || "");
+}
+/* a bar across the top of the staff tool when the key is missing or was refused */
+function staffKeyNeeded(refused){
+  if(CLIENT_MODE || !document.body) return;
+  let bar = document.getElementById("staffKeyBar");
+  if(!bar){
+    bar = document.createElement("div");
+    bar.id = "staffKeyBar";
+    bar.className = "staffkeybar";
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+  bar.innerHTML = '<b>' + (refused ? 'The quote server did not accept the staff key saved on this computer.' : 'Enter the staff key to connect this computer to the quote server.') + '</b>' +
+    '<span>Quotes, the pipeline and settings need it. Ask Joel for it; it is kept in this browser only, and anything waiting to be saved is kept until it works.</span>' +
+    '<span class="skrow"><input type="password" id="staffKeyInp" autocomplete="off" placeholder="Staff key" aria-label="Staff key">' +
+    '<button type="button" class="btn" id="staffKeySave">Save and reconnect</button></span>';
+  const save = () => {
+    const v = document.getElementById("staffKeyInp").value.trim();
+    if(!v) return;
+    setStaffKey(v);
+    location.reload();
+  };
+  document.getElementById("staffKeySave").onclick = save;
+  document.getElementById("staffKeyInp").onkeydown = e => { if(e.key === "Enter") save(); };
+}
 function sheetEndpoint(){
   let v = "";
   try{ v = (localStorage.getItem("wslr_sheet_url") || "").trim(); }catch(e){}
@@ -2078,7 +2122,7 @@ function postToSheet(payload, onFail){
        seen, but a phone that drops out mid-submit rejects and must not be told the
        selection arrived */
     try{
-      fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, payload))}).catch(function(){ if(onFail) onFail(); });
+      fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({quoteToken: organiserToken()}, payload))}).catch(function(){ if(onFail) onFail(); });
     }catch(e){ if(onFail) onFail(); }
     return true;
   }
@@ -2124,11 +2168,13 @@ function applySharedSettings(s){
 function loadSharedSettings(){
   const url = sheetEndpoint();
   if(!url) return;
+  if(!staffKey()){ staffKeyNeeded(false); SETTINGS_SYNC_STATE = "offline"; renderSyncBadge(); return; }
   SETTINGS_SYNC_STATE = "loading";
   renderSyncBadge();
-  fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "settings=1&token=" + encodeURIComponent(SHEET_TOKEN))
+  fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "settings=1&token=" + encodeURIComponent(staffKey()))
     .then(r => r.json())
     .then(data => {
+      if(data && data.error === "bad token") staffKeyNeeded(true);
       if(data && data.settings && applySharedSettings(data.settings)){
         renderTplOptions();
         /* this response can land seconds after the page opens: don't rebuild the
@@ -2154,15 +2200,19 @@ function pushSharedSettings(){
   SETTINGS_PUSH_TIMER = setTimeout(function(){
     const url = sheetEndpoint();
     if(!url) return;
+    if(!staffKey()){ staffKeyNeeded(false); SETTINGS_SYNC_STATE = "offline"; renderSyncBadge(); return; }
     SETTINGS_SYNC_STATE = "saving";
     renderSyncBadge();
     fetch(url, {
       method: "POST",
       headers: {"Content-Type": "text/plain;charset=utf-8"}, // avoids a CORS preflight; Apps Script reads it fine
-      body: JSON.stringify({token: SHEET_TOKEN, action: "saveSettings", settings: collectSharedSettings()})
+      body: JSON.stringify({token: staffKey(), action: "saveSettings", settings: collectSharedSettings()})
     })
       .then(r => r.text())
-      .then(() => { SETTINGS_SYNC_STATE = "synced"; renderSyncBadge(); })
+      .then(t => {
+        if(String(t).trim() === "bad token"){ staffKeyNeeded(true); SETTINGS_SYNC_STATE = "offline"; renderSyncBadge(); return; }
+        SETTINGS_SYNC_STATE = "synced"; renderSyncBadge();
+      })
       .catch(() => { SETTINGS_SYNC_STATE = "offline"; renderSyncBadge(); });
   }, 900);
 }
@@ -2238,6 +2288,7 @@ function flushOutbox(done){
     if(done) done();
     return;
   }
+  if(!staffKey()){ staffKeyNeeded(false); if(done) done(); return; }   // kept until there is a key
   FLUSH_BUSY = true;
   const step = () => {
     if(!OUTBOX.length){
@@ -2249,10 +2300,14 @@ function flushOutbox(done){
     fetch(sheetEndpoint(), {
       method: "POST",
       headers: {"Content-Type": "text/plain;charset=utf-8"}, // avoids a CORS preflight; Apps Script reads it fine
-      body: JSON.stringify(Object.assign({token: SHEET_TOKEN}, OUTBOX[0].payload))
+      body: JSON.stringify(Object.assign({token: staffKey()}, OUTBOX[0].payload))
     })
       .then(r => r.text())
-      .then(() => {
+      .then(t => {
+        /* refused for the key: keep it queued, stop, and ask for the key */
+        if(String(t).trim() === "bad token"){
+          SHEET_REACHABLE = true; FLUSH_BUSY = false; staffKeyNeeded(true); renderPipeSync(); if(done) done(); return;
+        }
         SHEET_REACHABLE = true;
         OUTBOX.shift();
         lsSet(LS_OUTBOX, OUTBOX);
@@ -2275,10 +2330,11 @@ function pullPipeline(force){
   PIPE_STATE = "loading";
   renderPipeSync();
   flushOutbox(() => {                  // our own changes land first, then we read
-    fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "list=1&token=" + encodeURIComponent(SHEET_TOKEN))
+    fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "list=1&token=" + encodeURIComponent(staffKey()))
       .then(r => r.json())
       .then(data => {
         PULL_BUSY = false;
+        if(data && data.error === "bad token") staffKeyNeeded(true);
         if(!data || !data.ok || !Array.isArray(data.quotes)) throw new Error("bad response");
         mergeServerQuotes(data.quotes);
         SHEET_REACHABLE = true;
@@ -2589,7 +2645,7 @@ function blankQuote(num){
     ratesInfo: null,    // {from, to, items, file}
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
-    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026)
+    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: d.freeRooms !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026)
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
     sel: blankSel(),    // the organiser's (or staff-suggested) selections
     lines: [],          // fixed extras the organiser can't change
@@ -2657,6 +2713,8 @@ function normalizeQuote(q){
   if(!q.features) q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
   if(q.features.cheapest === undefined) q.features.cheapest = true;
   if(q.features.cabinMap === undefined) q.features.cabinMap = true;
+  /* quotes made before the free-room rule keep the prices they were given */
+  if(q.features.freeRooms === undefined) q.features.freeRooms = false;
   if(q.sel){
     if(q.sel.who === undefined) q.sel.who = null;
     if(!q.sel.venueTimes) q.sel.venueTimes = {};
@@ -4124,11 +4182,35 @@ function mealServiceWords(){
 function schoolOn(){ return !!(Q.school && (Number(Q.school.base) > 0 || Number(Q.school.rate) > 0)); }
 function schoolIncludes(id){ return schoolOn() && manualPrice(id) === 0; }
 const SCHOOL_INCL_WORD = '<span class="inclpkg">included in your package</span>';
+/* ---------- one conference room free for every 5 cabins (28 Sept 2026) ----------
+   6-10 cabins: 1 room, 11-15: 2, and so on. It is the website calculator's rule, which Joel
+   kept and asked for here too. The rooms in FREE_ROOM_ORDER get it, for every day they are
+   booked. New quotes have it on (Settings: "Free conference rooms on new quotes"); quotes made
+   before it keep their prices unless it is ticked on the Prepare tab. */
+const FREE_ROOM_FROM = 6, FREE_ROOM_PER = 5;
+const FREE_ROOM_ORDER = ["fr13", "fr1", "fr2", "fr3", "fr5", "aud"];
+function freeRoomsOn(){ return !!(Q.features && Q.features.freeRooms); }
+function freeRoomsEarned(){
+  if(!freeRoomsOn()) return 0;
+  const n = unitsSplit().cabins;
+  return n >= FREE_ROOM_FROM ? Math.floor((n - 1) / FREE_ROOM_PER) : 0;
+}
+function freeRoomKeys(){
+  let left = freeRoomsEarned();
+  const out = [];
+  FREE_ROOM_ORDER.forEach(k => {
+    if(left <= 0) return;
+    const v = VENUES.find(x => x.key === k);
+    if(v && venueDaysSel(k) > 0 && catEntry(v.fullId).on){ out.push(k); left--; }
+  });
+  return out;
+}
 function venueIsFree(v){
   if(!v) return false;
   if(schoolOn() && SCHOOL_FREE_VENUES.indexOf(v.key) >= 0) return true;
   if(v.key === DINING_KEY) return diningIsFree();
   if(v.key === MARQUEE_KEY) return marqueeIsFree();
+  if(freeRoomKeys().indexOf(v.key) >= 0) return true;
   return false;
 }
 /* why it is free, in words, so every surface says the same thing */
@@ -4137,6 +4219,7 @@ function venueFreeReason(v){
   if(schoolOn() && SCHOOL_FREE_VENUES.indexOf(v.key) >= 0) return "with your school package";
   if(v.key === DINING_KEY) return "with " + mealServiceWords();
   if(v.key === MARQUEE_KEY) return "with your stay";
+  if(freeRoomKeys().indexOf(v.key) >= 0) return "with your " + unitsSplit().cabins + " cabins";
   return "";
 }
 function venueRate(v, half){ return venueIsFree(v) ? 0 : catEntry(half ? v.halfId : v.fullId).price; }
@@ -8903,9 +8986,10 @@ function fetchSheetQuote(num, done){
   const url = sheetEndpoint();
   if(!url){ done(null); return; }
   flushOutbox(() => {                  // our own saves land first, then we read
-    fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "list=1&token=" + encodeURIComponent(SHEET_TOKEN))
+    fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "list=1&token=" + encodeURIComponent(staffKey()))
       .then(r => r.json())
       .then(data => {
+        if(data && data.error === "bad token") staffKeyNeeded(true);
         if(!data || !data.ok || !Array.isArray(data.quotes)) throw new Error("bad response");
         SHEET_REACHABLE = true;
         done(data.quotes.find(q => q && q.num === num && !q.rowOnly) || null);
@@ -9056,11 +9140,12 @@ function fetchInterest(force, done){
   if(!force && INTEREST_AT && Date.now() - INTEREST_AT < INTEREST_FRESH_MS){ if(done) done(); return; }
   INTEREST_BUSY = true;
   renderInterest();
-  fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "interest=list&token=" + encodeURIComponent(SHEET_TOKEN))
+  fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "interest=list&token=" + encodeURIComponent(staffKey()))
     .then(r => r.text())
     .then(txt => {
       let data = null;
       try{ data = JSON.parse(txt); }catch(e){ throw new Error(googleErrorText(txt) || "the server did not answer with data"); }
+      if(data && data.error === "bad token"){ staffKeyNeeded(true); throw new Error("the staff key on this computer was not accepted"); }
       if(!data || !data.ok || !Array.isArray(data.interest)) throw new Error((data && data.error) || "the server could not read the enquiries");
       INTEREST = data.interest;
       INTEREST_AT = Date.now();
@@ -9154,6 +9239,13 @@ function interestNotesText(e, missed){
     " · accommodation " + money(t.accommodation) + ", venue hire " + money(t.venue) + ", catering " + money(t.meals));
   if(e.mix) L.push("Cabins they picked: " + String(e.mix).split("\n").join(" · "));
   if(e.choices) L.push("Meals they picked: " + String(e.choices).split("\n").join(" · "));
+  if(e.venueDayWords && typeof e.venueDayWords === "object" && Object.keys(e.venueDayWords).length){
+    L.push("Rooms they picked: " + Object.keys(e.venueDayWords).map(k => ((VENUES.find(x => x.key === k) || {}).name || k) + " " + e.venueDayWords[k]).join(" · ") +
+      (e.venueAvailability === "checked" ? " (all shown free in RMS when they looked" + (e.venueAvailAsAt ? ", " + e.venueAvailAsAt.slice(0, 16).replace("T", " ") : "") + ")" : " (room availability was not checked on the website)"));
+  }
+  if(e.freeVenues && typeof e.freeVenues === "object" && Object.keys(e.freeVenues).length){
+    L.push("Shown to them as included: " + Object.keys(e.freeVenues).map(k => ((VENUES.find(x => x.key === k) || {}).name || k) + " " + e.freeVenues[k]).join(" · "));
+  }
   if(e.restrictions) L.push("The booking system told them: " + e.restrictions);
   if(e.search) L.push("They also searched: " + e.search);
   if(missed && missed.length) L.push("COULD NOT BE MATCHED, add by hand: " + missed.join("; "));
@@ -9186,19 +9278,51 @@ function buildQuoteFromInterest(ref){
   /* the cabins */
   const accom = [];
   (e.cabinTypes || []).forEach(c => {
-    const id = matchAccomId(c.type);
+    /* calculator 2.0 sends the rate card id; older enquiries only the RMS name */
+    const id = (c.id && accomItems().some(it => it.id === c.id)) ? c.id : matchAccomId(c.type);
     if(id) accom.push({id: id, qty: Math.max(0, Math.round(Number(c.qty) || 0)), from: null, to: null});
     else missed.push(c.qty + " x " + c.type);
   });
   Q.sel.accom = accom.filter(b => b.qty > 0);
 
-  /* the conference rooms, on the days they asked for */
-  interestVenuePlan(e.venues).forEach(p => { interestVenueDays(p.key, p.days); });
+  /* the conference rooms, on the days they asked for: the exact days and sessions when the
+     website sent them (calculator 2.0), otherwise the day counts spread from the first day */
+  const vd = (e.venueDays && typeof e.venueDays === "object") ? e.venueDays : null;
+  if(vd && Object.keys(vd).length){
+    const days = eventDays();
+    if(!Q.sel.venueDays) Q.sel.venueDays = {};
+    Object.keys(vd).forEach(key => {
+      const v = VENUES.find(x => x.key === key);
+      if(!v){ missed.push("room " + key); return; }
+      const m = {};
+      Object.keys(vd[key] || {}).forEach(iso => {
+        const st = vd[key][iso];
+        if(days.indexOf(iso) >= 0 && (st === "full" || st === "am" || st === "pm")) m[iso] = st;
+      });
+      if(Object.keys(m).length){ Q.sel.venueDays[key] = m; syncVenueCount(key); }
+      else missed.push(v.name + " (its days fall outside the stay)");
+    });
+  } else {
+    interestVenuePlan(e.venues).forEach(p => { interestVenueDays(p.key, p.days); });
+  }
 
+  /* who's eating (calculator 2.0): adults, children and special diets, as the organiser's page keeps them */
+  if(e.who && typeof e.who === "object"){
+    const n = x => (x === "" || x === null || x === undefined) ? "" : Math.max(0, Math.round(Number(x) || 0));
+    Q.sel.who = {adults: n(e.who.adults), k412: n(e.who.k412), k13: n(e.who.k13), babies: n(e.who.babies), diet: n(e.who.diet)};
+  }
   /* the meals */
   const covers = Number(e.guests) || 0;
   const nights = Math.max(1, (e.nights ? Number(e.nights) : 0) || nightsCount());
-  ["breakfast", "lunch", "dinner"].forEach(slot => {
+  if(Array.isArray(e.catering) && e.catering.length){
+    /* calculator 2.0: each meal by its rate card id, with its own number of days */
+    e.catering.forEach(c => {
+      if(!c || !RATE[c.id]){ missed.push((c && c.name) || "a meal"); return; }
+      setCat(c.id, "on", true);
+      if(!Q.sel.cater) Q.sel.cater = {};
+      Q.sel.cater[c.id] = {ppl: Number(c.eaters) || covers || "", days: Math.max(1, Math.round(Number(c.days) || 1))};
+    });
+  } else ["breakfast", "lunch", "dinner"].forEach(slot => {
     const text = String(((e.meals || {})[slot] !== undefined ? (e.meals || {})[slot] : "") || "");
     const picked = text || (Number((e.covers || {})[slot]) > 0 ? slot : "");
     if(!picked) return;
@@ -9210,7 +9334,7 @@ function buildQuoteFromInterest(ref){
   });
 
   /* the church / not-for-profit rate they ticked on the website */
-  const pct = Number((e.totals || {}).discountPct) || 0;
+  const pct = Number(e.church) || Number((e.totals || {}).discountPct) || 0;
   if(pct === 20 || pct === 50){ Q.acnc = true; Q.sel.church = pct; }
 
   Q.internalNotes = interestNotesText(e, missed);
@@ -10196,6 +10320,7 @@ function renderSettings(){
   document.getElementById("s-emailvia").value = getEmailVia();
   document.getElementById("s-cheapest").checked = d.cheapest !== false;
   document.getElementById("s-cabmap").checked = d.cabinMap === true;
+  document.getElementById("s-freerooms").checked = d.freeRooms !== false;
   document.getElementById("s-coc").value = d.cocUrl || "";
   document.getElementById("s-infourl").value = (d.infoUrl === undefined ? GUEST_INFO_URL_DEFAULT : d.infoUrl) || "";
   document.getElementById("s-pdfmode").value = PDF_MODES.indexOf(d.pdfMode) >= 0 ? d.pdfMode : (d.pdfLinks ? "links" : "full");
@@ -10282,13 +10407,14 @@ function rmsGet(params){
   const url = sheetEndpoint();
   if(!url) return Promise.reject(new Error("no sheet endpoint"));
   const qs = Object.keys(params).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k])).join("&");
-  return fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + qs + "&token=" + encodeURIComponent(SHEET_TOKEN))
+  return fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + qs + "&token=" + encodeURIComponent(staffKey()))
     .then(r => r.text())
     .then(txt => {
       try{ return JSON.parse(txt); }
       catch(e){ throw new Error(googleErrorText(txt)); }
     })
     .then(data => {
+      if(data && data.error === "bad token") staffKeyNeeded(true);
       if(!data || !data.ok) throw new Error((data && data.error) || "RMS request failed");
       return data;
     });
@@ -11352,6 +11478,7 @@ function syncForm(){
   document.getElementById("f-feat-kids").checked = !!(Q.features && Q.features.kids);
   document.getElementById("f-feat-cheap").checked = !!(Q.features && Q.features.cheapest);
   document.getElementById("f-feat-cabmap").checked = cabinMapShown();
+  document.getElementById("f-feat-freerooms").checked = freeRoomsOn();
   renderLockSwitch();
 }
 /* the "Lock this quote" switch on tab 1 */
@@ -11397,7 +11524,7 @@ function renderLockSwitch(){
     : '<span class="swstate">OFF</span>The organiser can change the dates, cabins, rooms and catering on their page before they submit.') +
     (locks.length ? '<br>Locked on their own: ' + esc(locks.map(id => (RATE[id] || {}).name || id).join(", ")) + '.' : '');
 }
-[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"], ["f-feat-cabmap", "cabinMap"]].forEach(pair => {
+[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"], ["f-feat-cabmap", "cabinMap"], ["f-feat-freerooms", "freeRooms"]].forEach(pair => {
   document.getElementById(pair[0]).addEventListener("change", e => {
     if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
     Q.features[pair[1]] = e.target.checked;
@@ -11521,6 +11648,12 @@ document.querySelectorAll(".pdfModeSel").forEach(el => el.addEventListener("chan
 }));
 document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
 document.getElementById("s-body").addEventListener("input", e => saveDefaults({body: e.target.value}));
+document.getElementById("s-freerooms").addEventListener("change", e => {
+  saveDefaults({freeRooms: e.target.checked});
+  showToast(e.target.checked
+    ? "New quotes give one conference room free for every 5 cabins, from 6 cabins."
+    : "New quotes will not give free conference rooms for cabins. Quotes already made keep their own setting.");
+});
 document.getElementById("s-cabmap").addEventListener("change", e => {
   saveDefaults({cabinMap: e.target.checked});
   showToast(e.target.checked
