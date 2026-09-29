@@ -20,3 +20,9 @@ A clickable prototype of a quoting system for **Wollongong Surf Leisure Resort**
 - Prices pull from a rate card **you** own and can override on any quote.
 - Nothing ever sends itself — a person always checks and presses send.
 - Every quote logs itself, so the pipeline is visible even in a busy week or when someone's on leave.
+
+## Staff login
+
+The staff tool opens on a sign in screen. Pick your name (or "Someone else...") and type your password. Everyone starts on the same password; change your own on **Settings > Your login**. Passwords are checked by the quote server (Apps Script), so a change works on every computer.
+
+The server side is in `apps-script/StaffLogin.gs`. Setup instructions are at the top of that file.

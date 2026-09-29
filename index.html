@@ -175,11 +175,23 @@
   .totals .grand{border-top:1.5px solid var(--ink); margin-top:6px; padding-top:8px; font-weight:700; font-size:16.5px}
   .totals .grand span{color:var(--ink)}
 
-  /* the staff key bar (28 Sept 2026) */
-  .staffkeybar{position:sticky; top:0; z-index:9999; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; background:#fff4e0; border-bottom:2px solid #ef8f00; color:#5a3a00; padding:10px 16px; font-size:13.5px; line-height:1.45}
-  .staffkeybar b{flex:1 0 100%}
-  .staffkeybar .skrow{display:flex; gap:8px; flex-wrap:wrap}
-  .staffkeybar input{padding:6px 10px; border:1px solid #c9a36a; border-radius:7px; min-width:220px; font-size:14px}
+  /* the staff login (29 Sept 2026): replaces the staff key bar */
+  .loginwall{position:fixed; inset:0; z-index:99999; background:var(--page); display:flex; align-items:center; justify-content:center; padding:16px; overflow-y:auto}
+  .loginbox{width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:26px 24px; box-shadow:0 6px 30px rgba(0,0,0,.08)}
+  .loginbox img{display:block; height:58px; width:auto; margin:0 auto 14px}
+  .loginbox h2{margin:0 0 4px; font-size:20px; text-align:center}
+  .loginbox .sub{margin:0 0 18px; color:var(--ink2); font-size:13.5px; text-align:center}
+  .loginbox label{display:block; font-size:13px; font-weight:600; color:var(--ink2); margin:0 0 12px}
+  .loginbox select, .loginbox input{display:block; width:100%; margin-top:5px; padding:9px 11px; font:inherit; font-size:15px; border:1px solid #c9c8c1; border-radius:8px; background:#fff; color:var(--ink)}
+  .loginbox .btn{width:100%; margin-top:6px; padding:10px}
+  .loginbox label[hidden]{display:none}
+  .loginerr{color:var(--crit); font-size:13.5px; min-height:1.3em; margin:4px 0 0}
+  .whoami{margin-left:auto; display:flex; gap:8px; align-items:center; font-size:13.5px; color:var(--ink2); white-space:nowrap}
+  .whoami b{color:var(--ink)}
+  .pwgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px 14px; margin-top:10px}
+  .pwgrid label{display:block; font-size:13px; font-weight:600; color:var(--ink2)}
+  .pwgrid input{display:block; width:100%; margin-top:4px}
+  .pwmsg{font-size:13.5px; margin-left:10px}
   .btn{
     appearance:none; font:inherit; font-weight:600; font-size:14.5px; cursor:pointer;
     border-radius:9px; padding:10px 18px; border:1px solid var(--border);
@@ -1081,6 +1093,7 @@
       <h1>Functions &amp; Events Quote System</h1>
       <p class="sub">Wollongong Surf Leisure Resort · 201 Pioneer Road, Fairy Meadow NSW 2519 · 02 4283 6999</p>
     </div>
+    <div class="whoami" id="whoAmI"></div>
   </header>
 
   <nav class="tabs">
@@ -1386,6 +1399,23 @@
   <section id="tab-settings" class="panel">
 
     <p class="hint" style="margin:0 0 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap"><span id="syncBadge"></span> Everything on this tab is shared: edits save to the tracker sheet and load on every computer that opens the tool. If the sheet can't be reached, changes keep working on this computer and share next time it connects.</p>
+
+    <div class="card" id="userCard">
+      <div class="cardhead">
+        <h2>Your login</h2>
+        <span class="hint">only for you: this is not shared with anyone else. Everyone starts with the same password; change yours here whenever you like. It changes on every computer.</span>
+      </div>
+      <p style="margin:0">Signed in as <b id="pwUser"></b>. <button type="button" class="btn ghost" id="pwSignOut" style="margin-left:8px">Sign out</button></p>
+      <div class="pwgrid">
+        <label>Current password<input type="password" id="pwOld" autocomplete="current-password"></label>
+        <label>New password<input type="password" id="pwNew" autocomplete="new-password"></label>
+        <label>New password again<input type="password" id="pwNew2" autocomplete="new-password"></label>
+      </div>
+      <div class="actions" style="margin-top:12px; align-items:center">
+        <button type="button" class="btn primary" id="pwChange">Change my password</button>
+        <span class="pwmsg" id="pwMsg"></span>
+      </div>
+    </div>
 
     <div class="card">
       <div class="cardhead">
@@ -2074,39 +2104,149 @@ function resolvedSections(){
 
 /* ---------- sheet logging (Google Apps Script web app) ---------- */
 const DEFAULT_SHEET_ENDPOINT = "https://script.google.com/macros/s/AKfycbwH01LNaO8ifVNqXUugTT6WcHReneXZvMN4Aro3AIB9hu-sPyN5jvjhEKT4liMXbYhJ/exec";
-/* The staff key (28 Sept 2026). It used to be written here, and this page is public on
-   GitHub, so anyone could read every quote and enquiry with it. Now each computer types
-   it once and it stays in that browser. The organiser's page never needs it: it proves an
-   acceptance with its own quote's secret. */
+/* The staff login (29 Sept 2026). This page is public on GitHub, so nothing secret is
+   written here. Staff pick their name and type their password; the quote server checks
+   it and hands back the server key, which stays in this browser until they sign out.
+   Passwords are checked and changed on the server, so a change works on every computer.
+   The organiser's page never needs any of this: it proves an acceptance with its own
+   quote's secret. */
 const STAFF_KEY_LS = "wslr_staff_key";
+const STAFF_USER_LS = "wslr_staff_user";
+const STAFF_NAMES = ["Alan", "Alison", "Cathie", "Chiara", "CJ", "Della", "Joel", "Julie", "Kylie", "Lynda", "Marion", "Muhemed", "Natasha", "Paola"];
 function staffKey(){ try{ return (localStorage.getItem(STAFF_KEY_LS) || "").trim(); }catch(e){ return ""; } }
 function setStaffKey(v){ try{ localStorage.setItem(STAFF_KEY_LS, String(v || "").trim()); }catch(e){} }
+function staffUser(){ try{ return (localStorage.getItem(STAFF_USER_LS) || "").trim(); }catch(e){ return ""; } }
+function setStaffUser(v){ try{ localStorage.setItem(STAFF_USER_LS, String(v || "").trim()); }catch(e){} }
+function signOut(){
+  try{ localStorage.removeItem(STAFF_KEY_LS); }catch(e){}
+  location.reload();
+}
 /* the organiser's own quote secret, for their acceptance */
 function organiserToken(){
   return String((BOOT && BOOT.quote && BOOT.quote.token) || (typeof Q !== "undefined" && Q && Q.token) || "");
 }
-/* a bar across the top of the staff tool when the key is missing or was refused */
+/* one call to the quote server's login actions; replies are JSON */
+function loginCall(payload){
+  return fetch(sheetEndpoint(), {
+    method: "POST",
+    headers: {"Content-Type": "text/plain;charset=utf-8"}, // avoids a CORS preflight; Apps Script reads it fine
+    body: JSON.stringify(payload)
+  })
+    .then(r => r.text())
+    .then(t => { try{ return JSON.parse(t); }catch(e){ return {error: "The quote server gave an unexpected reply. It may still need the login update (see apps-script/StaffLogin.gs)."}; } });
+}
+/* the login screen, over the whole staff tool, when nobody is signed in on this computer
+   or the server stopped accepting the saved sign-in */
 function staffKeyNeeded(refused){
   if(CLIENT_MODE || !document.body) return;
-  let bar = document.getElementById("staffKeyBar");
-  if(!bar){
-    bar = document.createElement("div");
-    bar.id = "staffKeyBar";
-    bar.className = "staffkeybar";
-    document.body.insertBefore(bar, document.body.firstChild);
-  }
-  bar.innerHTML = '<b>' + (refused ? 'The quote server did not accept the staff key saved on this computer.' : 'Enter the staff key to connect this computer to the quote server.') + '</b>' +
-    '<span>Quotes, the pipeline and settings need it. Ask Joel for it; it is kept in this browser only, and anything waiting to be saved is kept until it works.</span>' +
-    '<span class="skrow"><input type="password" id="staffKeyInp" autocomplete="off" placeholder="Staff key" aria-label="Staff key">' +
-    '<button type="button" class="btn" id="staffKeySave">Save and reconnect</button></span>';
-  const save = () => {
-    const v = document.getElementById("staffKeyInp").value.trim();
-    if(!v) return;
-    setStaffKey(v);
-    location.reload();
+  if(refused){ try{ localStorage.removeItem(STAFF_KEY_LS); }catch(e){} }
+  if(document.getElementById("loginWall")) return;
+  const wall = document.createElement("div");
+  wall.id = "loginWall";
+  wall.className = "loginwall";
+  const last = staffUser();
+  const known = STAFF_NAMES.indexOf(last) >= 0;
+  const logo = (document.getElementById("appLogo") || {}).src || "";
+  wall.innerHTML = '<form class="loginbox" id="loginForm" autocomplete="on">' +
+    (logo ? '<img src="' + logo + '" alt="">' : '') +
+    '<h2>Quote System sign in</h2>' +
+    '<p class="sub">Wollongong Surf Leisure Resort, Functions &amp; Events</p>' +
+    '<label>Your name<select id="loginName" required>' +
+      '<option value="" disabled' + (last ? '' : ' selected') + '>Choose your name...</option>' +
+      STAFF_NAMES.map(n => '<option' + (n === last ? ' selected' : '') + '>' + n + '</option>').join("") +
+      '<option value="__other"' + (last && !known ? ' selected' : '') + '>Someone else...</option>' +
+    '</select></label>' +
+    '<label id="loginOtherWrap"' + (last && !known ? '' : ' hidden') + '>Type your name<input type="text" id="loginOther" autocomplete="username" maxlength="40"></label>' +
+    '<label>Password<input type="password" id="loginPw" autocomplete="current-password" required></label>' +
+    '<button type="submit" class="btn primary" id="loginBtn">Sign in</button>' +
+    '<p class="loginerr" id="loginErr">' + (refused ? 'Please sign in again.' : '') + '</p>' +
+  '</form>';
+  document.body.appendChild(wall);
+  document.body.style.overflow = "hidden";
+  const sel = document.getElementById("loginName");
+  const other = document.getElementById("loginOther");
+  const otherWrap = document.getElementById("loginOtherWrap");
+  if(last && !known) other.value = last;
+  sel.onchange = () => {
+    otherWrap.hidden = sel.value !== "__other";
+    if(!otherWrap.hidden) other.focus(); else document.getElementById("loginPw").focus();
   };
-  document.getElementById("staffKeySave").onclick = save;
-  document.getElementById("staffKeyInp").onkeydown = e => { if(e.key === "Enter") save(); };
+  (last ? document.getElementById("loginPw") : sel).focus();
+  document.getElementById("loginForm").onsubmit = ev => {
+    ev.preventDefault();
+    const err = document.getElementById("loginErr");
+    const btn = document.getElementById("loginBtn");
+    const name = sel.value === "__other" ? other.value.trim() : sel.value;
+    const pw = document.getElementById("loginPw").value;
+    if(!name){ err.textContent = "Please choose or type your name."; return; }
+    if(!pw){ err.textContent = "Please type your password."; return; }
+    err.textContent = "";
+    btn.disabled = true; btn.textContent = "Signing in...";
+    loginCall({action: "login", user: name, password: pw})
+      .then(res => {
+        if(res && res.ok && res.key){
+          setStaffUser(res.user || name);
+          setStaffKey(res.key);
+          location.reload();
+          return;
+        }
+        err.textContent = (res && res.error) || "That did not work. Please try again.";
+        btn.disabled = false; btn.textContent = "Sign in";
+      })
+      .catch(() => {
+        err.textContent = "Could not reach the quote server. Check the internet connection and try again.";
+        btn.disabled = false; btn.textContent = "Sign in";
+      });
+  };
+}
+/* who is signed in, top right, and the Your login card on the Settings tab */
+function renderWhoAmI(){
+  if(CLIENT_MODE) return;
+  const who = document.getElementById("whoAmI");
+  const user = staffUser();
+  if(who){
+    who.innerHTML = staffKey() && user ? '<span>Signed in as <b></b></span><button type="button" class="btn ghost" id="whoSignOut">Sign out</button>' : "";
+    if(who.querySelector("b")) who.querySelector("b").textContent = user;
+    const so = document.getElementById("whoSignOut");
+    if(so) so.onclick = signOut;
+  }
+  const pu = document.getElementById("pwUser");
+  if(pu) pu.textContent = user || "nobody";
+  const pso = document.getElementById("pwSignOut");
+  if(pso) pso.onclick = signOut;
+  const btn = document.getElementById("pwChange");
+  if(btn) btn.onclick = changeMyPassword;
+}
+function changeMyPassword(){
+  const msg = document.getElementById("pwMsg");
+  const oldPw = document.getElementById("pwOld").value;
+  const n1 = document.getElementById("pwNew").value;
+  const n2 = document.getElementById("pwNew2").value;
+  const say = (t, bad) => { msg.textContent = t; msg.style.color = bad ? "var(--crit)" : "var(--good)"; };
+  if(!staffUser()){ say("Please sign in first.", true); return; }
+  if(!oldPw){ say("Please type your current password.", true); return; }
+  if(n1.length < 6){ say("The new password needs at least 6 characters.", true); return; }
+  if(n1 !== n2){ say("The two new passwords do not match.", true); return; }
+  if(n1 === oldPw){ say("The new password is the same as the current one.", true); return; }
+  const btn = document.getElementById("pwChange");
+  btn.disabled = true;
+  say("Changing...", false);
+  loginCall({action: "changePassword", user: staffUser(), password: oldPw, newPassword: n1})
+    .then(res => {
+      btn.disabled = false;
+      if(res && res.ok){
+        ["pwOld", "pwNew", "pwNew2"].forEach(id => { document.getElementById(id).value = ""; });
+        say("Password changed. Use the new one next time you sign in, on any computer.", false);
+      } else {
+        say((res && res.error) || "That did not work. Please try again.", true);
+      }
+    })
+    .catch(() => { btn.disabled = false; say("Could not reach the quote server. Please try again.", true); });
+}
+if(!CLIENT_MODE){
+  const bootLogin = () => { renderWhoAmI(); if(!staffKey()) staffKeyNeeded(false); };
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootLogin);
+  else setTimeout(bootLogin, 0);
 }
 function sheetEndpoint(){
   let v = "";
@@ -9145,7 +9285,7 @@ function fetchInterest(force, done){
     .then(txt => {
       let data = null;
       try{ data = JSON.parse(txt); }catch(e){ throw new Error(googleErrorText(txt) || "the server did not answer with data"); }
-      if(data && data.error === "bad token"){ staffKeyNeeded(true); throw new Error("the staff key on this computer was not accepted"); }
+      if(data && data.error === "bad token"){ staffKeyNeeded(true); throw new Error("your sign in has expired, please sign in again"); }
       if(!data || !data.ok || !Array.isArray(data.interest)) throw new Error((data && data.error) || "the server could not read the enquiries");
       INTEREST = data.interest;
       INTEREST_AT = Date.now();
