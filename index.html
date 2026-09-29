@@ -1177,7 +1177,7 @@
               <option value="noprices">Hide all prices</option>
             </select>
           </label>
-          <label title="Appears in the deposit & payment information on the quote">Security bond ($)<input id="f-bond" type="number" min="0" step="50"></label>
+          <label title="Appears in the deposit &amp; payment information on the quote. Leave it blank for the automatic figure: $100 a cabin for a church, charity or school, otherwise $100 a cabin with $2,000 as the least.">Security bond ($)<input id="f-bond" type="number" min="0" step="50"><span class="hint" id="bondNote"></span></label>
         </div>
         <label class="pencilsw lockrow" title="Off by default. When it is on, the organiser's page shows the quote exactly as you have built it: they can read it and accept it, but the dates, cabins and rooms are fixed. Paid catering extras stay open unless you padlock them below.">
           <input type="checkbox" id="f-locked">
@@ -2077,7 +2077,7 @@ function activeSectionIds(){
 function fillQuoteText(t){
   const k = kdCfg();
   return String(t === null || t === undefined ? "" : t)
-    .split("{bond}").join(money0(Number(Q.bond) || 0))
+    .split("{bond}").join(money0(bondAmount()))
     .split("{depositsite}").join(money0(k.depositSite))
     .split("{depositroom}").join(money0(k.depositRoom))
     .split("{depositdays}").join(leadPhrase(k.depositDays))
@@ -2987,6 +2987,7 @@ function normalizeQuote(q){
     });
   }
   if(!q.priceMode) q.priceMode = "full";
+  if(q.bondManual === undefined) q.bondManual = q.bond !== undefined && q.bond !== null && q.bond !== "" && Number(q.bond) !== 2000;
   if(q.acnc === undefined) q.acnc = !!(q.sel && Number(q.sel.church) > 0) || !!(Number(q.churchDisc) > 0);
   delete q.churchOffer;
   if(q.sel && q.sel.accom){
@@ -4933,6 +4934,32 @@ function depositBreakdown(){
           perRoom: c.depositRoom, total: depositTotal(c), days: c.depositDays,
           halfPct: c.halfPct, halfDays: c.halfDays, halfAmount: Math.round(partShareBase() * c.halfPct) / 100};
 }
+/* the security bond: $100 a cabin for a church / ACNC group or a school, everyone else
+   $100 a cabin or $2,000, whichever is higher. Campsites don't count. Staff can type
+   their own figure on the quote (Q.bondManual); clearing it goes back to the rule. */
+const BOND_PER_CABIN = 100, BOND_MIN = 2000;
+function bondIsConcession(){ return !!Q.acnc || !!(Q.school && schoolBaseRate(Q.school)); }
+function bondAuto(){
+  const per = BOND_PER_CABIN * unitsSplit().cabins;
+  return bondIsConcession() ? per : Math.max(BOND_MIN, per);
+}
+function bondAmount(){
+  if(Q.bondManual && Q.bond !== "" && Q.bond !== null && Q.bond !== undefined) return Number(Q.bond) || 0;
+  return bondAuto();
+}
+function renderBondField(){
+  const el = document.getElementById("f-bond");
+  if(!el) return;
+  const auto = bondAuto();
+  el.placeholder = String(auto);
+  if(document.activeElement !== el) el.value = Q.bondManual ? Q.bond : "";
+  const note = document.getElementById("bondNote");
+  if(note) note.textContent = Q.bondManual
+    ? "your own figure, clear it to go back to " + money0(auto)
+    : "automatic: " + (bondIsConcession()
+        ? "$100 a cabin (" + (Q.acnc ? "church / charity" : "school") + ")"
+        : "$100 a cabin, at least $2,000");
+}
 /* what the part payment is a share of: the whole bill, after the church discount and
    any other discount (24 Sept 2026; it used to be the accommodation only) */
 function partShareBase(){
@@ -5079,7 +5106,7 @@ function snapshotQ(){
     prepEmail: String(Q.prepEmail || "").trim() || DEFAULT_PREP_EMAIL,
     notes: Q.notes, terms: Q.terms,
     priceMode: Q.priceMode || "full",
-    bond: Q.bond, acnc: !!Q.acnc,
+    bond: bondAmount(), bondManual: !!Q.bondManual, acnc: !!Q.acnc,
     sections: Q.sections ? JSON.parse(JSON.stringify(Q.sections)) : null,
     secText: JSON.parse(JSON.stringify(Q.secText || {})),
     kdOver: Array.isArray(Q.kdOver) ? JSON.parse(JSON.stringify(Q.kdOver)) : null,
@@ -8184,8 +8211,8 @@ function keyDatesAutoRows(showPrices){
       rows.push(['Deposit', money0(total) + ' (' + listWords(per) + '), due within ' + leadPhrase(c.depositDays) + ' of the invoice. Your booking' + alsoDisc + ' is confirmed once it is paid']);
     }
   }
-  if(showPrices && Number(Q.bond) > 0){
-    rows.push(['Security bond', money0(Q.bond) + ', paid prior to or on arrival and refunded on departure under the Code of Conduct']);
+  if(showPrices && bondAmount() > 0){
+    rows.push(['Security bond', money0(bondAmount()) + ', paid prior to or on arrival and refunded on departure under the Code of Conduct']);
   }
   if(kd){
     const at = (iso, text) => dated.push({iso: iso, row: [kdWhen(iso), text]});
@@ -8728,10 +8755,11 @@ function renderClient(){
       '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">' + (quoteLocked()
         ? 'Everything below is what we have put together for your group. Have a read, and accept it at the foot of the page when you are happy.'
         : 'Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.') + '</p>' +
+      churchHtml +
       siteInviteHTML() +
       datesPanelHTML() +
       schoolPanelHTML() +
-      accomHtml + cabinMapHTML() + venueHtml + caterHtml + churchHtml + fixedHtml +
+      accomHtml + cabinMapHTML() + venueHtml + caterHtml + fixedHtml +
       '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
       keyDatesHTML(showPrices, true) +
       '<div class="cb-sec" id="yourDetails"><h3>Your details</h3>' +
@@ -10200,6 +10228,7 @@ function copyFromQuote(num){
     notes: s.notes, terms: s.terms,
     priceMode: s.priceMode || "full",
     bond: (s.bond !== undefined && s.bond !== null && s.bond !== "") ? s.bond : b.bond,
+    bondManual: !!s.bondManual,
     acnc: s.acnc,
     churchDisc: s.churchDisc,
     sections: s.sections || null,
@@ -11375,8 +11404,8 @@ function switchTab(name){
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
 /* ---------- form bindings ---------- */
-function softRefresh(){ autosaveDraft(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); }
-function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
+function softRefresh(){ autosaveDraft(); renderBondField(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); }
+function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
 
 
 /* ---------- quoting on a booking already in RMS ----------
@@ -11702,9 +11731,15 @@ const BINDINGS = [
   ["f-contact", "contact"], ["f-org", "org"], ["f-email", "email"], ["f-mobile", "mobile"], ["f-event", "event"],
   ["f-date-start", "dateStart"], ["f-date-end", "dateEnd"], ["f-guests", "guests"],
   ["f-num", "num"], ["f-prepby", "prepBy"], ["f-prepemail", "prepEmail"], ["f-valid", "validDays"],
-  ["f-pricemode", "priceMode"], ["f-bond", "bond"],
+  ["f-pricemode", "priceMode"],
   ["f-notes", "notes"], ["f-terms", "terms"], ["f-internal", "internalNotes"]
 ];
+document.getElementById("f-bond").addEventListener("input", e => {
+  const v = e.target.value;
+  Q.bondManual = v !== "";
+  Q.bond = v === "" ? bondAuto() : Number(v);
+  softRefresh();
+});
 BINDINGS.forEach(pair => {
   const el = document.getElementById(pair[0]);
   el.addEventListener("input", () => {
@@ -11722,6 +11757,7 @@ BINDINGS.forEach(pair => {
 });
 function syncForm(){
   BINDINGS.forEach(pair => { document.getElementById(pair[0]).value = Q[pair[1]]; });
+  renderBondField();
   syncDiscForm();
   const endEl = document.getElementById("f-date-end");
   if(endEl) endEl.min = Q.dateStart || "";
