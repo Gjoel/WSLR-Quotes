@@ -192,6 +192,11 @@
   .pwgrid label{display:block; font-size:13px; font-weight:600; color:var(--ink2)}
   .pwgrid input{display:block; width:100%; margin-top:4px}
   .pwmsg{font-size:13.5px; margin-left:10px}
+  .usertable{width:100%; border-collapse:collapse; margin-top:10px; font-size:14px}
+  .usertable td{padding:7px 8px; border-bottom:1px solid var(--grid); vertical-align:middle}
+  .usertable td:last-child{text-align:right; white-space:nowrap}
+  .usertable .btn{padding:5px 10px; font-size:13px}
+  .usertag{display:inline-block; margin-left:8px; padding:1px 7px; border-radius:10px; background:#eef3fb; color:var(--accent-dn); font-size:11.5px; font-weight:600}
   .btn{
     appearance:none; font:inherit; font-weight:600; font-size:14.5px; cursor:pointer;
     border-radius:9px; padding:10px 18px; border:1px solid var(--border);
@@ -1417,6 +1422,23 @@
       </div>
     </div>
 
+    <div class="card" id="adminCard" hidden>
+      <div class="cardhead">
+        <h2>Manage staff</h2>
+        <span class="hint">only Joel sees this. The names here are the ones on the sign in screen. A new name starts on the standard password. Resetting a password puts it back to the standard one and unlocks the name if it was locked out. Someone taken off the list can't sign in any more, even through "Someone else".</span>
+      </div>
+      <div id="adminUsers"><p class="hint">Loading...</p></div>
+      <div class="actions" style="margin-top:12px; align-items:center">
+        <input type="text" id="adminNewName" placeholder="New staff name" maxlength="40" style="max-width:220px">
+        <button type="button" class="btn" id="adminAdd">+ Add to the list</button>
+      </div>
+      <div class="actions" style="margin-top:4px; align-items:center">
+        <input type="text" id="adminOtherName" placeholder="Someone not on the list" maxlength="40" style="max-width:220px">
+        <button type="button" class="btn" id="adminOtherReset">Reset their password</button>
+        <span class="pwmsg" id="adminMsg"></span>
+      </div>
+    </div>
+
     <div class="card">
       <div class="cardhead">
         <h2>Rate card</h2>
@@ -2117,8 +2139,13 @@ function staffKey(){ try{ return (localStorage.getItem(STAFF_KEY_LS) || "").trim
 function setStaffKey(v){ try{ localStorage.setItem(STAFF_KEY_LS, String(v || "").trim()); }catch(e){} }
 function staffUser(){ try{ return (localStorage.getItem(STAFF_USER_LS) || "").trim(); }catch(e){ return ""; } }
 function setStaffUser(v){ try{ localStorage.setItem(STAFF_USER_LS, String(v || "").trim()); }catch(e){} }
+/* Joel's signed pass for the Manage staff card; the server checks it on every change */
+const STAFF_PASS_LS = "wslr_staff_pass";
+const STAFF_ADMIN_LS = "wslr_staff_admin";
+function staffPass(){ try{ return localStorage.getItem(STAFF_PASS_LS) || ""; }catch(e){ return ""; } }
+function staffIsAdmin(){ try{ return localStorage.getItem(STAFF_ADMIN_LS) === "1" && !!staffPass(); }catch(e){ return false; } }
 function signOut(){
-  try{ localStorage.removeItem(STAFF_KEY_LS); }catch(e){}
+  try{ [STAFF_KEY_LS, STAFF_PASS_LS, STAFF_ADMIN_LS].forEach(k => localStorage.removeItem(k)); }catch(e){}
   location.reload();
 }
 /* the organiser's own quote secret, for their acceptance */
@@ -2145,7 +2172,9 @@ function staffKeyNeeded(refused){
   wall.id = "loginWall";
   wall.className = "loginwall";
   const last = staffUser();
-  const known = STAFF_NAMES.indexOf(last) >= 0;
+  let names = STAFF_NAMES;
+  try{ names = JSON.parse(localStorage.getItem("wslr_staff_names") || "null") || STAFF_NAMES; }catch(e){}
+  const known = names.indexOf(last) >= 0;
   const logo = (document.getElementById("appLogo") || {}).src || "";
   wall.innerHTML = '<form class="loginbox" id="loginForm" autocomplete="on">' +
     (logo ? '<img src="' + logo + '" alt="">' : '') +
@@ -2153,7 +2182,7 @@ function staffKeyNeeded(refused){
     '<p class="sub">Wollongong Surf Leisure Resort, Functions &amp; Events</p>' +
     '<label>Your name<select id="loginName" required>' +
       '<option value="" disabled' + (last ? '' : ' selected') + '>Choose your name...</option>' +
-      STAFF_NAMES.map(n => '<option' + (n === last ? ' selected' : '') + '>' + n + '</option>').join("") +
+      names.map(n => '<option' + (n === last ? ' selected' : '') + '>' + esc(n) + '</option>').join("") +
       '<option value="__other"' + (last && !known ? ' selected' : '') + '>Someone else...</option>' +
     '</select></label>' +
     '<label id="loginOtherWrap"' + (last && !known ? '' : ' hidden') + '>Type your name<input type="text" id="loginOther" autocomplete="username" maxlength="40"></label>' +
@@ -2172,6 +2201,17 @@ function staffKeyNeeded(refused){
     if(!otherWrap.hidden) other.focus(); else document.getElementById("loginPw").focus();
   };
   (last ? document.getElementById("loginPw") : sel).focus();
+  /* the list Joel keeps on the server; the names above are only a fallback */
+  loginCall({action: "staffList"}).then(res => {
+    if(!res || !res.ok || !Array.isArray(res.names) || !res.names.length) return;
+    try{ localStorage.setItem("wslr_staff_names", JSON.stringify(res.names)); }catch(e){}
+    const cur = sel.value === "__other" ? "" : sel.value;
+    const opts = '<option value="" disabled' + (cur ? '' : ' selected') + '>Choose your name...</option>' +
+      res.names.map(n => '<option' + (n === cur ? ' selected' : '') + '>' + esc(n) + '</option>').join("") +
+      '<option value="__other"' + (sel.value === "__other" ? ' selected' : '') + '>Someone else...</option>';
+    sel.innerHTML = opts;
+    if(cur && res.names.indexOf(cur) < 0){ sel.value = "__other"; other.value = cur; otherWrap.hidden = false; }
+  }).catch(() => {});
   document.getElementById("loginForm").onsubmit = ev => {
     ev.preventDefault();
     const err = document.getElementById("loginErr");
@@ -2187,6 +2227,10 @@ function staffKeyNeeded(refused){
         if(res && res.ok && res.key){
           setStaffUser(res.user || name);
           setStaffKey(res.key);
+          try{
+            localStorage.setItem(STAFF_PASS_LS, res.pass || "");
+            localStorage.setItem(STAFF_ADMIN_LS, res.admin ? "1" : "");
+          }catch(e){}
           location.reload();
           return;
         }
@@ -2216,6 +2260,79 @@ function renderWhoAmI(){
   if(pso) pso.onclick = signOut;
   const btn = document.getElementById("pwChange");
   if(btn) btn.onclick = changeMyPassword;
+  const ac = document.getElementById("adminCard");
+  if(ac && staffKey() && staffIsAdmin()){ ac.hidden = false; setupAdminCard(); }
+}
+/* ---------- Manage staff (Joel only) ---------- */
+let ADMIN_USERS = [];
+function adminSay(t, bad){
+  const m = document.getElementById("adminMsg");
+  if(m){ m.textContent = t; m.style.color = bad ? "var(--crit)" : "var(--good)"; }
+}
+function adminCall(payload){
+  return loginCall(Object.assign({pass: staffPass()}, payload)).then(res => {
+    if(!res || !res.ok) throw new Error((res && res.error) || "That did not work. Please try again.");
+    if(Array.isArray(res.users)){
+      ADMIN_USERS = res.users;
+      try{ localStorage.setItem("wslr_staff_names", JSON.stringify(res.users.map(u => u.name))); }catch(e){}
+      renderAdminUsers();
+    }
+    return res;
+  });
+}
+function renderAdminUsers(){
+  const box = document.getElementById("adminUsers");
+  if(!box) return;
+  box.innerHTML = '<table class="usertable"><tbody>' + ADMIN_USERS.map((u, i) =>
+    '<tr><td><b>' + esc(u.name) + '</b>' + (u.admin ? '<span class="usertag">admin</span>' : '') + '</td>' +
+    '<td class="hint">' + (u.ownPassword ? 'has their own password' : 'on the standard password') + '</td>' +
+    '<td><button type="button" class="btn" data-reset="' + i + '">Reset password</button> ' +
+    (u.admin ? '' : '<button type="button" class="btn ghost" data-remove="' + i + '">Remove</button>') + '</td></tr>'
+  ).join("") + '</tbody></table>';
+  box.querySelectorAll("[data-reset]").forEach(b => b.onclick = () => adminReset(ADMIN_USERS[+b.dataset.reset].name));
+  box.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => {
+    const name = ADMIN_USERS[+b.dataset.remove].name;
+    if(!confirm("Take " + name + " off the staff list? They won't be able to sign in any more.")) return;
+    adminSaveNames(ADMIN_USERS.map(u => u.name).filter(n => n !== name), name + " removed.");
+  });
+}
+function adminSaveNames(names, done){
+  adminSay("Saving...", false);
+  adminCall({action: "adminSaveUsers", names: names})
+    .then(() => adminSay(done, false))
+    .catch(err => adminSay(err.message, true));
+}
+function adminReset(name){
+  if(!name) return;
+  if(!confirm("Reset " + name + "'s password back to the standard one?")) return;
+  adminSay("Resetting...", false);
+  adminCall({action: "adminResetPassword", user: name})
+    .then(() => { adminSay(name + "'s password is back to the standard one.", false); return adminCall({action: "adminUsers"}); })
+    .catch(err => adminSay(err.message, true));
+}
+let ADMIN_READY = false;
+function setupAdminCard(){
+  if(ADMIN_READY) return;
+  ADMIN_READY = true;
+  const add = () => {
+    const inp = document.getElementById("adminNewName");
+    const name = inp.value.replace(/\s+/g, " ").trim();
+    if(!name) return;
+    if(ADMIN_USERS.some(u => u.name.toLowerCase() === name.toLowerCase())){ adminSay(name + " is already on the list.", true); return; }
+    inp.value = "";
+    adminSaveNames(ADMIN_USERS.map(u => u.name).concat(name), name + " added. They sign in with the standard password.");
+  };
+  document.getElementById("adminAdd").onclick = add;
+  document.getElementById("adminNewName").onkeydown = e => { if(e.key === "Enter") add(); };
+  document.getElementById("adminOtherReset").onclick = () => {
+    const inp = document.getElementById("adminOtherName");
+    const name = inp.value.replace(/\s+/g, " ").trim();
+    if(name){ inp.value = ""; adminReset(name); }
+  };
+  adminCall({action: "adminUsers"}).catch(err => {
+    document.getElementById("adminUsers").innerHTML = "";
+    adminSay(err.message, true);
+  });
 }
 function changeMyPassword(){
   const msg = document.getElementById("pwMsg");
