@@ -4,16 +4,24 @@
  * Add this as a NEW file in the quote server's Apps Script project
  * (Files  +  Script, name it StaffLogin), then make the one change to doPost
  * described below and redeploy (Deploy > Manage deployments > edit > New version).
+ * If you already added an earlier version of this file, just replace its contents
+ * with this one and redeploy.
  *
  * What it does:
+ *   - "staffList": the names shown on the sign in screen (no password needed).
  *   - "login": checks a staff member's name and password, and if right, replies with
  *     the server's staff key. The quote tool keeps that key in the browser and uses it
  *     exactly as before, so nothing else in the server changes.
  *   - "changePassword": lets a signed in person change their own password.
+ *   - "adminUsers", "adminSaveUsers", "adminResetPassword": for the people in
+ *     LOGIN_ADMINS only (Joel). Add or remove names on the sign in list and reset
+ *     anyone's password back to the default. The server checks a signed pass handed
+ *     out at sign in, so nobody can get these just by editing the page.
  *
  * Everyone starts on the default password below. A changed password is stored only as
  * a salted SHA-256 hash in Script Properties (never in plain text), and it works on
  * every computer. After 5 wrong passwords in a row a name is locked for 15 minutes.
+ * A name removed from the list can no longer sign in, even through "Someone else...".
  *
  * THE ONE CHANGE TO doPost: make these two lines the very first lines inside doPost(e),
  * before anything that reads or checks the token:
@@ -28,13 +36,15 @@
  *   4. a global variable named STAFF_KEY or TOKEN in the other script files
  * If your key lives somewhere else, add a Script Property STAFF_KEY with the same value.
  *
- * To reset someone's password back to the default, run resetStaffPassword() from the
- * editor after typing their name into it, or delete their "login_pw_..." Script Property.
+ * Password resets can also be done from the editor: run resetStaffPassword() after typing
+ * the person's name into it, or delete their "login_pw_..." Script Property.
  */
 
 var LOGIN_DEFAULT_PASSWORD = "QuoteWSLR!";
 var LOGIN_MAX_TRIES = 5;
 var LOGIN_LOCK_SECONDS = 15 * 60;
+var LOGIN_ADMINS = ["Joel"];
+var LOGIN_DEFAULT_NAMES = ["Alan", "Alison", "Cathie", "Chiara", "CJ", "Della", "Joel", "Julie", "Kylie", "Lynda", "Marion", "Muhemed", "Natasha", "Paola"];
 
 function staffLoginRoute_(e) {
   var data;
@@ -43,29 +53,42 @@ function staffLoginRoute_(e) {
   } catch (err) {
     return null;
   }
-  if (!data || (data.action !== "login" && data.action !== "changePassword")) return null;
+  var routes = {
+    staffList: function (d) { return { ok: true, names: loginNames_() }; },
+    login: staffLogin_,
+    changePassword: staffChangePassword_,
+    adminUsers: adminUsers_,
+    adminSaveUsers: adminSaveUsers_,
+    adminResetPassword: adminResetPassword_
+  };
+  if (!data || !routes.hasOwnProperty(data.action)) return null;
   var reply;
   try {
-    reply = data.action === "login" ? staffLogin_(data) : staffChangePassword_(data);
+    reply = routes[data.action](data);
   } catch (err) {
     reply = { error: "The quote server had a problem: " + err };
   }
   return ContentService.createTextOutput(JSON.stringify(reply)).setMimeType(ContentService.MimeType.JSON);
 }
 
+/* ---------- everyone ---------- */
+
 function staffLogin_(data) {
   var user = loginCleanName_(data.user);
   if (!user) return { error: "Please choose or type your name." };
+  if (loginIsRemoved_(user)) return { error: user + " is not on the staff list any more. Please ask Joel." };
+  user = loginListedSpelling_(user);
   var check = loginCheckPassword_(user, data.password);
   if (check) return check;
   var key = loginStaffKey_();
   if (!key) return { error: "The quote server has no staff key set. Ask Joel to add the STAFF_KEY Script Property." };
-  return { ok: true, user: user, key: key };
+  return { ok: true, user: user, key: key, admin: loginIsAdmin_(user), pass: loginPass_(user) };
 }
 
 function staffChangePassword_(data) {
   var user = loginCleanName_(data.user);
   if (!user) return { error: "Please sign in first." };
+  if (loginIsRemoved_(user)) return { error: user + " is not on the staff list any more." };
   var check = loginCheckPassword_(user, data.password);
   if (check) return check.error === "Wrong password. Please try again." ? { error: "Your current password is not right." } : check;
   var pw = String(data.newPassword || "");
@@ -76,12 +99,60 @@ function staffChangePassword_(data) {
   return { ok: true };
 }
 
+/* ---------- Joel only ---------- */
+
+function adminUsers_(data) {
+  var who = loginAdminFromPass_(data.pass);
+  if (!who) return { error: "Only Joel can do this. If you are Joel, sign out and back in, then try again." };
+  var props = PropertiesService.getScriptProperties();
+  var users = loginNames_().map(function (n) {
+    return { name: n, ownPassword: !!props.getProperty(loginPropName_(n)), admin: loginIsAdmin_(n) };
+  });
+  return { ok: true, users: users };
+}
+
+function adminSaveUsers_(data) {
+  var who = loginAdminFromPass_(data.pass);
+  if (!who) return { error: "Only Joel can do this. If you are Joel, sign out and back in, then try again." };
+  var seen = {};
+  var names = [];
+  (data.names || []).forEach(function (n) {
+    n = loginCleanName_(n);
+    if (n && !seen[n.toLowerCase()]) { seen[n.toLowerCase()] = true; names.push(n); }
+  });
+  for (var i = 0; i < LOGIN_ADMINS.length; i++) {
+    if (!seen[LOGIN_ADMINS[i].toLowerCase()]) return { error: LOGIN_ADMINS[i] + " can't be removed from the list." };
+  }
+  names.sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; });
+  /* anyone taken off the list is blocked from signing in, even as "Someone else" */
+  var removed = loginRemoved_().filter(function (n) { return !seen[n.toLowerCase()]; });
+  loginNames_().forEach(function (n) {
+    if (!seen[n.toLowerCase()] && removed.indexOf(n.toLowerCase()) < 0) removed.push(n.toLowerCase());
+  });
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty("LOGIN_NAMES", JSON.stringify(names));
+  props.setProperty("LOGIN_REMOVED", JSON.stringify(removed));
+  return adminUsers_(data);
+}
+
+function adminResetPassword_(data) {
+  var who = loginAdminFromPass_(data.pass);
+  if (!who) return { error: "Only Joel can do this. If you are Joel, sign out and back in, then try again." };
+  var user = loginCleanName_(data.user);
+  if (!user) return { error: "Whose password should be reset?" };
+  PropertiesService.getScriptProperties().deleteProperty(loginPropName_(user));
+  CacheService.getScriptCache().remove("login_tries_" + loginPropName_(user));
+  return { ok: true, user: user };
+}
+
+/* ---------- helpers ---------- */
+
 /* null when the password is right, otherwise {error} */
 function loginCheckPassword_(user, password) {
   var cache = CacheService.getScriptCache();
   var tryKey = "login_tries_" + loginPropName_(user);
   var tries = Number(cache.get(tryKey) || 0);
-  if (tries >= LOGIN_MAX_TRIES) return { error: "Too many wrong passwords for " + user + ". Please wait 15 minutes and try again." };
+  if (tries >= LOGIN_MAX_TRIES) return { error: "Too many wrong passwords for " + user + ". Please wait 15 minutes and try again, or ask Joel to reset it." };
   var pw = String(password || "");
   var stored = PropertiesService.getScriptProperties().getProperty(loginPropName_(user));
   var good;
@@ -99,6 +170,71 @@ function loginCheckPassword_(user, password) {
   return null;
 }
 
+function loginNames_() {
+  var raw = PropertiesService.getScriptProperties().getProperty("LOGIN_NAMES");
+  if (raw) {
+    try {
+      var list = JSON.parse(raw);
+      if (list && list.length) return list;
+    } catch (err) {}
+  }
+  return LOGIN_DEFAULT_NAMES.slice();
+}
+
+function loginRemoved_() {
+  try {
+    return JSON.parse(PropertiesService.getScriptProperties().getProperty("LOGIN_REMOVED") || "[]");
+  } catch (err) {
+    return [];
+  }
+}
+
+function loginIsRemoved_(user) {
+  return loginRemoved_().indexOf(String(user).toLowerCase()) >= 0;
+}
+
+/* "kylie" typed through Someone else signs in as the listed "Kylie" */
+function loginListedSpelling_(user) {
+  var names = loginNames_();
+  for (var i = 0; i < names.length; i++) {
+    if (names[i].toLowerCase() === user.toLowerCase()) return names[i];
+  }
+  return user;
+}
+
+function loginIsAdmin_(user) {
+  var u = String(user || "").toLowerCase();
+  for (var i = 0; i < LOGIN_ADMINS.length; i++) {
+    if (LOGIN_ADMINS[i].toLowerCase() === u) return true;
+  }
+  return false;
+}
+
+/* the signed pass handed out at sign in: name + "|" + signature */
+function loginPass_(user) {
+  return user + "|" + loginSign_(user);
+}
+
+function loginAdminFromPass_(pass) {
+  var s = String(pass || "");
+  var cut = s.lastIndexOf("|");
+  if (cut < 1) return "";
+  var user = s.slice(0, cut);
+  if (s.slice(cut + 1) !== loginSign_(user)) return "";
+  return loginIsAdmin_(user) ? user : "";
+}
+
+function loginSign_(user) {
+  var props = PropertiesService.getScriptProperties();
+  var secret = props.getProperty("LOGIN_SECRET");
+  if (!secret) {
+    secret = Utilities.getUuid() + Utilities.getUuid();
+    props.setProperty("LOGIN_SECRET", secret);
+  }
+  var bytes = Utilities.computeHmacSha256Signature(String(user).toLowerCase(), secret);
+  return Utilities.base64EncodeWebSafe(bytes);
+}
+
 function loginStaffKey_() {
   var props = PropertiesService.getScriptProperties();
   var names = ["STAFF_KEY", "STAFF_TOKEN", "TOKEN"];
@@ -113,7 +249,7 @@ function loginStaffKey_() {
 
 function loginCleanName_(name) {
   var n = String(name || "").replace(/\s+/g, " ").trim();
-  return n.length >= 1 && n.length <= 40 ? n : "";
+  return n.length >= 1 && n.length <= 40 && n.indexOf("|") < 0 ? n : "";
 }
 
 function loginPropName_(user) {

@@ -25,4 +25,6 @@ A clickable prototype of a quoting system for **Wollongong Surf Leisure Resort**
 
 The staff tool opens on a sign in screen. Pick your name (or "Someone else...") and type your password. Everyone starts on the same password; change your own on **Settings > Your login**. Passwords are checked by the quote server (Apps Script), so a change works on every computer.
 
+Joel can add and remove names on the sign in list and reset anyone's password from **Settings > Manage staff** (only Joel sees it).
+
 The server side is in `apps-script/StaffLogin.gs`. Setup instructions are at the top of that file.
