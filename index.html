@@ -1487,7 +1487,7 @@
     </div>
     <div class="card">
       <h2>Quote link page</h2>
-      <p class="hint" style="margin:0 0 8px">The page on our website that opens a quote, used for every link sent to an organiser (and the staff links in our own emails). Microsoft Defender and other mail filters often block links to script.google.com, so links go through wslr.com.au instead. Paste <b>https://www.wslr.com.au/your-quote/</b> here once that page is working. Leave it empty to link straight to the quote server. Quotes already sent keep the link they were sent with; send them again to give them the new one.</p>
+      <p class="hint" style="margin:0 0 8px">The page on our website that opens a quote, used for every link sent to an organiser (and the staff links in our own emails). Microsoft Defender and other mail filters often block links to script.google.com, so links go through wslr.com.au instead. Leave it empty to use our page, <b>https://www.wslr.com.au/your-quote/</b> (the default). Type another https:// address to use a different page, or type <b>direct</b> to link straight to the quote server. Quotes already sent keep the link they were sent with; send them again to give them the new one.</p>
       <input type="url" id="s-qlink" placeholder="https://www.wslr.com.au/your-quote/" style="width:100%">
       <p class="hint" id="s-qlink-note" style="margin:6px 0 0"></p>
     </div>
@@ -2774,7 +2774,7 @@ function getDefaults(){
     bond: 2000,
     cheapest: true,
     cocUrl: "",         // the digital Code of Conduct page; blank = COC_URL_DEFAULT (the WSLR page)
-    quoteLinkBase: "",  // the wslr.com.au page that shows a quote (links in emails); blank = the quote server's address
+    quoteLinkBase: "",  // the wslr.com.au page that shows a quote (links in emails); blank = QUOTE_LINK_DEFAULT (www.wslr.com.au/your-quote/)
     schoolPacks: [],    // school packages staff have added themselves
     accomRates: [],
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
@@ -3951,9 +3951,13 @@ function genToken(){
 }
 /* Oct 2026: links in emails go to a page on wslr.com.au that shows the quote inside it,
    because Microsoft Defender and other mail filters flag script.google.com links as
-   malicious. Settings > "Quote link page"; blank = the quote server's own address. */
+   malicious. Settings > "Quote link page". 5 Oct 2026: blank = our page (QUOTE_LINK_DEFAULT);
+   type "direct" there to link straight to the quote server (script.google.com) again. */
+const QUOTE_LINK_DEFAULT = "https://www.wslr.com.au/your-quote/";
 function quoteLinkBase(){
-  const u = String((getDefaults() || {}).quoteLinkBase || "").trim();
+  const typed = String((getDefaults() || {}).quoteLinkBase || "").trim();
+  if(/^direct$/i.test(typed)) return "";
+  const u = typed || QUOTE_LINK_DEFAULT;
   return /^https:\/\/[^\s?#]+$/i.test(u) ? u : "";
 }
 function linkForToken(tok){
@@ -12062,7 +12066,8 @@ function renderQlinkNote(){
   const el = document.getElementById("s-qlink-note");
   if(!el) return;
   const typed = String((document.getElementById("s-qlink") || {}).value || "").trim();
-  el.textContent = !typed ? "In use: links go straight to the quote server (script.google.com)."
+  el.textContent = /^direct$/i.test(typed) ? "In use: links go straight to the quote server (script.google.com)."
+    : !typed ? "In use (default): new links look like " + QUOTE_LINK_DEFAULT + "?t=…"
     : quoteLinkBase() ? "In use: new links look like " + quoteLinkBase() + "?t=…"
     : "Not used: it must be a whole https:// address with no ? or # in it.";
 }
