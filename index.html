@@ -1486,8 +1486,14 @@
       <div id="schoolDefaults"></div>
     </div>
     <div class="card">
+      <h2>Quote link page</h2>
+      <p class="hint" style="margin:0 0 8px">The page on our website that opens a quote, used for every link sent to an organiser (and the staff links in our own emails). Microsoft Defender and other mail filters often block links to script.google.com, so links go through wslr.com.au instead. Paste <b>https://www.wslr.com.au/your-quote/</b> here once that page is working. Leave it empty to link straight to the quote server. Quotes already sent keep the link they were sent with; send them again to give them the new one.</p>
+      <input type="url" id="s-qlink" placeholder="https://www.wslr.com.au/your-quote/" style="width:100%">
+      <p class="hint" id="s-qlink-note" style="margin:6px 0 0"></p>
+    </div>
+    <div class="card">
       <h2>Code of conduct link</h2>
-      <p class="hint" style="margin:0 0 8px">The web address of the digital Code of Conduct page. When it is filled in, every quote and PDF carries a "Read our Code of Conduct" link, and the organiser can read it before they accept. Leave it empty and no link is shown.</p>
+      <p class="hint" style="margin:0 0 8px">The web address of the digital Code of Conduct page. Every quote and PDF carries a "Read our Code of Conduct" link, and the organiser must tick that they have read it before they can accept. Leave it empty to use the WSLR page (www.wslr.com.au/wslr-code-of-conduct).</p>
       <input type="url" id="s-coc" placeholder="https://www.wslr.com.au/wslr-code-of-conduct/" style="width:100%">
     </div>
     <div class="card">
@@ -2767,7 +2773,8 @@ function getDefaults(){
     terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
     bond: 2000,
     cheapest: true,
-    cocUrl: "",         // the digital Code of Conduct page; shown as a link on every quote when set
+    cocUrl: "",         // the digital Code of Conduct page; blank = COC_URL_DEFAULT (the WSLR page)
+    quoteLinkBase: "",  // the wslr.com.au page that shows a quote (links in emails); blank = the quote server's address
     schoolPacks: [],    // school packages staff have added themselves
     accomRates: [],
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
@@ -3942,7 +3949,18 @@ function genToken(){
   crypto.getRandomValues(a);
   return Array.from(a, b => b.toString(16).padStart(2, "0")).join("");
 }
-function linkForToken(tok){ return tok ? sheetEndpoint() + "?t=" + tok : ""; }
+/* Oct 2026: links in emails go to a page on wslr.com.au that shows the quote inside it,
+   because Microsoft Defender and other mail filters flag script.google.com links as
+   malicious. Settings > "Quote link page"; blank = the quote server's own address. */
+function quoteLinkBase(){
+  const u = String((getDefaults() || {}).quoteLinkBase || "").trim();
+  return /^https:\/\/[^\s?#]+$/i.test(u) ? u : "";
+}
+function linkForToken(tok){
+  if(!tok) return "";
+  const base = quoteLinkBase();
+  return base ? base + "?t=" + tok : sheetEndpoint() + "?t=" + tok;
+}
 /* the same page for staff: view only, under a STAFF VIEW banner, and not counted as the organiser viewing it */
 function staffLinkForToken(tok){ return tok ? linkForToken(tok) + "&view=staff" : ""; }
 function mealsSummary(){
@@ -7931,9 +7949,12 @@ function lockBannerHTML(){
     'If something needs changing, use the button at the foot of the page or call us on ' + esc(VENUE_PHONE) + ' and we will sort it out for you.' + staff + '</div>';
 }
 /* the digital Code of Conduct, when its address is set on the Settings tab */
+/* Oct 2026 (Joel): every organiser must tick the Code of Conduct before they accept, so
+   the WSLR page is used whenever Settings has no other link */
+const COC_URL_DEFAULT = "https://www.wslr.com.au/wslr-code-of-conduct/";
 function cocUrl(){
   const u = String((getDefaults() || {}).cocUrl || "").trim();
-  return /^https?:\/\//i.test(u) ? u : "";
+  return /^https?:\/\//i.test(u) ? u : COC_URL_DEFAULT;
 }
 /* ---------- short PDFs: link to the website instead of printing the information ----------
    The information sections at the foot of a quote are, word for word, the two pages on
@@ -10717,6 +10738,8 @@ function renderSettings(){
   document.getElementById("s-cabmap").checked = d.cabinMap === true;
   document.getElementById("s-freerooms").checked = d.freeRooms !== false;
   document.getElementById("s-coc").value = d.cocUrl || "";
+  document.getElementById("s-qlink").value = d.quoteLinkBase || "";
+  renderQlinkNote();
   document.getElementById("s-infourl").value = (d.infoUrl === undefined ? GUEST_INFO_URL_DEFAULT : d.infoUrl) || "";
   document.getElementById("s-pdfmode").value = PDF_MODES.indexOf(d.pdfMode) >= 0 ? d.pdfMode : (d.pdfLinks ? "links" : "full");
   renderRcEditor();
@@ -12035,6 +12058,15 @@ document.getElementById("prevSel").addEventListener("change", e => {
 document.getElementById("s-notes").addEventListener("input", e => saveDefaults({notes: e.target.value}));
 document.getElementById("s-terms").addEventListener("input", e => saveDefaults({terms: e.target.value}));
 document.getElementById("s-coc").addEventListener("input", e => { saveDefaults({cocUrl: String(e.target.value || "").trim()}); refresh(); });
+function renderQlinkNote(){
+  const el = document.getElementById("s-qlink-note");
+  if(!el) return;
+  const typed = String((document.getElementById("s-qlink") || {}).value || "").trim();
+  el.textContent = !typed ? "In use: links go straight to the quote server (script.google.com)."
+    : quoteLinkBase() ? "In use: new links look like " + quoteLinkBase() + "?t=…"
+    : "Not used: it must be a whole https:// address with no ? or # in it.";
+}
+document.getElementById("s-qlink").addEventListener("input", e => { saveDefaults({quoteLinkBase: String(e.target.value || "").trim()}); renderQlinkNote(); refresh(); });
 document.getElementById("s-infourl").addEventListener("input", e => { saveDefaults({infoUrl: String(e.target.value || "").trim()}); refresh(); });
 document.getElementById("s-pdfmode").addEventListener("change", e => { saveDefaults({pdfMode: PDF_MODES.indexOf(e.target.value) >= 0 ? e.target.value : "full", pdfLinks: undefined}); refresh(); });
 document.querySelectorAll(".pdfModeSel").forEach(el => el.addEventListener("change", e => {
