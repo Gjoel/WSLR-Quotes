@@ -715,6 +715,14 @@
   .changebox.flash{animation:chflash 1.6s ease 2}
   @keyframes chflash{0%,100%{box-shadow:none} 50%{box-shadow:0 0 0 4px rgba(242,140,40,.45)}}
   .depscreen .depnote{padding:8px 16px; background:#fff6e0; color:#6b4b00; font-size:13px}
+  .depscreen .depnext{display:flex; gap:12px 18px; align-items:center; flex-wrap:wrap; padding:10px 16px; background:rgba(12,163,12,.08); border-top:1px solid rgba(12,163,12,.25); border-bottom:1px solid rgba(12,163,12,.25); font-size:14px}
+  .depscreen .depnext b{font-size:15px}
+  .depscreen .depnext .fcwhat{color:var(--ink2); font-size:13px}
+  .depscreen .depnext .btn.accept{white-space:nowrap}
+  .fcbox{margin-top:14px; border:1.5px solid rgba(12,163,12,.5); border-radius:10px; padding:14px 16px; background:rgba(12,163,12,.06); font-size:14px; text-align:left}
+  .fcbox h3{margin:0 0 6px; font-size:16px}
+  .fcbox .fcrow{display:flex; gap:10px 16px; align-items:center; flex-wrap:wrap; margin-top:8px}
+  .fcbox .fcsmall{font-size:12.5px; color:var(--ink2)}
   .depscreen .depwait{flex:1 1 auto; overflow:auto; padding:40px 16px}
   .depscreen .depwait .resprog{max-width:520px; margin:0 auto; padding:20px 22px; box-shadow:0 2px 14px rgba(0,0,0,.1)}
   .depscreen .depwait p{margin:12px 0 0; font-size:13.5px; color:#44505c}
@@ -1294,7 +1302,17 @@
           <label class="secitem"><input type="checkbox" id="f-feat-kids"> <span><span class="sectitle">Children's &amp; dietary pricing</span><span class="secwhy">adults &amp; 13+ / 4–12 (half) / infants 0–3 (free) + dietary (+$10 adults &amp; 13+, +$5 children 12 and under) priced properly per meal</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-cheap"> <span><span class="sectitle">Cheapest dates search</span><span class="secwhy">lets them price their cabins across other dates, untick when the dates are already held</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-cabmap"> <span><span class="sectitle">Cabin map</span><span class="secwhy">lets them request particular cabins on the site plan (requests only), untick to hide it from them</span></span></label>
-          <label class="secitem"><input type="checkbox" id="f-feat-freerooms"> <span><span class="sectitle">Free conference room per 5 cabins</span><span class="secwhy">one conference room at no charge for every 5 cabins, from 6 cabins (6-10 = 1, 11-15 = 2), the same rule as the website calculator</span></span></label>
+          <div>
+          <label class="secitem"><input type="checkbox" id="f-feat-venuecredit"> <span><span class="sectitle">Venue credit for their stay</span><span class="secwhy">this much per cabin and per site comes off the daily price of each conference room and the Auditorium (half that on a half day, never below $0), the same rule as the website calculator</span></span></label>
+          <div class="vcrates" style="display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin:-2px 0 6px 26px; font-size:13px">
+            <label>$<input type="number" id="f-vc-cabin" class="pin" step="0.5" min="0" style="width:70px"> a day per cabin</label>
+            <label>$<input type="number" id="f-vc-site" class="pin" step="0.5" min="0" style="width:70px"> a day per site</label>
+            <span class="fmuted">this quote only</span>
+          </div>
+          </div>
+          <label class="secitem"><input type="checkbox" id="f-feat-caterfuture"> <span><span class="sectitle">New catering prices for stays from <span class="cfFromWord">1 Jul 2027</span></span><span class="secwhy">when they arrive on or after that date, the meals take the new prices (from Settings when this quote was made; untick and tick to take today's Settings). A price typed on this quote still wins</span></span></label>
+          <label class="secitem" id="f-feat-freerooms-row"><input type="checkbox" id="f-feat-freerooms"> <span><span class="sectitle">Old rule: free conference room per 5 cabins</span><span class="secwhy">only for quotes sent before 7 Oct 2026 that promised it (6-10 cabins = 1 room, 11-15 = 2). Replaced by the venue credit, untick it if you switch this quote over</span></span></label>
+          <label class="secitem"><input type="checkbox" id="f-feat-autoform"> <span><span class="sectitle">Confirmation form the moment they accept</span><span class="secwhy">their Final Confirmation form is made on the website as soon as they accept, prefilled from this quote and the units held in RMS, and the link is emailed to them and shown on their quote page. Untick for a group you want to set up by hand (a complicated school, say): it then waits on the builder's Accepted quotes tab</span></span></label>
         </div>
         <p class="hint" style="margin-top:4px">The organiser can always send a message and conference room times with their submission, that part is built in.</p>
       </div>
@@ -1517,9 +1535,27 @@
       <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Any single quote can still be changed on the Prepare tab, under "Extras on the organiser's page".</p>
     </div>
     <div class="card">
-      <h2>Free conference rooms on new quotes</h2>
-      <label class="secitem" style="padding:0"><input type="checkbox" id="s-freerooms"> <span><span class="sectitle">One conference room free for every 5 cabins</span><span class="secwhy">from 6 cabins (6-10 cabins = 1 room, 11-15 = 2 ...), for every day it is booked: Conference Rooms 1, 2 &amp; 3 first, then Rooms 1, 2, 3 on their own, Room 5, the Auditorium. The website calculator gives the same.</span></span></label>
-      <p class="hint" style="margin-top:8px">This sets what new quotes start with, and it is shared with every computer. Quotes made before 28 Sept 2026 keep their prices unless it is ticked on the Prepare tab.</p>
+      <h2>Venue credit on new quotes</h2>
+      <label class="secitem" style="padding:0"><input type="checkbox" id="s-venuecredit"> <span><span class="sectitle">An amount per cabin and per site off the conference rooms</span><span class="secwhy">taken off the daily price of each conference room and the Auditorium, for every day it is booked (half that on a half day, never below $0). It shows as one "Venue credit" line under the subtotal. The website calculator gives the same.</span></span></label>
+      <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin:8px 0 0 26px; font-size:13px">
+        <label>$<input type="number" id="s-vc-cabin" class="pin" step="0.5" min="0" style="width:70px"> a day per cabin</label>
+        <label>$<input type="number" id="s-vc-site" class="pin" step="0.5" min="0" style="width:70px"> a day per site</label>
+      </div>
+      <p class="hint" style="margin-top:8px">This sets what new quotes start with (normally $25 a cabin and $15 a site), and it is shared with every computer. Each quote keeps the amounts it was made with, and they can be changed for one quote on its Prepare tab. Conference rooms are no longer free per 5 cabins (7 Oct 2026). Quotes made before this keep their prices unless it is ticked on the Prepare tab.</p>
+    </div>
+    <div class="card">
+      <h2>New catering prices from a date</h2>
+      <p class="hint" style="margin-top:0">Stays arriving on or after this date take these meal prices instead of the rate card's. Leave a box blank to keep the rate card price for that meal.</p>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; font-size:13px; margin:6px 0">
+        <label>From <input type="date" id="s-cf-from" class="pin" style="width:150px"></label>
+      </div>
+      <div id="s-cf-prices" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:6px 14px; font-size:13px"></div>
+      <p class="hint" style="margin-top:8px">Shared with every computer. This sets what new quotes start with: each quote keeps the list it was made with. Quotes made before 7 Oct 2026 keep their prices unless "New catering prices" is ticked on their Prepare tab. Children 4–12 still pay half, and the dietary surcharge is not changed.</p>
+    </div>
+    <div class="card">
+      <h2>Confirmation form the moment a quote is accepted</h2>
+      <label class="secitem" style="padding:0"><input type="checkbox" id="s-autoform"> <span><span class="sectitle">Make the organiser's Final Confirmation form as soon as they accept</span><span class="secwhy">the quote server asks the website to build it (prefilled from the quote and the units held in RMS) straight after the RMS booking, emails the organiser their link and shows it on their thank-you screen. The group is marked "Made automatically" on the builder until someone checks and saves it. Untick to go back to building every form by hand from the Accepted quotes tab.</span></span></label>
+      <p class="hint" style="margin-top:8px">Shared with every computer, and the server reads it too. Any single quote can still be switched on or off on its Prepare tab, under "Extras on the organiser's page". Needs the server's AutoForm.gs and the website's plugin 1.0.99 with the shared secret set; until then nothing is made and the quote waits on the Accepted quotes tab as before.</p>
     </div>
     <div class="card">
       <h2>Cheapest dates search on new quotes</h2>
@@ -1607,6 +1643,7 @@
     <button type="button" id="depBack">View my quote</button>
   </div>
   <div class="depnote" id="depNote" style="display:none"></div>
+  <div class="depnext" id="depNext" hidden></div>
   <div class="depwait" id="depWait" hidden>
     <div class="resprog" role="status" aria-live="polite">
       <div class="resprog-top"><b id="depWaitTitle">Making your booking</b><span id="depWaitTime"></span></div>
@@ -1686,6 +1723,33 @@ const DEFAULT_RATE_GROUPS = [
   ]}
 ];
 const DEFAULT_ITEM_BY_ID = {};
+/* ---------- new catering prices for stays from a date (Joel, 7 Oct 2026) ----------
+   Stays arriving on or after "from" take these per-person prices instead of the rate
+   card's (a price typed on the quote still wins). Settings can change the date and the
+   prices for new quotes; each quote keeps the list it was made with (Q.caterSched), so the
+   organiser's page shows the same prices. Quotes made before 7 Oct 2026 only take them
+   when ticked on the Prepare tab. */
+const CATER_FUTURE = {from: "2027-07-01", prices: {bf_hot: 33, bf_cont: 22, lunch_sit: 28, lunch_pack: 22, din2: 39, din1: 33}};
+let CF_HOUSE_CACHE = null;
+function caterFutureHouse(){
+  if(CF_HOUSE_CACHE) return JSON.parse(JSON.stringify(CF_HOUSE_CACHE));
+  let d = {};
+  try { d = getDefaults() || {}; } catch(e) {}
+  const from = /^\d{4}-\d{2}-\d{2}$/.test(String(d.caterFrom || "")) ? d.caterFrom : CATER_FUTURE.from;
+  const prices = Object.assign({}, CATER_FUTURE.prices);
+  if(d.caterPrices && typeof d.caterPrices === "object") Object.keys(d.caterPrices).forEach(k => {
+    const v = d.caterPrices[k];
+    if(v === null || v === "") delete prices[k];
+    else if(isFinite(Number(v)) && Number(v) >= 0) prices[k] = Number(v);
+  });
+  CF_HOUSE_CACHE = {from: from, prices: prices};
+  setTimeout(() => { CF_HOUSE_CACHE = null; }, 0);
+  return JSON.parse(JSON.stringify(CF_HOUSE_CACHE));
+}
+function caterFutureSched(){
+  const q = (typeof Q !== "undefined" && Q) ? Q.caterSched : null;
+  return (q && q.from && q.prices) ? q : caterFutureHouse();
+}
 DEFAULT_RATE_GROUPS.forEach(g => g.items.forEach(it => { DEFAULT_ITEM_BY_ID[it.id] = it; }));
 const CUSTOM_ITEM = {id:"custom", name:"Custom item (type your own)", unit:"flat", price:0, custom:true, meal:true};
 let RATE_GROUPS = [];
@@ -2910,7 +2974,8 @@ function blankQuote(num){
     ratesInfo: null,    // {from, to, items, file}
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
-    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: d.freeRooms !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026)
+    caterSched: caterFutureHouse(), // the new catering prices and the date they start, as they were when this quote was made
+    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, vcCabin: (d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin, vcSite: (d.vcSite === null || d.vcSite === undefined) ? 15 : d.vcSite, autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
     minStay: {},        // RMS minimum stays for the quoted rate: {itemId: {"2026-10-03": {s: 2, a: 0}}}, only nights with a rule
     staffShort: null,   // stays staff sent below the minimum on purpose: ["itemId|from|to", ...]
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
@@ -2982,6 +3047,12 @@ function normalizeQuote(q){
   if(q.features.cabinMap === undefined) q.features.cabinMap = true;
   /* quotes made before the free-room rule keep the prices they were given */
   if(q.features.freeRooms === undefined) q.features.freeRooms = false;
+  /* and quotes made before the venue credit (7 Oct 2026) keep theirs too */
+  if(q.features.venueCredit === undefined) q.features.venueCredit = false;
+  /* and the new catering prices for stays from 1 July 2027 (7 Oct 2026) */
+  if(q.features.caterFuture === undefined) q.features.caterFuture = false;
+  /* the confirmation form on acceptance (6 Oct 2026) is on unless this quote or the house says no */
+  if(q.features.autoForm === undefined) q.features.autoForm = (getDefaults() || {}).autoForm !== false;
   if(q.sel){
     if(q.sel.who === undefined) q.sel.who = null;
     if(q.sel.who) mergeInfants_(q.sel.who);
@@ -4142,12 +4213,22 @@ function dietPerMeal(){
 /* children 12 and under: $5 a meal, never more than the adult surcharge (a school package is $5 for everyone) */
 const DIET_KIDS_RATE = 5;
 function dietKidsPerMeal(){ return Math.min(DIET_KIDS_RATE, dietPerMeal()); }
+function caterFutureOn(){ return !!(Q && Q.features && Q.features.caterFuture); }
+function caterFutureApplies(){
+  return caterFutureOn() && !!Q.dateStart && Q.dateStart >= caterFutureSched().from;
+}
+function caterFuturePrice(id){
+  if(!caterFutureApplies()) return null;
+  const v = caterFutureSched().prices[id];
+  return (v === undefined || v === null) ? null : Number(v);
+}
 function catEntry(id){
   const it = RATE[id] || {};
   const c = (Q.catalog && Q.catalog[id]) || {};
+  const fut = caterFuturePrice(id);
   return {
     on: c.on !== undefined ? !!c.on : true,
-    price: (c.price !== undefined && c.price !== null && c.price !== "") ? (Number(c.price) || 0) : (Number(it.price) || 0),
+    price: (c.price !== undefined && c.price !== null && c.price !== "") ? (Number(c.price) || 0) : (fut !== null ? fut : (Number(it.price) || 0)),
     avail: (c.avail !== undefined && c.avail !== null && c.avail !== "") ? (Number(c.avail) || 0) : (it.avail !== undefined ? Number(it.avail) : null)
   };
 }
@@ -4538,7 +4619,7 @@ function mealServiceWords(){
 function schoolOn(){ return !!(Q.school && (Number(Q.school.base) > 0 || Number(Q.school.rate) > 0)); }
 function schoolIncludes(id){ return schoolOn() && manualPrice(id) === 0; }
 const SCHOOL_INCL_WORD = '<span class="inclpkg">included in your package</span>';
-/* ---------- one conference room free for every 5 cabins (28 Sept 2026) ----------
+/* ---------- OLD RULE, kept for quotes sent with it: one conference room free for every 5 cabins (28 Sept 2026, replaced by the venue credit below on 7 Oct 2026) ----------
    6-10 cabins: 1 room, 11-15: 2, and so on. It is the website calculator's rule, which Joel
    kept and asked for here too. The rooms in FREE_ROOM_ORDER get it, for every day they are
    booked. New quotes have it on (Settings: "Free conference rooms on new quotes"); quotes made
@@ -4546,6 +4627,8 @@ const SCHOOL_INCL_WORD = '<span class="inclpkg">included in your package</span>'
 const FREE_ROOM_FROM = 6, FREE_ROOM_PER = 5;
 const FREE_ROOM_ORDER = ["fr13", "fr1", "fr2", "fr3", "fr5", "aud"];
 function freeRoomsOn(){ return !!(Q.features && Q.features.freeRooms); }
+/* their Final Confirmation form is made the moment they accept (6 Oct 2026): on unless switched off */
+function autoFormOn(){ return !(Q.features && Q.features.autoForm === false); }
 function freeRoomsEarned(){
   if(!freeRoomsOn()) return 0;
   const n = unitsSplit().cabins;
@@ -4579,6 +4662,50 @@ function venueFreeReason(v){
   return "";
 }
 function venueRate(v, half){ return venueIsFree(v) ? 0 : catEntry(half ? v.halfId : v.fullId).price; }
+
+/* ---------- venue credit for the group's stay (Joel and Alan, 7 Oct 2026) ----------
+   Replaces the free conference room per 5 cabins. Every cabin booked takes $25, and every
+   site $15, off the daily price of each conference room and the Auditorium, for every day
+   it is booked. A half day takes half the credit, and a room never goes below $0. The
+   Dining Room and Marquee keep their own rules above. The room lines keep their full
+   price and the credit is one line under the subtotal, so the group sees what it saved.
+   New quotes have it on (Settings: "Venue credit on new quotes"); quotes made before it
+   keep their prices unless it is ticked on the Prepare tab. */
+const VENUE_CREDIT_CABIN = 25, VENUE_CREDIT_SITE = 15;   // the usual amounts; Settings and each quote can change them
+function vcNum_(v, dflt){ const n = Number(v); return (v === "" || v === null || v === undefined || !isFinite(n) || n < 0) ? dflt : n; }
+/* the amounts on this quote: its own (Prepare tab), else the house ones (Settings), else $25 / $15 */
+function vcRates(){
+  const f = (Q && Q.features) || {}, d = getDefaults() || {};
+  return {cabin: vcNum_(f.vcCabin, vcNum_(d.vcCabin, VENUE_CREDIT_CABIN)), site: vcNum_(f.vcSite, vcNum_(d.vcSite, VENUE_CREDIT_SITE))};
+}
+function vcMoney(n){ return Math.round(n) === n ? money0(n) : money(n); }
+const VENUE_CREDIT_KEYS = ["fr13", "fr1", "fr2", "fr3", "fr5", "aud"];
+function venueCreditOn(){ return !!(Q.features && Q.features.venueCredit); }
+function venueCreditPerDay(){
+  if(!venueCreditOn()) return 0;
+  const u = unitsSplit();
+  const r = vcRates();
+  return u.cabins * r.cabin + u.sites * r.site;
+}
+/* what the credit takes off one room, for the days it is booked */
+function venueCreditFor(v){
+  const per = venueCreditPerDay();
+  if(per <= 0 || !v || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || venueIsFree(v) || !catEntry(v.fullId).on) return 0;
+  const d = venueDaysSel(v.key);
+  if(d <= 0) return 0;
+  const sp = venueDaySplit(v.key);
+  const full = sp ? sp.full : Math.floor(d), half = sp ? sp.half : ((d % 1) ? 1 : 0);
+  return full * Math.min(Number(catEntry(v.fullId).price) || 0, per) +
+    half * Math.min(Number(catEntry(v.halfId).price) || 0, per / 2);
+}
+function venueCreditTotal(){ return VENUES.reduce((s, v) => s + venueCreditFor(v), 0); }
+/* "10 cabins × $25 + 4 sites × $15 = $310 off each room per day" */
+function venueCreditWords(){
+  const u = unitsSplit(), r = vcRates(), bits = [];
+  if(u.cabins > 0 && r.cabin > 0) bits.push(u.cabins + " cabin" + (u.cabins === 1 ? "" : "s") + " × " + vcMoney(r.cabin));
+  if(u.sites > 0 && r.site > 0) bits.push(u.sites + " site" + (u.sites === 1 ? "" : "s") + " × " + vcMoney(r.site));
+  return bits.join(" + ") + " = " + vcMoney(venueCreditPerDay()) + " off each conference room and auditorium per day";
+}
 
 /* ---------- the conference rooms: one space or three rooms, never both ---------
    Picking "Conference Rooms 1, 2 & 3" takes all three rooms, so the single rooms
@@ -5136,11 +5263,14 @@ function discWord(part){ return part.t === "amt" ? money0(Number(part.v) || 0) :
 function totals(){
   const accom = selAccomSub(), venue = selVenueSub(), cater = selCaterSub(), fixed = fixedSub();
   const sub = accom + venue + cater + fixed;
+  const credit = Math.min(venueCreditTotal(), venue);
   const churchPct = Number(Q.sel.church) || 0;
-  const church = (accom + venue) * churchPct / 100;
-  const afterChurch = sub - church;
+  const church = (accom + venue - credit) * churchPct / 100;
+  const afterChurch = sub - credit - church;
   const d = Q.disc || {};
-  const discLines = [];
+  /* the venue credit rides with the discount rows, so every surface that shows them
+     (totals, organiser page, PDF, deposit invoice credits) shows it too */
+  const discLines = credit > 0 ? [{label: "Venue credit for your stay (" + venueCreditWords() + ")", amount: credit, venueCredit: true}] : [];
   let disc = 0;
   if(d.on){
     const b = discBases();
@@ -5154,7 +5284,7 @@ function totals(){
   }
   const total = afterChurch - disc;
   const gst = total * GST_PCT / (100 + GST_PCT);
-  return {sub, church, churchPct, disc, discLines, total, gst};
+  return {sub, church, churchPct, disc, discLines, total, gst, venueCredit: credit};
 }
 function discLinesHTML(t){
   return (t.discLines || []).map(x => '<div class="savings"><span>' + esc(x.label) + '</span><span>−' + money(x.amount) + '</span></div>').join('');
@@ -6466,6 +6596,7 @@ function renderPrep(){
       '<div><span class="pkgname">' + esc(v.name) + '</span>' + lockBtnHTML(v.fullId, "this room") +
         '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
         (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') +
+        (venueCreditFor(v) > 0 ? '<div class="cb-free">venue credit −' + money(venueCreditFor(v)) + ' (' + esc(vcMoney(venueCreditPerDay())) + ' a day)</div>' : '') +
         (vov ? '<span class="overnote">⚠ Over availability: picked on ' + esc(takenDaysWords(vov.days)) + ', when RMS shows it already booked</span>' : '') +
         venueAvailNote(v) + '</div>' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
@@ -7762,6 +7893,7 @@ function openDepositScreen(){
             : "Your invoice number and reservation number are being created now. Our functions team will email the invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay."));
   note.textContent = msg; note.style.display = "block";
   document.getElementById("depTitle").textContent = "Deposit invoice" + (dep && dep.number ? " " + dep.number : "") + " · Quote " + Q.num;
+  renderFcNext();
   document.getElementById("depFrame").srcdoc = wslrDepositInvoiceHtml(depositInvoiceData());
   scr.classList.add("open");
   document.body.style.overflow = "hidden";
@@ -7791,7 +7923,7 @@ function waitForBooking(){
   if(!scr || !box){ openDepositScreen(); return; }
   if(DEP_WAIT) clearInterval(DEP_WAIT.timer);
   const mine = Q.submittedAt, start = Date.now(), LIMIT = 60000;
-  const steps = ["Selection received", "Booking your cabins and rooms", "Creating your deposit invoice"];
+  const steps = ["Selection received", "Booking your cabins and rooms", "Creating your deposit invoice", "Setting up your confirmation form"];
   const st = {booked: false, done: false, busy: false, fails: 0};
   DEP_WAIT = st;
   document.getElementById("depTitle").textContent = "Quote " + Q.num + " · making your booking";
@@ -7804,7 +7936,7 @@ function waitForBooking(){
     /* eases towards 90% over about 20 s; the last bit fills when the server says done */
     const pct = st.done ? 100 : Math.min(90, Math.round(90 * (1 - Math.exp(-(Date.now() - start) / 9000))));
     document.getElementById("depWaitFill").style.width = pct + "%";
-    const at = st.done ? 3 : st.booked ? 2 : 1;
+    const at = st.done ? 4 : st.booked ? 2 : 1;
     document.getElementById("depWaitSteps").innerHTML = steps.map((t, i) =>
       '<li class="' + (i < at ? "done" : i === at ? "on" : "") + '">' + esc(t) + '</li>').join("");
   };
@@ -7832,9 +7964,12 @@ function waitForBooking(){
       if(r.failed){ if(++st.fails >= 2) finish(); return; }
       const h = r.rmsHold || null;
       if(h && h.groupId && (h.at || "") >= mine) st.booked = true;
+      /* their Final Confirmation form, made by the website during this wait (6 Oct 2026) */
+      if(r.confirmation && r.confirmation.url) Q.confirmation = r.confirmation;
       if(r.submitDone && r.submitDone === mine){
         st.done = true;
         if(h) Q.rmsHold = h;
+        if(r.confirmation) Q.confirmation = r.confirmation;
         draw();
         setTimeout(finish, 400);
       }
@@ -7843,6 +7978,33 @@ function waitForBooking(){
   draw();
   st.timer = setInterval(poll, 2500);
   setTimeout(poll, 4000);
+}
+/* ---------- their Final Confirmation form (6 Oct 2026) ----------
+   When the quote server has had the website make the organiser's Final Confirmation form
+   (rooming list, meals, dietary needs, conference room set-ups), Q.confirmation holds its
+   link. It is offered on the thank-you (deposit) screen the moment the booking is made, and
+   on the organiser's page under the accepted box whenever they come back. */
+function fcLink(){ return (Q.confirmation && Q.confirmation.url) ? String(Q.confirmation.url) : ""; }
+function fcDueWords(){
+  const d = Q.confirmation && Q.confirmation.deadline;
+  return d ? ' by <b>' + esc(fmtDate(d)) + '</b>' : '';
+}
+function fcNextHTML(compact){
+  const url = fcLink();
+  if(!url || !asOrg()) return '';
+  const btn = '<a class="btn accept" href="' + esc(url) + '" target="_blank" rel="noopener">Start your confirmation form →</a>';
+  if(compact){
+    return '<div><b>Next step: your confirmation form</b><div class="fcwhat">Tell us who is in each room, your meal choices and any dietary needs' + fcDueWords() + '. You can start now or come back to it any time from your quote page or the email we have sent you.</div></div>' + btn;
+  }
+  return '<div class="fcbox"><h3>Your confirmation form</h3>Tell us who is in each room, your meal choices, any dietary needs and how you would like your rooms set up' + fcDueWords() + '. It saves as you go, so you can come back to it as often as you like.' +
+    '<div class="fcrow">' + btn + '<span class="fcsmall">The same link is in the email we sent to ' + esc(Q.email || 'you') + '.</span></div></div>';
+}
+function renderFcNext(){
+  const el = document.getElementById("depNext");
+  if(!el) return;
+  const html = fcNextHTML(true);
+  el.innerHTML = html;
+  el.hidden = !html;
 }
 function closeDepositScreen(){
   if(DEP_WAIT){ clearInterval(DEP_WAIT.timer); DEP_WAIT = null; }
@@ -8243,7 +8405,8 @@ function staffViewZoneHTML(){
   return '<div class="submitted-box" style="background:#f3edf9;border-color:#5b2a86">Staff view: this is where the organiser ' +
     (booked ? 'changes and resubmits their booking' : 'accepts the quote') + '. Nothing can be submitted from here.' +
     '<span>To change the quote, open it in the quote tool (the button at the top of this page).</span>' +
-    (booked && Q.rmsHold && Q.rmsHold.deposit ? '<div class="depopen"><button type="button" class="btn" id="depOpenBtn">View their deposit invoice</button></div>' : '') + '</div>';
+    (booked && Q.rmsHold && Q.rmsHold.deposit ? '<div class="depopen"><button type="button" class="btn" id="depOpenBtn">View their deposit invoice</button></div>' : '') +
+    (fcLink() ? '<div class="depopen"><a class="btn" href="' + esc((Q.confirmation && Q.confirmation.editUrl) || fcLink()) + '" target="_blank" rel="noopener">Their confirmation form' + (Q.confirmation.made ? ' (made automatically on acceptance)' : '') + '</a></div>' : '') + '</div>';
 }
 document.addEventListener("click", e => {
   if(!e.target || e.target.id !== "trimBtn") return;
@@ -8260,8 +8423,8 @@ function submitZoneBaseHTML(){
     return '<div class="submitted-box">✓ ' + (booked ? 'Quote accepted' : 'Selection received') + ', ' + esc(firstName(Q.contact)) + '.' +
       (booked
         ? '<span>We have made an unconfirmed booking for you and emailed your deposit invoice. Pay it to confirm your booking.</span>' +
-          '<div class="depopen"><button type="button" class="btn accept" id="depOpenBtn">' + ((Q.rmsHold && Q.rmsHold.deposit && Q.rmsHold.deposit.status === "paid") ? '✓ Deposit paid · view invoice' : 'View deposit invoice &amp; how to pay') + '</button></div></div>'
-        : '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit.</span></div>') +
+          '<div class="depopen"><button type="button" class="btn accept" id="depOpenBtn">' + ((Q.rmsHold && Q.rmsHold.deposit && Q.rmsHold.deposit.status === "paid") ? '✓ Deposit paid · view invoice' : 'View deposit invoice &amp; how to pay') + '</button></div>' + fcNextHTML(false) + '</div>'
+        : '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit.</span>' + fcNextHTML(false) + '</div>') +
       changeZoneHTML(dirty, askBtn) + historyListHTML();
   }
   if(bookingsOnSubmit()){
@@ -8694,9 +8857,14 @@ function renderClient(){
                   ? 'free during the meal service if you add catering'
                   : 'free if you are staying onsite, just add your cabins above') + ')</div>')
           : '';
+        const vcr = venueCreditFor(v);
+        const creditHint = (!venueCreditOn() || isFree || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || !showPrices) ? ''
+          : vcr > 0
+            ? '<div class="cb-free">Venue credit −' + money(vcr) + ' with your stay (' + esc(vcMoney(venueCreditPerDay())) + ' off each day)</div>'
+            : '<div class="cb-note">(' + [vcRates().cabin > 0 ? vcMoney(vcRates().cabin) + ' a day off for every cabin you book' : '', vcRates().site > 0 ? vcMoney(vcRates().site) + ' for every site' : ''].filter(Boolean).join(', ') + ')</div>';
         return '<div class="cb-row">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
-            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + freeHint + venueAvailNote(v) +
+            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + freeHint + creditHint + venueAvailNote(v) +
             (showPrices ? (isFree ? '<div class="cb-price"><s>' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</s></div>' : '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>') +
               (asOrg() ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price for this quote"> full · $<input type="number" class="spNum" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price for this quote"> half</div>') : '') +
             ((d > 0 || venueDayMap(v.key)) ? venueDaysHTML(v) : '') +
@@ -10740,7 +10908,11 @@ function renderSettings(){
   document.getElementById("s-emailvia").value = getEmailVia();
   document.getElementById("s-cheapest").checked = d.cheapest !== false;
   document.getElementById("s-cabmap").checked = d.cabinMap === true;
-  document.getElementById("s-freerooms").checked = d.freeRooms !== false;
+  document.getElementById("s-venuecredit").checked = d.venueCredit !== false;
+  document.getElementById("s-vc-cabin").value = vcNum_(d.vcCabin, VENUE_CREDIT_CABIN);
+  document.getElementById("s-vc-site").value = vcNum_(d.vcSite, VENUE_CREDIT_SITE);
+  renderCaterFutureSettings();
+  document.getElementById("s-autoform").checked = d.autoForm !== false;
   document.getElementById("s-coc").value = d.cocUrl || "";
   document.getElementById("s-qlink").value = d.quoteLinkBase || "";
   renderQlinkNote();
@@ -11514,6 +11686,11 @@ function rmsPipeChip(r){
     else if(hold.deposit === "invoiced") bits.push('<span class="rmschip muted" title="The deposit invoice has been emailed to the organiser">dep invoiced</span>');
     else if(hold.deposit === "failed") bits.push('<span class="rmschip warn" title="The deposit invoice could not be sent; see the email">dep inv failed</span>');
   }
+  /* their Final Confirmation form (6 Oct 2026) */
+  const fc = r.confirmation || null;
+  if(fc && fc.url) bits.push('<a class="rmschip held" href="' + esc(fc.editUrl || fc.url) + '" target="_blank" rel="noopener" title="' + esc((fc.made ? 'Confirmation form made automatically when the quote was accepted' : 'The quote already had a confirmation form') + (fc.deadline ? ', due back ' + fmtDate(fc.deadline) : '') + '. Opens it in the builder.') + '">form</a>');
+  else if(fc && fc.held) bits.push('<span class="rmschip warn" title="' + esc('Confirmation form not made: needs a person. ' + fc.held) + '">form: needs a person</span>');
+  else if(fc && fc.error) bits.push('<span class="rmschip short" title="' + esc('Confirmation form NOT made automatically: ' + fc.error + '. Use Create confirmation on the builder, or wait for the morning retry.') + '">form not made</span>');
   if(chk.checked){
     const sf = chk.shortfalls || [];
     if(sf.length) bits.push('<span class="rmschip short" title="' + esc(sf.map(x => shortfallWords(x, false).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&')).join('\n')) + '">⚠ short ' + esc(sf.length === 1 ? (sf[0].available + '/' + sf[0].selected) : (sf.length + ' lines')) + '</span>');
@@ -11909,6 +12086,16 @@ function syncForm(){
   document.getElementById("f-feat-cheap").checked = !!(Q.features && Q.features.cheapest);
   document.getElementById("f-feat-cabmap").checked = cabinMapShown();
   document.getElementById("f-feat-freerooms").checked = freeRoomsOn();
+  document.getElementById("f-feat-freerooms-row").style.display = freeRoomsOn() ? "" : "none";
+  document.getElementById("f-feat-venuecredit").checked = venueCreditOn();
+  document.getElementById("f-feat-caterfuture").checked = caterFutureOn();
+  document.querySelectorAll(".cfFromWord").forEach(el => { el.textContent = shortDateY(caterFutureSched().from); });
+  ["cabin", "site"].forEach(k => {
+    const el = document.getElementById("f-vc-" + k);
+    if(document.activeElement !== el) el.value = vcRates()[k];
+    el.disabled = !venueCreditOn();
+  });
+  document.getElementById("f-feat-autoform").checked = autoFormOn();
   renderLockSwitch();
 }
 /* the "Lock this quote" switch on tab 1 */
@@ -11954,7 +12141,7 @@ function renderLockSwitch(){
     : '<span class="swstate">OFF</span>The organiser can change the dates, cabins, rooms and catering on their page before they submit.') +
     (locks.length ? '<br>Locked on their own: ' + esc(locks.map(id => (RATE[id] || {}).name || id).join(", ")) + '.' : '');
 }
-[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"], ["f-feat-cabmap", "cabinMap"], ["f-feat-freerooms", "freeRooms"]].forEach(pair => {
+[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"], ["f-feat-cabmap", "cabinMap"], ["f-feat-freerooms", "freeRooms"], ["f-feat-venuecredit", "venueCredit"], ["f-feat-autoform", "autoForm"]].forEach(pair => {
   document.getElementById(pair[0]).addEventListener("change", e => {
     if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
     Q.features[pair[1]] = e.target.checked;
@@ -12088,11 +12275,72 @@ document.querySelectorAll(".pdfModeSel").forEach(el => el.addEventListener("chan
 }));
 document.getElementById("s-subject").addEventListener("input", e => saveDefaults({subject: e.target.value}));
 document.getElementById("s-body").addEventListener("input", e => saveDefaults({body: e.target.value}));
-document.getElementById("s-freerooms").addEventListener("change", e => {
-  saveDefaults({freeRooms: e.target.checked});
+function renderCaterFutureSettings(){
+  const sc = caterFutureHouse();
+  const fromEl = document.getElementById("s-cf-from");
+  if(document.activeElement !== fromEl) fromEl.value = sc.from;
+  const box = document.getElementById("s-cf-prices");
+  if(box.contains(document.activeElement)) return;
+  box.innerHTML = caterItems().filter(it => it.id !== "diet").map(it =>
+    '<label style="display:flex; align-items:center; gap:6px"><span style="flex:1">' + esc(it.name) + '</span>' +
+    '<span class="fmuted">now ' + money0(Number((RATE[it.id] || {}).price) || 0) + ' →</span> $<input type="number" class="pin cfPrice" data-id="' + esc(it.id) + '" step="0.5" min="0" style="width:70px" value="' +
+    (sc.prices[it.id] === undefined ? '' : sc.prices[it.id]) + '"></label>').join("");
+  box.querySelectorAll(".cfPrice").forEach(el => el.addEventListener("change", e => {
+    const d = getDefaults() || {};
+    const cp = Object.assign({}, d.caterPrices || {});
+    const v = e.target.value === "" ? null : Number(e.target.value);
+    cp[e.target.dataset.id] = (v === null || !isFinite(v) || v < 0) ? null : v;
+    saveDefaults({caterPrices: cp});
+    CF_HOUSE_CACHE = null;
+    showToast("New quotes take the new price for " + ((RATE[e.target.dataset.id] || {}).name || "that meal") + ". Quotes already made keep theirs.");
+  }));
+}
+document.getElementById("s-cf-from").addEventListener("change", e => {
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) return;
+  saveDefaults({caterFrom: e.target.value});
+  CF_HOUSE_CACHE = null;
+  showToast("New quotes for stays arriving from " + shortDateY(e.target.value) + " take the new catering prices. Quotes already made keep theirs.");
+});
+document.getElementById("f-feat-caterfuture").addEventListener("change", e => {
+  if(!Q.features) Q.features = {};
+  Q.features.caterFuture = e.target.checked;
+  /* ticking takes the Settings list as it is today */
+  if(e.target.checked) Q.caterSched = caterFutureHouse();
+  refresh();
+});
+/* an older quote ticked onto the venue credit keeps today's Settings amounts, so the organiser's page shows the same */
+document.getElementById("f-feat-venuecredit").addEventListener("change", e => {
+  if(e.target.checked && Q.features && (Q.features.vcCabin === undefined || Q.features.vcCabin === null)){
+    const r = vcRates(); Q.features.vcCabin = r.cabin; Q.features.vcSite = r.site;
+  }
+});
+[["f-vc-cabin", "vcCabin"], ["f-vc-site", "vcSite"]].forEach(pair => {
+  document.getElementById(pair[0]).addEventListener("input", e => {
+    if(!Q.features) Q.features = {};
+    const n = Number(e.target.value);
+    Q.features[pair[1]] = (e.target.value === "" || !isFinite(n) || n < 0) ? undefined : n;
+    refresh();
+  });
+});
+[["s-vc-cabin", "vcCabin"], ["s-vc-site", "vcSite"]].forEach(pair => {
+  document.getElementById(pair[0]).addEventListener("change", e => {
+    const n = Number(e.target.value);
+    const v = (e.target.value === "" || !isFinite(n) || n < 0) ? null : n;
+    saveDefaults({[pair[1]]: v});
+    showToast("New quotes take " + vcMoney(vcNum_(v, pair[1] === "vcCabin" ? VENUE_CREDIT_CABIN : VENUE_CREDIT_SITE)) + " a day per " + (pair[1] === "vcCabin" ? "cabin" : "site") + " off each conference room. Quotes already made keep their own amount.");
+  });
+});
+document.getElementById("s-venuecredit").addEventListener("change", e => {
+  saveDefaults({venueCredit: e.target.checked});
   showToast(e.target.checked
-    ? "New quotes give one conference room free for every 5 cabins, from 6 cabins."
-    : "New quotes will not give free conference rooms for cabins. Quotes already made keep their own setting.");
+    ? "New quotes take " + vcMoney(vcRates().cabin) + " per cabin and " + vcMoney(vcRates().site) + " per site off the daily price of each conference room and the Auditorium."
+    : "New quotes will not give the venue credit. Quotes already made keep their own setting.");
+});
+document.getElementById("s-autoform").addEventListener("change", e => {
+  saveDefaults({autoForm: e.target.checked});
+  showToast(e.target.checked
+    ? "The organiser's confirmation form is made the moment they accept (new quotes, and any quote that has not switched it off)."
+    : "No confirmation form is made automatically. Accepted quotes wait on the builder's Accepted quotes tab.");
 });
 document.getElementById("s-cabmap").addEventListener("change", e => {
   saveDefaults({cabinMap: e.target.checked});
