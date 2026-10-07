@@ -586,7 +586,8 @@
     padding:9px 12px; border-radius:8px; font-size:13px; font-weight:600;
     background:rgba(12,163,12,.09); color:#0a6b0a;
   }
-  .capbar.short{background:rgba(236,131,90,.14); color:#a34c14}
+  .capbar.short{background:rgba(208,59,59,.12); color:#a11d1d}
+  .capbar.squish{background:rgba(236,131,90,.16); color:#a34c14}
   .capbar .capsub{font-weight:400; font-size:12px}
 
   /* ---------- site inspection invite, your dates panel, weekend finder ---------- */
@@ -1700,14 +1701,14 @@ const DEFAULT_RATE_GROUPS = [
     {id:"din_half",  name:"Dining Room - half day",                     unit:"per half day", price:250}
   ]},
   {group:"Accommodation & camping", items:[
-    {id:"acc_4br_house", name:"4 Bedroom House",                          unit:"per night", price:930, sleeps:10, bedsMax:9, avail:1,  beds:"4 king beds or 8 king single beds; queen sofa bed in lounge room"},
-    {id:"acc_2br_ter",   name:"2 Bedroom Terrace Apartment",              unit:"per night", price:465, sleeps:6, bedsMax:6,  avail:3,  beds:"2 king beds or 4 king single beds; sofa with 2 chaise single beds"},
-    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow Unit",                  unit:"per night", price:378, sleeps:6, bedsMax:5,  avail:5,  beds:"2 double beds or 4 single beds; queen sofa bed in lounge room"},
-    {id:"acc_2br_std",   name:"2 Bedroom Air Conditioned Unit",           unit:"per night", price:344, sleeps:7, bedsMax:6,  avail:8,  beds:"1 king bed & 2 single beds; 2 queen sofa beds in lounge room"},
-    {id:"acc_1br_ter",   name:"1 Bedroom Terrace Unit",                   unit:"per night", price:333, sleeps:6, bedsMax:5,  avail:6,  beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
-    {id:"acc_1br_std",   name:"1 Bedroom Air Conditioned Unit",           unit:"per night", price:277, sleeps:6, bedsMax:5,  avail:33, beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
-    {id:"acc_motel_std", name:"Motel Style Air Conditioned Unit",         unit:"per night", price:212, sleeps:4, bedsMax:4,  avail:36, beds:"1 king bed or 2 king single beds & bunk bed"},
-    {id:"acc_motel_bud", name:"Motel Style Budget Unit (communal parking)",unit:"per night", price:176, sleeps:4, bedsMax:4,  avail:16, beds:"1 king bed or 2 king single beds & bunk bed"},
+    {id:"acc_4br_house", name:"4 Bedroom House",                          unit:"per night", price:930, sleeps:10, comfy:8, bedsMax:9, avail:1,  beds:"4 king beds or 8 king single beds; queen sofa bed in lounge room"},
+    {id:"acc_2br_ter",   name:"2 Bedroom Terrace Apartment",              unit:"per night", price:465, sleeps:6, comfy:4, bedsMax:6,  avail:3,  beds:"2 king beds or 4 king single beds; sofa with 2 chaise single beds"},
+    {id:"acc_2br_bung",  name:"2 Bedroom Bungalow Unit",                  unit:"per night", price:378, sleeps:6, comfy:4, bedsMax:5,  avail:5,  beds:"2 double beds or 4 single beds; queen sofa bed in lounge room"},
+    {id:"acc_2br_std",   name:"2 Bedroom Air Conditioned Unit",           unit:"per night", price:344, sleeps:7, comfy:5, bedsMax:6,  avail:8,  beds:"1 king bed & 2 single beds; 2 queen sofa beds in lounge room"},
+    {id:"acc_1br_ter",   name:"1 Bedroom Terrace Unit",                   unit:"per night", price:333, sleeps:6, comfy:4, bedsMax:5,  avail:6,  beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
+    {id:"acc_1br_std",   name:"1 Bedroom Air Conditioned Unit",           unit:"per night", price:277, sleeps:6, comfy:4, bedsMax:5,  avail:33, beds:"1 king bed or 2 king singles; bunk bed; queen sofa in lounge room"},
+    {id:"acc_motel_std", name:"Motel Style Air Conditioned Unit",         unit:"per night", price:212, sleeps:4, comfy:3, bedsMax:4,  avail:36, beds:"1 king bed or 2 king single beds & bunk bed"},
+    {id:"acc_motel_bud", name:"Motel Style Budget Unit (communal parking)",unit:"per night", price:176, sleeps:4, comfy:3, bedsMax:4,  avail:16, beds:"1 king bed or 2 king single beds & bunk bed"},
     {id:"camp_unpow",    name:"Unpowered Campsite",                       unit:"per night", price:36, sleeps:6},
     {id:"camp_pow_wf",   name:"Powered Waterfront Campsite",              unit:"per night", price:51, sleeps:6},
     {id:"camp_pow_dt",   name:"Powered Drive Thru Site",                  unit:"per night", price:51, sleeps:6}
@@ -1794,6 +1795,11 @@ function buildRate(stored){
     if(it.name) it.name = String(it.name).replace(/\s*\(air ?con\)/gi, "").replace(/\s{2,}/g, " ").trim();
     /* campsites sleep a maximum of 6 people */
     if(/^camp_/.test(String(it.id)) && (it.sleeps === undefined || it.sleeps === null || it.sleeps === "")) it.sleeps = 6;
+    /* "sleeps comfortably" (7 Oct 2026) arrived after the rate cards were saved: fill it from the defaults */
+    if(it.comfy === undefined || it.comfy === null){
+      const d = DEFAULT_ITEM_BY_ID[it.id];
+      if(d && d.comfy !== undefined) it.comfy = d.comfy;
+    }
     /* separate-bed counts arrived after most rate cards were saved: fill them from the defaults */
     if(it.bedsMax === undefined || it.bedsMax === null){
       const d = DEFAULT_ITEM_BY_ID[it.id];
@@ -6490,7 +6496,8 @@ function stepperHTML(kind, id, val, opts){
   '</div>';
 }
 function sleepsPill(it){
-  return (it.sleeps ? ' <span class="sleeps">Sleeps up to ' + it.sleeps + '</span>' : '') +
+  const c = Number(it.comfy) || 0;
+  return (it.sleeps ? ' <span class="sleeps">' + (c > 0 && c < Number(it.sleeps) ? 'Sleeps ' + c + ' comfortably, up to ' + it.sleeps : 'Sleeps up to ' + it.sleeps) + '</span>' : '') +
     (Number(it.bedsMax) > 0 ? ' <span class="sleeps bedsp" title="The most separate beds this unit can be made up with">Up to ' + Number(it.bedsMax) + ' separate bed' + (Number(it.bedsMax) === 1 ? '' : 's') + '</span>' : '');
 }
 /* the bed configuration line, with the separate-bed count on the end */
@@ -7437,6 +7444,16 @@ function perPersonHTML(t){
   if(n > 0) out += ' &nbsp;·&nbsp; <b>' + money0(pp / n) + '</b> per person per night over ' + n + ' night' + (n === 1 ? '' : 's');
   return '<div class="ppLine">' + out + '</div>';
 }
+/* how many the selected cabins and sites sleep comfortably (adults in proper beds, no sofa beds);
+   a unit with no "comfortably" number counts at its full "sleeps" */
+function comfyOf(it){ const c = Number(it && it.comfy) || 0; return c > 0 ? c : (Number(it && it.sleeps) || 0); }
+function selComfy(){
+  return (Q.sel.accom || []).reduce((s, b) => {
+    const it = RATE[b.id];
+    if(!it || !catEntry(b.id).on) return s;
+    return s + (Number(b.qty) || 0) * comfyOf(it);
+  }, 0);
+}
 /* what the selected cabins and sites add up to: {cabins, sites, cabinSleeps, siteSleeps} */
 function selSleepSplit(){
   const o = {cabins: 0, sites: 0, cabinSleeps: 0, siteSleeps: 0};
@@ -7454,6 +7471,8 @@ function capBarHTML(){
   const guests = Number(Q.guests) || 0;
   const split = !!(Q.sel && Q.sel.split);
   const short = guests > 0 && cap < guests;
+  const comfy = selComfy();
+  const squish = !short && guests > 0 && comfy < guests;   // everyone fits, but only using sofa beds / kids' bunks
   const m = selSleepSplit();
   const pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
   /* cabins only, sites only, or a mix of both, each worded for what was picked */
@@ -7467,10 +7486,16 @@ function capBarHTML(){
     lead = 'Your ' + (m.cabins === 1 ? 'cabin sleeps' : 'cabins sleep') + ' up to <b>&nbsp;' + cap + '&nbsp;</b> people';
   }
   const more = m.cabins > 0 && m.sites > 0 ? 'cabins or sites' : (m.sites > 0 ? 'sites' : 'cabins');
-  return '<div class="capbar' + (short ? ' short' : '') + '" id="capBar">' +
+  const gw = guests + ' guest' + (guests === 1 ? '' : 's');
+  return '<div class="capbar' + (short ? ' short' : squish ? ' squish' : '') + '" id="capBar">' +
     (cap > 0
       ? (lead +
-         (guests ? '<span class="capsub">· you expect ' + guests + ' guest' + (guests === 1 ? '' : 's') + (short ? ', you may need more ' + more : ' ✓') + '</span>' : '') +
+         (comfy < cap ? '<span class="capsub">(' + comfy + ' comfortably)</span>' : '') +
+         (guests ? '<span class="capsub">· ' + (short
+            ? '<b>not enough beds</b> for your ' + gw + ': ' + (guests - cap) + ' short, you need more ' + more
+            : squish
+              ? '<b>a squeeze</b> for your ' + gw + ': ' + (guests - comfy) + ' would be on sofa beds or bunks (children are fine there), or add ' + more
+              : 'room for your ' + gw + ' ✓') + '</span>' : '') +
          (split ? '<span class="capsub">· capacity varies on split nights</span>' : ''))
       : 'No cabins or campsites selected yet' + (guests ? ' <span class="capsub">· you expect ' + guests + ' guests</span>' : '')) +
     '</div>';
@@ -10740,7 +10765,7 @@ function isAccomRateId(id){ return /^(acc_|camp_)/.test(String(id)); }
 function renderRcEditor(){
   const host = document.getElementById("rcEditor");
   const groups = editableGroups();
-  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th class="num" title="How many people the unit sleeps, shown as the Sleeps badge">Sleeps</th><th class="num" title="The most separate beds the unit can be made up with (king beds split, bunks count as two, a sofa bed as one); shown as the beds badge and on the quote">Separate beds</th><th class="num" title="Default units available, the per-quote number starts from this">Units</th><th title="Priced per person">Per person</th><th title="Shows the day &amp; time control on fixed lines">Day &amp; time</th><th></th></tr></thead><tbody>';
+  let html = '<table class="rc-table"><thead><tr><th>Item</th><th>Group</th><th class="num">Price (inc GST)</th><th class="num" title="How many people the unit sleeps at most (children, sofa beds), shown as the Sleeps badge">Sleeps</th><th class="num" title="How many adults it sleeps comfortably in proper beds, no sofa beds. Above this the guest count shows orange (a squeeze); above Sleeps it shows red">Comfortably</th><th class="num" title="The most separate beds the unit can be made up with (king beds split, bunks count as two, a sofa bed as one); shown as the beds badge and on the quote">Separate beds</th><th class="num" title="Default units available, the per-quote number starts from this">Units</th><th title="Priced per person">Per person</th><th title="Shows the day &amp; time control on fixed lines">Day &amp; time</th><th></th></tr></thead><tbody>';
   groups.forEach((g, gi) => {
     g.items.forEach((it, ii) => {
       const locked = isAccomRateId(it.id);
@@ -10751,6 +10776,7 @@ function renderRcEditor(){
           ? '<span class="fmuted" title="Cabin and campsite prices come from the RMS live link, an import, a set price below, or a price typed on the quote. This number is not used.">priced from RMS</span>'
           : '<input type="number" step="0.5" min="0" data-gi="' + gi + '" data-ii="' + ii + '" data-k="price" value="' + it.price + '">') + '</td>' +
         '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="sleeps" value="' + (it.sleeps || "") + '" placeholder="-"></td>' +
+        '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="comfy" value="' + (it.comfy || "") + '" placeholder="-"></td>' +
         '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="bedsMax" value="' + (it.bedsMax || "") + '" placeholder="-"></td>' +
         '<td class="num"><input type="number" min="0" step="1" data-gi="' + gi + '" data-ii="' + ii + '" data-k="avail" value="' + (it.avail || "") + '" placeholder="-"></td>' +
         '<td style="text-align:center"><input type="checkbox" class="rc-cb" data-gi="' + gi + '" data-ii="' + ii + '" data-k="pp"' + (it.pp ? " checked" : "") + '></td>' +
@@ -10782,6 +10808,9 @@ function renderRcEditor(){
     } else if(k === "sleeps" || k === "avail"){
       const v = Number(e.target.value);
       if(e.target.value === "" || !v) delete item[k]; else item[k] = v;
+    } else if(k === "comfy"){
+      /* blank = same as Sleeps, kept as 0 so the default doesn't creep back */
+      item.comfy = Number(e.target.value) || 0;
     } else if(k === "bedsMax"){
       /* blank means "don't show a bed count", kept as 0 so the default doesn't creep back */
       item.bedsMax = Number(e.target.value) || 0;
