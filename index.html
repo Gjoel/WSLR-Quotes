@@ -1141,7 +1141,7 @@
         <h2>Internal notes <span class="intpill">staff only</span></h2>
         <span class="hint">special arrangements and anything worth knowing next time: a conference room given at no charge, a rate we held, who to talk to. Kept with the quote, shown on the staff emails, and never sent to the organiser or shown on their page.</span>
       </div>
-      <textarea id="f-internal" rows="3" placeholder="e.g. Rooms 1, 2 &amp; 3 given complimentary in 2026 because they booked 40 cabins · always ask for Kylie in the office · bus parks on the grass by the office"></textarea>
+      <textarea id="f-internal" rows="3"></textarea>
     </div>
     <div id="resProgress" class="resprog" role="status" aria-live="polite" hidden>
       <div class="resprog-top"><b id="resProgTitle">Reading the booking from RMS</b><span id="resProgTime"></span></div>
@@ -1976,7 +1976,7 @@ function fmtWhen(w){
   }
   return bits.join(" · ");
 }
-function money(n){ return "$" + (Number(n)||0).toLocaleString("en", {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function money(n){ n = Number(n) || 0; return (n < 0 ? "−$" : "$") + Math.abs(n).toLocaleString("en", {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function money0(n){ return "$" + Math.round(Number(n)||0).toLocaleString("en"); }
 function esc(s){
   return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -4132,6 +4132,7 @@ function displayLines(){
       total: tot
     });
   });
+  const vca = venueCreditAlloc();
   VENUES.forEach(v => {
     const d = Number((Q.sel.venues || {})[v.key]) || 0;
     if(d <= 0 || !catEntry(v.fullId).on) return;
@@ -4140,8 +4141,16 @@ function displayLines(){
     const dw = venueDaysWords(v.key);
     const vt = [dw, (Q.sel.venueTimes || {})[v.key] || ""].filter(Boolean).join(" · ");
     const freeTag = venueIsFree(v) ? " (included at no charge " + venueFreeReason(v) + ")" : "";
+    /* 12 Oct 2026 (Joel): the room at its full price, then each saving on its own line
+       straight under it, so the group sees exactly what comes off and why */
     if(full > 0) out.push({name: (RATE[v.fullId] || {name: v.name + " - full day"}).name + freeTag, qty: full, nights: 0, beds: "", price: venueRate(v, false), disc: 0, unit: "per day", when: vt, total: full * venueRate(v, false)});
     if(half > 0) out.push({name: (RATE[v.halfId] || {name: v.name + " - half day"}).name + freeTag, qty: half, nights: 0, beds: "", price: venueRate(v, true), disc: 0, unit: "per half day", when: (full > 0 ? "" : vt), total: half * venueRate(v, true)});
+    const adj = (name, amt) => { amt = Math.round(amt * 100) / 100; if(amt > 0) out.push({name: name, qty: 1, nights: 0, beds: "", price: -amt, disc: 0, unit: "discount", when: "", total: -amt, venueAdj: true}); };
+    const pw = venuePairWhy(v);
+    adj(pw === "all3" ? "↳ All three rooms booked: charged as All Conference Rooms 1, 2 & 3"
+      : pw === "12" ? "↳ Rooms 1 & 2 booked together: " + money0(PAIR_ROOM_FULL) + " a day each"
+      : "↳ Rooms 2 & 3 booked together: " + money0(PAIR_ROOM_FULL) + " a day each", venuePairFor(v));
+    adj("↳ Venue credit with your stay (" + venueCreditShort() + ")", vca.byKey[v.key] || 0);
   });
   if(kidsOn()){
     let dietMeals = 0, dietKidMeals = 0;
@@ -4717,17 +4726,22 @@ function isWinterDay(iso){ return /^\d{4}-\d{2}-\d{2}$/.test(String(iso || "")) 
    credit when the bookings that day add up to a full day (one full day, or a morning and an
    afternoon), half when there is only a half day, and doubled on a winter day.
    Returns {byKey: {key: $}, total: $, winterDays: n}. */
-function venueCreditAlloc(){
-  const per = venueCreditPerDay();
-  const out = {byKey: {}, total: 0, winterDays: 0};
-  if(per <= 0) return out;
-  const days = {};                      // day key -> [{key, use (1 or .5), price}]
+/* ---------- neighbouring rooms booked together (Joel, 12 Oct 2026) ----------
+   Conference Rooms 1 & 2, or 2 & 3, booked on the same day: each is $200 a full day ($100 a
+   half day) instead of its own price. All three booked on their own on the same day are
+   charged what All Conference Rooms 1, 2 & 3 costs. Rooms 1 & 3 on their own are not
+   neighbours. The saving shows as its own line under each room. */
+const PAIR_ROOM_FULL = 200, PAIR_ROOM_HALF = 100;
+/* every conference room and the Auditorium, day by day: [{day, iso, key, use, price, pair}]
+   where price is after the pair deal and pair is what the deal took off */
+function venueDayRows(){
+  const days = {};
   VENUES.forEach(v => {
     if(VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || venueIsFree(v) || !catEntry(v.fullId).on) return;
     const d = venueDaysSel(v.key);
     if(d <= 0) return;
     const fullP = Number(catEntry(v.fullId).price) || 0, halfP = Number(catEntry(v.halfId).price) || 0;
-    const add = (day, use) => { (days[day] = days[day] || []).push({key: v.key, use: use, price: use === 1 ? fullP : halfP}); };
+    const add = (day, use) => { (days[day] = days[day] || []).push({day: day, key: v.key, use: use, price: use === 1 ? fullP : halfP, pair: 0}); };
     const m = venueDayMap(v.key);
     if(m) Object.keys(m).forEach(iso => add(iso, m[iso] === "full" ? 1 : 0.5));
     else {
@@ -4736,6 +4750,41 @@ function venueCreditAlloc(){
       if(half) add("#" + full, 0.5);
     }
   });
+  Object.keys(days).forEach(day => {
+    const rows = days[day];
+    rows.forEach(r => { r.iso = day.charAt(0) === "#" ? (Q.dateStart ? isoAddDays(Q.dateStart, Number(day.slice(1))) : "") : day; });
+    const r1 = rows.find(r => r.key === "fr1"), r2 = rows.find(r => r.key === "fr2"), r3 = rows.find(r => r.key === "fr3");
+    const cut = (r, to) => { const t = Math.max(0, Math.min(r.price, to)); r.pair = Math.round((r.price - t) * 100) / 100; r.price = t; r.pairWhy = r.pairWhy || ""; };
+    if(r1 && r2 && r3 && r1.use === r2.use && r2.use === r3.use){
+      /* all three on their own: the price of All Conference Rooms 1, 2 & 3, shared out */
+      const all = Number(catEntry(r1.use === 1 ? "fr13_full" : "fr13_half").price) || 0;
+      const was = r1.price + r2.price + r3.price;
+      if(all > 0 && all < was){
+        const t1 = Math.round(r1.price * all / was * 100) / 100, t2 = Math.round(r2.price * all / was * 100) / 100;
+        const t3 = Math.round((all - t1 - t2) * 100) / 100;   // the last room takes the rounding, so the three add up exactly
+        cut(r1, t1); cut(r2, t2); cut(r3, t3);
+        [r1, r2, r3].forEach(r => { r.pairWhy = "all3"; });
+      }
+    } else {
+      const pair = (a, b, why) => [a, b].forEach(r => { if(!r.pairWhy){ cut(r, r.use === 1 ? PAIR_ROOM_FULL : PAIR_ROOM_HALF); r.pairWhy = why; } });
+      if(r1 && r2) pair(r1, r2, "12");
+      else if(r2 && r3) pair(r2, r3, "23");
+    }
+  });
+  return Object.keys(days).reduce((a, k) => a.concat(days[k]), []);
+}
+function venuePairFor(v){ return v ? venueDayRows().filter(r => r.key === v.key).reduce((s, r) => s + (r.pair || 0), 0) : 0; }
+function venuePairWhy(v){
+  const ws = venueDayRows().filter(r => r.key === v.key && r.pair > 0).map(r => r.pairWhy);
+  return ws.indexOf("all3") >= 0 ? "all3" : (ws.indexOf("12") >= 0 ? "12" : (ws.indexOf("23") >= 0 ? "23" : ""));
+}
+function venuePairTotal(){ return venueDayRows().reduce((s, r) => s + (r.pair || 0), 0); }
+function venueCreditAlloc(){
+  const per = venueCreditPerDay();
+  const out = {byKey: {}, total: 0, winterDays: 0};
+  if(per <= 0) return out;
+  const days = {};                      // day key -> [{key, use (1 or .5), price after the pair deal}]
+  venueDayRows().forEach(r => { (days[r.day] = days[r.day] || []).push(r); });
   Object.keys(days).forEach(day => {
     const rows = days[day].slice().sort((a, b) => b.price - a.price);
     /* a day count with no picked days runs from the arrival day */
@@ -4756,6 +4805,19 @@ function venueCreditAlloc(){
 /* what the credit takes off one room, over the days it is booked */
 function venueCreditFor(v){ return (v && venueCreditAlloc().byKey[v.key]) || 0; }
 function venueCreditTotal(){ return venueCreditAlloc().total; }
+/* a room's total with its credit: "<s>$300.00</s> $25.00" */
+function venueSubHTML(v, d){
+  const g = venueDayTotal(v, d), c = venueCreditFor(v) + venuePairFor(v);
+  return c > 0 ? '<s class="fmuted">' + money(g) + '</s> ' + money(Math.max(0, g - c)) : money(g);
+}
+/* "11 cabins × $25 = $275 a day" */
+function venueCreditShort(){
+  const u = unitsSplit(), r = vcRates(), bits = [];
+  if(u.cabins > 0 && r.cabin > 0) bits.push(u.cabins + " cabin" + (u.cabins === 1 ? "" : "s") + " × " + vcMoney(r.cabin));
+  if(u.sites > 0 && r.site > 0) bits.push(u.sites + " site" + (u.sites === 1 ? "" : "s") + " × " + vcMoney(r.site));
+  const w = venueCreditAlloc().winterDays;
+  return bits.join(" + ") + " = " + vcMoney(venueCreditPerDay()) + " a day" + (w ? ", doubled on winter days" : "");
+}
 /* "10 cabins × $25 + 4 sites × $15 = $310 a day off your conference rooms" */
 function venueCreditWords(){
   const u = unitsSplit(), r = vcRates(), bits = [];
@@ -5320,16 +5382,18 @@ function discAmount(part, base){
 }
 function discWord(part){ return part.t === "amt" ? money0(Number(part.v) || 0) : (Number(part.v) || 0) + "%"; }
 function totals(){
-  const accom = selAccomSub(), venue = selVenueSub(), cater = selCaterSub(), fixed = fixedSub();
+  const accom = selAccomSub(), venueGross = selVenueSub(), cater = selCaterSub(), fixed = fixedSub();
+  /* the venue credit is already off the room lines (shown next to each room, 9 Oct 2026),
+     so the subtotal is what they pay for the rooms */
+  const pairs = Math.min(venuePairTotal(), venueGross);
+  const credit = Math.min(venueCreditTotal(), venueGross - pairs);
+  const venue = venueGross - pairs - credit;
   const sub = accom + venue + cater + fixed;
-  const credit = Math.min(venueCreditTotal(), venue);
   const churchPct = Number(Q.sel.church) || 0;
-  const church = (accom + venue - credit) * churchPct / 100;
-  const afterChurch = sub - credit - church;
+  const church = (accom + venue) * churchPct / 100;
+  const afterChurch = sub - church;
   const d = Q.disc || {};
-  /* the venue credit rides with the discount rows, so every surface that shows them
-     (totals, organiser page, PDF, deposit invoice credits) shows it too */
-  const discLines = credit > 0 ? [{label: "Venue credit for your stay (" + venueCreditWords() + ")", amount: credit, venueCredit: true}] : [];
+  const discLines = [];
   let disc = 0;
   if(d.on){
     const b = discBases();
@@ -5343,7 +5407,7 @@ function totals(){
   }
   const total = afterChurch - disc;
   const gst = total * GST_PCT / (100 + GST_PCT);
-  return {sub, church, churchPct, disc, discLines, total, gst, venueCredit: credit};
+  return {sub, church, churchPct, disc, discLines, total, gst, venueCredit: credit, venuePairs: pairs, venueGross: venueGross};
 }
 function discLinesHTML(t){
   return (t.discLines || []).map(x => '<div class="savings"><span>' + esc(x.label) + '</span><span>−' + money(x.amount) + '</span></div>').join('');
@@ -6662,7 +6726,7 @@ function renderPrep(){
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
       stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0, canUp: can.ok, upTitle: can.why}) +
-      '<div class="pkgsub">' + (d > 0 ? (free ? '<span class="freetag">Free</span>' : money(sub)) : '<span class="fmuted">-</span>') + '</div>' +
+      '<div class="pkgsub">' + (d > 0 ? (free ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : '<span class="fmuted">-</span>') + '</div>' +
     '</div>';
   }).join("");
 
@@ -7842,7 +7906,7 @@ function fullBillData(){
   /* $0 lines carry no money, so they are not rows on a bill */
   pricedLines().forEach(l => {
     const u = String(l.unit || "");
-    const g = /^per unit/.test(u) ? 0 : (u === "per day" || u === "per half day") ? 1 : (!l.fixed && /per (person|meal)/.test(u)) ? 2 : 3;
+    const g = /^per unit/.test(u) ? 0 : (u === "per day" || u === "per half day" || l.venueAdj) ? 1 : (!l.fixed && /per (person|meal)/.test(u)) ? 2 : 3;
     const qty = Number(l.qty) || 0;
     const amount = Math.round((Number(l.total) || 0) * 100) / 100;
     const bits = [];
@@ -8936,13 +9000,16 @@ function renderClient(){
                   : 'free if you are staying onsite, just add your cabins above') + ')</div>')
           : '';
         const vcr = venueCreditFor(v);
+        const pr = venuePairFor(v), pwhy = pr > 0 ? venuePairWhy(v) : "";
+        const pairHint = pr > 0 ? '<div class="cb-free">' + (pwhy === "all3" ? "All three rooms booked: charged as All Conference Rooms 1, 2 &amp; 3" : (pwhy === "12" ? "Rooms 1 &amp; 2" : "Rooms 2 &amp; 3") + " booked together: " + money0(PAIR_ROOM_FULL) + " a day each") + ' (−' + money(pr) + ')</div>'
+          : (["fr1", "fr2", "fr3"].indexOf(v.key) >= 0 && showPrices ? '<div class="cb-note">(Book ' + (v.key === "fr2" ? "Room 1 or 3" : "Room 2") + ' as well, the same day, and each is ' + money0(PAIR_ROOM_FULL) + ' a day)</div>' : '');
         const creditHint = (!venueCreditOn() || isFree || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || !showPrices) ? ''
           : vcr > 0
             ? '<div class="cb-free">Venue credit −' + money(vcr) + ' with your stay (' + esc(vcMoney(venueCreditPerDay())) + ' a day, shared across your rooms)</div>'
             : '<div class="cb-note">(' + [vcRates().cabin > 0 ? vcMoney(vcRates().cabin) + ' a day off for every cabin you book' : '', vcRates().site > 0 ? vcMoney(vcRates().site) + ' for every site' : ''].filter(Boolean).join(', ') + ', doubled in June, July and August)</div>';
         return '<div class="cb-row">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
-            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + freeHint + creditHint + venueAvailNote(v) +
+            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + freeHint + pairHint + creditHint + venueAvailNote(v) +
             (showPrices ? (isFree ? '<div class="cb-price"><s>' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</s></div>' : '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>') +
               (asOrg() ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price for this quote"> full · $<input type="number" class="spNum" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price for this quote"> half</div>') : '') +
             ((d > 0 || venueDayMap(v.key)) ? venueDaysHTML(v) : '') +
@@ -8955,7 +9022,7 @@ function renderClient(){
             })() : '') +
           '</div>' +
           stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0, canUp: can.ok, upTitle: can.why, lock: lockedItem(v.fullId, "venue")}) +
-          '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : money(venueDayTotal(v, d))) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
+          '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         '</div>';
       }).join('') + '</div>'
     : '';
@@ -10601,6 +10668,7 @@ function copyFromQuote(num){
   const s = SAVED.find(x => x.num === num);
   if(!s) return;
   const b = blankQuote(nextQuoteNum());
+  const fresh = JSON.parse(JSON.stringify({features: b.features, caterSched: b.caterSched}));   // today's rules, before the copy lands on b
   Q = Object.assign(b, JSON.parse(JSON.stringify({
     contact: s.contact, org: s.org, email: s.email, event: s.event,
     dateStart: s.dateStart, dateEnd: s.dateEnd, guests: s.guests,
@@ -10627,11 +10695,25 @@ function copyFromQuote(num){
      import, or a typed price) is the only way this quote can be sent. */
   Q.rates = {}; Q.rateFixed = {}; Q.availCal = {}; Q.ratesInfo = null; Q.availInfo = null;
   Q.rmsBase = null; Q.rmsOver = null;
+  /* 9 Oct 2026 (Joel: "a previous quote brought in keeps the old rates"): nothing priced is
+     carried across either. Conference room and meal prices typed on the old quote, the old
+     quote's pricing rules (free room per 5 cabins, venue credit amounts, catering price dates)
+     and the prices on its extra items all start again from today's rate card and Settings.
+     What is kept is the group's own choices: dates, rooms, meals, numbers, discounts, notes. */
   Object.keys(Q.catalog || {}).forEach(id => {
-    if(/^(acc_|camp_)/.test(String(id))){
-      delete Q.catalog[id].price;
-      delete Q.catalog[id].avail;
-    }
+    delete Q.catalog[id].price;
+    delete Q.catalog[id].avail;
+  });
+  ["freeRooms", "venueCredit", "vcCabin", "vcSite", "caterFuture"].forEach(k => {
+    if(!Q.features) Q.features = {}; if(k in fresh.features) Q.features[k] = fresh.features[k]; else delete Q.features[k];
+  });
+  Q.caterSched = fresh.caterSched;
+  const droppedRooms = [];
+  Q.lines = (Q.lines || []).filter(l => {
+    if(l.room){ droppedRooms.push((Number(l.qty) || 0) + " × " + (l.desc || "room")); return false; }   // rooms from an old RMS statement: old prices
+    const it = RATE[l.id];
+    if(it && !it.custom && it.price !== undefined) l.price = it.price;   // rate-card extras: today's price
+    return true;
   });
   Q.needsTariff = true;
   if(!Q.sel) Q.sel = null; // force legacy conversion below
@@ -10639,7 +10721,8 @@ function copyFromQuote(num){
   syncForm();
   refresh();
   autoRmsBoot();
-  showToast("Copied " + num + " into new quote " + Q.num + ". Prices from the old quote are not carried over; RMS is being asked for these dates now.");
+  showToast("Copied " + num + " into new quote " + Q.num + ". Nothing priced is carried over: everything is on today's rates and rules, and RMS is being asked for these dates now." +
+    (droppedRooms.length ? " Left off (rooms imported from an old RMS statement, add them again): " + droppedRooms.join(", ") + "." : ""));
 }
 function renderPrevOptions(){
   const sel = document.getElementById("prevSel");
