@@ -68,6 +68,16 @@
   .discrow span{font-weight:500}
   .discrow input, .discrow select{padding:4px 6px; font-size:12.5px}
   .discrow em{font-style:normal; text-align:center}
+  /* rooms at their own % (staff only, Oct 2026) */
+  .roomdisc{margin-top:12px; padding:10px 12px; border:1px dashed var(--grid); border-radius:9px; font-size:12.5px; color:var(--ink2)}
+  .roomdisc[hidden]{display:none}
+  .roomdisc b{color:var(--ink)}
+  .rdrow, .rdhead{display:grid; grid-template-columns:minmax(0,2fr) 52px 60px minmax(0,1.6fr) 26px; gap:6px; align-items:center; margin-top:6px}
+  .rdhead{margin-top:8px; font-size:11.5px; font-weight:600}
+  .rdrow input, .rdrow select{padding:4px 6px; font-size:12.5px; min-width:0; width:100%; box-sizing:border-box}
+  .rdrow .rdx{appearance:none; border:none; background:none; color:var(--ink2); font-size:16px; cursor:pointer; padding:0}
+  .rdadd{appearance:none; border:1px solid rgba(42,120,214,.4); background:none; color:var(--accent); font:inherit; font-size:12px; font-weight:600; border-radius:6px; cursor:pointer; padding:3px 8px; margin-top:8px}
+  .rdsum{margin-top:6px; color:var(--good); font-weight:600}
   /* the organiser's postal address */
   .cd-grid .cdwide{grid-column:1/-1}
   input,select,textarea{
@@ -1188,6 +1198,7 @@
           </label>
           <label title="Appears in the deposit &amp; payment information on the quote. Leave it blank for the automatic figure: $100 a cabin for a church, charity or school, otherwise $100 a cabin with $2,000 as the least.">Security bond ($)<input id="f-bond" type="number" min="0" step="50"><span class="hint" id="bondNote"></span></label>
         </div>
+        <div class="roomdisc" id="roomDiscBox" hidden></div>
         <label class="pencilsw lockrow" title="Off by default. When it is on, the organiser's page shows the quote exactly as you have built it: they can read it and accept it, but the dates, cabins and rooms are fixed. Paid catering extras stay open unless you padlock them below.">
           <input type="checkbox" id="f-locked">
           <span><b>Lock this quote (the organiser can't change it)</b><span class="hint" id="lockNote"></span></span>
@@ -5377,15 +5388,46 @@ function selSleeps(){
     return s + (Number(b.qty) || 0) * (Number(it.sleeps) || 0);
   }, 0);
 }
+/* Rooms at their own % (Oct 2026), set by staff on the Prepare tab under Discount: e.g. the
+   priest's room at 50% while the rest of the group has the church 20%. A room listed here
+   comes out of the church discount and takes its own % instead. Q.disc.rooms =
+   [{id, qty, pct, note}]; they count while the Discount box is ticked, only for rooms
+   still on the quote, and never for more rooms of a type than are booked. */
+function roomDiscRows(){
+  const d = Q.disc || {};
+  return (d.on && Array.isArray(d.rooms)) ? d.rooms : [];
+}
+function roomDiscCalc(churchPct){
+  const used = {}, lines = [];
+  let cost = 0, amount = 0;
+  roomDiscRows().forEach(r => {
+    const id = r && r.id;
+    if(!id || !RATE[id] || !catEntry(id).on) return;
+    const blocks = (Q.sel.accom || []).filter(b => b.id === id);
+    const have = blocks.reduce((t, b) => t + (Number(b.qty) || 0), 0);
+    const n = Math.min(Math.max(0, Math.floor(Number(r.qty) || 0)), have - (used[id] || 0));
+    if(n <= 0) return;
+    used[id] = (used[id] || 0) + n;
+    const pct = Math.min(100, Math.max(0, Number(r.pct) || 0));
+    const c = blocks.reduce((t, b) => t + blockTotal(b), 0) / have * n;
+    const a = c * pct / 100;
+    cost += c; amount += a;
+    const note = String(r.note || "").trim();
+    if(a > 0) lines.push({label: "Room discount, " + n + " × " + RATE[id].name + " at " + pct + "%" +
+      (churchPct > 0 && pct !== churchPct ? " (in place of " + churchPct + "%)" : "") + (note ? ": " + note : ""), amount: a});
+  });
+  return {cost: cost, amount: amount, lines: lines};
+}
 /* the accommodation and catering amounts the discounts work on */
 function discBases(){
   const churchPct = Number(Q.sel && Q.sel.church) || 0;
+  const rd = roomDiscCalc(churchPct);
   let accomLines = 0, caterLines = 0;
   (Q.lines || []).forEach(l => {
     if(isAccomLine(l)) accomLines += lineTotal(l);
     else if(isCaterLine(l)) caterLines += lineTotal(l);
   });
-  return {accom: (selAccomSub() + accomLines) * (1 - churchPct / 100), cater: selCaterSub() + caterLines};
+  return {accom: (selAccomSub() + accomLines - rd.cost) * (1 - churchPct / 100) + rd.cost - rd.amount, cater: selCaterSub() + caterLines};
 }
 function discAmount(part, base){
   const v = Number(part && part.v) || 0;
@@ -5402,20 +5444,23 @@ function totals(){
   const venue = venueGross - pairs - credit;
   const sub = accom + venue + cater + fixed;
   const churchPct = Number(Q.sel.church) || 0;
-  const church = (accom + venue) * churchPct / 100;
+  /* rooms at their own % are left out of the church discount */
+  const rd = roomDiscCalc(churchPct);
+  const church = (accom - rd.cost + venue) * churchPct / 100;
   const afterChurch = sub - church;
   const d = Q.disc || {};
   const discLines = [];
   let disc = 0;
   if(d.on){
+    rd.lines.forEach(x => discLines.push(x));
     const b = discBases();
     const da = discAmount(d.accom, b.accom), dc = discAmount(d.cater, b.cater);
     if(da > 0) discLines.push({label: "Accommodation discount (" + discWord(d.accom) + ")", amount: da});
     if(dc > 0) discLines.push({label: "Catering discount (" + discWord(d.cater) + ")", amount: dc});
     const all = Number(d.all) || 0;
-    const dall = all > 0 ? (afterChurch - da - dc) * all / 100 : 0;
+    const dall = all > 0 ? (afterChurch - rd.amount - da - dc) * all / 100 : 0;
     if(dall > 0) discLines.push({label: "Discount (" + all + "%)", amount: dall});
-    disc = da + dc + dall;
+    disc = rd.amount + da + dc + dall;
   }
   const total = afterChurch - disc;
   const gst = total * GST_PCT / (100 + GST_PCT);
@@ -11904,8 +11949,8 @@ function switchTab(name){
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
 /* ---------- form bindings ---------- */
-function softRefresh(){ autosaveDraft(); renderBondField(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); }
-function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
+function softRefresh(){ autosaveDraft(); renderBondField(); renderRoomDisc(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); }
+function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
 
 
 /* ---------- quoting on a booking already in RMS ----------
@@ -12226,6 +12271,77 @@ function syncDiscForm(){
   };
   ["f-disc-on", "f-disc-accom-t", "f-disc-cater-t"].forEach(id => document.getElementById(id).addEventListener("change", upd));
   ["f-disc-accom", "f-disc-cater", "f-disc-all"].forEach(id => document.getElementById(id).addEventListener("input", upd));
+})();
+/* rooms at their own % (staff only): shown under Quote settings while Discount is ticked */
+function renderRoomDisc(){
+  const host = document.getElementById("roomDiscBox");
+  if(!host) return;
+  const d = Q.disc || {};
+  host.hidden = !d.on;
+  if(!d.on) return;
+  if(host.contains(document.activeElement) && document.activeElement.tagName === "INPUT"){ renderRoomDiscSum(); return; }
+  const rows = Array.isArray(d.rooms) ? d.rooms : [];
+  const booked = [];
+  (Q.sel.accom || []).forEach(b => { if(RATE[b.id] && catEntry(b.id).on && (Number(b.qty) || 0) > 0 && booked.indexOf(b.id) < 0) booked.push(b.id); });
+  const opts = cur => {
+    const ids = booked.slice();
+    if(cur && ids.indexOf(cur) < 0 && RATE[cur]) ids.push(cur);
+    return '<option value="">Room type…</option>' + ids.map(id => '<option value="' + esc(id) + '"' + (id === cur ? ' selected' : '') + '>' +
+      esc(RATE[id].name) + (booked.indexOf(id) < 0 ? ' (not on the quote)' : ' (' + accomQtyTotal(id) + ' booked)') + '</option>').join('');
+  };
+  const church = Number(Q.sel.church) || 0;
+  host.innerHTML = '<b>Rooms at their own %</b> <span class="hint">Staff only. For example, the priest\'s room at 50% while the group has ' +
+      (church > 0 ? 'the church ' + church + '%' : 'no church discount') + '. These rooms come out of the church discount and take their own % instead. ' +
+      'The quote shows a line for each, e.g. “Room discount, 1 × Motel at 50%”, with your note after it.</span>' +
+    (rows.length ? '<div class="rdhead"><span>Room type</span><span>Rooms</span><span>%</span><span>Note on the quote (optional)</span><span></span></div>' : '') +
+    rows.map((r, i) => '<div class="rdrow" data-i="' + i + '">' +
+      '<select data-f="id">' + opts(r.id) + '</select>' +
+      '<input type="number" data-f="qty" min="1" step="1" value="' + esc(String(r.qty === undefined ? 1 : r.qty)) + '">' +
+      '<input type="number" data-f="pct" min="0" max="100" step="0.5" value="' + esc(String(r.pct === undefined ? "" : r.pct)) + '" placeholder="%">' +
+      '<input type="text" data-f="note" value="' + esc(r.note || "") + '" placeholder="e.g. Fr Michael\'s room">' +
+      '<button type="button" class="rdx" data-x="' + i + '" title="Take this row off">×</button></div>').join('') +
+    '<button type="button" class="rdadd" id="rdAdd">+ Add a room at its own %</button>' +
+    '<div class="rdsum" id="rdSum"></div>';
+  renderRoomDiscSum();
+}
+function renderRoomDiscSum(){
+  const el = document.getElementById("rdSum");
+  if(!el) return;
+  const rd = roomDiscCalc(Number(Q.sel.church) || 0);
+  el.textContent = rd.amount > 0 ? "Comes off: " + money(rd.amount) + " on " + money(rd.cost) + " of rooms" : "";
+}
+(function(){
+  const host = document.getElementById("roomDiscBox");
+  if(!host) return;
+  const rows = () => {
+    if(!Q.disc) Q.disc = {on: true, accom: {v: "", t: "pct"}, cater: {v: "", t: "pct"}, all: 0};
+    if(!Array.isArray(Q.disc.rooms)) Q.disc.rooms = [];
+    return Q.disc.rooms;
+  };
+  const edit = e => {
+    const row = e.target.closest(".rdrow"), f = e.target.dataset.f;
+    if(!row || !f) return;
+    const r = rows()[Number(row.dataset.i)];
+    if(!r) return;
+    if(f === "note") r.note = e.target.value;
+    else if(f === "id") r.id = e.target.value;
+    else r[f] = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
+    if(f === "pct" && Number(r.pct) > 100) r.pct = 100;
+    softRefresh();
+  };
+  host.addEventListener("input", edit);
+  host.addEventListener("change", e => { if(e.target.dataset.f === "id") edit(e); });
+  host.addEventListener("click", e => {
+    if(e.target.id === "rdAdd"){
+      const booked = [];
+      (Q.sel.accom || []).forEach(b => { if(RATE[b.id] && catEntry(b.id).on && (Number(b.qty) || 0) > 0 && booked.indexOf(b.id) < 0) booked.push(b.id); });
+      rows().push({id: booked.length === 1 ? booked[0] : "", qty: 1, pct: 50, note: ""});
+      softRefresh();
+    } else if(e.target.dataset.x !== undefined){
+      rows().splice(Number(e.target.dataset.x), 1);
+      softRefresh();
+    }
+  });
 })();
 const BINDINGS = [
   ["f-contact", "contact"], ["f-org", "org"], ["f-email", "email"], ["f-mobile", "mobile"], ["f-event", "event"],
