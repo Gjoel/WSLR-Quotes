@@ -1473,7 +1473,7 @@
     <div class="card">
       <div class="cardhead">
         <h2>Standard information sections</h2>
-        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond; {holddays} how long the quote is valid for; {pricelead} how long the quoted prices hold before arrival; {menuoptions} the menu options ticked for the quote; and {deposit}, {depositsite}, {depositroom}, {depositdays}, {halfpct}, {halflead}, {cateringlead}, {finallead}, {bigunits}, {cancelpct}, {cancelbiglead} and {cancellead} follow the deposit, deadline &amp; cancellation rules further down this page.</span>
+        <span class="hint">the wording that appears on quotes when a section is switched on. {bond} becomes the quote's security bond; {holddays} how long the quote is valid for; {pricelead} how long the quoted prices hold before arrival; {menuoptions} the menu options ticked for the quote; and {deposit}, {depositsite}, {depositroom}, {depositdays}, {halfpct}, {halflead}, {balancewhen}, {cateringlead}, {finallead}, {bigunits}, {cancelpct}, {cancelbiglead} and {cancellead} follow the deposit, deadline &amp; cancellation rules further down this page.</span>
       </div>
       <div id="secEditor"></div>
     </div>
@@ -2091,7 +2091,7 @@ const INFO_SECTIONS = [
   {id:"booking_info", title:"To proceed with a booking", why:"on for every quote",
    text:"To proceed with a booking we require: your group name, contact person, postal address and mobile number; arrival and departure dates; the number of rooms and each type of room you wish to book; all meals you wish to have included as part of your package; and the dates and times of use of the conference rooms. Once you accept your quote online we make an unconfirmed booking for you straight away and email you an invoice for the deposit. Reservations stay unconfirmed until the deposit is received."},
   {id:"deposit", title:"Deposit, payment & security bond", why:"on for every quote",
-   text:"1. Once your quote is accepted we make an unconfirmed booking and email you a deposit invoice. 2. The deposit is {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room, payable within {depositdays} of the invoice, to secure your reservation and any church discount. If it is not received we will be in touch, and an unconfirmed booking can be cancelled. 3. Once the deposit is paid, {halfpct} of the total is due {halflead} prior to arrival (as soon as possible if you book inside that time). 4. The remaining balance must be paid prior to arrival, before keys are handed over, and is payable by EFT, cash, EFTPOS, Mastercard or Visa. A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
+   text:"1. Once your quote is accepted we make an unconfirmed booking and email you a deposit invoice. 2. The deposit is {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room, payable within {depositdays} of the invoice, to secure your reservation and any church discount. If it is not received we will be in touch, and an unconfirmed booking can be cancelled. 3. Once the deposit is paid, {halfpct} of the total is due {halflead} prior to arrival (as soon as possible if you book inside that time). 4. The remaining balance is due {balancewhen} and must be paid before keys are handed over. It is payable by EFT, cash, EFTPOS, Mastercard or Visa. A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
   {id:"cancel", title:"Cancellation conditions", why:"on for every quote",
    text:"Groups of more than {bigunits} cabins and campsites may cancel more than {cancelpct} of their cabins and campsites without penalty up to {cancelbiglead} prior to arrival, and up to {cancelpct} of them without penalty up to {cancellead} prior to arrival. Groups of {bigunits} cabins and campsites or fewer may cancel without penalty up to {cancellead} prior to arrival. Within {cancellead} of arrival nothing can be cancelled without penalty: cabins and campsites cancelled from then on are charged at the full rate, so all numbers must be final {cancellead} before your event."},
   {id:"conduct", title:"Code of conduct", why:"auto for group stays",
@@ -2173,6 +2173,7 @@ function fillQuoteText(t){
     .replace(/\{halfpct\} of (the |your )?accommodation/g, (m, p) => "{halfpct} of " + (p || "the ") + "total")
     .split("{halfpct}").join(k.halfPct + "%")
     .split("{halflead}").join(leadPhrase(k.halfDays))
+    .split("{balancewhen}").join(balanceWhenPhrase(k))
     .split("{depositlead}").join(leadPhrase(k.halfDays))
     .split("{emaillead}").join(leadPhrase(k.halfDays))
     .split("{cateringlead}").join(leadPhrase(k.cateringDays))
@@ -2819,7 +2820,9 @@ const OLD_EMAIL_BODIES = [
 const OLD_TERMS = [
   "A $100 deposit per cabin or conference room confirms your booking; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
   "A {deposit} deposit per cabin or conference room confirms your booking, due within {depositdue}; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
-  "A {deposit} deposit per cabin or conference room booked is due {depositwhen}, to secure your reservation; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference."
+  "A {deposit} deposit per cabin or conference room booked is due {depositwhen}, to secure your reservation; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
+  /* until Oct 2026: the balance any time before the keys, now due balanceDays before arrival */
+  "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference."
 ];
 /* Notes that only ever named a flat "14 days" for final numbers, written before the
    deadline rules became settings. A stored copy that is still one of these steps
@@ -2850,7 +2853,7 @@ function dropGroupMappings(rms){
 function getDefaults(){
   return Object.assign({
     notes: "Room hire includes setup and pack-down. Final guest numbers, dietary requirements and catering numbers are due {finallead} before the event. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
-    terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
+    terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance {balancewhen}, before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
     bond: 2000,
     cheapest: true,
     cocUrl: "",         // the digital Code of Conduct page; blank = COC_URL_DEFAULT (the WSLR page)
@@ -5161,10 +5164,11 @@ function selCaterSub(){
    4. more than bigUnits cabins+sites: more than cancelPct may be cancelled free until
       cancelBigDays out, up to cancelPct until cancelDays out; smaller groups can
       cancel anything free until cancelDays out; nothing free inside cancelDays
-   5. the balance before arrival and the keys
+   5. the balance, due balanceDays before arrival (Oct 2026: the day before, so it is
+      paid before anyone asks for keys; 0 = on arrival)
    6. catering numbers and final numbers due before arrival */
 const KD_VERSION = 3;
-const KD_DEFAULTS = {depositPer: 100, depositSite: 50, depositRoom: 0, depositDays: 7, halfPct: 50, halfDays: 90,
+const KD_DEFAULTS = {depositPer: 100, depositSite: 50, depositRoom: 0, depositDays: 7, halfPct: 50, halfDays: 90, balanceDays: 1,
   cateringDays: 10, finalDays: 10, bigUnits: 20, cancelPct: 20, cancelBigDays: 28, cancelDays: 10, holdDays: 14, priceDays: 14,
   farMonths: 12, farDepositDays: 21};
 /* keys whose meaning changed with the 2026 rules: a value saved under the old rules is dropped */
@@ -5225,6 +5229,13 @@ function leadPhrase(days){
   if(n === 90) return "3 months";
   if(n % 7 === 0) return (n / 7) + " week" + (n === 7 ? "" : "s");
   return n + " day" + (n === 1 ? "" : "s");
+}
+/* when the balance is due, in words: "the day before arrival", "3 days before arrival", "on arrival" */
+function balanceWhenPhrase(c){
+  const n = Math.max(0, Math.round(Number((c || kdCfg()).balanceDays) || 0));
+  if(n === 0) return "on arrival";
+  if(n === 1) return "the day before arrival";
+  return leadPhrase(n) + " before arrival";
 }
 /* deposit & key dates, worked out from the selection and the template's rules,
    unless staff have edited the rows for this quote (Q.kdOver) on the preview */
@@ -5290,7 +5301,7 @@ function depositBreakdown(){
   const c = kdCfg(), u = unitsSplit(), rooms = venuesSelected();
   return {cabins: u.cabins, sites: u.sites, rooms: rooms, perCabin: c.depositPer, perSite: c.depositSite,
           perRoom: c.depositRoom, total: depositTotal(c), days: c.depositDays,
-          halfPct: c.halfPct, halfDays: c.halfDays, halfAmount: Math.round(partShareBase() * c.halfPct) / 100};
+          halfPct: c.halfPct, halfDays: c.halfDays, balanceDays: c.balanceDays, halfAmount: Math.round(partShareBase() * c.halfPct) / 100};
 }
 /* the security bond: $100 a cabin for a church / ACNC group or a school, everyone else
    $100 a cabin or $2,000, whichever is higher. Campsites don't count. Staff can type
@@ -5338,6 +5349,7 @@ function keyDates(){
     finalNums: isoAddDays(Q.dateStart, -c.finalDays),
     finalDays: c.finalDays,
     half: isoAddDays(Q.dateStart, -c.halfDays),
+    balance: isoAddDays(Q.dateStart, -c.balanceDays),
     cancelBig: isoAddDays(Q.dateStart, -c.cancelBigDays),
     cancel: isoAddDays(Q.dateStart, -c.cancelDays),
     big: unitsSelected() > c.bigUnits
@@ -6876,6 +6888,7 @@ function kdFieldsHTML(c, cls, list){
     row("Events more than", f("farMonths") + '<span class="kdu">months away: due</span>' + f("farDepositDays") + '<span class="kdu">days after acceptance</span>', true) +
     grp("Part payment") +
     row("Share of the total bill", f("halfPct") + '<span class="kdu">%, due</span>' + f("halfDays") + '<span class="kdu">days before arrival</span>', true) +
+    row("Balance (the rest of the total)", f("balanceDays") + '<span class="kdu">days before arrival (1 = the day before, 0 = on arrival)</span>', true) +
     grp("Cancellation without penalty") +
     row("A bigger group is more than", f("bigUnits") + '<span class="kdu">cabins &amp; sites</span>') +
     row("Bigger groups: more than", f("cancelPct") + '<span class="kdu">% until</span>' + f("cancelBigDays") + '<span class="kdu">days out</span>', true) +
@@ -7873,7 +7886,10 @@ function depositInvoiceData(){
   if(c.halfPct > 0 && half > 0 && halfPay > 0.5) payments.push({label: c.halfPct + "% of the total, less the deposit",
     due: halfDue && kdPassed(halfDue) ? "As soon as possible" : short(halfDue), amount: halfPay,
     note: c.halfPct + "% of the total is " + money(half) + "; the " + money(depTotal) + " deposit counts towards it"});
-  if(Q.dateStart) payments.push({label: "Balance", due: "Before arrival, " + short(Q.dateStart), amount: balance, note: "Paid before keys are handed over"});
+  const balDue = Q.dateStart ? isoAddDays(Q.dateStart, -c.balanceDays) : "";
+  if(Q.dateStart) payments.push({label: "Balance", amount: balance,
+    due: c.balanceDays > 0 ? (kdPassed(balDue) ? "As soon as possible" : short(balDue)) : "On arrival, " + short(Q.dateStart),
+    note: (c.balanceDays > 0 ? "Due " + balanceWhenPhrase(c) + "; p" : "P") + "aid before keys are handed over"});
   const schedule = [];
   if(Q.dateStart && c.finalDays > 0) schedule.push("Final numbers & catering numbers due " + short(isoAddDays(Q.dateStart, -Math.max(c.finalDays, c.cateringDays))));
   const nights = Q.dateStart ? nightsCount() : 0;
@@ -8212,7 +8228,7 @@ function depositPayHTML(){
       '<b>Reference</b><span>' + esc(ref) + '</span>' +
     '</div>' +
     '<div>Card payments can be taken over the phone on ' + VENUE_PHONE + ', or ask us for a payment link.</div>' +
-    (b.halfPct > 0 ? '<div class="paysmall">After the deposit, ' + b.halfPct + '% of the total is due ' + leadPhrase(b.halfDays) + ' before arrival, and the balance before keys are handed over.</div>' : '') +
+    (b.halfPct > 0 ? '<div class="paysmall">After the deposit, ' + b.halfPct + '% of the total is due ' + leadPhrase(b.halfDays) + ' before arrival, and the balance ' + balanceWhenPhrase(b) + ', before keys are handed over.</div>' : '') +
     '<div class="paysmall">We do not accept American Express.</div>' +
     '</div>';
 }
@@ -8693,8 +8709,13 @@ function keyDatesAutoRows(showPrices){
     if(c.finalDays > 0) at(kd.finalNums, kdPassed(kd.finalNums)
       ? 'final numbers & details due as soon as possible (normally ' + leadPhrase(kd.finalDays) + ' before arrival)'
       : 'final numbers & details due (' + leadPhrase(kd.finalDays) + ' before arrival)');
-    /* 5: the balance */
-    dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), 'arrival. The remaining balance must be paid before this, and before keys are handed over']});
+    /* 5: the balance, due balanceDays before arrival (the day before by default) */
+    if(c.balanceDays > 0){
+      at(kd.balance, kdPassed(kd.balance)
+        ? 'the remaining balance is due as soon as possible (normally ' + balanceWhenPhrase(c) + ')'
+        : 'the remaining balance is due (' + balanceWhenPhrase(c) + ')');
+      dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), 'arrival. Keys are handed over once the balance is paid']});
+    } else dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), 'arrival. The remaining balance must be paid before keys are handed over']});
     dated.sort((a, b) => (a.iso < b.iso ? -1 : (a.iso > b.iso ? 1 : 0)));
     /* same day, one line (e.g. the 10 day cancellation cut-off and the numbers) */
     const merged = [];
