@@ -583,6 +583,16 @@
   .cb-price{font-size:12.5px; color:var(--ink2)}
   .cb-avail{font-size:11.5px; color:var(--muted)}
   .cb-incl{font-size:12.5px; color:var(--good); font-weight:600; margin-top:2px}
+  /* a conference room that can't be picked while the combined space (or its rooms) is (Oct 2026) */
+  .cb-row.cb-blocked .pkgname, .cb-row.cb-blocked .pkgmeta, .cb-row.cb-blocked .cb-price, .cb-row.cb-blocked .stepper,
+  .cb-row.cb-blocked .pkgsub, .cb-row.cb-blocked .tourlink{opacity:.4}
+  .cb-blocknote{font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:3px}
+  /* venue credit: one banner at the top of the conference rooms (Oct 2026) */
+  .vcbanner{margin:6px 0 12px; padding:12px 14px; border-radius:10px; background:rgba(26,140,70,.09); border:1px solid rgba(26,140,70,.35)}
+  .vcbig{font-size:21px; font-weight:800; line-height:1.2; color:var(--good)}
+  .vcsmall{font-size:13px; color:var(--ink2); margin-top:4px; line-height:1.45}
+  .vcsmall b{color:var(--ink)}
+  .vcpoint{margin-top:10px; font-size:14px; font-weight:700; color:var(--good)}
   .blockrows{grid-column:1 / -1; padding-left:14px; border-left:2px solid var(--grid); margin:2px 0 4px}
   .blockrow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:5px 0; font-size:13px; color:var(--ink2)}
   .blockrow .pkgsub{min-width:80px; margin-left:auto}
@@ -3225,7 +3235,7 @@ const SCHOOL_ROOMS_DEFAULT = {
   perStudent: 4, perTeacher: 2, perDriver: 1,
   studentTypes: ["acc_motel_std", "acc_motel_bud", "acc_1br_std"],
   teacherTypes: ["acc_1br_std", "acc_motel_std", "acc_motel_bud"],
-  base: {"Primary": 50, "High school": 55}
+  base: {"Primary": 55, "High school": 60}   // 15 Oct 2026: was $50 / $55
 };
 function schoolCfg(){
   const d = (getDefaults() || {}).school || {};
@@ -4861,6 +4871,47 @@ function venueCreditWords(){
     (w ? "; doubled to " + vcMoney(venueCreditPerDay() * 2) + " on " + (w === 1 ? "your winter day" : "your " + w + " winter days") : "");
 }
 
+/* The venue credit said once, big and green, at the top of the conference rooms
+   (Joel, 15 Oct 2026): how much a day the group's cabins earn, the sum behind it, and
+   what it is taking off the rooms picked so far. Before any cabins are picked it says
+   how the credit is earned instead. The room lines still show what came off each one. */
+function venueCreditRoomsOffered(){
+  return VENUES.some(v => VENUE_CREDIT_KEYS.indexOf(v.key) >= 0 && (RATE[v.fullId] || RATE[v.halfId]) && catEntry(v.fullId).on && !venueIsFree(v));
+}
+function venueCreditBannerHTML(showPrices){
+  if(!venueCreditOn() || !showPrices || !venueCreditRoomsOffered()) return '';
+  const per = venueCreditPerDay(), r = vcRates();
+  if(per <= 0){
+    if(!(r.cabin > 0)) return '';
+    return '<div class="vcbanner"><div class="vcbig">Stay with us and save on your conference rooms</div>' +
+      '<div class="vcsmall">Every cabin you book takes <b>' + vcMoney(r.cabin) + ' a day</b> off your conference room hire' +
+      (r.site > 0 ? ' (every campsite ' + vcMoney(r.site) + ')' : '') + ', doubled in June, July and August. Add your cabins above and it comes off by itself.</div></div>';
+  }
+  const a = venueCreditAlloc();
+  const u = unitsSplit(), bits = [];
+  if(u.cabins > 0 && r.cabin > 0) bits.push(u.cabins + ' cabin' + (u.cabins === 1 ? '' : 's') + ' × ' + vcMoney(r.cabin));
+  if(u.sites > 0 && r.site > 0) bits.push(u.sites + ' site' + (u.sites === 1 ? '' : 's') + ' × ' + vcMoney(r.site));
+  return '<div class="vcbanner"><div class="vcbig">Venue credit: ' + vcMoney(per) + ' a day to use on your conference rooms</div>' +
+    '<div class="vcsmall">Your <b>' + bits.join(' + ') + ' = ' + vcMoney(per) + '</b> comes off your conference room hire each day you use a room' +
+      ' (half that on a day with only a morning or an afternoon' + (a.winterDays ? ', double on your ' + (a.winterDays === 1 ? 'winter day' : a.winterDays + ' winter days') : '') + '). ' +
+      'There is nothing to claim: it comes off by itself.<br>' +
+      (a.total > 0 ? '<b>Taking ' + money(a.total) + ' off the rooms you have picked below.</b>' : '<b>Pick your rooms below and it comes straight off.</b>') +
+    '</div></div>';
+}
+/* under the cabins: a pointer down to the credit they are earning */
+function venueCreditPointerHTML(showPrices){
+  if(!venueCreditOn() || !showPrices || !venueCreditRoomsOffered()) return '';
+  const per = venueCreditPerDay();
+  return per > 0 ? '<div class="vcpoint">Your cabins also give you ' + vcMoney(per) + ' a day off your conference rooms ↓</div>' : '';
+}
+/* why a room can't be picked right now, in words */
+function venueBlockedNote(v){
+  const blk = venueBlockedBy(v);
+  if(!blk) return '';
+  return '<div class="cb-blocknote">(' + (v.members
+    ? 'You have picked single rooms. Take them off to book all three as one space'
+    : 'Included in ' + esc(blk.name) + ', which you have picked') + ')</div>';
+}
 /* ---------- the conference rooms: one space or three rooms, never both ---------
    Picking "Conference Rooms 1, 2 & 3" takes all three rooms, so the single rooms
    step aside while it is selected, and the other way round. Returns the venue
@@ -5902,6 +5953,21 @@ function stepVenue(key, dir){
     const m = Object.assign({}, venueDayMap(key) || {});
     if(dir > 0){
       const freeDay = iso => !venueTakenOn(v, iso) || !!staffExtra("venue:" + key, iso);
+      /* Joel, 15 Oct 2026: a room wanted for as many days as the stay has nights is the
+         usual conference: the afternoon they arrive, full days in between and the morning
+         they leave (2 nights, 2 days = afternoon, full day, morning). So the + that brings
+         the days up to the nights sets that pattern, as long as every day is free and the
+         days so far are the full days + itself put in from the first day. */
+      const nights = days.length - 1;
+      const picked = Object.keys(m).sort();
+      const plusMade = picked.every((iso, i) => iso === days[i] && m[iso] === "full");
+      if(nights >= 1 && plusMade && picked.length === nights - 1 && days.every(freeDay)){
+        days.forEach((iso, i) => { m[iso] = i === 0 ? "pm" : (i === nights ? "am" : "full"); });
+        Q.sel.venueDays[key] = m;
+        syncVenueCount(key);
+        refresh();
+        return;
+      }
       let openDay = days.find(iso => !m[iso] && freeDay(iso));
       if(!openDay && !CLIENT_MODE){
         /* staff can still add a booked day, in red */
@@ -9075,7 +9141,7 @@ function renderClient(){
         : '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
           '<span><b>Some cabins are only needed for part of the stay</b><br>' +
           '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin, you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>') +
-      rows + capHtml + '</div>';
+      rows + capHtml + venueCreditPointerHTML(showPrices) + '</div>';
   }
 
   /* --- venues (interactive) --- */
@@ -9083,6 +9149,7 @@ function renderClient(){
   const venueHtml = venuesOn.length
     ? '<div class="cb-sec"><h3>Conference rooms &amp; venues</h3>' +
       '<p class="cb-hint">in half-day steps · a half day is 6 continuous hours or less</p>' +
+      venueCreditBannerHTML(showPrices) +
       venuesOn.map(v => {
         const c = catEntry(v.fullId), ch = catEntry(v.halfId);
         const d = Number((Q.sel.venues || {})[v.key]) || 0;
@@ -9099,13 +9166,14 @@ function renderClient(){
         const pr = venuePairFor(v), pwhy = pr > 0 ? venuePairWhy(v) : "";
         const pairHint = pr > 0 ? '<div class="cb-free">' + (pwhy === "all3" ? "All three rooms booked: charged as All Conference Rooms 1, 2 &amp; 3" : (pwhy === "12" ? "Rooms 1 &amp; 2" : "Rooms 2 &amp; 3") + " booked together: " + money0(PAIR_ROOM_FULL) + " a day each") + ' (−' + money(pr) + ')</div>'
           : (["fr1", "fr2", "fr3"].indexOf(v.key) >= 0 && showPrices ? '<div class="cb-note">(Book ' + (v.key === "fr2" ? "Room 1 or 3" : "Room 2") + ' as well, the same day, and each is ' + money0(PAIR_ROOM_FULL) + ' a day)</div>' : '');
-        const creditHint = (!venueCreditOn() || isFree || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || !showPrices) ? ''
+        const blocked = !!venueBlockedBy(v) && d <= 0;
+        const creditHint = (blocked || !venueCreditOn() || isFree || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || !showPrices) ? ''
           : vcr > 0
             ? '<div class="cb-free">Venue credit −' + money(vcr) + ' with your stay (' + esc(vcMoney(venueCreditPerDay())) + ' a day, shared across your rooms)</div>'
             : '<div class="cb-note">(' + [vcRates().cabin > 0 ? vcMoney(vcRates().cabin) + ' a day off for every cabin you book' : '', vcRates().site > 0 ? vcMoney(vcRates().site) + ' for every site' : ''].filter(Boolean).join(', ') + ', doubled in June, July and August)</div>';
-        return '<div class="cb-row">' +
+        return '<div class="cb-row' + (blocked ? ' cb-blocked' : '') + '">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
-            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + freeHint + pairHint + creditHint + venueAvailNote(v) +
+            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + (blocked ? venueBlockedNote(v) : freeHint + pairHint + creditHint + venueAvailNote(v)) +
             (showPrices ? (isFree ? '<div class="cb-price"><s>' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</s></div>' : '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>') +
               (asOrg() ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price for this quote"> full · $<input type="number" class="spNum" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price for this quote"> half</div>') : '') +
             ((d > 0 || venueDayMap(v.key)) ? venueDaysHTML(v) : '') +
