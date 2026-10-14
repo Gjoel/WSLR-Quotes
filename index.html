@@ -4128,7 +4128,8 @@ function roomsSummary(){
 function displayLines(){
   const out = [];
   const n = nightsCount();
-  (Q.sel.accom || []).forEach(b => {
+  const rdParts = roomDiscCalc().parts;
+  (Q.sel.accom || []).forEach((b, bi) => {
     const it = RATE[b.id], c = catEntry(b.id);
     if(!it || !c.on || (Number(b.qty) || 0) <= 0) return;
     const bn = blockNights(b);
@@ -4136,14 +4137,31 @@ function displayLines(){
     const partial = !!(b.from || b.to);
     const qty = Number(b.qty) || 0;
     const tot = blockTotal(b);
-    out.push({
-      name: it.name, qty: b.qty,
+    const unitPrice = qty > 0 ? tot / qty : 0;
+    const when = (partial && r) ? ("arrive " + shortDate(r.from) + " · leave " + shortDate(r.to)) : "";
+    const unitWord = "per unit for " + bn + " night" + (bn === 1 ? "" : "s");
+    /* rooms at their own % (staff, under Discount) come off this line onto their own */
+    const mine = rdParts.filter(p => p.block === bi);
+    const rest = qty - mine.reduce((t, p) => t + p.n, 0);
+    if(rest > 0) out.push({
+      name: it.name, qty: rest,
       nights: 0, nightsWord: "nights", part: partial,
       beds: bedsLine(it), sleeps: it.sleeps || 0,
-      price: qty > 0 ? Math.round(tot / qty * 100) / 100 : 0, disc: 0,
-      unit: "per unit for " + bn + " night" + (bn === 1 ? "" : "s"),
-      when: (partial && r) ? ("arrive " + shortDate(r.from) + " · leave " + shortDate(r.to)) : "",
-      total: tot
+      price: Math.round(unitPrice * 100) / 100, disc: 0,
+      unit: unitWord, when: when,
+      total: unitPrice * rest
+    });
+    mine.forEach(p => {
+      const each = p.unit * (1 - p.pct / 100);
+      out.push({
+        name: it.name + ", " + (p.pct >= 100 ? "no charge" : p.pct > 0 ? p.pct + "% off" : "full price") + (p.note ? ": " + p.note : ""), qty: p.n,
+        nights: 0, nightsWord: "nights", part: partial,
+        beds: bedsLine(it), sleeps: it.sleeps || 0,
+        price: Math.round(each * 100) / 100, disc: 0, roomDisc: p.pct,
+        unit: unitWord,
+        when: [when, "usually " + money(p.unit) + " a unit"].filter(Boolean).join(" · "),
+        total: each * p.n
+      });
     });
   });
   const vca = venueCreditAlloc();
@@ -5390,38 +5408,41 @@ function selSleeps(){
 }
 /* Rooms at their own % (Oct 2026), set by staff on the Prepare tab under Discount: e.g. the
    priest's room at 50% while the rest of the group has the church 20%. A room listed here
-   comes out of the church discount and takes its own % instead. Q.disc.rooms =
+   comes out of the church discount, takes its own % instead and is its own line on the
+   quote at the lower price (displayLines), so the organiser sees it is cheaper. Q.disc.rooms =
    [{id, qty, pct, note}]; they count while the Discount box is ticked, only for rooms
    still on the quote, and never for more rooms of a type than are booked. */
 function roomDiscRows(){
   const d = Q.disc || {};
   return (d.on && Array.isArray(d.rooms)) ? d.rooms : [];
 }
-function roomDiscCalc(churchPct){
-  const used = {}, lines = [];
+function roomDiscCalc(){
+  const acc = Q.sel.accom || [], left = {}, parts = [];
   let cost = 0, amount = 0;
   roomDiscRows().forEach(r => {
     const id = r && r.id;
     if(!id || !RATE[id] || !catEntry(id).on) return;
-    const blocks = (Q.sel.accom || []).filter(b => b.id === id);
-    const have = blocks.reduce((t, b) => t + (Number(b.qty) || 0), 0);
-    const n = Math.min(Math.max(0, Math.floor(Number(r.qty) || 0)), have - (used[id] || 0));
-    if(n <= 0) return;
-    used[id] = (used[id] || 0) + n;
+    let want = Math.max(0, Math.floor(Number(r.qty) || 0));
     const pct = Math.min(100, Math.max(0, Number(r.pct) || 0));
-    const c = blocks.reduce((t, b) => t + blockTotal(b), 0) / have * n;
-    const a = c * pct / 100;
-    cost += c; amount += a;
     const note = String(r.note || "").trim();
-    if(a > 0) lines.push({label: "Room discount, " + n + " × " + RATE[id].name + " at " + pct + "%" +
-      (churchPct > 0 && pct !== churchPct ? " (in place of " + churchPct + "%)" : "") + (note ? ": " + note : ""), amount: a});
+    acc.forEach((b, i) => {
+      if(want <= 0 || b.id !== id) return;
+      const q = Number(b.qty) || 0;
+      const free = left[i] === undefined ? q : left[i];
+      const n = Math.min(want, free);
+      if(n <= 0) return;
+      left[i] = free - n; want -= n;
+      const unit = blockTotal(b) / q;
+      cost += unit * n; amount += unit * n * pct / 100;
+      parts.push({block: i, n: n, unit: unit, pct: pct, note: note});
+    });
   });
-  return {cost: cost, amount: amount, lines: lines};
+  return {cost: cost, amount: amount, parts: parts};
 }
 /* the accommodation and catering amounts the discounts work on */
 function discBases(){
   const churchPct = Number(Q.sel && Q.sel.church) || 0;
-  const rd = roomDiscCalc(churchPct);
+  const rd = roomDiscCalc();
   let accomLines = 0, caterLines = 0;
   (Q.lines || []).forEach(l => {
     if(isAccomLine(l)) accomLines += lineTotal(l);
@@ -5442,25 +5463,25 @@ function totals(){
   const pairs = Math.min(venuePairTotal(), venueGross);
   const credit = Math.min(venueCreditTotal(), venueGross - pairs);
   const venue = venueGross - pairs - credit;
-  const sub = accom + venue + cater + fixed;
   const churchPct = Number(Q.sel.church) || 0;
-  /* rooms at their own % are left out of the church discount */
-  const rd = roomDiscCalc(churchPct);
+  /* rooms at their own % are left out of the church discount, and their own line on the
+     quote is already at the lower price, so the subtotal is what they pay for them */
+  const rd = roomDiscCalc();
+  const sub = accom - rd.amount + venue + cater + fixed;
   const church = (accom - rd.cost + venue) * churchPct / 100;
   const afterChurch = sub - church;
   const d = Q.disc || {};
   const discLines = [];
   let disc = 0;
   if(d.on){
-    rd.lines.forEach(x => discLines.push(x));
     const b = discBases();
     const da = discAmount(d.accom, b.accom), dc = discAmount(d.cater, b.cater);
     if(da > 0) discLines.push({label: "Accommodation discount (" + discWord(d.accom) + ")", amount: da});
     if(dc > 0) discLines.push({label: "Catering discount (" + discWord(d.cater) + ")", amount: dc});
     const all = Number(d.all) || 0;
-    const dall = all > 0 ? (afterChurch - rd.amount - da - dc) * all / 100 : 0;
+    const dall = all > 0 ? (afterChurch - da - dc) * all / 100 : 0;
     if(dall > 0) discLines.push({label: "Discount (" + all + "%)", amount: dall});
-    disc = rd.amount + da + dc + dall;
+    disc = da + dc + dall;
   }
   const total = afterChurch - disc;
   const gst = total * GST_PCT / (100 + GST_PCT);
@@ -12292,7 +12313,7 @@ function renderRoomDisc(){
   const church = Number(Q.sel.church) || 0;
   host.innerHTML = '<b>Rooms at their own %</b> <span class="hint">Staff only. For example, the priest\'s room at 50% while the group has ' +
       (church > 0 ? 'the church ' + church + '%' : 'no church discount') + '. These rooms come out of the church discount and take their own % instead. ' +
-      'The quote shows a line for each, e.g. “Room discount, 1 × Motel at 50%”, with your note after it.</span>' +
+      'Each one is its own line on the quote at the lower price, e.g. “Motel, 50% off: Fr Michael\'s room” with “usually $x a unit” under it.</span>' +
     (rows.length ? '<div class="rdhead"><span>Room type</span><span>Rooms</span><span>%</span><span>Note on the quote (optional)</span><span></span></div>' : '') +
     rows.map((r, i) => '<div class="rdrow" data-i="' + i + '">' +
       '<select data-f="id">' + opts(r.id) + '</select>' +
@@ -12307,7 +12328,7 @@ function renderRoomDisc(){
 function renderRoomDiscSum(){
   const el = document.getElementById("rdSum");
   if(!el) return;
-  const rd = roomDiscCalc(Number(Q.sel.church) || 0);
+  const rd = roomDiscCalc();
   el.textContent = rd.amount > 0 ? "Comes off: " + money(rd.amount) + " on " + money(rd.cost) + " of rooms" : "";
 }
 (function(){
