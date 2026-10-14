@@ -582,6 +582,7 @@
   .cb-row:last-child{border-bottom:none}
   .cb-price{font-size:12.5px; color:var(--ink2)}
   .cb-avail{font-size:11.5px; color:var(--muted)}
+  .cb-incl{font-size:12.5px; color:var(--good); font-weight:600; margin-top:2px}
   .blockrows{grid-column:1 / -1; padding-left:14px; border-left:2px solid var(--grid); margin:2px 0 4px}
   .blockrow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:5px 0; font-size:13px; color:var(--ink2)}
   .blockrow .pkgsub{min-width:80px; margin-left:auto}
@@ -9016,6 +9017,7 @@ function renderClient(){
   if(accomOn.length){
     const evFrom = Q.dateStart || '';
     const evTo = evFrom ? isoAddDays(evFrom, n) : '';
+    const rdParts = roomDiscCalc().parts;
     const rows = accomOn.map(it => {
       const q = accomQtyTotal(it.id);
       const blocks = [];
@@ -9023,6 +9025,13 @@ function renderClient(){
       const sub = blocks.reduce((s, x) => s + blockTotal(x.b), 0);
       const avail = availDisplay(it.id);
       const meta = avail !== null ? ('up to ' + avail + ' available on your dates') : '';
+      /* rooms at their own % (staff, under Discount): said in brackets here, and the
+         price beside the stepper is what this room type costs with them in it */
+      const rdMine = rdParts.filter(p => blocks.some(x => x.i === p.block));
+      const rdSave = rdMine.reduce((s, p) => s + p.unit * p.n * p.pct / 100, 0);
+      const rdNote = rdMine.length && showPrices
+        ? '<div class="cb-incl">(includes ' + rdMine.map(p => p.n + ' at ' + (p.pct >= 100 ? 'no charge' : p.pct > 0 ? p.pct + '% off' : 'full price') + (p.note ? ': ' + esc(p.note) : '')).join('; ') + ')</div>'
+        : '';
       let blockHtml = '';
       if(split){
         blockHtml = '<div class="blockrows">' +
@@ -9047,12 +9056,12 @@ function renderClient(){
       return '<div class="cb-row">' +
         '<div><span class="pkgname">' + esc(it.name) + '</span>' + sleepsPill(it) + tourLink(tourFor(it.id)) +
           (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') +
-          (meta ? '<div class="cb-price">' + esc(meta) + '</div>' : '') +
+          (meta ? '<div class="cb-price">' + esc(meta) + '</div>' : '') + rdNote +
           staffAccomPrice(it.id, showPrices) + '</div>' +
         (split
           ? '<div class="cb-avail" style="text-align:right">' + q + ' selected</div>'
           : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: asOrg() ? canAddOver(it.id, stayNightsList()) : true, lock: lockedItem(it.id, "accom")})) +
-        '<div class="pkgsub">' + (q > 0 && showPrices ? (schoolIncludes(it.id) ? SCHOOL_INCL_WORD : money(sub)) : (q > 0 ? q + ' ✓' : '<span class="fmuted">-</span>')) + '</div>' +
+        '<div class="pkgsub">' + (q > 0 && showPrices ? (schoolIncludes(it.id) ? SCHOOL_INCL_WORD : money(sub - rdSave)) : (q > 0 ? q + ' ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         blockHtml +
       '</div>';
     }).join('');
