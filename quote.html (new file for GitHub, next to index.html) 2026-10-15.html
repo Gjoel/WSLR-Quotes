@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Your quote | Wollongong Surf Leisure Resort</title>
+<!--
+  The organiser's quote page, without Google (15 Oct 2026).
+  www.wslr.com.au/your-quote/?t=TOKEN shows this file (https://gjoel.github.io/WSLR-Quotes/quote.html?t=TOKEN)
+  in its frame. It reads the quote from the quote server as plain data (?q=TOKEN, code.gs), reads
+  index.html from this same folder, puts the quote in front of it the way the quote server does
+  (window.WSLR_BOOTSTRAP, plus window.WSLR_TRANSPORT = "fetch"), and shows it. The organiser's browser
+  never opens a Google page, so a Google sign-in, an account chooser, several Google accounts, a
+  school or work Google account or blocked cookies in frames can't get in the way. The quote itself
+  is still read from script.google.com in the background, so a network that blocks that address
+  entirely gets the Try again screen with our phone and email.
+  &view=staff is passed through: the same page under a STAFF VIEW banner, as before.
+  If the quote server can't be reached, it says so and offers Try again, our phone number and email.
+  After 25 seconds with no answer it says the quote is taking longer than usual and offers Try
+  again, and the quote still appears the moment an answer arrives (whichever try answers first).
+  It never sends anyone to script.google.com.
+-->
+<style>
+  :root{
+    --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --navy:#1b2a6b;
+    --accent:#2a78d6; --accent-dn:#1c5cab;
+  }
+  *{box-sizing:border-box}
+  html{color-scheme:light}
+  body{margin:0; background:var(--page); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:16px; line-height:1.5}
+  .box{max-width:480px; margin:0 auto; padding:56px 16px 40px; text-align:center}
+  .logo{width:132px; height:auto; display:block; margin:0 auto 28px}
+  h1{font-size:21px; line-height:1.3; font-weight:650; margin:0 0 10px; color:var(--navy)}
+  p{margin:0 0 12px; color:var(--ink2)}
+  .spin{width:34px; height:34px; margin:2px auto 18px; border-radius:50%;
+    border:3px solid rgba(42,120,214,.18); border-top-color:var(--accent); animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){ .spin{animation-duration:2.6s} }
+  .btn{display:inline-block; margin:8px 0 20px; padding:12px 28px; border:0; border-radius:8px;
+    background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer}
+  .btn:hover,.btn:focus-visible{background:var(--accent-dn)}
+  .contact a{color:var(--accent-dn); font-weight:600; white-space:nowrap}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<main class="box">
+  <img class="logo" src="logo.png" alt="Wollongong Surf Leisure Resort">
+  <div id="wqLoading" role="status" aria-live="polite">
+    <div class="spin" aria-hidden="true"></div>
+    <h1>Loading your quote…</h1>
+    <p>This usually takes a few seconds.</p>
+  </div>
+  <div id="wqMsg" role="alert" hidden></div>
+  <noscript><p>Please turn on JavaScript to see your quote, or call us on (02) 4283 6999.</p></noscript>
+</main>
+<script>
+(function () {
+  "use strict";
+  /* the quote server (Apps Script "WSLR Quote Logger"); only ever read as data, never opened as a page */
+  var EXEC = "https://script.google.com/macros/s/AKfycbwH01LNaO8ifVNqXUugTT6WcHReneXZvMN4Aro3AIB9hu-sPyN5jvjhEKT4liMXbYhJ/exec";
+  var LIMIT = 25000;   // ms: then it says it is taking longer than usual and offers Try again
+  var CALL = 'call us on <a href="tel:+61242836999">(02) 4283 6999</a> or email <a href="mailto:functions@wslr.com.au">functions@wslr.com.au</a>';
+  var STILL = "If it still won't open, please " + CALL + ".";
+  var loading = document.getElementById("wqLoading");
+  var msg = document.getElementById("wqMsg");
+  var params = null;
+  try { params = new URLSearchParams(location.search); } catch (e) { params = null; }
+  var tok = params ? String(params.get("t") || "") : "";
+  var staff = !!params && params.get("view") === "staff";
+  var attempt = 0;      // the latest try (the first load, then each Try again)
+  var served = false;   // the quote is on screen: from then on nothing here touches the page
+
+  function show(title, text, retry, contact) {
+    if (served) return;
+    loading.hidden = true;
+    msg.hidden = false;
+    msg.innerHTML = "<h1>" + title + "</h1>" + (text ? "<p>" + text + "</p>" : "") +
+      (retry ? '<button type="button" class="btn" id="wqRetry">Try again</button>' : "") +
+      (contact ? '<p class="contact">' + contact + "</p>" : "");
+    var b = document.getElementById("wqRetry");
+    if (b) { b.addEventListener("click", function () { start(); }); try { b.focus(); } catch (e) {} }
+  }
+  function notFound() {
+    show("Quote not found", "This quote link is no longer available. Please " + CALL + ".", false, "");
+  }
+  /* kind: "slow" (no answer yet after 25 s, still waiting), "server" (the quote server or GitHub
+     answered but could not give us the quote), anything else: the quote server could not be reached */
+  function failed(kind) {
+    if (kind === "slow") {
+      show("Your quote is taking longer than usual",
+        "Our quote system is slow just now. Your quote will appear here as soon as it's ready, or you can try again.", true, STILL);
+    } else if (kind === "server") {
+      show("We couldn't open your quote just now",
+        "Our quote system is busy just now. Please try again in a minute.", true, STILL);
+    } else {
+      show("We couldn't open your quote just now",
+        "We couldn't reach our quote system. Please check you're online, then try again. On a school or work network, your phone's mobile data may work instead.", true, STILL);
+    }
+  }
+  /* what the quote server does (code.gs renderQuotePage): the quote goes in a script straight
+     after <body ...>. Every less-than sign in it is written as a JavaScript escape (backslash
+     u003c), which reads back the same, so nothing in the quote (an end-of-script tag or an HTML
+     comment typed into an organiser's message, say) can end or upset the script early. */
+  function serve(html, boot) {
+    var tag = "<script>window.WSLR_BOOTSTRAP = " + JSON.stringify(boot).replace(/</g, "\\u003c") +
+      ';window.WSLR_TRANSPORT = "fetch";</scr' + 'ipt>';
+    var page = html.replace(/<body([^>]*)>/, function (m, attrs) { return "<body" + attrs + ">" + tag; });
+    document.open();
+    document.write(page);
+    document.close();
+    try {
+      document.title = (boot.staffView ? "STAFF VIEW · " : "") + "Quote " + String(boot.quote.num || "") + " - Wollongong Surf Leisure Resort";
+    } catch (e) {}
+  }
+  function oops(kind) { var e = new Error(kind); e.kind = kind; return e; }
+
+  function start() {
+    if (served) return;
+    var mine = ++attempt;
+    loading.hidden = false;
+    msg.hidden = true;
+    msg.innerHTML = "";
+    var settled = false;
+    /* 25 s and no answer: say so and offer Try again, but keep this request going. A slow quote
+       server (a cold start, a slow RMS) still answers, and the quote then shows straight away;
+       a Try again in the meantime runs alongside it and the first answer wins. */
+    var timer = setTimeout(function () {
+      if (served || settled || mine !== attempt) return;
+      failed("slow");
+    }, LIMIT);
+    var end = function () { settled = true; clearTimeout(timer); };
+    /* the quote (and today's availability) from the server, and the page itself from this folder,
+       side by side; the page's address changes every 5 minutes, so a new version reaches everyone
+       quickly, as it does through the quote server */
+    var quote = fetch(EXEC + "?q=" + encodeURIComponent(tok) + (staff ? "&view=staff" : ""), {cache: "no-store", credentials: "omit"})
+      .then(function (r) {
+        return r.text().then(function (t) {
+          try { return JSON.parse(t); } catch (e) { throw oops("server"); }
+        });
+      }, function () { throw oops("net"); });
+    var page = fetch("index.html?v=" + Math.floor(Date.now() / 300000), {credentials: "same-origin"})
+      .then(function (r) { if (!r.ok) throw oops("server"); return r.text(); }, function () { throw oops("net"); });
+    page.catch(function () {});
+    quote.then(function (j) {
+      if (served) return;
+      if (!j || j.ok !== true || !j.boot || !j.boot.quote) {
+        end();
+        if (mine !== attempt) return;
+        if (j && j.ok === false && j.error === "not found") notFound(); else failed("server");
+        return;
+      }
+      return page.then(function (html) {
+        if (served) return;
+        end();
+        /* index.html from round 3 on (it knows WSLR_TRANSPORT): an older copy, still being served
+           while GitHub catches up, can't run here safely, so it is a "try again in a minute" */
+        if (typeof html !== "string" || html.indexOf("<body") < 0 || html.indexOf("WSLR_BOOTSTRAP") < 0 || html.indexOf("WSLR_TRANSPORT") < 0) {
+          if (mine === attempt) failed("server");
+          return;
+        }
+        served = true;
+        serve(html, j.boot);
+      });
+    }).catch(function (e) {
+      if (served) return;
+      end();
+      if (mine === attempt) failed((e && e.kind) || "net");
+    });
+  }
+
+  if (!/^[A-Za-z0-9_-]{8,200}$/.test(tok)) {
+    show("This quote link is incomplete", "Please open the link from your quote email again, or " + CALL + ".", false, "");
+    return;
+  }
+  if (typeof fetch !== "function" || typeof JSON === "undefined") {
+    show("This browser can't show your quote", "Please open the link on another phone or computer, or " + CALL + ".", false, "");
+    return;
+  }
+  start();
+})();
+</script>
+</body>
+</html>
