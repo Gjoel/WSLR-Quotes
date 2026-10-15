@@ -583,16 +583,37 @@
   .cb-price{font-size:12.5px; color:var(--ink2)}
   .cb-avail{font-size:11.5px; color:var(--muted)}
   .cb-incl{font-size:12.5px; color:var(--good); font-weight:600; margin-top:2px}
-  /* a conference room that can't be picked while the combined space (or its rooms) is (Oct 2026) */
-  .cb-row.cb-blocked .pkgname, .cb-row.cb-blocked .pkgmeta, .cb-row.cb-blocked .cb-price, .cb-row.cb-blocked .stepper,
-  .cb-row.cb-blocked .pkgsub, .cb-row.cb-blocked .tourlink{opacity:.4}
-  .cb-blocknote{font-size:12.5px; font-weight:600; color:var(--ink2); margin-top:3px}
+  /* Rooms 1, 2 & 3 inside the picked combined space: ticked, locked, same days (15 Oct 2026) */
+  .vincpill{appearance:none; border:none; border-radius:999px; background:var(--good, #1a8c46); color:#fff; font-weight:700; font-size:13.5px;
+    padding:6px 12px; cursor:default; white-space:nowrap; font-family:inherit}
+  .incltag{display:inline-block; font-weight:700; color:var(--good, #1a8c46)}
+  .vdays.vdincl .vday{cursor:default}
+  .vonebar, .vswitchask{margin-top:8px; padding:9px 11px; border-radius:9px; font-size:13px; line-height:1.45; color:var(--ink)}
+  .vonebar{background:rgba(26,140,70,.09); border:1px solid rgba(26,140,70,.35)}
+  .vswitchask{background:#f3f8fd; border:1px solid #9cc3e6}
+  .vonespace, .vswitch{appearance:none; border:1.5px solid var(--good, #1a8c46); background:#fff; color:var(--good, #1a8c46); border-radius:8px;
+    padding:4px 10px; font-weight:700; font-size:12.5px; cursor:pointer; margin:4px 4px 0 0; font-family:inherit}
+  .vonespace, .vswitch.go{background:var(--good, #1a8c46); color:#fff}
+  .vswitch{border-color:#5b9bd0; color:#174a87}
+  .vswitch.go{border-color:var(--good, #1a8c46)}
   /* venue credit: one banner at the top of the conference rooms (Oct 2026) */
   .vcbanner{margin:6px 0 12px; padding:12px 14px; border-radius:10px; background:rgba(26,140,70,.09); border:1px solid rgba(26,140,70,.35)}
   .vcbig{font-size:21px; font-weight:800; line-height:1.2; color:var(--good)}
   .vcsmall{font-size:13px; color:var(--ink2); margin-top:4px; line-height:1.45}
   .vcsmall b{color:var(--ink)}
   .vcpoint{margin-top:10px; font-size:14px; font-weight:700; color:var(--good)}
+  /* the staff view of the venue credit: day by day (Oct 2026) */
+  .vcstaff{margin:8px 0 10px}
+  .vcstaff.off{padding:8px 12px; border-radius:9px; border:1px dashed var(--grid); font-size:12.5px; color:var(--ink2)}
+  .vctable{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:8px; table-layout:fixed}
+  .vctable th{text-align:left; font-weight:600; color:var(--ink2); padding:3px 6px; border-bottom:1px solid rgba(26,140,70,.35)}
+  .vctable td{padding:3px 6px; vertical-align:top; border-bottom:1px solid rgba(26,140,70,.15); overflow-wrap:anywhere}
+  .vctable th.n, .vctable td.n{text-align:right; width:78px; font-variant-numeric:tabular-nums}
+  .vctable th.d, .vctable td.d{width:92px}
+  .vctable .left{color:#a86a00; font-weight:600}
+  .vctable tfoot td{font-weight:700; border-bottom:none}
+  .vcnote{font-size:12px; color:var(--ink2); margin-top:6px}
+  .totnote{font-size:12px; color:var(--good); font-weight:600; margin-top:6px}
   .blockrows{grid-column:1 / -1; padding-left:14px; border-left:2px solid var(--grid); margin:2px 0 4px}
   .blockrow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:5px 0; font-size:13px; color:var(--ink2)}
   .blockrow .pkgsub{min-width:80px; margin-left:auto}
@@ -722,7 +743,10 @@
     border-radius:10px; padding:16px 18px; text-align:center; font-weight:700; font-size:15px;
   }
   .submitted-box span{display:block; font-weight:400; font-size:13px; color:var(--ink2); margin-top:4px}
-  /* the deposit invoice screen, opened after submitting */
+  /* a quote past its "valid until" date, or withdrawn (15 Oct 2026) */
+  .submitted-box.expiredbox{background:#fdf3ec; border-color:#d98b4a}
+  .submitted-box.expiredbox .acceptrow{justify-content:center; margin-top:10px}
+  .expiredtag{color:#b4541f; font-weight:700}
   .depscreen{position:fixed; inset:0; z-index:9000; background:#e9eef2; display:none; flex-direction:column}
   .depscreen.open{display:flex}
   .depscreen .depbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 16px; background:#0b5c8e; color:#fff}
@@ -1273,6 +1297,7 @@
           <span class="bulkpick"><button type="button" class="bulkbtn" data-kind="venue" data-on="1">tick all</button><button type="button" class="bulkbtn" data-kind="venue" data-on="0">untick all</button></span>
           <span class="hint">picked in half-day steps · half day = 6 continuous hours or less</span>
         </div>
+        <div id="prepVenueCredit"></div>
         <div class="preprow prephead">
           <span class="prepcol"></span><span class="prepcol">Venue</span><span class="prepcol">$ full day</span><span class="prepcol">$ half day</span><span class="prepcol">Suggest</span><span class="prepcol">Suggested $</span>
         </div>
@@ -1882,7 +1907,7 @@ function tourLink(url, label){
    space is free only when all three are (members), and a single room cannot be picked while
    the combined space is (partOf), or the same room would be held twice. */
 const VENUES = [
-  {key:"fr13", name:"Conference Rooms 1, 2 & 3", cap:"up to 150 people · walls open into one space", fullId:"fr13_full", halfId:"fr13_half", members:["fr1", "fr2", "fr3"], tour: TOUR_FULL + "&scene=r8wB&menu=0"},
+  {key:"fr13", name:"Conference Rooms 1, 2 & 3 (combined)", cap:"up to 150 people · walls open into one space", fullId:"fr13_full", halfId:"fr13_half", members:["fr1", "fr2", "fr3"], tour: TOUR_FULL + "&scene=r8wB&menu=0"},
   {key:"fr1",  name:"Conference Room 1",          cap:"6.7m × 11.3m · on its own, part of the Rooms 1, 2 & 3 space", fullId:"fr1_full",  halfId:"fr1_half",  partOf:"fr13", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
   {key:"fr2",  name:"Conference Room 2",          cap:"6.7m × 11.2m · on its own, part of the Rooms 1, 2 & 3 space", fullId:"fr2_full",  halfId:"fr2_half",  partOf:"fr13", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
   {key:"fr3",  name:"Conference Room 3",          cap:"6.7m × 7.6m · on its own, part of the Rooms 1, 2 & 3 space",  fullId:"fr3_full",  halfId:"fr3_half",  partOf:"fr13", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
@@ -2097,7 +2122,7 @@ const INFO_SECTIONS = [
   {id:"accom_notes", title:"About your accommodation", why:"auto when accommodation is quoted",
    text:"All units are fully self contained with kitchen and bathroom facilities. Linen is supplied on all beds; beach towels are not supplied. Guests have free use of the 25m indoor heated pool, spa and steam room during their stay, and complimentary pool towels are available. Once your booking is made, the prices on this quote stay valid, and your booking can be changed at these prices, until {pricelead} before your arrival date (cancellations follow the cancellation conditions below). Any rooms added after that are charged at our dynamic price on the day they are added, which changes every day depending on occupancy. For more information on our accommodation visit www.wslr.com.au, or take a virtual walk-through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
   {id:"church", title:"Church & charitable group discount conditions", why:"auto when a church discount is applied",
-   text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and venue hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room booked are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and venue hire applies on conditions a) to d) if you choose to self cater or have fewer than 3 group main meals during your stay. The discount applies to accommodation and venue hire only, never to catering."},
+   text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and venue hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room booked are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and venue hire applies on conditions b) to d) if you choose to self cater or have fewer than 3 group main meals during your stay. The discount applies to accommodation and venue hire only, never to catering."},
   {id:"venue_info", title:"Conference rooms & auditorium", why:"auto when venue hire is quoted",
    text:"Conference Rooms 1, 2 & 3 hold a maximum of 150 persons; rooms 1 & 2 sit next to each other and the walls between them can be opened up to form larger rooms. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds a maximum of 500 persons, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). All conference rooms are equipped with 55 inch flat screen TVs, and Wi-Fi is complimentary for all conference delegates. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee. No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner. Our Private Dining Room holds a maximum of 120 persons and is included at no charge while your group's meal service is running; like the Marquee it still has to be booked in advance and is subject to availability."},
   {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
@@ -2193,6 +2218,12 @@ function fillQuoteText(t){
     .split("{depositwhen}").join(depositWhenPhrase(k))
     .split("{deposit}").join(money0(k.depositPer))
     .replace(/\{halfpct\} of (the |your )?accommodation/g, (m, p) => "{halfpct} of " + (p || "the ") + "total")
+    /* the 20% church discount is for groups WITHOUT the 3 catered meals of condition a),
+       so it can only rest on b) to d) (Joel, 15 Oct 2026); house-saved wording may still say a) */
+    .replace(/(20% discount[^.]*?applies on conditions )a\) to d\)/g, "$1b) to d)")
+    /* school quotes copied the standard sentence with $5 put in for $10, which read
+       "$5.00 per person per meal ($5.00 for children 12 and under)" */
+    .split("$5.00 per person per meal ($5.00 for children 12 and under)").join("$5.00 per person per meal")
     .split("{halfpct}").join(k.halfPct + "%")
     .split("{halflead}").join(leadPhrase(k.halfDays))
     .split("{balancewhen}").join(balanceWhenPhrase(k))
@@ -2228,7 +2259,9 @@ function resolvedSections(){
     return {
       id: id,
       title: po.title !== undefined ? po.title : c.title,
-      text: po.text !== undefined ? po.text : baseText,
+      /* per-quote wording gets the same filling as the standard text, so a placeholder in it
+         (a school quote's copied {finallead}) never prints raw (15 Oct 2026) */
+      text: po.text !== undefined ? sectionBaseText(id, {text: po.text}) : baseText,
       edited: po.title !== undefined || po.text !== undefined
     };
   }).filter(s => String(s.text).trim() !== "");
@@ -2489,7 +2522,14 @@ function postToSheet(payload, onFail){
        seen, but a phone that drops out mid-submit rejects and must not be told the
        selection arrived */
     try{
-      fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({quoteToken: organiserToken()}, payload))}).catch(function(){ if(onFail) onFail(); });
+      fetch(url, {method:"POST", mode:"no-cors", body: JSON.stringify(Object.assign({quoteToken: organiserToken()}, payload))})
+        .then(function(r){
+          /* a reply we can read (not the usual opaque one): the server refusing an expired or
+             withdrawn quote ("expired" / "unavailable", code.gs 13.18) goes to the same handler */
+          if(!r || r.type === "opaque" || !onFail || typeof r.text !== "function") return;
+          return r.text().then(function(t){ const k = String(t || "").trim(); if(k === "expired" || k === "unavailable") onFail(k); });
+        }, function(){ if(onFail) onFail(); })
+        .catch(function(){});
     }catch(e){ if(onFail) onFail(); }
     return true;
   }
@@ -4013,10 +4053,12 @@ function buildSchoolQuote(sc, counts){
   const plan = schoolNumbers(Q.school, c);
   const pr = schoolPricing(Q.school, c);
   /* the standing wording quotes $10 for special diets; a school group pays $5 */
-  const kids = (INFO_SECTIONS.find(x => x.id === "children") || {}).text || "";
+  const kids = (sectionContent("children") || INFO_SECTIONS.find(x => x.id === "children") || {}).text || "";
   if(kids){
     if(!Q.secText) Q.secText = {};
-    Q.secText.children = {text: kids.split("$10.00 per person per meal").join("$5.00 per person per meal")};
+    /* one $5 for everyone on a school quote, not "$5.00 ... ($5.00 for children 12 and under)" */
+    Q.secText.children = {text: kids.split("$10.00 per person per meal ($5.00 for children 12 and under)").join("$5.00 per person per meal")
+      .split("$10.00 per person per meal").join("$5.00 per person per meal")};
   }
   /* the cabins are ours to work out, so they are locked; the group's own numbers and
      meals stay theirs to change, and the rooms follow whatever they type */
@@ -4160,7 +4202,8 @@ function displayLines(){
       beds: bedsLine(it), sleeps: it.sleeps || 0,
       price: Math.round(unitPrice * 100) / 100, disc: 0,
       unit: unitWord, when: when,
-      total: unitPrice * rest
+      total: unitPrice * rest,
+      pkg: schoolOn() && !(unitPrice > 0)       // a school's cabins are priced on the package line
     });
     mine.forEach(p => {
       const each = p.unit * (1 - p.pct / 100);
@@ -4190,7 +4233,7 @@ function displayLines(){
     if(half > 0) out.push({name: (RATE[v.halfId] || {name: v.name + " - half day"}).name + freeTag, qty: half, nights: 0, beds: "", price: venueRate(v, true), disc: 0, unit: "per half day", when: (full > 0 ? "" : vt), total: half * venueRate(v, true)});
     const adj = (name, amt) => { amt = Math.round(amt * 100) / 100; if(amt > 0) out.push({name: name, qty: 1, nights: 0, beds: "", price: -amt, disc: 0, unit: "discount", when: "", total: -amt, venueAdj: true}); };
     const pw = venuePairWhy(v);
-    adj(pw === "all3" ? "↳ All three rooms booked: charged as All Conference Rooms 1, 2 & 3"
+    adj(pw === "all3" ? "↳ All three rooms booked: charged as Conference Rooms 1, 2 & 3 (combined)"
       : pw === "12" ? "↳ Rooms 1 & 2 booked together: " + money0(PAIR_ROOM_FULL) + " a day each"
       : "↳ Rooms 2 & 3 booked together: " + money0(PAIR_ROOM_FULL) + " a day each", venuePairFor(v));
     adj("↳ Venue credit with your stay (" + venueCreditShort() + ")", vca.byKey[v.key] || 0);
@@ -4205,15 +4248,23 @@ function displayLines(){
       const b = mealBands(it.id);
       const p = catEntry(it.id).price;
       const dTag = days > 1 ? days : 0;
-      if(b.adults > 0) out.push({name: it.name + ", adults & 13+", qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
-      if(b.k412 > 0) out.push({name: it.name + ", children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
+      /* a school quote: the meals in the package are charged on the "School meal:" lines, so
+         here they are one line for everyone, marked as part of the package, and no row on a
+         school quote calls the students "adults & 13+" (15 Oct 2026) */
+      if(schoolOn() && SCHOOL_MEAL_IDS.indexOf(it.id) >= 0 && !(Number(p) > 0)){
+        const all = b.adults + b.k412;
+        if(all > 0) out.push({name: it.name, qty: all, nights: dTag, nightsWord: "days", beds: "", price: 0, disc: 0, unit: "per person", when: "", total: 0, pkg: true});
+      } else {
+        if(b.adults > 0) out.push({name: it.name + (schoolOn() ? "" : ", adults & 13+"), qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
+        if(b.k412 > 0) out.push({name: it.name + ", children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
+      }
       /* infants 0–3 eat free, so they add no line */
       dietMeals += b.diet * days;
       dietKidMeals += b.dietKids * days;
     });
     if(dietMeals > 0){
       const dietRate = dietPerMeal();
-      if(dietRate > 0) out.push({name: "Special dietary surcharge (medically diagnosed)" + (dietKidMeals > 0 ? ", adults & 13+" : ""), qty: dietMeals, nights: 0, nightsWord: "meals", beds: "", price: dietRate, disc: 0, unit: "per meal", when: "", total: dietMeals * dietRate});
+      if(dietRate > 0) out.push({name: "Special dietary surcharge (medically diagnosed)" + (dietKidMeals > 0 && !schoolOn() ? ", adults & 13+" : ""), qty: dietMeals, nights: 0, nightsWord: "meals", beds: "", price: dietRate, disc: 0, unit: "per meal", when: "", total: dietMeals * dietRate});
     }
     if(dietKidMeals > 0){
       const kidRate = dietKidsPerMeal();
@@ -4225,7 +4276,8 @@ function displayLines(){
       if(!c || !catEntry(it.id).on) return;
       const ppl = Number(c.ppl) || 0, days = Number(c.days) || 0;
       if(ppl <= 0 || days <= 0) return;
-      out.push({name: it.name, qty: ppl, nights: days > 1 ? days : 0, nightsWord: "days", beds: "", price: catEntry(it.id).price, disc: 0, unit: "per person", when: "", total: ppl * days * catEntry(it.id).price});
+      out.push({name: it.name, qty: ppl, nights: days > 1 ? days : 0, nightsWord: "days", beds: "", price: catEntry(it.id).price, disc: 0, unit: "per person", when: "", total: ppl * days * catEntry(it.id).price,
+        pkg: schoolOn() && SCHOOL_MEAL_IDS.indexOf(it.id) >= 0 && !(Number(catEntry(it.id).price) > 0)});
     });
   }
   Q.lines.filter(l => (Number(l.qty) || 0) > 0).forEach(l => {
@@ -4784,9 +4836,9 @@ function venueDayRows(){
     const d = venueDaysSel(v.key);
     if(d <= 0) return;
     const fullP = Number(catEntry(v.fullId).price) || 0, halfP = Number(catEntry(v.halfId).price) || 0;
-    const add = (day, use) => { (days[day] = days[day] || []).push({day: day, key: v.key, use: use, price: use === 1 ? fullP : halfP, pair: 0}); };
+    const add = (day, use, part) => { (days[day] = days[day] || []).push({day: day, key: v.key, use: use, part: part || "", price: use === 1 ? fullP : halfP, pair: 0}); };
     const m = venueDayMap(v.key);
-    if(m) Object.keys(m).forEach(iso => add(iso, m[iso] === "full" ? 1 : 0.5));
+    if(m) Object.keys(m).forEach(iso => add(iso, m[iso] === "full" ? 1 : 0.5, m[iso]));
     else {
       const full = Math.floor(d), half = (d % 1) ? 1 : 0;
       for(let i = 0; i < full; i++) add("#" + i, 1);
@@ -4824,7 +4876,7 @@ function venuePairWhy(v){
 function venuePairTotal(){ return venueDayRows().reduce((s, r) => s + (r.pair || 0), 0); }
 function venueCreditAlloc(){
   const per = venueCreditPerDay();
-  const out = {byKey: {}, total: 0, winterDays: 0};
+  const out = {byKey: {}, total: 0, winterDays: 0, days: []};
   if(per <= 0) return out;
   const days = {};                      // day key -> [{key, use (1 or .5), price after the pair deal}]
   venueDayRows().forEach(r => { (days[r.day] = days[r.day] || []).push(r); });
@@ -4834,13 +4886,25 @@ function venueCreditAlloc(){
     const iso = day.charAt(0) === "#" ? (Q.dateStart ? isoAddDays(Q.dateStart, Number(day.slice(1))) : "") : day;
     const winter = isWinterDay(iso);
     if(winter) out.winterDays++;
-    let pot = per * (winter ? 2 : 1) * Math.min(1, rows.reduce((s, r) => s + r.use, 0));
-    rows.forEach(r => {
+    /* a full day when any room is booked for the full day, or the day has a morning AND an
+       afternoon; a day of mornings only (or afternoons only) is a half-day day, however many
+       rooms, so three single rooms on the same morning earn what the combined space does on
+       that morning (15 Oct 2026). Rooms with only a day count don't say which half: as before. */
+    const known = rows.every(r => r.use === 1 || r.part === "am" || r.part === "pm");
+    const cover = rows.some(r => r.use === 1) ? 1
+      : known ? ((rows.some(r => r.part === "am") && rows.some(r => r.part === "pm")) ? 1 : 0.5)
+      : Math.min(1, rows.reduce((s, r) => s + r.use, 0));
+    let pot = per * (winter ? 2 : 1) * cover;
+    const dayRec = {day: day, iso: iso, winter: winter, pot: pot, used: 0, rows: rows.map(r => ({key: r.key, use: r.use, take: 0}))};
+    out.days.push(dayRec);
+    rows.forEach((r, i) => {
       const take = Math.min(pot, r.price);
       if(take <= 0) return;
       pot -= take;
       out.byKey[r.key] = (out.byKey[r.key] || 0) + take;
       out.total += take;
+      dayRec.used += take;
+      dayRec.rows[i].take = take;
     });
   });
   return out;
@@ -4904,13 +4968,244 @@ function venueCreditPointerHTML(showPrices){
   const per = venueCreditPerDay();
   return per > 0 ? '<div class="vcpoint">Your cabins also give you ' + vcMoney(per) + ' a day off your conference rooms ↓</div>' : '';
 }
-/* why a room can't be picked right now, in words */
-function venueBlockedNote(v){
-  const blk = venueBlockedBy(v);
-  if(!blk) return '';
-  return '<div class="cb-blocknote">(' + (v.members
-    ? 'You have picked single rooms. Take them off to book all three as one space'
-    : 'Included in ' + esc(blk.name) + ', which you have picked') + ')</div>';
+/* ---------- Rooms 1, 2 & 3 inside the combined space (Joel, 15 Oct 2026) ----------
+   When "Conference Rooms 1, 2 & 3 (combined)" is picked, the three single rooms show as
+   ticked and locked with the same days, labelled Included. This is DISPLAY ONLY: the
+   quote keeps {fr13: n} and never stores fr1/fr2/fr3 for a combined booking (storing
+   them would charge twice). Three singles on the same days get a "Make it one space"
+   button, and + on the combined space while singles are picked asks before switching. */
+const CONF_SINGLES = ["fr1", "fr2", "fr3"];
+let VENUE_SWITCH_ASK = false;            // the "Switch to the combined space?" question is showing
+function venueByKey(k){ return VENUES.find(x => x.key === k) || null; }
+/* "Room 2" from "Conference Room 2" */
+function venueShortName(v){ return String((v && v.name) || "").replace(/^Conference /, ""); }
+/* the combined space this single room is part of, while it is picked (else null) */
+function venueIncludedIn(v){
+  if(!v || !v.partOf || venueDaysSel(v.key) > 0) return null;
+  const p = venueByKey(v.partOf);
+  return (p && venueDaysSel(p.key) > 0 && catEntry(p.fullId).on) ? p : null;
+}
+/* "Fri 12 Mar, Sat 13 Mar and Sun 14 Mar" (a half day says which half) */
+function venueDayListWords(m){
+  const bits = Object.keys(m || {}).sort().map(iso => dayLabel(iso) + (m[iso] === "am" ? " (morning)" : (m[iso] === "pm" ? " (afternoon)" : "")));
+  return bits.length > 1 ? bits.slice(0, -1).join(", ") + " and " + bits[bits.length - 1] : (bits[0] || "");
+}
+/* "Room 2" / "Rooms 1 and 2" / "Rooms 1, 2 and 3" */
+function venueRoomsWords(list){
+  const n = list.map(v => venueShortName(v).replace(/^Room /, ""));
+  if(n.length === 1) return "Room " + n[0];
+  return "Rooms " + n.slice(0, -1).join(", ") + " and " + n[n.length - 1];
+}
+function venueInclToastMsg(v){
+  const p = venueIncludedIn(v) || venueByKey(v && v.partOf) || {name: "Conference Rooms 1, 2 & 3 (combined)"};
+  const r = venueShortName(v), pn = String(p.name).replace(/ \(combined\)$/, "");
+  return r + " is already yours as part of " + pn + ". To use " + r + " on its own, take the combined space off first.";
+}
+/* the green line on an included room */
+function venueInclLineHTML(v, p){
+  return '<div class="cb-incl vinclline">✓ Part of ' + esc(p.name) + (venueIsFree(p) && schoolOn()
+    ? ', included in your school package (walls open into one space)'
+    : ', which you have picked (walls open into one space)') + '</div>';
+}
+/* the combined space's days, read-only, under each included room (red where staff went over) */
+function venueInclDaysHTML(v, p){
+  const m = venueDayMap(p.key);
+  const days = eventDays();
+  if(!m || !days.length) return '';
+  return '<div class="vdays vdincl"><span class="vdlab">Same days as ' + esc(p.name) + '</span>' +
+    days.map(iso => {
+      const st = m[iso] || "";
+      const a = venueDayAvail(p, iso);
+      const taken = a !== null && Number(a) <= 0;
+      return '<button type="button" class="vday vdro' + (st ? ' ' + st : '') + (taken && st ? ' taken' : '') + '" data-incl="' + esc(v.key) + '" title="' +
+        esc(shortDate(iso) + ': ' + VDAY_WORD[st] + ', as ' + p.name) + '"><b>' + esc(dayLabel(iso)) + '</b><span>' + esc(VDAY_WORD[st]) + '</span></button>';
+    }).join('') + '</div>';
+}
+/* the locked green pill in place of the +/− buttons: "✓ 1.5d" */
+function venueInclPillHTML(v, p){
+  return '<button type="button" class="vincpill" data-incl="' + esc(v.key) + '" title="' + esc(venueInclToastMsg(v)) + '">✓ ' + venueDaysSel(p.key) + 'd</button>';
+}
+/* the three single rooms picked on exactly the same days, each the same way, with no
+   combined space: {days: map | null, count}. null when they differ. */
+function venueAllThreeSame(){
+  const p = venueByKey("fr13");
+  if(!p || !catEntry(p.fullId).on || !(RATE[p.fullId] || RATE[p.halfId]) || venueDaysSel("fr13") > 0) return null;
+  const vs = CONF_SINGLES.map(venueByKey);
+  if(vs.some(v => !v || !catEntry(v.fullId).on || venueDaysSel(v.key) <= 0)) return null;
+  const maps = vs.map(v => venueDayMap(v.key));
+  if(maps.every(m => !m)){
+    const c = vs.map(v => venueDaysSel(v.key));
+    return (c[0] === c[1] && c[1] === c[2]) ? {days: null, count: c[0]} : null;
+  }
+  if(maps.some(m => !m)) return null;
+  const sig = m => Object.keys(m).sort().map(k => k + ":" + m[k]).join(",");
+  return (sig(maps[0]) === sig(maps[1]) && sig(maps[1]) === sig(maps[2])) ? {days: maps[0], count: venueDaysSel("fr1")} : null;
+}
+/* the green bar under Room 3 */
+function venueOneSpaceBarHTML(){
+  const s = venueAllThreeSame();
+  if(!s) return '';
+  const p = venueByKey("fr13");
+  const when = s.days ? 'on ' + esc(venueDayListWords(s.days)) : 'for ' + s.count + ' day' + (s.count === 1 ? '' : 's');
+  const free = CONF_SINGLES.every(k => venueIsFree(venueByKey(k)));
+  return '<div class="vonebar">All three rooms ' + when + (free ? '.' : ': you pay the ' + esc(p.name) + ' price.') +
+    ' Want the walls open as one space? <button type="button" class="vonespace">Make it one space</button></div>';
+}
+/* the single rooms that are picked */
+function venueSinglesPicked(){ return CONF_SINGLES.map(venueByKey).filter(v => v && venueDaysSel(v.key) > 0 && catEntry(v.fullId).on); }
+/* move every day the single rooms have into the combined space (a full day beats a half
+   day; a morning in one room and an afternoon in another is the full day), notes too */
+function venueMoveSinglesIn(){
+  const p = venueByKey("fr13");
+  if(!p) return false;
+  if(!Q.sel.venues) Q.sel.venues = {};
+  if(!Q.sel.venueDays) Q.sel.venueDays = {};
+  const map = Object.assign({}, venueDayMap("fr13") || {});
+  let anyMap = Object.keys(map).length > 0, count = 0;
+  const notes = [];
+  const own = String((Q.sel.venueTimes || {}).fr13 || "").trim();
+  if(own) notes.push(own);
+  CONF_SINGLES.forEach(k => {
+    const m = venueDayMap(k), c = venueDaysSel(k);
+    if(m){
+      anyMap = true;
+      Object.keys(m).forEach(iso => { const a = map[iso], b = m[iso]; map[iso] = !a ? b : ((a === "full" || b === "full" || a !== b) ? "full" : a); });
+    } else if(c > count) count = c;
+    const t = String((Q.sel.venueTimes || {})[k] || "").trim();
+    if(t && notes.indexOf(t) < 0) notes.push(t);
+    delete Q.sel.venues[k];
+    delete Q.sel.venueDays[k];
+    if(Q.sel.venueTimes) delete Q.sel.venueTimes[k];
+  });
+  if(anyMap){ Q.sel.venueDays.fr13 = map; syncVenueCount("fr13"); }
+  else if(count > 0) Q.sel.venues.fr13 = count;
+  if(notes.length){ if(!Q.sel.venueTimes) Q.sel.venueTimes = {}; Q.sel.venueTimes.fr13 = notes.join("; "); }
+  VENUE_SWITCH_ASK = false;
+  return true;
+}
+/* any of the rooms involved locked by staff on the organiser's page */
+function venueSwapLocked(){
+  return asOrg() && ["fr13"].concat(CONF_SINGLES).some(k => { const v = venueByKey(k); return v && lockedItem(v.fullId, "venue"); });
+}
+function venueMakeOneSpace(){
+  if(!venueAllThreeSame()) return;
+  if(venueSwapLocked()){ showToast("These rooms are set by our team. Talk to us to change them."); return; }
+  venueMoveSinglesIn();
+  refresh();
+  showToast("Done: Conference Rooms 1, 2 & 3 are now one space, on the same days.");
+}
+/* days the combined space can't take, because one of its rooms is booked by someone else */
+function venueSwitchBlockedDays(){
+  const p = venueByKey("fr13");
+  const days = {};
+  venueSinglesPicked().forEach(v => Object.keys(venueDayMap(v.key) || {}).forEach(iso => { days[iso] = 1; }));
+  return Object.keys(days).sort().filter(iso => venueTakenOn(p, iso) && !staffExtra("venue:fr13", iso));
+}
+/* the question under the combined space when single rooms are picked and + is pressed */
+function venueSwitchAskHTML(v, showPrices){
+  if(!VENUE_SWITCH_ASK || !v.members) return '';
+  const picked = venueSinglesPicked();
+  if(!picked.length) return '';
+  const days = {};
+  let legacy = 0;
+  picked.forEach(s => { const m = venueDayMap(s.key); if(m) Object.keys(m).forEach(iso => { days[iso] = days[iso] === "full" || m[iso] === "full" || (days[iso] && days[iso] !== m[iso]) ? "full" : m[iso]; }); else legacy = Math.max(legacy, venueDaysSel(s.key)); });
+  const when = Object.keys(days).length ? ' on ' + esc(venueDayListWords(Object.keys(days).reduce((o, k) => { o[k] = "full"; return o; }, {}))) : (legacy ? ' for ' + legacy + ' day' + (legacy === 1 ? '' : 's') : '');
+  const head = 'You have ' + esc(venueRoomsWords(picked)) + ' picked' + when + '. ';
+  const off = CLIENT_MODE ? venueSwitchBlockedDays() : [];
+  if(off.length) return '<div class="vswitchask">' + head + 'One of the three rooms is already booked on ' + esc(off.map(dayLabel).join(", ")) +
+    ', so they can\'t open into one space then. <button type="button" class="vswitch" data-act="keep">Keep my rooms</button></div>';
+  const price = showPrices && !venueIsFree(v) ? ', ' + money0(catEntry(v.fullId).price) + ' a day' : '';
+  return '<div class="vswitchask">' + head + 'Switch to ' + esc(v.name) + price + ' instead? ' +
+    '<button type="button" class="vswitch go" data-act="switch">Switch</button> <button type="button" class="vswitch" data-act="keep">Keep my rooms</button></div>';
+}
+function venueSwitchAnswer(act){
+  if(act === "switch"){
+    if(venueSwapLocked()){ showToast("These rooms are set by our team. Talk to us to change them."); VENUE_SWITCH_ASK = false; refresh(); return; }
+    const off = venueSwitchBlockedDays();
+    if(off.length && CLIENT_MODE){ VENUE_SWITCH_ASK = false; refresh(); return; }
+    venueMoveSinglesIn();
+    refresh();
+    showToast(off.length ? "Switched. Over availability: RMS shows one of the rooms already booked on " + off.map(shortDate).join(", ") + "." : "Switched to Conference Rooms 1, 2 & 3 (combined).", !!off.length);
+    return;
+  }
+  VENUE_SWITCH_ASK = false;
+  refresh();
+}
+/* the combined space's own line while it is picked */
+function venueInclHeadHTML(v){
+  if(!v.members || venueDaysSel(v.key) <= 0 || !catEntry(v.fullId).on) return '';
+  const shown = v.members.some(k => { const m = venueByKey(k); return m && (RATE[m.fullId] || RATE[m.halfId]) && catEntry(m.fullId).on; });
+  return '<div class="cb-incl">Includes Conference Rooms 1, 2 and 3' + (shown ? ' (shown ticked below)' : '') + '</div>';
+}
+/* clicks for the pieces above, on the organiser's page and the staff Prepare tab */
+function wireVenueIncl(host){
+  if(!host) return;
+  host.querySelectorAll(".vincpill, .vday.vdro").forEach(el => el.addEventListener("click", e => {
+    e.preventDefault();
+    showToast(venueInclToastMsg(venueByKey(e.currentTarget.dataset.incl)));
+  }));
+  host.querySelectorAll(".vonespace").forEach(el => el.addEventListener("click", () => venueMakeOneSpace()));
+  host.querySelectorAll(".vswitch").forEach(el => el.addEventListener("click", e => venueSwitchAnswer(e.currentTarget.dataset.act)));
+}
+/* The staff view (Prepare tab, Joel 15 Oct 2026): the same big green heading the organiser
+   sees, then day by day which rooms are booked, the credit that day, what it took off and
+   anything left unused, so staff can see at a glance whether credit is going to waste. */
+function venueCreditStaffHTML(){
+  if(!venueCreditRoomsOffered()) return '';
+  const r = vcRates();
+  if(!venueCreditOn()) return '<div class="vcstaff off">Venue credit is <b>off</b> for this quote. Tick “Venue credit for their stay” under Quote features to give ' +
+    vcMoney(r.cabin) + ' a day per cabin (' + vcMoney(r.site) + ' per site) off the conference rooms.</div>';
+  const per = venueCreditPerDay();
+  if(per <= 0) return '<div class="vcstaff off">Venue credit is <b>on</b>, but there are no cabins or sites on the quote yet. Each cabin adds ' +
+    vcMoney(r.cabin) + ' a day (each site ' + vcMoney(r.site) + ') off the conference rooms.</div>';
+  const u = unitsSplit(), bits = [];
+  if(u.cabins > 0 && r.cabin > 0) bits.push(u.cabins + ' cabin' + (u.cabins === 1 ? '' : 's') + ' × ' + vcMoney(r.cabin));
+  if(u.sites > 0 && r.site > 0) bits.push(u.sites + ' site' + (u.sites === 1 ? '' : 's') + ' × ' + vcMoney(r.site));
+  const a = venueCreditAlloc();
+  const nameOf = k => { const v = venueByKey(k); return v ? venueShortName(v) : k; };
+  const useWord = (key, use) => use === 1 ? "full day" : "half day";
+  const dayWord = (key, iso, use) => {
+    const m = venueDayMap(key);
+    const st = m && m[iso];
+    return st ? VDAY_WORD[st].toLowerCase() : useWord(key, use);
+  };
+  /* every event day, so a day with no room shows its credit going unused */
+  const byDay = {};
+  (a.days || []).forEach(d => { byDay[d.day] = d; });
+  const evDays = eventDays();
+  let keys = evDays.length ? evDays.slice() : [];
+  (a.days || []).forEach(d => { if(keys.indexOf(d.day) < 0) keys.push(d.day); });
+  keys = keys.sort((x, y) => String(byDay[x] ? byDay[x].iso : x).localeCompare(String(byDay[y] ? byDay[y].iso : y)));
+  let used = 0, unused = 0;
+  const rowsHtml = keys.map(k => {
+    const d = byDay[k];
+    const iso = d ? d.iso : k;
+    const label = /^\d{4}-/.test(iso) ? dayLabel(iso) : 'Day ' + (Number(String(k).slice(1)) + 1);
+    if(!d){
+      const could = per * (isWinterDay(iso) ? 2 : 1);
+      unused += could;
+      return '<tr><td class="d">' + esc(label) + '</td><td class="fmuted">no conference room booked</td><td class="n fmuted">' + money(could) + '</td><td class="n">-</td><td class="n left">' + money(could) + '</td></tr>';
+    }
+    const left = Math.max(0, d.pot - d.used);
+    used += d.used; unused += left;
+    const rooms = d.rows.map(x => esc(nameOf(x.key)) + ' ' + esc(dayWord(x.key, iso, x.use)) + (x.take > 0 ? ' <span class="fmuted">(−' + money(x.take) + ')</span>' : '')).join(', ');
+    return '<tr><td class="d">' + esc(label) + (d.winter ? ' <span class="fmuted">winter ×2</span>' : '') + '</td><td>' + rooms + '</td>' +
+      '<td class="n">' + money(d.pot) + '</td><td class="n">' + money(d.used) + '</td>' +
+      '<td class="n' + (left > 0.005 ? ' left' : '') + '">' + (left > 0.005 ? money(left) : '-') + '</td></tr>';
+  }).join('');
+  return '<div class="vcbanner vcstaff"><div class="vcbig">Venue credit: ' + vcMoney(per) + ' a day</div>' +
+    '<div class="vcsmall"><b>' + bits.join(' + ') + ' = ' + vcMoney(per) + '</b> a day off conference room hire: the dearest room that day first, anything left to the next room that day. ' +
+      'Half on a day with only a morning or an afternoon, double in June, July and August. It is already taken off the room prices below and on the quote; the organiser sees it in a green banner.</div>' +
+    (keys.length ? '<table class="vctable"><thead><tr><th class="d">Day</th><th>Rooms booked</th><th class="n">Credit</th><th class="n">Used</th><th class="n">Not used</th></tr></thead><tbody>' + rowsHtml + '</tbody>' +
+      '<tfoot><tr><td class="d">Total</td><td></td><td class="n"></td><td class="n">' + money(used) + '</td><td class="n' + (unused > 0.005 ? ' left' : '') + '">' + (unused > 0.005 ? money(unused) : '-') + '</td></tr></tfoot></table>' : '') +
+    (unused > 0.005 ? '<div class="vcnote">Credit not used is simply lost: it is never paid out or moved to accommodation or catering. A day with no room, or a cheap room, leaves some behind.</div>' : '') +
+  '</div>';
+}
+/* under the staff cabins: what they earn, pointing down */
+function venueCreditStaffPointerHTML(){
+  if(!venueCreditOn() || !venueCreditRoomsOffered()) return '';
+  const per = venueCreditPerDay();
+  return per > 0 ? '<div class="vcpoint">These cabins give ' + vcMoney(per) + ' a day of venue credit off the conference rooms ↓</div>' : '';
 }
 /* ---------- the conference rooms: one space or three rooms, never both ---------
    Picking "Conference Rooms 1, 2 & 3" takes all three rooms, so the single rooms
@@ -4974,7 +5269,12 @@ function cycleVenueDay(key, iso){
   if(next && !cur){
     /* switching a day on: same rules as the + button, then this particular day */
     const blk = venueBlockedBy(v);
-    if(blk){ showToast((v.members ? "Take the single rooms off first" : "Included in " + blk.name) + ".", true); return; }
+    if(blk){
+      /* never both: a single room inside the picked combined space says so calmly, and the
+         combined space with single rooms picked asks before switching (Joel, 15 Oct 2026) */
+      if(v.members){ VENUE_SWITCH_ASK = true; refresh(); return; }
+      showToast(venueInclToastMsg(v)); return;
+    }
     if(venueTakenOn(v, iso) && !staffExtra("venue:" + key, iso)){
       if(CLIENT_MODE){ showToast(v.name + " is already booked on " + shortDate(iso) + ".", true); return; }
       showToast("Over availability: RMS shows " + v.name + " already booked on " + shortDate(iso) + ". Added anyway: it is marked in red.", true);
@@ -5091,10 +5391,13 @@ function takenDaysWords(list){
 /* the note under a venue row: what RMS said (staff and organiser see the same words) */
 function venueAvailNote(v){
   const blk = venueBlockedBy(v);
-  if(blk) return '<div class="cb-note venuenote">(' + (v.members ? 'the single rooms are selected below, take those off to book the whole space' : 'included in ' + esc(blk.name) + ' above') + ')</div>';
+  if(blk) return '<div class="cb-note venuenote">(' + (v.members
+    ? 'you have ' + esc(venueRoomsWords(venueSinglesPicked())) + ' picked below; press + if you would rather have all three rooms as one space'
+    : 'included in ' + esc(blk.name) + ' above') + ')</div>';
   const a = venueAvailInfo(v);
   if(!a.known) return '';
-  if(a.free) return '<div class="cb-free venuenote">free for ' + (a.days === 1 ? 'your event day' : 'all ' + a.days + ' event days') + ' <span class="fmuted">(RMS)</span></div>';
+  /* "vacant", not "free": free means no charge elsewhere on this page (Joel, 15 Oct 2026) */
+  if(a.free) return '<div class="cb-free venuenote">vacant for ' + (a.days === 1 ? 'your event day' : 'all ' + a.days + ' event days') + ' <span class="fmuted">(RMS)</span></div>';
   /* a shared space is never "already booked": another group being in is a conversation
      about meal times, not a closed door */
   if(a.shared){
@@ -5118,7 +5421,7 @@ function venueCanAdd(v){
     if(days.length){
       const m = venueDayMap(v.key) || {};
       const open = days.filter(iso => !m[iso] && !(venueDayAvail(v, iso) !== null && Number(venueDayAvail(v, iso)) <= 0));
-      if(!open.length && !Object.keys(m).some(iso => m[iso] !== "full")) return {ok: false, why: Object.keys(m).length ? "Every free day is already picked" : "Already booked " + takenDaysWords(a.taken)};
+      if(!open.length && !Object.keys(m).some(iso => m[iso] !== "full")) return {ok: false, why: Object.keys(m).length ? "Every vacant day is already picked" : "Already booked " + takenDaysWords(a.taken)};
       return {ok: true, why: ""};
     }
     if(a.known && !a.free && venueDaysSel(v.key) <= 0) return {ok: false, why: "Already booked " + takenDaysWords(a.taken)};
@@ -5800,7 +6103,9 @@ function totalsHTML(t, grandLabel){
 }
 function renderTotals(){
   const pm = Q.priceMode || "full";
-  document.getElementById("totals").innerHTML = totalsHTML(totals(), "Total (inc GST)") +
+  const tt = totals();
+  document.getElementById("totals").innerHTML = totalsHTML(tt, "Total (inc GST)") +
+    (tt.venueCredit > 0 ? '<div class="totnote">Includes ' + money(tt.venueCredit) + ' venue credit, already off the conference room prices (' + esc(vcMoney(venueCreditPerDay())) + ' a day)</div>' : '') +
     (pm === "nototal" ? '<div class="hiddenflag">final total hidden on the client quote</div>'
      : pm === "noprices" ? '<div class="hiddenflag">all prices hidden on the client quote</div>' : '');
 }
@@ -5941,6 +6246,13 @@ function stepVenue(key, dir){
   const cur = Number((Q.sel.venues || {})[key]) || 0;
   if(dir > 0){
     const v = VENUES.find(x => x.key === key);
+    /* the combined space and its single rooms are never both on the quote (Joel, 15 Oct 2026):
+       + on the combined space with single rooms picked asks first, + on a single room inside
+       the picked combined space says it is already theirs */
+    if(v && venueBlockedBy(v)){
+      if(v.members){ VENUE_SWITCH_ASK = true; refresh(); return; }
+      showToast(venueInclToastMsg(v)); return;
+    }
     const can = v ? venueCanAdd(v) : {ok: true};
     if(!can.ok){ showToast(can.why + ".", true); return; }
   }
@@ -6735,7 +7047,10 @@ function lockedItem(id, kind){
   if(kind === "cater") return (catEntry(id).price || 0) === 0;
   return true;
 }
-function lockedDates(){ return quoteLocked(); }
+/* an organiser can't move a school group's dates themselves: the package, its meals and the
+   rooming are worked out by our team around them (15 Oct 2026) */
+function schoolDatesLocked(){ return !!(CLIENT_MODE && schoolOn()); }
+function lockedDates(){ return quoteLocked() || schoolDatesLocked(); }
 /* every cabin on offer is locked: the organiser is being shown a rooming, not a menu */
 function accomAllLocked(){
   const on = accomItems().filter(it => catEntry(it.id).on);
@@ -6850,8 +7165,11 @@ function renderPrep(){
       '<div class="pkgsub">' + (q > 0 ? money(sub) : '<span class="fmuted">-</span>') + '</div>' +
     '</div>';
   }).join("") || '<p class="hint">No accommodation items in the rate card. Add some on the Settings tab.</p>';
+  document.getElementById("prepAccom").insertAdjacentHTML("beforeend", venueCreditStaffPointerHTML());
 
   /* venues */
+  const vcHost = document.getElementById("prepVenueCredit");
+  if(vcHost) vcHost.innerHTML = venueCreditStaffHTML();
   document.getElementById("prepVenues").innerHTML = VENUES.filter(v => RATE[v.fullId] || RATE[v.halfId]).map(v => {
     const c = catEntry(v.fullId);
     const ch = catEntry(v.halfId);
@@ -6860,18 +7178,25 @@ function renderPrep(){
     const sub = d > 0 ? venueDayTotal(v, d) : 0;
     const can = venueCanAdd(v);
     const vov = ovById["venue:" + v.key];
-    return '<div class="preprow' + (c.on ? '' : ' off') + (vov ? ' over' : '') + '">' +
+    /* the same "included" look as the organiser's page for a single room inside the picked
+       combined space; its own prices stay editable (Joel, 15 Oct 2026) */
+    const incl = c.on ? venueIncludedIn(v) : null;
+    return '<div class="preprow' + (c.on ? '' : ' off') + (vov ? ' over' : '') + (incl ? ' cb-included' : '') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="venue" data-id="' + esc(v.key) + '"' + (c.on ? ' checked' : '') + ' title="Offer this venue on this quote">' +
       '<div><span class="pkgname">' + esc(v.name) + '</span>' + lockBtnHTML(v.fullId, "this room") +
         '<div class="pkgmeta">' + esc(v.cap) + '</div>' +
-        (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') +
-        (venueCreditFor(v) > 0 ? '<div class="cb-free">venue credit −' + money(venueCreditFor(v)) + ' (from ' + esc(vcMoney(venueCreditPerDay())) + ' a day, shared)</div>' : '') +
-        (vov ? '<span class="overnote">⚠ Over availability: picked on ' + esc(takenDaysWords(vov.days)) + ', when RMS shows it already booked</span>' : '') +
-        venueAvailNote(v) + '</div>' +
+        (incl ? venueInclLineHTML(v, incl) + venueInclDaysHTML(v, incl)
+          : venueInclHeadHTML(v) +
+            (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') +
+            (venueCreditFor(v) > 0 ? '<div class="cb-free">venue credit −' + money(venueCreditFor(v)) + ' (from ' + esc(vcMoney(venueCreditPerDay())) + ' a day, shared)</div>' : '') +
+            (vov ? '<span class="overnote">⚠ Over availability: picked on ' + esc(takenDaysWords(vov.days)) + ', when RMS shows it already booked</span>' : '') +
+            venueAvailNote(v) + venueSwitchAskHTML(v, true)) +
+        (v.key === "fr3" ? venueOneSpaceBarHTML() : '') + '</div>' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
-      stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0, canUp: can.ok, upTitle: can.why}) +
-      '<div class="pkgsub">' + (d > 0 ? (free ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : '<span class="fmuted">-</span>') + '</div>' +
+      (incl ? venueInclPillHTML(v, incl)
+        : stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0, canUp: can.ok || !!(v.members && venueBlockedBy(v)), upTitle: can.why})) +
+      '<div class="pkgsub">' + (incl ? '<span class="incltag">Included</span>' : (d > 0 ? (free ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : '<span class="fmuted">-</span>')) + '</div>' +
     '</div>';
   }).join("");
 
@@ -6900,6 +7225,7 @@ function renderPrep(){
   }).join("");
 
   wireSelSteppers(document.getElementById("tab-staff"));
+  wireVenueIncl(document.getElementById("prepVenues"));
   const host = document.getElementById("tab-staff");
   host.querySelectorAll(".prepon").forEach(el => el.addEventListener("change", e => {
     const id = e.target.dataset.id, kind = e.target.dataset.kind, on = e.target.checked;
@@ -7405,8 +7731,33 @@ function findCheapest(){
   if(el) el.scrollIntoView({behavior:"smooth", block:"nearest"});
 }
 /* move the whole event, keeping any per-cabin dates in step with the new arrival */
+/* A school quote follows its dates (15 Oct 2026): each meal's chosen days move by as many
+   days as the arrival did, days that fall outside the new stay drop off (a meal only goes
+   back to every day of its kind when none are left), and the package is worked out again so
+   the package lines, the notes, the "Your group" panel and the total all agree. */
+function schoolFollowDates(shift){
+  if(!schoolOn() || !Q.dateStart) return;
+  const S = Q.school, raw = S.meals;
+  if(raw && typeof raw === "object"){
+    const meals = {};
+    Object.keys(raw).forEach(id => {
+      const m = schoolAddon(id);
+      if(!m) return;
+      const valid = schoolMealDays(m.kind);
+      const days = (Array.isArray(raw[id] && raw[id].days) ? raw[id].days : [])
+        .map(d => shift ? isoAddDays(d, shift) : d)
+        .filter((d, i, a) => valid.indexOf(d) >= 0 && a.indexOf(d) === i);
+      meals[id] = {days: (days.length ? days : valid).slice().sort()};
+    });
+    Q.school = Object.assign({}, S, {meals: meals});
+  }
+  schoolNumbers(Q.school, Q.school.counts);
+  const fn = document.getElementById("f-notes");
+  if(fn && document.activeElement !== fn) fn.value = Q.notes;
+}
 function setEventDates(from, nights){
   if(!from) return;
+  if(schoolDatesLocked()){ showToast("To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au"); return; }
   const n = Math.max(1, Number(nights) || 1);
   const shift = (Q.dateStart && from) ? isoDiffDays(Q.dateStart, from) : 0;
   Q.dateStart = from;
@@ -7423,6 +7774,7 @@ function setEventDates(from, nights){
       Q.sel.venueDays[k] = moved;
     });
   }
+  schoolFollowDates(shift);
   const a = document.getElementById("f-date-start"), b = document.getElementById("f-date-end");
   if(a) a.value = Q.dateStart;
   if(b) b.value = Q.dateEnd;
@@ -7469,6 +7821,8 @@ function serverAvailCheck(done){
 function onAcceptClick(){
   if(STAFF_VIEW){ showToast("Staff view: nothing on this page is submitted. Open the quote in the quote tool to change it.", true); return; }
   if(!CLIENT_MODE){ doSubmit(); return; }
+  const expBlk = quoteAcceptBlock();
+  if(expBlk){ updateSubmitState(); showToast(expBlk.title + " " + ACCEPT_BLOCK_CALL, true); return; }
   if(overLines().length || shortStaysBlocking().length){ updateSubmitState(); return; }
   const sb = document.getElementById("submitBtn");
   if(sb){ sb.disabled = true; sb.textContent = "Checking what is free…"; }
@@ -7659,6 +8013,7 @@ function datesPanelHTML(){
     '<p class="cb-hint">' + (asOrg() && lockedDates()
         ? 'these are the dates we have set aside for your group'
         : 'move the arrival date or the number of nights to see what other dates would cost, nothing is held until our team confirms it') + '</p>' +
+    (asOrg() && schoolDatesLocked() ? '<p class="cb-hint dpcall">To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au</p>' : '') +
     '<div class="daterow">' +
       '<label class="dlab">Arrive<input type="date" id="dpFrom" value="' + esc(from) + '"' + (asOrg() && lockedDates() ? ' disabled' : '') + '></label>' +
       '<div class="dlab">Nights' + stepperHTML("nights", "n", n, {canDown: n > 1, lock: lockedDates()}) + '</div>' +
@@ -8016,7 +8371,9 @@ function depositInvoiceData(){
   const halfPay = Math.max(0, Math.round((half - depTotal) * 100) / 100);
   const balance = Math.max(0, Math.round((total - depTotal - halfPay) * 100) / 100);
   const payments = [{label: "Deposit (this invoice" + (dep && dep.number ? ", " + dep.number : "") + ")", due: short(due) + (dep && dep.status === "paid" ? " (paid)" : ""), amount: depTotal}];
-  if(c.halfPct > 0 && half > 0 && halfPay > 0.5) payments.push({label: c.halfPct + "% of the total, less the deposit",
+  /* the same test as the key dates (15 Oct 2026): only with cabins or sites on the booking and
+     more than 50c left to pay, so the page and the invoice never disagree */
+  if(c.halfPct > 0 && half > 0 && halfPay > 0.5 && unitsSplit().total > 0) payments.push({label: c.halfPct + "% of the total, less the deposit",
     due: halfDue && kdPassed(halfDue) ? "As soon as possible" : short(halfDue), amount: halfPay,
     note: c.halfPct + "% of the total is " + money(half) + "; the " + money(depTotal) + " deposit counts towards it"});
   const balDue = Q.dateStart ? isoAddDays(Q.dateStart, -c.balanceDays) : "";
@@ -8253,6 +8610,13 @@ function waitForBooking(){
       if(DEP_WAIT !== st || !r) return;
       /* the server cannot be asked (an older server, say): show the invoice as it stands */
       if(r.failed){ if(++st.fails >= 2) finish(); return; }
+      /* staff withdrew the quote after this page was opened: the server refused the
+         acceptance (code.gs 13.18), so nothing was booked. Say so instead of waiting. */
+      if((r.status === "Expired" || r.status === "Declined") && r.submittedAt !== mine && typeof SUBMIT_UNDO === "function"){
+        clearInterval(st.timer);
+        SUBMIT_UNDO("unavailable");
+        return;
+      }
       const h = r.rmsHold || null;
       if(h && h.groupId && (h.at || "") >= mine) st.booked = true;
       /* their Final Confirmation form, made by the website during this wait (6 Oct 2026) */
@@ -8672,22 +9036,65 @@ function cocTickHTML(){
 function cocBlocks(){ return cocNeeded() && !(Q.cocAgreed && Q.cocAgreed.at); }
 /* Sept 2026: the organiser can't accept while anything on the quote is more than is free
    (or while the page is asking RMS); staff who opened the real link can't submit at all */
+/* ---------- a quote that has run out (Joel, 15 Oct 2026) ----------
+   On the organiser's page, a quote past its "valid until" date (Sydney time; the day itself
+   is still fine), or one staff marked Expired or Declined, can't be accepted: the accept area
+   says so and how to get it refreshed. A quote already Submitted or Accepted is never blocked,
+   so a group can still change its booking. The quote server (code.gs 13.18) refuses the same
+   cases and answers "expired" or "unavailable". */
+const ACCEPT_BLOCK_CALL = "Call us on (02) 4283 6999 or email functions@wslr.com.au and we'll refresh it for you.";
+let ACCEPT_BLOCK_REPLY = null;           // what the server said when it refused, if it could be read
+function sydneyTodayISO(){
+  try{
+    const p = new Intl.DateTimeFormat("en-AU", {timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit"}).formatToParts(new Date());
+    const g = t => (p.find(x => x.type === t) || {}).value || "";
+    if(g("year") && g("month") && g("day")) return g("year") + "-" + g("month") + "-" + g("day");
+  }catch(e){}
+  return isoDate(new Date());
+}
+function quoteValidUntilISO(){
+  const v = String(Q.validUntil || "").slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "";
+}
+function quoteExpiredByDate(){
+  const vu = quoteValidUntilISO();
+  return !!vu && vu < sydneyTodayISO();
+}
+/* null = may be accepted, else {code: "expired" | "unavailable", title} */
+function quoteAcceptBlock(){
+  if(!CLIENT_MODE) return null;
+  const st = String(Q.status || "").trim();
+  if(st === "Submitted" || st === "Accepted" || Q.accepted) return null;
+  const passed = quoteExpiredByDate();
+  const expiredWords = "This quote expired on " + fmtDate(quoteValidUntilISO()) + ".";
+  if(st === "Expired" || st === "Declined" || ACCEPT_BLOCK_REPLY === "unavailable")
+    return {code: "unavailable", title: st !== "Declined" && passed ? expiredWords : "This quote is no longer available."};
+  if(passed || ACCEPT_BLOCK_REPLY === "expired") return {code: "expired", title: passed ? expiredWords : "This quote has expired."};
+  return null;
+}
+function acceptBlockHTML(b){
+  return '<div class="submitted-box expiredbox"><b>' + esc(b.title) + '</b><span>' + esc(ACCEPT_BLOCK_CALL) + '</span>' +
+    '<div class="acceptrow"><a class="btn ghost" href="' + esc(telHref(VENUE_PHONE)) + '">Call (02) 4283 6999</a>' +
+    '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Please refresh quote " + Q.num) + '">Email us</a></div></div>';
+}
 function submitZoneHTML(){
   if(CLIENT_MODE && STAFF_VIEW) return staffViewZoneHTML();
+  const expBlk = quoteAcceptBlock();
+  if(expBlk) return acceptBlockHTML(expBlk);
   let html = submitZoneBaseHTML();
   if(!CLIENT_MODE) return html;
   const ov = overLines();
   const sh = shortStaysBlocking();
   if(!ov.length && !sh.length && !AVAIL_CHECK.busy) return html;
   html = html.replace('id="submitBtn"', 'id="submitBtn" disabled title="' +
-    (AVAIL_CHECK.busy ? 'Checking what is free on your dates' : ov.length ? 'Some of what you picked is not free on your dates' : 'Your dates are shorter than our minimum stay') + '"');
+    (AVAIL_CHECK.busy ? 'Checking what is available on your dates' : ov.length ? 'Some of what you picked is not available on your dates' : 'Your dates are shorter than our minimum stay') + '"');
   return (AVAIL_CHECK.busy
-      ? '<div class="availblock" style="border-color:#1f5fae;background:#e8f0fb">Checking what is free on your dates…</div>'
+      ? '<div class="availblock" style="border-color:#1f5fae;background:#e8f0fb">Checking what is available on your dates…</div>'
       : shortBlockHTML(sh) + availBlockHTML(ov)) + html;
 }
 function availBlockHTML(ov){
   if(!ov || !ov.length) return '';
-  return '<div class="availblock"><b>Some of what you have picked is not free on your dates:</b> ' + esc(ov.map(overWords).join("; ")) + '.' +
+  return '<div class="availblock"><b>Some of what you have picked is not available on your dates:</b> ' + esc(ov.map(overWords).join("; ")) + '.' +
     '<br>Reduce ' + (ov.length === 1 ? 'it' : 'them') + ' above, pick other dates, or ' +
     '<button type="button" class="btn" id="trimBtn">change ' + (ov.length === 1 ? 'it' : 'them') + ' to what is free</button></div>';
 }
@@ -8705,6 +9112,21 @@ document.addEventListener("click", e => {
   refresh();
   if(changed.length) showToast(changed.join(", ") + " " + (changed.length === 1 ? "has" : "have") + " been changed to what is free. Check the total, then accept.");
 });
+/* ---------- nothing to put a deposit on (Joel, 15 Oct 2026) ----------
+   A booking with no cabins or sites (only conference rooms, which carry no deposit) has a $0
+   deposit: there is no deposit, the booking is confirmed when they accept, and the organiser
+   gets a confirmation email (Deposit.gs 1.12 uses the same words). */
+const NO_DEP_THANKS = "Thank you! Your booking is confirmed and a confirmation email is on its way. There is no deposit to pay.";
+function noDepositBooking(){ return depositTotal() <= 0.005; }
+/* "the day before your event": the balance rule, said for a day booking */
+function noDepBalanceWhen(){
+  const p = balanceWhenPhrase(kdCfg());
+  return p === "on arrival" ? "on the day of your event" : p.replace(/arrival$/, "your event");
+}
+function noDepAcceptWords(){
+  return "When you accept: " + (venuesSelected() > 0 ? "we book your conference rooms" : "we make your booking") + " and email you a confirmation. " +
+    "There is no deposit for this booking. The full amount is due " + noDepBalanceWhen() + ".";
+}
 function submitZoneBaseHTML(){
   const anySel = hasSel(Q) || Q.lines.some(l => (Number(l.qty) || 0) > 0);
   const askBtn = '<a class="btn ghost" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Question about quote " + Q.num) + '">Ask a question</a>';
@@ -8712,7 +9134,9 @@ function submitZoneBaseHTML(){
     const dirty = submitDirty();
     const booked = bookingsOnSubmit() || !!(Q.rmsHold && Q.rmsHold.deposit);
     return '<div class="submitted-box">✓ ' + (booked ? 'Quote accepted' : 'Selection received') + ', ' + esc(firstName(Q.contact)) + '.' +
-      (booked
+      (booked && noDepositBooking()
+        ? '<span>' + NO_DEP_THANKS + '</span>' + fcNextHTML(false) + '</div>'
+        : booked
         ? '<span>We have made an unconfirmed booking for you and emailed your deposit invoice. Pay it to confirm your booking.</span>' +
           '<div class="depopen"><button type="button" class="btn accept" id="depOpenBtn">' + ((Q.rmsHold && Q.rmsHold.deposit && Q.rmsHold.deposit.status === "paid") ? '✓ Deposit paid · view invoice' : 'View deposit invoice &amp; how to pay') + '</button></div>' + fcNextHTML(false) + '</div>'
         : '<span>Our functions team will confirm availability and final pricing, then be in touch to arrange the deposit.</span>' + fcNextHTML(false) + '</div>') +
@@ -8729,8 +9153,10 @@ function submitZoneBaseHTML(){
       (miss.length && anySel && !schoolCallBlocks() ? '<div class="tierwarn" style="text-align:center">Please add your postal address in <b>Your details</b> above (' + esc(miss.join(", ")) + ') so we can make your booking.</div>' : '') +
       cocTickHTML() +
       '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + block + '>Accept ' + (quoteLocked() ? 'this quote' : 'quote') + ' &amp; book</button>' + askBtn + '</div>' +
-      '<p class="qp-aud" style="text-align:center; margin-top:6px">Accepting makes an unconfirmed booking for what you have picked and emails you a deposit invoice' +
-      (d > 0 && (Q.priceMode || "full") !== "noprices" ? ' for ' + money0(d) : '') + ', due within ' + leadPhrase(kdCfg().depositDays) + '. Your booking is confirmed once the deposit is paid.</p>';
+      (noDepositBooking()
+        ? '<p class="qp-aud" style="text-align:center; margin-top:6px">' + esc(noDepAcceptWords()) + '</p>'
+        : '<p class="qp-aud" style="text-align:center; margin-top:6px">Accepting makes an unconfirmed booking for what you have picked and emails you a deposit invoice' +
+          (d > 0 && (Q.priceMode || "full") !== "noprices" ? ' for ' + money0(d) : '') + ', due within ' + leadPhrase(kdCfg().depositDays) + '. Your booking is confirmed once the deposit is paid.</p>');
   }
   return schoolCallBarHTML() + cocTickHTML() +
     '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? (schoolCallBlocks() ? ' disabled title="Please call us about your numbers first"' : (cocBlocks() ? ' disabled title="Please tick the code of conduct first"' : '')) : ' disabled title="Choose at least one item first"') + '>' +
@@ -8791,8 +9217,10 @@ function keyDatesAutoRows(showPrices){
     if(split.cabins > 0){ what.push(split.cabins + ' cabin' + (split.cabins === 1 ? '' : 's')); per.push(money0(c.depositPer) + ' per cabin'); }
     if(split.sites > 0){ what.push(split.sites + ' campsite' + (split.sites === 1 ? '' : 's')); per.push(money0(c.depositSite) + ' per campsite'); }
     if(vs > 0){ what.push(vs + ' conference room' + (vs === 1 ? '' : 's')); if(c.depositRoom > 0) per.push(money0(c.depositRoom) + ' per conference room'); }
-    rows.push(['When you accept', 'we make an unconfirmed booking for your ' + listWords(what) + ' and email you the deposit invoice']);
     const total = depositTotal(c);
+    rows.push(['When you accept', total <= 0.005
+      ? 'we book your ' + listWords(what) + ' and email you a confirmation. There is no deposit for this booking'
+      : 'we make an unconfirmed booking for your ' + listWords(what) + ' and email you the deposit invoice']);
     if(showPrices && total > 0){
       const alsoDisc = Number(Q.sel.church) > 0 ? ' and your discount' : '';
       rows.push(['Deposit', money0(total) + ' (' + listWords(per) + '), due within ' + leadPhrase(c.depositDays) + ' of the invoice. Your booking' + alsoDisc + ' is confirmed once it is paid']);
@@ -8971,13 +9399,20 @@ function freeLineWords(l){
   const n = String(l.name || "").replace(/\s*\((included|complimentary)[^)]*\)\s*$/i, "").trim();
   return (Number(l.qty) || 0) + " × " + n;
 }
+/* what is truly at no charge. A school's cabins and package meals are $0 rows too, but they
+   are paid for on the "School package" / "School meal:" lines, so they are listed apart as
+   part of the package rather than as free (15 Oct 2026). */
 function includedListText(){
-  return freeLines().map(freeLineWords).join(" · ");
+  return freeLines().filter(l => !l.pkg).map(freeLineWords).join(" · ");
+}
+function packageListText(){
+  return freeLines().filter(l => l.pkg).map(freeLineWords).join(" · ");
 }
 function includedHTML(cls){
-  const txt = includedListText();
-  if(!txt) return '';
-  return '<div class="' + (cls || "qp-incl") + '"><b>Included at no charge</b><span>' + esc(txt) + '</span></div>';
+  const txt = includedListText(), pk = packageListText();
+  if(!txt && !pk) return '';
+  return (pk ? '<div class="' + (cls || "qp-incl") + '"><b>In your school package (priced above)</b><span>' + esc(pk) + '</span></div>' : '') +
+    (txt ? '<div class="' + (cls || "qp-incl") + '"><b>Included at no charge</b><span>' + esc(txt) + '</span></div>' : '');
 }
 /* everything the tracker sheet / emailed quote page needs, in one payload */
 function buildDisplayPayload(){
@@ -9162,18 +9597,32 @@ function renderClient(){
                   ? 'free during the meal service if you add catering'
                   : 'free if you are staying onsite, just add your cabins above') + ')</div>')
           : '';
+        /* a single room inside the picked combined space: ticked, locked, same days, Included
+           (display only, nothing is stored on it; Joel, 15 Oct 2026) */
+        const incl = venueIncludedIn(v);
+        if(incl) return '<div class="cb-row cb-included">' +
+          '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
+            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + venueInclLineHTML(v, incl) + venueInclDaysHTML(v, incl) +
+            (v.key === "fr3" ? venueOneSpaceBarHTML() : '') +
+          '</div>' +
+          venueInclPillHTML(v, incl) +
+          '<div class="pkgsub"><span class="incltag">Included</span></div>' +
+        '</div>';
         const vcr = venueCreditFor(v);
         const pr = venuePairFor(v), pwhy = pr > 0 ? venuePairWhy(v) : "";
-        const pairHint = pr > 0 ? '<div class="cb-free">' + (pwhy === "all3" ? "All three rooms booked: charged as All Conference Rooms 1, 2 &amp; 3" : (pwhy === "12" ? "Rooms 1 &amp; 2" : "Rooms 2 &amp; 3") + " booked together: " + money0(PAIR_ROOM_FULL) + " a day each") + ' (−' + money(pr) + ')</div>'
-          : (["fr1", "fr2", "fr3"].indexOf(v.key) >= 0 && showPrices ? '<div class="cb-note">(Book ' + (v.key === "fr2" ? "Room 1 or 3" : "Room 2") + ' as well, the same day, and each is ' + money0(PAIR_ROOM_FULL) + ' a day)</div>' : '');
-        const blocked = !!venueBlockedBy(v) && d <= 0;
-        const creditHint = (blocked || !venueCreditOn() || isFree || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || !showPrices) ? ''
+        const pairEach = money0(PAIR_ROOM_FULL) + ' a day (' + money0(PAIR_ROOM_HALF) + ' a half day)';
+        const pairHint = pr > 0 ? '<div class="cb-free">' + (pwhy === "all3" ? "All three rooms booked: charged as Conference Rooms 1, 2 &amp; 3 (combined)" : (pwhy === "12" ? "Rooms 1 &amp; 2" : "Rooms 2 &amp; 3") + " booked together: each is " + pairEach) + ' (−' + money(pr) + ')</div>'
+          : (["fr1", "fr2", "fr3"].indexOf(v.key) >= 0 && showPrices && !isFree ? '<div class="cb-note">(Book ' + (v.key === "fr2" ? "Room 1 or 3" : "Room 2") + ' as well, the same day, and each is ' + pairEach + ')</div>' : '');
+        const creditHint = (!venueCreditOn() || isFree || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || !showPrices) ? ''
           : vcr > 0
             ? '<div class="cb-free">Venue credit −' + money(vcr) + ' with your stay (' + esc(vcMoney(venueCreditPerDay())) + ' a day, shared across your rooms)</div>'
             : '<div class="cb-note">(' + [vcRates().cabin > 0 ? vcMoney(vcRates().cabin) + ' a day off for every cabin you book' : '', vcRates().site > 0 ? vcMoney(vcRates().site) + ' for every site' : ''].filter(Boolean).join(', ') + ', doubled in June, July and August)</div>';
-        return '<div class="cb-row' + (blocked ? ' cb-blocked' : '') + '">' +
+        const schoolFree = isFree && schoolOn() && SCHOOL_FREE_VENUES.indexOf(v.key) >= 0 && v.key !== DINING_KEY && v.key !== MARQUEE_KEY
+          ? '<div class="cb-free">Included in your school package</div>' : '';
+        return '<div class="cb-row">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
-            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + (blocked ? venueBlockedNote(v) : freeHint + pairHint + creditHint + venueAvailNote(v)) +
+            '<div class="pkgmeta">' + esc(v.cap) + '</div>' + venueInclHeadHTML(v) + freeHint + schoolFree + pairHint + creditHint + venueAvailNote(v) +
+            venueSwitchAskHTML(v, showPrices) +
             (showPrices ? (isFree ? '<div class="cb-price"><s>' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</s></div>' : '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>') +
               (asOrg() ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price for this quote"> full · $<input type="number" class="spNum" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price for this quote"> half</div>') : '') +
             ((d > 0 || venueDayMap(v.key)) ? venueDaysHTML(v) : '') +
@@ -9183,9 +9632,9 @@ function renderClient(){
               return '<input type="text" class="vtimeInp' + (busy ? ' needtimes' : '') + '" data-key="' + esc(v.key) + '" placeholder="' +
                 (sh ? 'meal times and notes (e.g. breakfast 8am, dinner 6pm)' : 'times and notes (e.g. 9am to 4pm, projector, 40 seated theatre style)') +
                 '" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">';
-            })() : '') +
+            })() : '') + (v.key === "fr3" ? venueOneSpaceBarHTML() : '') +
           '</div>' +
-          stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0, canUp: can.ok, upTitle: can.why, lock: lockedItem(v.fullId, "venue")}) +
+          stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0, canUp: can.ok || !!(v.members && venueBlockedBy(v)), upTitle: can.why, lock: lockedItem(v.fullId, "venue")}) +
           '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         '</div>';
       }).join('') + '</div>'
@@ -9355,7 +9804,8 @@ function renderClient(){
         '<div class="qp-addr">' + VENUE_ADDR1 + '<br>' + VENUE_ADDR2 + '<br>' + VENUE_ABN + '</div></div>' +
       '<div class="qp-meta"><div><b>Quote ' + esc(Q.num) + '</b></div>' +
       '<div>Issued ' + ((CLIENT_MODE && BOOT.quote.display && BOOT.quote.display.issued) ? fmtDate(BOOT.quote.display.issued) : fmtDate(today)) + '</div>' +
-      '<div>Valid until ' + ((CLIENT_MODE && Q.validUntil) ? fmtDate(Q.validUntil) : fmtDate(plusDays(today, Number(Q.validDays)||14))) + '</div>' +
+      '<div>Valid until ' + ((CLIENT_MODE && Q.validUntil) ? fmtDate(Q.validUntil) : fmtDate(plusDays(today, Number(Q.validDays)||14))) +
+        (quoteAcceptBlock() && quoteExpiredByDate() ? ' <span class="expiredtag">(expired)</span>' : '') + '</div>' +
         (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
         '<div class="qp-contactlines">Phone: ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>' + VENUE_WEB_LINK + '</div></div>' +
     '</div>' +
@@ -9481,7 +9931,10 @@ function renderClient(){
     if(!S) return;
     const c = schoolCounts(S.counts);
     c[e.target.dataset.k] = Math.max(0, Math.round(Number(e.target.value) || 0));
-    const plan = schoolNumbers({level: S.level, meals: S.meals, rate: S.rate}, c);
+    /* the whole package goes back in, so a per-night rate and meal rates staff typed for this
+       quote survive the organiser changing a number (15 Oct 2026). The rooms are still worked
+       out afresh from the numbers, as they always were on this page. */
+    const plan = schoolNumbers(Object.assign({}, S, {keepRooms: false}), c);
     refresh();
     const t = schoolTotals(c);
     /* more rooms than we have free: they cannot book that themselves, so we ask them
@@ -9558,10 +10011,11 @@ function renderClient(){
     c[k] = (v === "" || Number(v) === bandDefault(k)) ? "" : Number(v);
     refreshCaterRows();
   }));
-  page.querySelectorAll(".vday").forEach(el => el.addEventListener("click", e => {
+  page.querySelectorAll(".vday:not(.vdro)").forEach(el => el.addEventListener("click", e => {
     const b = e.currentTarget;
     cycleVenueDay(b.dataset.key, b.dataset.iso);
   }));
+  wireVenueIncl(page);
   page.querySelectorAll(".vtimeInp").forEach(el => el.addEventListener("input", e => {
     if(!Q.sel.venueTimes) Q.sel.venueTimes = {};
     Q.sel.venueTimes[e.target.dataset.key] = e.target.value;
@@ -10137,7 +10591,7 @@ function interestNotesText(e, missed){
   if(e.choices) L.push("Meals they picked: " + String(e.choices).split("\n").join(" · "));
   if(e.venueDayWords && typeof e.venueDayWords === "object" && Object.keys(e.venueDayWords).length){
     L.push("Rooms they picked: " + Object.keys(e.venueDayWords).map(k => ((VENUES.find(x => x.key === k) || {}).name || k) + " " + e.venueDayWords[k]).join(" · ") +
-      (e.venueAvailability === "checked" ? " (all shown free in RMS when they looked" + (e.venueAvailAsAt ? ", " + e.venueAvailAsAt.slice(0, 16).replace("T", " ") : "") + ")" : " (room availability was not checked on the website)"));
+      (e.venueAvailability === "checked" ? " (all shown vacant in RMS when they looked" + (e.venueAvailAsAt ? ", " + e.venueAvailAsAt.slice(0, 16).replace("T", " ") : "") + ")" : " (room availability was not checked on the website)"));
   }
   if(e.freeVenues && typeof e.freeVenues === "object" && Object.keys(e.freeVenues).length){
     L.push("Shown to them as included: " + Object.keys(e.freeVenues).map(k => ((VENUES.find(x => x.key === k) || {}).name || k) + " " + e.freeVenues[k]).join(" · "));
@@ -10781,6 +11235,7 @@ function doStaffResubmit(){
   renderClient();
   showToast("Saved " + Q.num + ". The booking and deposit invoice are being updated; functions@ gets one email with the result (and a second only if something needs doing).");
 }
+let SUBMIT_UNDO = null;                 // puts the page back if the latest submission did not go through
 function doSubmit(){
   if(STAFF_VIEW) return;
   /* belt and braces: the button is already held, but never take a booking for rooms
@@ -10789,6 +11244,9 @@ function doSubmit(){
     showToast("We do not have enough rooms free for those numbers, so we cannot take this online. Please call us on " + VENUE_PHONE + " and we will work it out with you.", true);
     return;
   }
+  const expBlk = quoteAcceptBlock();
+  if(expBlk){ renderClient(); showToast(expBlk.title + " " + ACCEPT_BLOCK_CALL, true); return; }
+  const noDep = noDepositBooking();
   const wasStatus = Q.status, wasSel = Q.submittedSel, wasAt = Q.submittedAt;
   const wasHist = Array.isArray(Q.history) ? Q.history.slice() : null;
   Q.status = "Submitted";
@@ -10802,8 +11260,22 @@ function doSubmit(){
   const snap = snapshotQ();
   upsertSnapshot(snap);
   /* the full selection travels to the tracker sheet: who's eating, message, venue times, totals */
-  postToSheet({action: "submitted", quote: sheetQuotePayload(snap)}, CLIENT_MODE ? function(){
+  postToSheet({action: "submitted", quote: sheetQuotePayload(snap)}, CLIENT_MODE ? SUBMIT_UNDO = function(reply){
+    SUBMIT_UNDO = null;
     Q.status = wasStatus; Q.submittedSel = wasSel; Q.submittedAt = wasAt; Q.history = wasHist; Q.accepted = wasStatus === "Accepted";
+    /* the quote server refused it: past its "valid until" date, or Expired / Declined (code.gs 13.18) */
+    const k = String(reply || "").trim();
+    if(k === "expired" || k === "unavailable"){
+      ACCEPT_BLOCK_REPLY = k;
+      if(DEP_WAIT){ clearInterval(DEP_WAIT.timer); DEP_WAIT = null; }
+      const scr = document.getElementById("depScreen");
+      if(scr) scr.classList.remove("open", "waiting");
+      document.body.style.overflow = "";
+      renderClient();
+      const b = quoteAcceptBlock();
+      showToast((b ? b.title : "This quote is no longer available.") + " " + ACCEPT_BLOCK_CALL, true);
+      return;
+    }
     renderClient();
     showToast("That did not reach us, please check your connection and press Submit again. If it keeps failing, call " + VENUE_PHONE + " or email " + VENUE_EMAIL + ".");
   } : null);
@@ -10813,7 +11285,7 @@ function doSubmit(){
   if(CLIENT_MODE && bookingsOnSubmit() && depositTotal() > 0) setTimeout(waitForBooking, 300);
   showToast(CLIENT_MODE
     ? (bookingsOnSubmit()
-        ? "Thank you! Your unconfirmed booking is being made and your deposit invoice is on its way to " + (Q.email || "your email") + "."
+        ? (noDep ? NO_DEP_THANKS : "Thank you! Your unconfirmed booking is being made and your deposit invoice is on its way to " + (Q.email || "your email") + ".")
         : "Selection submitted, thank you! Our functions team has been notified and will confirm availability and final pricing with you.")
     : "Selection for " + Q.num + " submitted and logged to the tracker sheet. In the live version this also emails the functions team, who confirm availability and final pricing.");
 }
@@ -11489,8 +11961,8 @@ function renderRmsSettings(){
           return '<tr><td>' + esc(r.name) + '<span class="auto">full &amp; half day · price from the rate card</span></td>' +
             '<td><span class="fmuted">' + (missing.length
               ? 'follows the three single rooms below: map ' + esc(missing.join(", ")) + ' to finish'
-              : 'all three of ' + esc(mapped.map(m => m.room.name).join(", ")) + ' free') + '</span></td>' +
-            '<td>' + (missing.length ? '<span class="overdue" title="Map every single room to its RMS room">' + (3 - missing.length) + ' of 3</span>' : '<span class="fmuted" title="Free only when all three rooms are free">3 rooms</span>') + '</td></tr>';
+              : 'all three of ' + esc(mapped.map(m => m.room.name).join(", ")) + ' vacant') + '</span></td>' +
+            '<td>' + (missing.length ? '<span class="overdue" title="Map every single room to its RMS room">' + (3 - missing.length) + ' of 3</span>' : '<span class="fmuted" title="Vacant only when all three rooms are vacant">3 rooms</span>') + '</td></tr>';
         }
         if(r.shared){
           /* a shared space: several rooms, and groups share them, so it is never blocked */
@@ -12457,7 +12929,11 @@ document.getElementById("f-bond").addEventListener("input", e => {
 BINDINGS.forEach(pair => {
   const el = document.getElementById(pair[0]);
   el.addEventListener("input", () => {
+    const was = Q[pair[1]];
     Q[pair[1]] = (el.type === "number") ? (el.value === "" ? "" : Number(el.value)) : el.value;
+    /* a school quote's meals and package follow the new dates (15 Oct 2026) */
+    if((pair[1] === "dateStart" || pair[1] === "dateEnd") && schoolOn() && Q.dateStart && (!Q.dateEnd || Q.dateEnd >= Q.dateStart))
+      schoolFollowDates(pair[1] === "dateStart" && was && /^\d{4}-\d{2}-\d{2}$/.test(String(was)) ? isoDiffDays(was, Q.dateStart) : 0);
     if(pair[1] === "prepBy"){ try{ localStorage.setItem(LS_PREPBY, el.value); }catch(e){} }
     if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
     if(pair[1] === "dateStart" || pair[1] === "dateEnd"){
