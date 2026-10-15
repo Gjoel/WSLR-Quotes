@@ -339,6 +339,7 @@
   .schooldlg .sgopt em{display:block; font-style:normal; color:var(--ink2, #6b7580); font-size:12px; margin-top:3px; line-height:1.5}
   .schoolsec .sgnoteline{margin-top:8px; font-size:13px; color:var(--ink2, #6b7580)}
   .schoolsec .sgwarn{margin-top:8px; background:#fff4e0; border-left:4px solid #ef8f00; padding:7px 10px; border-radius:6px; font-size:13px}
+  .schoolsec .sgwarn.sgred{background:#fde8e8; border-left-color:#d93025; color:#8a1c1c}
   .sgcall{margin-top:10px; background:#fdecec; border:1.5px solid #c62828; border-radius:10px; padding:11px 14px; font-size:14px; line-height:1.6}
   .sgcall b{display:block; color:#a01a1a; font-size:14.5px; margin-bottom:3px}
   .sgcall span{display:block}
@@ -589,6 +590,9 @@
   .incltag{display:inline-block; font-weight:700; color:var(--good, #1a8c46)}
   .vdays.vdincl .vday{cursor:default}
   .vonebar, .vswitchask{margin-top:8px; padding:9px 11px; border-radius:9px; font-size:13px; line-height:1.45; color:var(--ink)}
+  .cb-row > .vonebar, .cb-row > .vswitchask{grid-column:1 / -1; margin-top:2px}
+  .preprow > .vonebar, .preprow > .vswitchask{grid-column:2 / -1; margin-top:2px}
+  @media (max-width:760px){ .preprow > .vonebar, .preprow > .vswitchask{grid-column:1 / -1} }
   .vonebar{background:rgba(26,140,70,.09); border:1px solid rgba(26,140,70,.35)}
   .vswitchask{background:#f3f8fd; border:1px solid #9cc3e6}
   .vonespace, .vswitch{appearance:none; border:1.5px solid var(--good, #1a8c46); background:#fff; color:var(--good, #1a8c46); border-radius:8px;
@@ -929,6 +933,12 @@
   .vday.tight{border-color:#e0a24a}
   .vday:disabled{opacity:.9}
   .vdays .vdhint{flex:1 0 100%; font-size:11.5px; color:var(--muted)}
+  /* the check-out day of a staying group: a morning, until 12 noon (15 Oct 2026) */
+  .vday.vdep span{white-space:normal; max-width:110px; margin:0 auto}
+  .vday.vdepbad{border-color:#d08a00; box-shadow:0 0 0 2px rgba(208,138,0,.35)}
+  .departwarn{background:rgba(208,138,0,.12); border:1px solid rgba(208,138,0,.45); color:#6b4800; border-radius:8px;
+    padding:6px 10px; margin:6px 0 2px; font-size:12.5px; line-height:1.45}
+  .dinrule{font-size:12px}
   .orgmsg textarea{font-size:13.5px}
   .cd-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin-top:2px}
   .cd-grid label{display:flex; flex-direction:column; gap:3px; font-size:11.5px; font-weight:600; color:var(--ink2)}
@@ -1217,7 +1227,7 @@
           <label title="Where the alert goes when the client accepts or declines online. The functions inbox always gets a copy.">Preparer email<input id="f-prepemail" type="email" placeholder="functions@wslr.com.au"></label>
           <label title="Shown as Valid until on the quote, and drives the follow-up column on the Pipeline">Quote valid for (days)<input id="f-valid" type="number" min="1"></label>
           <div class="discbox" id="discBox">
-            <label class="disctgl" title="Take something off the accommodation and/or the catering, after any church discount"><input type="checkbox" id="f-disc-on"> Discount</label>
+            <label class="disctgl" title="Take something off the accommodation and/or the catering, after any church or charity discount"><input type="checkbox" id="f-disc-on"> Discount</label>
             <div class="discrows" id="discRows" hidden>
               <div class="discrow"><span>Accommodation</span><input type="number" id="f-disc-accom" min="0" step="0.5" placeholder="0"><select id="f-disc-accom-t"><option value="pct">%</option><option value="amt">$</option></select></div>
               <div class="discrow"><span>Catering</span><input type="number" id="f-disc-cater" min="0" step="0.5" placeholder="0"><select id="f-disc-cater-t"><option value="pct">%</option><option value="amt">$</option></select></div>
@@ -1327,7 +1337,7 @@
 
       <div class="pkgsec">
         <div class="pkghead">
-          <h3>Church &amp; charitable discount</h3>
+          <h3>Church or Charity Discount</h3>
         </div>
         <div class="churchrow">
           <label class="secitem" style="padding:0; font-weight:600"><input type="checkbox" id="f-acnc"> <span>This group is a registered church or ACNC charity</span></label>
@@ -1359,6 +1369,8 @@
           </div>
           </div>
           <label class="secitem"><input type="checkbox" id="f-feat-caterfuture"> <span><span class="sectitle">New catering prices for stays from <span class="cfFromWord">27 Sep 2027</span></span><span class="secwhy">when they arrive on or after that date, the meals take the new prices (from Settings when this quote was made; untick and tick to take today's Settings). A price typed on this quote still wins</span></span></label>
+          <label class="secitem"><input type="checkbox" id="f-feat-diningmeals"> <span><span class="sectitle">Dining Room: meals free, booked days charged</span><span class="secwhy">their meals are served in the Dining Room at no charge, and it is theirs for the hours around each meal (after breakfast until mid-morning, and around lunch and dinner); booking it on the quote as a half or full day is for other times and is charged at the room's price, whatever meals are on the quote (15 Oct 2026). Quotes made before then are unticked: the Dining Room is free on every booked day once any meal is on the quote</span></span></label>
+          <label class="secitem"><input type="checkbox" id="f-feat-roomdeposit"> <span><span class="sectitle">Deposit on a conference-room-only booking</span><span class="secwhy">with no cabins or sites on the quote, each conference room or space charged carries the rooms-only deposit (Settings, $100 by default; Rooms 1, 2 &amp; 3 combined count once; the Marquee and Dining Room carry none), never more than the booking total (15 Oct 2026). Quotes made before then are unticked: they were sent as &quot;no deposit&quot; and keep it</span></span></label>
           <label class="secitem" id="f-feat-freerooms-row"><input type="checkbox" id="f-feat-freerooms"> <span><span class="sectitle">Old rule: free conference room per 5 cabins</span><span class="secwhy">only for quotes sent before 7 Oct 2026 that promised it (6-10 cabins = 1 room, 11-15 = 2). Replaced by the venue credit, untick it if you switch this quote over</span></span></label>
           <label class="secitem"><input type="checkbox" id="f-feat-autoform"> <span><span class="sectitle">Confirmation form the moment they accept</span><span class="secwhy">their Final Confirmation form is made on the website as soon as they accept, prefilled from this quote and the units held in RMS, and the link is emailed to them and shown on their quote page. Untick for a group you want to set up by hand (a complicated school, say): it then waits on the builder's Accepted quotes tab</span></span></label>
         </div>
@@ -1711,6 +1723,33 @@
    from the server, and Submit posts back for real. One file, one rendering engine. */
 const BOOT = (typeof window !== "undefined" && window.WSLR_BOOTSTRAP && window.WSLR_BOOTSTRAP.quote) ? window.WSLR_BOOTSTRAP : null;
 const CLIENT_MODE = !!BOOT;
+/* Quote links without Google (15 Oct 2026). quote.html (next to this file on GitHub) reads the
+   quote from the quote server as JSON (?q=), puts it in front of this page exactly as the server
+   does and adds window.WSLR_TRANSPORT = "fetch". The organiser's browser then never opens a Google
+   page, so a Google sign-in, an account chooser or a blocked script.google.com frame can't get in
+   the way. The page talks to the server with plain requests instead of google.script.run (?avail=,
+   ?booking=, and a POST it can read the answer to). Served by the quote server itself (the old
+   links), nothing here changes. */
+const FETCH_TRANSPORT = CLIENT_MODE && typeof window !== "undefined" && window.WSLR_TRANSPORT === "fetch";
+/* Loaded that way, the page runs at gjoel.github.io, the staff tool's own address, so it keeps its
+   storage to itself, in memory: nothing a staff member keeps on the same computer (their quotes,
+   settings, sign-in) is read or overwritten, and it works the same when the browser blocks storage
+   in frames (third-party cookies off). Inside the quote server's frame it always had an address of
+   its own. */
+if(FETCH_TRANSPORT){
+  (function(){
+    const mem = Object.create(null);
+    const store = {
+      getItem(k){ k = String(k); return k in mem ? mem[k] : null; },
+      setItem(k, v){ mem[String(k)] = String(v); },
+      removeItem(k){ delete mem[String(k)]; },
+      clear(){ Object.keys(mem).forEach(k => { delete mem[k]; }); },
+      key(i){ return Object.keys(mem)[i] === undefined ? null : Object.keys(mem)[i]; },
+      get length(){ return Object.keys(mem).length; }
+    };
+    try{ Object.defineProperty(window, "localStorage", {configurable: true, enumerable: true, get(){ return store; }}); }catch(e){}
+  })();
+}
 /* Sept 2026: the organiser's link opened by staff (Pipeline ↗, the staff emails add
    &view=staff): the page looks exactly like the organiser's, under a STAFF VIEW banner,
    and nothing on it can be changed or submitted */
@@ -1763,10 +1802,16 @@ const DEFAULT_RATE_GROUPS = [
   {group:"Catering", items:[
     {id:"bf_hot",     name:"Breakfast - Hot",           unit:"per person", price:30, pp:true, meal:true},
     {id:"bf_cont",    name:"Breakfast - Continental",   unit:"per person", price:20, pp:true, meal:true},
+    /* Joel, 15 Oct 2026: the Breakfast Pack ($20) and morning and afternoon tea ($10 a head)
+       are priced on the quote, as on the website. Children 4-12 half price, under 4 free, like
+       every meal; no dietary surcharge on the teas (noDiet). */
+    {id:"bf_pack",    name:"Breakfast - Pack",          unit:"per person", price:20, pp:true, meal:true},
     {id:"lunch_sit",  name:"Lunch - Sit Down",          unit:"per person", price:25, pp:true, meal:true},
     {id:"lunch_pack", name:"Lunch - Packed",            unit:"per person", price:20, pp:true, meal:true},
     {id:"din2",       name:"Dinner - 2 Course",         unit:"per person", price:35, pp:true, meal:true},
     {id:"din1",       name:"Dinner - 1 Course",         unit:"per person", price:30, pp:true, meal:true},
+    {id:"mtea",       name:"Morning tea",               unit:"per person", price:10, pp:true, meal:true, noDiet:true},
+    {id:"atea",       name:"Afternoon tea",             unit:"per person", price:10, pp:true, meal:true, noDiet:true},
     {id:"diet",       name:"Special dietary surcharge", unit:"per person", price:10, pp:true, meal:true}
   ]}
 ];
@@ -1778,7 +1823,8 @@ const DEFAULT_ITEM_BY_ID = {};
    organiser's page shows the same prices. Quotes made before 7 Oct 2026 only take them
    when ticked on the Prepare tab. */
 const CATER_FUTURE = {from: "2027-09-27",   /* Monday 27 Sept 2027, same as the website (Joel, 9 Oct 2026; was 1 July 2027) */
-  prices: {bf_hot: 33, bf_cont: 22, lunch_sit: 28, lunch_pack: 22, din2: 39, din1: 33}};
+  prices: {bf_hot: 33, bf_cont: 22, lunch_sit: 28, lunch_pack: 22, din2: 39, din1: 33,
+           bf_pack: 20, mtea: 10, atea: 10}};   /* the pack and the teas stay the same (Joel, 15 Oct 2026) */
 let CF_HOUSE_CACHE = null;
 function caterFutureHouse(){
   if(CF_HOUSE_CACHE) return JSON.parse(JSON.stringify(CF_HOUSE_CACHE));
@@ -1834,6 +1880,42 @@ function withRoomItems(groups){
   });
   return groups;
 }
+/* The Breakfast Pack and morning and afternoon tea (priced from 15 Oct 2026) arrived after the
+   rate cards were saved: the same fill-in as the single rooms. The pack goes in under the
+   breakfasts, the teas just above the dietary surcharge. A quote's own snapshot is never
+   touched, so a quote sent without them keeps offering teas "on request" as before. */
+const NEW_CATER_ITEM_IDS = ["bf_pack", "mtea", "atea"];
+function withCaterItems(groups){
+  if(!Array.isArray(groups) || !groups.length) return groups;
+  const have = {};
+  groups.forEach(g => (g.items || []).forEach(it => { have[it.id] = true; }));
+  const missing = NEW_CATER_ITEM_IDS.filter(id => !have[id]);
+  if(!missing.length) return groups;
+  let target = groups.find(g => g.group === "Catering") ||
+               groups.find(g => (g.items || []).some(it => /^(bf_|lunch_|din[12]$|diet$)/.test(String(it.id))));
+  if(!target){
+    target = {group: "Catering", items: []};
+    groups.push(target);
+  }
+  if(!Array.isArray(target.items)) target.items = [];
+  missing.forEach(id => {
+    const def = DEFAULT_ITEM_BY_ID[id];
+    if(!def) return;
+    let at;
+    if(id === "bf_pack"){
+      let last = -1;
+      target.items.forEach((it, i) => { if(/^bf_/.test(String(it.id))) last = i; });
+      at = last + 1;
+    } else {
+      at = target.items.findIndex(it => it.id === "diet");
+      if(at < 0) at = target.items.length;
+    }
+    target.items.splice(at, 0, JSON.parse(JSON.stringify(def)));
+  });
+  return groups;
+}
+/* every item that arrived after rate cards were saved */
+function withNewItems(groups){ return withCaterItems(withRoomItems(groups)); }
 function buildRate(stored){
   const src = (stored && stored.length) ? stored : JSON.parse(JSON.stringify(DEFAULT_RATE_GROUPS));
   RATE_GROUPS = src.filter(g => g.group !== "Other").concat([{group:"Other", items:[CUSTOM_ITEM]}]);
@@ -1912,14 +1994,14 @@ const VENUES = [
   {key:"fr2",  name:"Conference Room 2",          cap:"6.7m × 11.2m · on its own, part of the Rooms 1, 2 & 3 space", fullId:"fr2_full",  halfId:"fr2_half",  partOf:"fr13", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
   {key:"fr3",  name:"Conference Room 3",          cap:"6.7m × 7.6m · on its own, part of the Rooms 1, 2 & 3 space",  fullId:"fr3_full",  halfId:"fr3_half",  partOf:"fr13", tour: TOUR_FULL + "&scene=r8wB&menu=0"},
   {key:"fr5",  name:"Conference Room 5",          cap:"up to 45 people · fully separate room",        fullId:"fr5_full",  halfId:"fr5_half",  tour: TOUR_FULL + "&scene=vlAL&menu=0"},
-  {key:"aud",  name:"Auditorium",                 cap:"up to 500 people · 30.0m × 15.0m",             fullId:"aud_full",  halfId:"aud_half",  tour: TOUR_FULL + "&scene=wVBg&menu=0"},
+  {key:"aud",  name:"Auditorium",                 cap:"up to 500 standing · 30.0m × 15.0m",           fullId:"aud_full",  halfId:"aud_half",  tour: TOUR_FULL + "&scene=wVBg&menu=0"},
   {key:"marq", name:"Marquee",                    cap:"up to 160 people · book ahead, subject to availability", fullId:"marq_full", halfId:"marq_half", tour: TOUR_FULL + "&scene=xnDz&menu=0"},
   /* shared: the Dining Room is three RMS rooms (CONF 6, 7 and 8) and more than one group
      can be in it at once, at different meal sittings. So its availability is a count of
      free rooms rather than free/not, it never blocks the organiser, and a submission
      pencils only as many rooms as the headcount needs. CONF 9 is not used by this tool:
      it is not a space groups are given. */
-  {key:"din",  name:"Dining Room",                cap:"up to 120 people · several sittings, shared with other groups", fullId:"din_full",  halfId:"din_half",  shared:3, roomNos:["6", "7", "8"], tour: TOUR_FULL + "&scene=yoEz&menu=0"}
+  {key:"din",  name:"Dining Room",                cap:"up to 120 seated · several sittings, shared with other groups", fullId:"din_full",  halfId:"din_half",  shared:3, roomNos:["6", "7", "8"], tour: TOUR_FULL + "&scene=yoEz&menu=0"}
 ];
 function isAccomLine(l){
   if(ITEM_GROUP[l.id] === ACCOM_GROUP) return true;
@@ -2121,16 +2203,16 @@ const LOGO_QP = HAVE_LOGO ? '<img class="qp-logo" src="' + LOGO_DATA + '" alt="W
 const INFO_SECTIONS = [
   {id:"accom_notes", title:"About your accommodation", why:"auto when accommodation is quoted",
    text:"All units are fully self contained with kitchen and bathroom facilities. Linen is supplied on all beds; beach towels are not supplied. Guests have free use of the 25m indoor heated pool, spa and steam room during their stay, and complimentary pool towels are available. Once your booking is made, the prices on this quote stay valid, and your booking can be changed at these prices, until {pricelead} before your arrival date (cancellations follow the cancellation conditions below). Any rooms added after that are charged at our dynamic price on the day they are added, which changes every day depending on occupancy. For more information on our accommodation visit www.wslr.com.au, or take a virtual walk-through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
-  {id:"church", title:"Church & charitable group discount conditions", why:"auto when a church discount is applied",
+  {id:"church", title:"Church or Charity Discount conditions", why:"auto when a church or charity discount is applied",
    text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and venue hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room booked are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and venue hire applies on conditions b) to d) if you choose to self cater or have fewer than 3 group main meals during your stay. The discount applies to accommodation and venue hire only, never to catering."},
   {id:"venue_info", title:"Conference rooms & auditorium", why:"auto when venue hire is quoted",
-   text:"Conference Rooms 1, 2 & 3 hold a maximum of 150 persons; rooms 1 & 2 sit next to each other and the walls between them can be opened up to form larger rooms. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds a maximum of 500 persons, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). All conference rooms are equipped with 55 inch flat screen TVs, and Wi-Fi is complimentary for all conference delegates. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee. No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner. Our Private Dining Room holds a maximum of 120 persons and is included at no charge while your group's meal service is running; like the Marquee it still has to be booked in advance and is subject to availability."},
+   text:"Conference Rooms 1, 2 & 3 sit side by side, and the walls between them open up into one space, Conference Rooms 1, 2 & 3 (combined), for up to 150 people; each room can also be booked on its own. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds up to 500 people standing, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). What is included: Conference Rooms 1, 2, 3 and 5 and the Dining Room each have a TV with HDMI (bring your laptop), and a projector and screen are available in the Auditorium and the Marquee. We lend urns, microphones (corded and cordless) and stands, whiteboards and a butcher's paper board on request, subject to availability: ask for them on your Final Confirmation form. Wi-Fi is complimentary for all conference delegates. Our kitchen is not available to groups. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee.{checkoutrooms} No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner. Our Private Dining Room seats up to 120 people. {diningrule} Like the Marquee, it still has to be booked in advance and is subject to availability."},
   {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
    text:"All meals are served buffet style, and your group chooses one option per meal service with our catering team closer to the date. {menuoptions}"},
   {id:"catering_info", title:"Catering", why:"auto when catering is quoted",
-   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Final catering numbers are due no later than {cateringlead} prior to your arrival date, and catering is subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
+   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Menu choices are due on your Final Confirmation form {formdays} before arrival, and final catering numbers {cateringdays} before arrival; catering is subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
   {id:"children", title:"Children's pricing & dietary requirements", why:"auto when catering is quoted",
-   text:"Children's catering is charged as: 3 years and under free; 4–12 years 50% of the full rate; 13 years and over full rate. Medically diagnosed special dietary requirements (e.g. gluten free, intolerances, allergies) incur a surcharge of $10.00 per person per meal ($5.00 for children 12 and under); special diet meals are served by our Catering Team Leader on duty, and it is the customer's responsibility to make themselves known to our staff. Any additional persons added after your final details are submitted {finallead} prior to arrival incur an additional $10 per person per meal surcharge."},
+   text:"Children's catering is charged as: 3 years and under free; 4–12 years 50% of the full rate; 13 years and over full rate. Medically diagnosed special dietary requirements (e.g. gluten free, intolerances, allergies) incur a surcharge of $10.00 per person per meal ($5.00 for children 12 and under); special diet meals are served by our Catering Team Leader on duty, and it is the customer's responsibility to make themselves known to our staff. Any additional persons added after the final numbers ({finaldays} before arrival) incur an additional $10 per person per meal surcharge."},
   {id:"selfcater", title:"Self catering", why:"auto when accommodation is quoted without catering",
    text:"If you are self catering, you are responsible for all cleaning and for supplying all plates, bowls, cutlery, cups, utensils and cleaning equipment to clean up after your meals if using the Marquee or a common area. Our kitchen is not available for customer use or for self catered meals."},
   {id:"coffee", title:"Barista coffee", why:"switch on if the group would like the coffee van",
@@ -2146,7 +2228,7 @@ const INFO_SECTIONS = [
   {id:"checkin", title:"Check-in, check-out & facilities", why:"auto for group stays",
    text:"Check in is between 2.00pm and 8.00pm Monday to Saturday, and 2.00pm to 5.00pm Sunday; if your arrival time is likely to be outside these times, please advise reception. Check out is between 8.00am and 10.00am; late check out is available on request, subject to availability. Pool hours are 8.00am to 8.45pm Monday to Saturday and 8.00am to 5.45pm Sunday (the pool is closed 3.30pm to 7.30pm Monday to Friday during NSW school terms for swimming training). Other sporting facilities are available at a discounted hire fee. No pets."},
   {id:"final_conf", title:"Final confirmation details", why:"auto for group stays",
-   text:"Final numbers and details for your accommodation are due {finallead} prior to your arrival date, and final catering numbers no later than {cateringlead} prior to arrival."},
+   text:"{finalboth} (Extra people after the final numbers: $10 per person per meal.)"},
   {id:"site_visit", title:"Come and see the resort", why:"on for every quote",
    text:"Organisers are always welcome to visit us before booking, and we would love to show you around. A site inspection takes about half an hour and covers the conference rooms, the auditorium, the marquee lawn, the private dining room and a sample of the accommodation, so you can picture exactly how your event will run. We can also walk through catering, room set ups and arrival times while you are here. Site inspections are by appointment at a date and time that suits you, including outside office hours by arrangement. To book one, call 02 4283 6999, email functions@wslr.com.au, or just say so in your reply to this quote and we will organise it. If you cannot get to us before booking, there is a full virtual walk through of the resort at https://radian.mintdesign.co.nz/virtual-tour?vt=WpmbkMJezJ"},
   {id:"other", title:"Other information", why:"on for every quote",
@@ -2206,13 +2288,37 @@ function activeSectionIds(){
   }
   return autoSectionIds();
 }
+/* something is picked and none of it is a cabin or a site: the room deposit is depositRoomOnly */
+function roomsOnlyQuoteFilled(){
+  try{ return !!Q.sel && (hasSel(Q) || (Q.lines || []).some(l => (Number(l.qty) || 0) > 0)) && roomsOnlyBooking(); }catch(e){ return false; }
+}
+/* the Dining Room sentence in the conference rooms section: the rule this quote was made with */
+function diningRuleWords(){
+  if(!diningMealsOnlyOn()) return "It is included at no charge while your group's meal service is running.";
+  /* the same words as the /functions and Important Group Information pages (15 Oct 2026) */
+  const fp = catEntry("din_full").price, hp = catEntry("din_half").price;
+  return diningMealsWords("there") + (fp > 0 ? " To use it at other times it's " + money0(fp) + " a full day" + (hp > 0 ? " or " + money0(hp) + " a half day" : "") + "."
+    : " To use it at other times, please ask us.");
+}
+/* a staying group's check-out day (15 Oct 2026); nothing for a day event */
+function checkoutRoomsWords(){
+  let dep = "";
+  try{ dep = venueDepartIso(); }catch(e){ dep = ""; }
+  if(!dep) return "";
+  /* an older quote sent with a full day or afternoon that day keeps it, and says so */
+  let kept = false;
+  try{ kept = VENUES.some(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && venueDepartBad(v.key)); }catch(e){ kept = false; }
+  return " On your check-out day the conference rooms are yours in the morning, " + DEPART_WORD + ", at the half-day price." +
+    (kept ? " A full day or afternoon already on your quote for that day stays as we sent it." : "");
+}
 /* {bond} and the deposit & deadline rules, filled into any wording on the quote */
 function fillQuoteText(t){
   const k = kdCfg();
   return String(t === null || t === undefined ? "" : t)
     .split("{bond}").join(money0(bondAmount()))
     .split("{depositsite}").join(money0(k.depositSite))
-    .split("{depositroom}").join(money0(k.depositRoom))
+    /* a conference-room-only booking pays its own room deposit (15 Oct 2026) */
+    .split("{depositroom}").join(money0(roomsOnlyQuoteFilled() && roomOnlyDepositOn() ? k.depositRoomOnly : k.depositRoom))
     .split("{depositdays}").join(leadPhrase(k.depositDays))
     .split("{depositdue}").join(leadPhrase(k.depositDays))
     .split("{depositwhen}").join(depositWhenPhrase(k))
@@ -2226,10 +2332,23 @@ function fillQuoteText(t){
     .split("$5.00 per person per meal ($5.00 for children 12 and under)").join("$5.00 per person per meal")
     .split("{halfpct}").join(k.halfPct + "%")
     .split("{halflead}").join(leadPhrase(k.halfDays))
-    .split("{balancewhen}").join(balanceWhenPhrase(k))
+    .split("{balancewhen}").join(roomsOnlyQuoteFilled() ? eventWords(balanceWhenPhrase(k)) : balanceWhenPhrase(k))
     .split("{depositlead}").join(leadPhrase(k.halfDays))
     .split("{emaillead}").join(leadPhrase(k.halfDays))
     .split("{cateringlead}").join(leadPhrase(k.cateringDays))
+    /* the final-details deadlines, said in days (Joel, 15 Oct 2026) */
+    .split("{finalboth}").join(roomsOnlyQuoteFilled() ? eventWords(finalBothWords(k)) : finalBothWords(k))
+    .split("{formdays}").join(daysPhrase(k.formDays))
+    .split("{formlead}").join(daysPhrase(k.formDays))
+    .split("{finaldays}").join(daysPhrase(k.finalDays))
+    .split("{cateringdays}").join(daysPhrase(k.cateringDays))
+    /* the Dining Room on a new quote (15 Oct 2026): their meals there need no booking, so the
+       closing "Like the Marquee, it still has to be booked in advance" (the standard wording and
+       any house-saved copy) would read as if it did. Only other times are booked. */
+    .replace(/\{diningrule\}\s*Like the Marquee, it still has to be booked in advance and is subject to availability\./g,
+      m => diningMealsOnlyOn() ? "{diningrule} Booking it for other times is subject to availability." : m)
+    .split("{diningrule}").join(diningRuleWords())
+    .split("{checkoutrooms}").join(checkoutRoomsWords())
     .split("{finalleadbig}").join(leadPhrase(k.finalDays))
     .split("{finallead}").join(leadPhrase(k.finalDays))
     .split("{bigunits}").join(String(k.bigUnits))
@@ -2241,7 +2360,55 @@ function fillQuoteText(t){
     .split("{holddays}").join(leadPhrase(Number(Q.validDays) > 0 ? Number(Q.validDays) : k.holdDays))
     /* no room deposit: leave the conference room part out of the sentence */
     .replace(/(,| and) \$0 per conference room( booked)?/g, (m, a, b) => b || "")
-    .replace(/ and \$0 per conference room/g, "");
+    .replace(/ and \$0 per conference room/g, "")
+    .replace(/[\s\S]+/, s => roomsOnlyQuoteFilled() ? roomsOnlyWording(s) : s)
+    .replace(/[\s\S]+/, s => noDepositQuote() ? noDepositWording(s) : s);
+}
+/* ---------- the wording on a conference-room-only booking (15 Oct 2026) ----------
+   Nobody stays, so there is no 50% part payment (the page's own payment plan only asks for
+   one with cabins or sites, and so does Deposit.gs 1.13) and no keys; the deposit is for the
+   conference rooms only. The standard (and house-saved) wording is put that way here. */
+const MONEY_RX = "\\$[\\d,]+(?:\\.\\d\\d)?";
+function roomsOnlyWording(s){
+  return String(s)
+    .replace(new RegExp("\\(" + MONEY_RX + " per cabin, " + MONEY_RX + " per campsite, (" + MONEY_RX + " per conference room)\\)", "g"), "($1)")
+    .replace(new RegExp(MONEY_RX + " per cabin, " + MONEY_RX + " per campsite and (" + MONEY_RX + " per conference room)", "g"), "$1")
+    /* the part payment comes out of the numbered list and the balance takes its number */
+    .replace(/\s*(\d)\. Once the deposit is paid, \d+% of the total is due [^.]*?\.\s*\d\. The remaining balance/, (m, n) => " " + n + ". The remaining balance")
+    .replace(/\b\d+% of the total is due [^.]*? before (?:arrival|your event), and the balance /g, "The balance is due ")
+    .replace(/ and must be paid before keys are handed over/g, "")
+    .replace(/,? before keys are handed over/g, "");
+}
+/* ---------- the wording on a booking with no deposit (15 Oct 2026) ----------
+   A booking whose deposit comes to $0 (since round 2: only the Marquee or the Dining Room,
+   rooms at no charge, or a rooms-only quote made before the $100 room deposit) is confirmed on
+   acceptance and the organiser is emailed a confirmation. The standard (and house-saved)
+   payment wording talks about an unconfirmed booking and a deposit invoice, so on such a
+   quote those sentences are swapped for the no-deposit ones; the balance and bond stay. */
+function noDepositQuote(){
+  if(depositOnRecord()) return false;
+  /* the quote server already confirmed it with no deposit (Deposit.gs 1.12, rmsHold.noDeposit):
+     it stays "no deposit" unless what they last sent now carries one */
+  if(confirmedNoDeposit() && !confirmedNoDepositNowDue()) return true;
+  if(!noDepositBooking()) return false;
+  return hasSel(Q) || (Q.lines || []).some(l => (Number(l.qty) || 0) > 0);
+}
+const NO_DEP_SENTENCE = "There is no deposit for this booking: it is confirmed when you accept and we email you a confirmation.";
+function noDepositWording(s){
+  return String(s)
+    /* the Deposit section: items 1 to 3 (unconfirmed booking, deposit, part payment) become one */
+    .replace(/1\. Once your quote is accepted[\s\S]*?\d\. The remaining balance is due/, "1. " + NO_DEP_SENTENCE + " 2. The full amount is due")
+    .replace(/Once your quote is accepted we make an unconfirmed booking and email you a deposit invoice\./g, NO_DEP_SENTENCE)
+    /* booking information */
+    .replace(/we make an unconfirmed booking for you straight away and email you an invoice for the deposit\./g, "we make your booking straight away and email you a confirmation.")
+    .replace(/\s*Reservations stay unconfirmed until the deposit is received\./g, " There is no deposit for this booking.")
+    /* Payment & terms */
+    .replace(/When you accept this quote we make an unconfirmed booking and email you a deposit invoice(?: \([^)]*\))?(?:, due within [^.]*)?\./g, "When you accept this quote we book it and email you a confirmation. There is no deposit for this booking.")
+    .replace(/\b\d+% of the total is due [^.]*? before arrival, and the balance ?/g, "The full amount is due ")
+    .replace(/The balance is due /g, "The full amount is due ")
+    .replace(/The full amount is due , before/g, "The full amount is due before")
+    /* there is no deposit invoice: the reservation number is on the booking confirmation */
+    .replace(/\(on your deposit invoice\)/g, "(on your booking confirmation)");
 }
 /* the standard wording with this quote's numbers filled in. Used both to print the
    section and to tell whether staff have actually changed it. */
@@ -2517,6 +2684,7 @@ function postToSheet(payload, onFail){
   const url = sheetEndpoint();
   if(!url){ if(onFail) onFail(); return false; }
   if(STAFF_VIEW) return false;      // staff looking at an organiser's link: nothing leaves this page
+  if(FETCH_TRANSPORT) return orgPostReadable(url, payload, onFail);
   if(CLIENT_MODE){
     /* the organiser's page: the response is opaque, so an HTTP error still can't be
        seen, but a phone that drops out mid-submit rejects and must not be told the
@@ -2535,6 +2703,66 @@ function postToSheet(payload, onFail){
   }
   /* staff: queue it so it retries until the sheet confirms (see the sync module below) */
   queuePost(payload);
+  return true;
+}
+/* The organiser's page loaded by quote.html (FETCH_TRANSPORT, 15 Oct 2026). The acceptance goes
+   as a plain text POST: no custom headers, so the browser sends it straight (no preflight), and
+   the quote server's answer can be read. "expired" or "unavailable" (code.gs 13.18) goes to
+   onFail with that word. Any other answer is left to the booking screen's own check with the
+   server, exactly as when the answer could not be read.
+   When the request fails with no answer at all, it may still have reached us (a reply the
+   browser would not show the page), so the page asks the server before saying it did not:
+     the server can't be reached either: it did not get through (onFail(), as before)
+     the server has this very submission: it arrived, nothing to undo
+     it does not: if the booking screen is waiting on the server, that check decides (it puts the
+     page back when the server never sees it); otherwise onFail()
+   A refusal the server words itself ("error: ..." when something went wrong there, "bad token",
+   "unknown action") is acted on at once: the page asks the server whether this submission is
+   stored after all (then nothing is undone) and otherwise puts the page back straight away,
+   instead of leaving the booking screen to wait out its minute. */
+function orgPostReadable(url, payload, onFail){
+  const mine = String((payload && payload.quote && payload.quote.submittedAt) || "");
+  const fail = k => { if(onFail) onFail(k); };
+  /* the server will not take it (expired or withdrawn): say that, not "check your connection" */
+  const blocked = r => {
+    if(!(r && r.acceptBlock && r.acceptBlock.title)) return false;
+    noteServerAcceptBlock(r);
+    fail(r.acceptBlock.code === "expired" ? "expired" : "unavailable");
+    return true;
+  };
+  const unsure = () => {
+    if(!onFail) return;
+    bookingStatus(r => {
+      if(!r || r.failed){ fail(); return; }
+      if(mine && String(r.submittedAt || "") === mine) return;
+      if(DEP_WAIT || NO_DEP_WAIT) return;
+      if(blocked(r)) return;
+      fail();
+    });
+  };
+  /* "error: ..." is worth another press (the server hit a snag: "error"); a token or action it
+     does not know will not get better by trying again, so that is "call us" ("unconfirmed") */
+  const refused = k => {
+    if(!onFail) return;
+    bookingStatus(r => {
+      if(r && !r.failed && mine && String(r.submittedAt || "") === mine) return;
+      if(r && !r.failed && blocked(r)) return;
+      fail(/^error\b/i.test(k) ? "error" : "unconfirmed");
+    });
+  };
+  try{
+    fetch(url, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, credentials: "omit", cache: "no-store",
+                body: JSON.stringify(Object.assign({quoteToken: organiserToken()}, payload))})
+      .then(function(r){
+        if(!r || !r.ok){ unsure(); return; }
+        return r.text().then(function(t){
+          const k = String(t || "").trim();
+          if(k === "expired" || k === "unavailable") fail(k);
+          else if(/^error\b/i.test(k) || k === "bad token" || k === "unknown action") refused(k);
+        }, unsure);
+      }, unsure)
+      .catch(function(){});
+  }catch(e){ fail(); }
   return true;
 }
 
@@ -2565,7 +2793,7 @@ function collectSharedSettings(){
 function applySharedSettings(s){
   if(!s || typeof s !== "object") return false;
   let touched = false;
-  if(Array.isArray(s.ratecard) && s.ratecard.length){ lsSet(LS_RATECARD, withRoomItems(s.ratecard)); touched = true; }
+  if(Array.isArray(s.ratecard) && s.ratecard.length){ lsSet(LS_RATECARD, withNewItems(s.ratecard)); touched = true; }
   if(s.sections && typeof s.sections === "object"){ lsSet(LS_SECTIONS, s.sections); touched = true; }
   if(s.defaults && typeof s.defaults === "object"){ lsSet(LS_DEFAULTS, dropStaleDefaults(s.defaults)); touched = true; }
   if(s.rms && typeof s.rms === "object"){ lsSet(LS_RMS, dropGroupMappings(s.rms)); touched = true; }
@@ -2884,14 +3112,18 @@ const OLD_TERMS = [
   "A {deposit} deposit per cabin or conference room confirms your booking, due within {depositdue}; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
   "A {deposit} deposit per cabin or conference room booked is due {depositwhen}, to secure your reservation; the balance is due prior to or on arrival. Payment by EFT is preferred; please use your quote number as the payment reference.",
   /* until Oct 2026: the balance any time before the keys, now due balanceDays before arrival */
-  "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference."
+  "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
+  /* until 15 Oct 2026: the reservation number without saying where to find it */
+  "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance {balancewhen}, before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference."
 ];
 /* Notes that only ever named a flat "14 days" for final numbers, written before the
    deadline rules became settings. A stored copy that is still one of these steps
    aside for the current default, which follows the rules instead. */
 const OLD_NOTES = [
   "Room hire includes setup and pack-down. Catering is booked at least {cateringlead} before the event, and final guest numbers and dietary requirements are due {finallead} before it. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
-  "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date. All accommodation is subject to availability at the time of booking."
+  "Room hire includes setup and pack-down. Final guest numbers and dietary requirements are due 14 days before the event. We can hold your dates for 14 days from the quote date. All accommodation is subject to availability at the time of booking.",
+  /* until 15 Oct 2026: one deadline; the form (14 days) and the numbers (10 days) are now both said */
+  "Room hire includes setup and pack-down. Final guest numbers, dietary requirements and catering numbers are due {finallead} before the event. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking."
 ];
 function dropStaleDefaults(d){
   if(d && typeof d === "object"){
@@ -2914,8 +3146,8 @@ function dropGroupMappings(rms){
 }
 function getDefaults(){
   return Object.assign({
-    notes: "Room hire includes setup and pack-down. Final guest numbers, dietary requirements and catering numbers are due {finallead} before the event. We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
-    terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance {balancewhen}, before keys are handed over. Payment by EFT is preferred; please use your reservation number as the payment reference.",
+    notes: "Room hire includes setup and pack-down. {finalboth} We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
+    terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance {balancewhen}, before keys are handed over. Payment by EFT is preferred; please use your reservation number (on your deposit invoice) as the payment reference for every payment.",
     bond: 2000,
     cheapest: true,
     cocUrl: "",         // the digital Code of Conduct page; blank = COC_URL_DEFAULT (the WSLR page)
@@ -3056,7 +3288,7 @@ function blankQuote(num){
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
     caterSched: caterFutureHouse(), // the new catering prices and the date they start, as they were when this quote was made
-    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, vcCabin: (d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin, autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
+    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, roomOnlyDeposit: true, vcCabin: (d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin, autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
     minStay: {},        // RMS minimum stays for the quoted rate: {itemId: {"2026-10-03": {s: 2, a: 0}}}, only nights with a rule
     staffShort: null,   // stays staff sent below the minimum on purpose: ["itemId|from|to", ...]
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
@@ -3132,6 +3364,12 @@ function normalizeQuote(q){
   if(q.features.venueCredit === undefined) q.features.venueCredit = false;
   /* and the new catering prices for stays from 27 Sept 2027 (7 Oct 2026) */
   if(q.features.caterFuture === undefined) q.features.caterFuture = false;
+  /* and the Dining Room: meals there at no charge, booked days charged (15 Oct 2026): quotes
+     made before it keep "free on every booked day once any meal is on the quote" */
+  if(q.features.diningMealsOnly === undefined) q.features.diningMealsOnly = false;
+  /* and the $100 deposit per conference room on a rooms-only booking (15 Oct 2026): a quote
+     made before it was sent as "no deposit", and keeps that */
+  if(q.features.roomOnlyDeposit === undefined) q.features.roomOnlyDeposit = false;
   /* the confirmation form on acceptance (6 Oct 2026) is on unless this quote or the house says no */
   if(q.features.autoForm === undefined) q.features.autoForm = (getDefaults() || {}).autoForm !== false;
   if(q.sel){
@@ -3268,6 +3506,31 @@ function builtInSchoolTemplates(){
    units: students 4 to a room in the motel and 1 bedroom air conditioned units,
    teachers twin share. Everything bigger, and the campsites, are switched off. */
 const SCHOOL_MIN = 20;
+/* When the school rate applies (Joel, 15 Oct 2026): every night Sunday to Thursday, inside an NSW
+   public school term. The website's school estimate only offers it then; here staff get a red
+   warning and can still go ahead. NSW Eastern division, the days STUDENTS attend. CHECK ONCE A
+   YEAR (education.nsw.gov.au/schooling/calendars) and keep in step with the website's school box.
+   2028 is the whole term dates (staff development days included) until the student dates are out. */
+const SCHOOL_TERMS = [
+  ["2026-02-02", "2026-04-02"], ["2026-04-22", "2026-07-03"], ["2026-07-21", "2026-09-25"], ["2026-10-13", "2026-12-17"],
+  ["2027-02-03", "2027-04-09"], ["2027-04-29", "2027-07-02"], ["2027-07-20", "2027-09-24"], ["2027-10-12", "2027-12-20"],
+  ["2028-01-31", "2028-04-07"], ["2028-04-24", "2028-07-07"], ["2028-07-24", "2028-09-29"], ["2028-10-16", "2028-12-21"]
+];
+function schoolTermOn(iso){ return SCHOOL_TERMS.some(t => iso >= t[0] && iso <= t[1]); }
+/* what stops these nights getting the school rate, in words ("" = nothing) */
+function schoolWindowProblem(nights){
+  nights = nights || [];
+  if(!nights.length) return "";
+  const last = SCHOOL_TERMS[SCHOOL_TERMS.length - 1][1];
+  if(nights.some(d => d > last)) return "the school terms for " + nights[nights.length - 1].slice(0, 4) + " are not loaded yet (SCHOOL_TERMS), so check the dates by hand";
+  const day = d => new Date(d + "T12:00:00").getDay();
+  const wkend = nights.filter(d => day(d) === 5 || day(d) === 6);
+  const hols = nights.filter(d => day(d) <= 4 && !schoolTermOn(d));
+  const bits = [];
+  if(wkend.length) bits.push("it includes the night" + (wkend.length === 1 ? "" : "s") + " of " + wkend.slice(0, 3).map(d => dayLabel(d)).join(", ") + (wkend.length > 3 ? " and more" : ""));
+  if(hols.length) bits.push(hols.slice(0, 3).map(d => dayLabel(d)).join(", ") + (hols.length > 3 ? " and " + (hols.length - 3) + " more" : "") + (hols.length === 1 ? " is" : " are") + " outside the NSW school terms");
+  return bits.join(", and ");
+}
 /* the house rules for school rooming, shared with every computer (Settings tab).
    The lists are in the order rooms are filled: the first type that RMS still has free
    is used, then the next one down. */
@@ -3425,12 +3688,12 @@ function schoolNotes(sc){
     "• Complimentary WiFi\n" +
     "• The bus driver stays and eats free\n\n" +
     "Good to know:\n" +
-    "• Available during NSW school terms, Monday to Thursday nights (negotiable).\n" +
+    "• Available during NSW school terms, Sunday to Thursday nights (negotiable).\n" +
     "• We do not run organised programs; the onsite activities are there for you to use during your stay.\n" +
-    "• Groups over the dining room capacity (160 people) may need more than one meal sitting, or another dining area, subject to availability.\n" +
+    "• Groups over the dining room capacity (120 seated) may need more than one meal sitting, or another dining area, subject to availability.\n" +
     "• Catering is booked at least 1 month before your stay and is subject to availability.\n" +
     "• Medical or special dietary meals (gluten free, vegetarian, intolerances) are $5.00 per person per meal.\n" +
-    "• Final numbers and catering numbers are due {finallead} before you arrive.";
+    "• {finalboth}";
 }
 /* fill rooms from the cheapest types out, capped by what RMS says is free */
 /* the rooms actually on the quote, handed out group by group. This is what the
@@ -3770,6 +4033,11 @@ function schoolShortHTML(plan){
     '<span>What you have entered needs ' + n + ' more room' + (one ? '' : 's') + ' than we have free on your dates, so we cannot add ' + (one ? 'it' : 'them') + ' here. Call our functions team on <a href="' + telHref(VENUE_PHONE) + '">' + esc(VENUE_PHONE) + '</a> or email <a href="mailto:' + esc(VENUE_EMAIL) + '">' + esc(VENUE_EMAIL) + '</a> and we will work it out with you.</span>' +
     '<span class="sgcallsm">Put the numbers back to what we have available and you can carry on booking as normal.</span></div>';
 }
+/* staff only, in red: a school rate on nights the website would not offer it for */
+function schoolWindowHTML(){
+  const why = schoolWindowProblem(stayNightsList());
+  return why ? '<div class="sgwarn sgred"><b>Outside the school rate dates.</b> The school rate is for Sunday to Thursday nights in NSW school terms, and ' + esc(why) + '. You can still send it at this price; the website would not have offered it.</div>' : '';
+}
 /* the same message next to the accept button, which is held while this is showing */
 function schoolCallBarHTML(){
   if(!schoolCallBlocks()) return '';
@@ -3806,6 +4074,7 @@ function schoolPanelHTML(){
           ' · about ' + money0(pr.perNight) + ' per person per night</td><td class="r"><b>' + money(pr.total) + '</b></td></tr></table>'
       : '<div class="sgtot"><b>' + t.people + '</b> staying' + (t.free ? ' · ' + t.free + ' free (bus driver' + (t.free === 1 ? '' : 's') + ')' : '') + '</div>') +
     (t.people && t.people < SCHOOL_MIN ? '<div class="sgwarn">The catered package needs at least ' + SCHOOL_MIN + ' people. Tell us your numbers and we will work something out with you.</div>' : '') +
+    (asOrg() ? '' : schoolWindowHTML()) +
     schoolShortHTML(plan) +
   '</div>';
 }
@@ -4070,7 +4339,8 @@ function buildSchoolQuote(sc, counts){
   if(t.people < SCHOOL_MIN) warn.push("under " + SCHOOL_MIN + " people, so the catered package price does not normally apply");
   if(plan.short) warn.push(plan.short + " room(s) more than RMS shows free on these dates, so check availability");
   const nights = stayNightsList();
-  if(nights.some(d => [4, 5, 6].indexOf(new Date(d + "T12:00:00").getDay()) >= 0)) warn.push("the package covers Monday to Thursday nights (negotiable), and this stay includes a Friday, Saturday or Sunday night");
+  const outside = schoolWindowProblem(nights);
+  if(outside) warn.push("the school rate is for Sunday to Thursday nights in NSW school terms, and " + outside);
   const mealWords = pr.rows.filter(r => r.id !== "base").map(r => r.label.toLowerCase() + " × " + r.days).join(", ");
   showToast(schoolLevelWords(sc.level) + " · " + money0(pr.base) + "pp per night for accommodation & breakfast" +
     (mealWords ? " plus " + mealWords : ", no other meals") + " · " +
@@ -4258,9 +4528,11 @@ function displayLines(){
         if(b.adults > 0) out.push({name: it.name + (schoolOn() ? "" : ", adults & 13+"), qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
         if(b.k412 > 0) out.push({name: it.name + ", children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
       }
-      /* infants 0–3 eat free, so they add no line */
-      dietMeals += b.diet * days;
-      dietKidMeals += b.dietKids * days;
+      /* infants 0–3 eat free, so they add no line; the teas carry no dietary surcharge */
+      if(!caterNoDiet(it.id)){
+        dietMeals += b.diet * days;
+        dietKidMeals += b.dietKids * days;
+      }
     });
     if(dietMeals > 0){
       const dietRate = dietPerMeal();
@@ -4606,6 +4878,9 @@ function shortFixNights(list){
 function shortBlockHTML(list){
   if(!list || !list.length) return '';
   const fix = shortFixNights(list);
+  /* a school organiser can't change the dates themselves (15 Oct 2026) */
+  if(asOrg() && lockedDates()) return '<div class="availblock"><b>Your dates are shorter than our minimum stay:</b> ' + esc(list.map(shortWords).join("; ")) + '.' +
+    '<br>To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au</div>';
   return '<div class="availblock"><b>Your dates are shorter than our minimum stay:</b> ' + esc(list.map(shortWords).join("; ")) + '.' +
     '<br>Please add a night or pick other dates' + (fix ? ', or ' +
     '<button type="button" class="btn" id="shortFixBtn">stay ' + fix + ' nights from ' + esc(shortDate(Q.dateStart)) + '</button>' : '') +
@@ -4703,9 +4978,14 @@ function selAccomSub(){
    Two house rules, in one place so the totals, the organiser's page, the PDF
    and the tracker sheet summary can never disagree with the wording on the
    quote:
-     · the Private Dining Room is included while a meal service is running
+     · the Private Dining Room: the group's meals are served there at no charge and it is
+       theirs for the hours around each meal; booked as a function space (a half or full day
+       on the quote) it is charged (new quotes from 15 Oct 2026, Q.features.diningMealsOnly).
+       Quotes made before then keep the old rule: included on every booked day once any meal
+       is on the quote
      · the Marquee is complimentary for a group staying onsite
-   Both still have to be booked in advance and are subject to availability.
+   Both still have to be booked in advance and are subject to availability (on a new quote,
+   only the Dining Room's other times are booked: meal times need no booking).
    ------------------------------------------------------------------------ */
 const DINING_KEY = "din";
 const MARQUEE_KEY = "marq";
@@ -4716,7 +4996,23 @@ function caterServicesOn(){
     return !!c && (Number(c.days) || 0) > 0;
   });
 }
-function diningIsFree(){ return caterServicesOn().length > 0; }
+/* Joel, 15 Oct 2026 ("free for the hours around when it's catered: if they have a breakfast
+   then they have it for free until mid-morning"): the meals are served in the Dining Room at
+   no charge and the room is the group's for the hours around each meal, so that needs no
+   booking. Booking it on the quote, a half or full day, is for other times and is charged at
+   the room's price ($500 a day, $250 a half day), whatever meals are on the quote. This replaces
+   round 2's "free all day on any day we cater" before it went out; quotes made before 15 Oct
+   keep the rule they were sent with (free once any meal is on the quote). */
+function diningMealsOnlyOn(){ return !!(Q.features && Q.features.diningMealsOnly); }
+function diningIsFree(){
+  if(diningMealsOnlyOn()) return false;
+  return caterServicesOn().length > 0;
+}
+/* the meals part of the rule, in the organiser's words (the card says "here", the conference
+   rooms section "there") */
+function diningMealsWords(where){
+  return "Your meals are served " + where + " at no charge, and it's yours for the hours around each meal (after breakfast until mid-morning, and around lunch and dinner).";
+}
 /* the marquee is free once the group is actually staying with us */
 function stayingOnsite(){
   return (Q.sel.accom || []).some(b => (Number(b.qty) || 0) > 0 && catEntry(b.id).on) ||
@@ -4776,7 +5072,7 @@ function venueIsFree(v){
 function venueFreeReason(v){
   if(!v) return "";
   if(schoolOn() && SCHOOL_FREE_VENUES.indexOf(v.key) >= 0) return "with your school package";
-  if(v.key === DINING_KEY) return "with " + mealServiceWords();
+  if(v.key === DINING_KEY) return diningMealsOnlyOn() ? "" : "with " + mealServiceWords();
   if(v.key === MARQUEE_KEY) return "with your stay";
   if(freeRoomKeys().indexOf(v.key) >= 0) return "with your " + unitsSplit().cabins + " cabins";
   return "";
@@ -4789,7 +5085,8 @@ function venueRate(v, half){ return venueIsFree(v) ? 0 : catEntry(half ? v.halfI
    Auditorium) first, and what that room doesn't use goes to the next room booked that day
    (Joel, 7 Oct 2026: one pot a day, not the full amount off every room). A day with only
    half-day bookings gets half the credit, and no room goes below $0. The
-   Dining Room and Marquee keep their own rules above. The room lines keep their full
+   Marquee keeps its own rule above; the Dining Room takes the credit on any day it is charged
+   (Joel, 15 Oct 2026; free with the meals, nothing to take off). The room lines keep their full
    price and the credit is one line under the subtotal, so the group sees what it saved.
    New quotes have it on (Settings: "Venue credit on new quotes"); quotes made before it
    keep their prices unless it is ticked on the Prepare tab. */
@@ -4803,7 +5100,8 @@ function vcRates(){
   return {cabin: cabin, site: cabin / 2};
 }
 function vcMoney(n){ return Math.round(n) === n ? money0(n) : money(n); }
-const VENUE_CREDIT_KEYS = ["fr13", "fr1", "fr2", "fr3", "fr5", "aud"];
+/* the Dining Room too, on any day it is charged (Joel, 15 Oct 2026); a day it is free with the meals has nothing to take off */
+const VENUE_CREDIT_KEYS = ["fr13", "fr1", "fr2", "fr3", "fr5", "aud", "din"];
 function venueCreditOn(){ return !!(Q.features && Q.features.venueCredit); }
 function venueCreditPerDay(){
   if(!venueCreditOn()) return 0;
@@ -4886,14 +5184,11 @@ function venueCreditAlloc(){
     const iso = day.charAt(0) === "#" ? (Q.dateStart ? isoAddDays(Q.dateStart, Number(day.slice(1))) : "") : day;
     const winter = isWinterDay(iso);
     if(winter) out.winterDays++;
-    /* a full day when any room is booked for the full day, or the day has a morning AND an
-       afternoon; a day of mornings only (or afternoons only) is a half-day day, however many
-       rooms, so three single rooms on the same morning earn what the combined space does on
-       that morning (15 Oct 2026). Rooms with only a day count don't say which half: as before. */
-    const known = rows.every(r => r.use === 1 || r.part === "am" || r.part === "pm");
-    const cover = rows.some(r => r.use === 1) ? 1
-      : known ? ((rows.some(r => r.part === "am") && rows.some(r => r.part === "pm")) ? 1 : 0.5)
-      : Math.min(1, rows.reduce((s, r) => s + r.use, 0));
+    /* the day's uses add up to at most one full day. Three single rooms charged as the
+       combined space (the all-three deal) count as that one space, a third each, so they earn
+       exactly what Conference Rooms 1, 2 & 3 (combined) would on that day (15 Oct 2026; the
+       same rule as the website calculator; the invoice tool adds the uses up as before) */
+    const cover = Math.min(1, rows.reduce((s, r) => s + (r.pairWhy === "all3" ? r.use / 3 : r.use), 0));
     let pot = per * (winter ? 2 : 1) * cover;
     const dayRec = {day: day, iso: iso, winter: winter, pot: pot, used: 0, rows: rows.map(r => ({key: r.key, use: r.use, take: 0}))};
     out.days.push(dayRec);
@@ -4916,6 +5211,13 @@ function venueCreditTotal(){ return venueCreditAlloc().total; }
 function venueSubHTML(v, d){
   const g = venueDayTotal(v, d), c = venueCreditFor(v) + venuePairFor(v);
   return c > 0 ? '<s class="fmuted">' + money(g) + '</s> ' + money(Math.max(0, g - c)) : money(g);
+}
+/* The Dining Room on a quote made from 15 Oct 2026 (Joel): what the card says under the room,
+   booked or not. Their meals need no booking; the half and full days here are for other times. */
+function diningHintHTML(showPrices){
+  const fp = catEntry("din_full").price, hp = catEntry("din_half").price;
+  return '<div class="cb-note dinrule">' + esc(diningMealsWords("here")) + ' Book it here only if you want it at other times' +
+    (showPrices && fp > 0 ? ': ' + esc(money0(fp)) + ' a full day' + (hp > 0 ? ', ' + esc(money0(hp)) + ' a half day' : '') : '') + '.</div>';
 }
 /* "11 cabins × $25 = $275 a day" */
 function venueCreditShort(){
@@ -4999,6 +5301,9 @@ function venueRoomsWords(list){
 function venueInclToastMsg(v){
   const p = venueIncludedIn(v) || venueByKey(v && v.partOf) || {name: "Conference Rooms 1, 2 & 3 (combined)"};
   const r = venueShortName(v), pn = String(p.name).replace(/ \(combined\)$/, "");
+  /* the organiser can't take the combined space off when our team has set it */
+  if(asOrg() && (quoteLocked() || (p.fullId && lockedItem(p.fullId, "venue"))))
+    return r + " is part of " + p.name + ", which we have set for you. Talk to us to change it.";
   return r + " is already yours as part of " + pn + ". To use " + r + " on its own, take the combined space off first.";
 }
 /* the green line on an included room */
@@ -5012,18 +5317,24 @@ function venueInclDaysHTML(v, p){
   const m = venueDayMap(p.key);
   const days = eventDays();
   if(!m || !days.length) return '';
+  const dep = venueDepartIso(p.key);
   return '<div class="vdays vdincl"><span class="vdlab">Same days as ' + esc(p.name) + '</span>' +
     days.map(iso => {
       const st = m[iso] || "";
+      /* the check-out morning reads the same as on the combined space (15 Oct 2026) */
+      const word = iso === dep && st === "am" ? "Morning, " + DEPART_WORD : VDAY_WORD[st];
       const a = venueDayAvail(p, iso);
       const taken = a !== null && Number(a) <= 0;
-      return '<button type="button" class="vday vdro' + (st ? ' ' + st : '') + (taken && st ? ' taken' : '') + '" data-incl="' + esc(v.key) + '" title="' +
-        esc(shortDate(iso) + ': ' + VDAY_WORD[st] + ', as ' + p.name) + '"><b>' + esc(dayLabel(iso)) + '</b><span>' + esc(VDAY_WORD[st]) + '</span></button>';
+      /* read-only copies: out of the tab order (the pill is the one control on the row) */
+      return '<button type="button" tabindex="-1" aria-disabled="true" class="vday vdro' + (st ? ' ' + st : '') + (taken && st ? ' taken' : '') + (iso === dep ? ' vdep' : '') + '" data-incl="' + esc(v.key) + '" title="' +
+        esc(shortDate(iso) + ': ' + word + ', as ' + p.name) + '"><b>' + esc(dayLabel(iso)) + '</b><span>' + esc(word) + '</span></button>';
     }).join('') + '</div>';
 }
 /* the locked green pill in place of the +/− buttons: "✓ 1.5d" */
 function venueInclPillHTML(v, p){
-  return '<button type="button" class="vincpill" data-incl="' + esc(v.key) + '" title="' + esc(venueInclToastMsg(v)) + '">✓ ' + venueDaysSel(p.key) + 'd</button>';
+  const n = venueDaysSel(p.key);
+  return '<button type="button" class="vincpill" data-incl="' + esc(v.key) + '" title="' + esc(venueInclToastMsg(v)) + '" aria-label="' +
+    esc(venueShortName(v) + ': included with ' + p.name + ', ' + venueCountWords(n)) + '">✓ ' + n + 'd</button>';
 }
 /* the three single rooms picked on exactly the same days, each the same way, with no
    combined space: {days: map | null, count}. null when they differ. */
@@ -5041,14 +5352,39 @@ function venueAllThreeSame(){
   const sig = m => Object.keys(m).sort().map(k => k + ":" + m[k]).join(",");
   return (sig(maps[0]) === sig(maps[1]) && sig(maps[1]) === sig(maps[2])) ? {days: maps[0], count: venueDaysSel("fr1")} : null;
 }
-/* the green bar under Room 3 */
+/* "half a day", "1 day", "1 and a half days", "2 days" */
+function venueCountWords(n){
+  n = Number(n) || 0;
+  const whole = Math.floor(n), half = n % 1 ? true : false;
+  if(!whole) return half ? 'half a day' : '0 days';
+  return whole + (half ? ' and a half days' : (whole === 1 ? ' day' : ' days'));
+}
+/* the quote total if the single rooms were moved into the combined space: worked out on a
+   copy of the selection, so nothing on the quote changes */
+function venueDryRunMoveTotal(){
+  const orig = Q.sel, ask = VENUE_SWITCH_ASK;
+  let t = null;
+  try{ Q.sel = JSON.parse(JSON.stringify(orig || {})); venueMoveSinglesIn(); t = totals().total; }
+  catch(e){ t = null; }
+  finally{ Q.sel = orig; VENUE_SWITCH_ASK = ask; }
+  return t;
+}
+/* the green bar under Room 3. Only offered when one space costs no more than the three rooms
+   do now (staff may have priced the single rooms lower on this quote), and it only says
+   "you pay the combined price" when the all-three deal is what is being charged. */
 function venueOneSpaceBarHTML(){
   const s = venueAllThreeSame();
   if(!s) return '';
   const p = venueByKey("fr13");
-  const when = s.days ? 'on ' + esc(venueDayListWords(s.days)) : 'for ' + s.count + ' day' + (s.count === 1 ? '' : 's');
   const free = CONF_SINGLES.every(k => venueIsFree(venueByKey(k)));
-  return '<div class="vonebar">All three rooms ' + when + (free ? '.' : ': you pay the ' + esc(p.name) + ' price.') +
+  if(!free){
+    const after = venueDryRunMoveTotal();
+    if(after === null || after > totals().total + 0.005) return '';
+  }
+  const singleRows = venueDayRows().filter(r => CONF_SINGLES.indexOf(r.key) >= 0);
+  const deal = !free && singleRows.length > 0 && singleRows.every(r => r.pairWhy === "all3");
+  const when = s.days ? 'on ' + esc(venueDayListWords(s.days)) : 'for ' + venueCountWords(s.count);
+  return '<div class="vonebar">All three rooms ' + when + (deal ? ': you pay the ' + esc(p.name) + ' price.' : '.') +
     ' Want the walls open as one space? <button type="button" class="vonespace">Make it one space</button></div>';
 }
 /* the single rooms that are picked */
@@ -5109,12 +5445,19 @@ function venueSwitchAskHTML(v, showPrices){
   const days = {};
   let legacy = 0;
   picked.forEach(s => { const m = venueDayMap(s.key); if(m) Object.keys(m).forEach(iso => { days[iso] = days[iso] === "full" || m[iso] === "full" || (days[iso] && days[iso] !== m[iso]) ? "full" : m[iso]; }); else legacy = Math.max(legacy, venueDaysSel(s.key)); });
-  const when = Object.keys(days).length ? ' on ' + esc(venueDayListWords(Object.keys(days).reduce((o, k) => { o[k] = "full"; return o; }, {}))) : (legacy ? ' for ' + legacy + ' day' + (legacy === 1 ? '' : 's') : '');
+  const when = Object.keys(days).length ? ' on ' + esc(venueDayListWords(days)) : (legacy ? ' for ' + venueCountWords(legacy) : '');
   const head = 'You have ' + esc(venueRoomsWords(picked)) + ' picked' + when + '. ';
   const off = CLIENT_MODE ? venueSwitchBlockedDays() : [];
   if(off.length) return '<div class="vswitchask">' + head + 'One of the three rooms is already booked on ' + esc(off.map(dayLabel).join(", ")) +
     ', so they can\'t open into one space then. <button type="button" class="vswitch" data-act="keep">Keep my rooms</button></div>';
-  const price = showPrices && !venueIsFree(v) ? ', ' + money0(catEntry(v.fullId).price) + ' a day' : '';
+  /* the price for the kind of days they would be switching: half days quote the half-day price */
+  const kinds = Object.keys(days).map(k => days[k] === "full" ? "full" : "half");
+  if(legacy){ if(Math.floor(legacy) > 0) kinds.push("full"); if(legacy % 1) kinds.push("half"); }
+  const fullP = money0(catEntry(v.fullId).price), halfP = money0(catEntry(v.halfId).price);
+  const hasFull = kinds.indexOf("full") >= 0, hasHalf = kinds.indexOf("half") >= 0;
+  const price = !(showPrices && !venueIsFree(v)) ? ''
+    : (hasFull && hasHalf ? ', ' + fullP + ' a full day and ' + halfP + ' a half day'
+      : hasHalf ? ', ' + halfP + ' a half day' : ', ' + fullP + ' a day');
   return '<div class="vswitchask">' + head + 'Switch to ' + esc(v.name) + price + ' instead? ' +
     '<button type="button" class="vswitch go" data-act="switch">Switch</button> <button type="button" class="vswitch" data-act="keep">Keep my rooms</button></div>';
 }
@@ -5219,6 +5562,53 @@ function venueDaysSel(key){ return Number((Q.sel && Q.sel.venues || {})[key]) ||
    and the organiser can pick the days whenever they like. */
 const VDAY_NEXT = {"": "full", full: "am", am: "pm", pm: ""};
 const VDAY_WORD = {full: "Full day", am: "Morning", pm: "Afternoon", "": "Not needed"};
+/* ---------- check-out day (Joel, 15 Oct 2026) ----------
+   A group staying with us (any cabin or site on the quote) has its conference rooms until
+   12 noon on the day it leaves: a morning, at the half-day price, and the venue credit still
+   applies that day. That day's button goes Not needed -> Morning (until 12 noon) -> Not
+   needed, and + never makes it a full day. A full day or afternoon saved on that day before
+   this rule stays as it was sent: staff see it in amber, and the organiser can only take it
+   down to a morning. A day event (no cabins or sites) is unchanged. The Dining Room is not
+   held to it: the group's last meals (the bus lunch) are served there. */
+const DEPART_WORD = "until 12 noon";
+function venueDepartIso(key){
+  if(key === DINING_KEY) return "";
+  const days = eventDays();
+  if(days.length < 2 || !stayingOnsite()) return "";
+  return days[days.length - 1];
+}
+/* the next state of a day button */
+function vdayNext(cur, iso, key){
+  if(iso && iso === venueDepartIso(key)) return cur === "am" ? "" : "am";
+  return VDAY_NEXT[cur || ""];
+}
+/* a full day or afternoon saved on the check-out day ("full" / "pm"), else "" */
+function venueDepartBad(key){
+  const dep = venueDepartIso(key);
+  if(!dep) return "";
+  const m = venueDayMap(key);
+  if(m) return (m[dep] === "full" || m[dep] === "pm") ? m[dep] : "";
+  /* a count with no days picked (an older quote, or rooms added before the dates): more full
+     days than the days before check-out means the check-out day is priced as a full day */
+  return venueDaysSel(key) > (eventDays().length - 1) + 0.5 ? "count" : "";
+}
+/* the amber note staff see on a room with a full day or afternoon on the check-out day; the
+   organiser gets one plain line about it (review fix, 15 Oct 2026) */
+function venueDepartWarnHTML(v){
+  if(!v) return '';
+  const bad = venueDepartBad(v.key);
+  if(!bad) return '';
+  const day = esc(dayLabel(venueDepartIso(v.key)));
+  if(asOrg()) return '<div class="cb-note departorg">' + (bad === "count"
+    ? 'Your check-out day is ' + day + ': the conference rooms are yours that morning, ' + DEPART_WORD + '. Pick your days above and that day is charged as a morning.'
+    : 'Your check-out day is ' + day + ': the conference rooms are yours that morning, ' + DEPART_WORD + '. ' + (bad === "full" ? 'A full day' : 'An afternoon') +
+      ' is on your quote as we sent it; ' + (lockedItem(v.fullId, "venue") ? 'ask us if you would like it as a morning.' : 'tap the day to make it a morning, or ask us.')) + '</div>';
+  if(bad === "count") return '<div class="departwarn staffedit-ui">⚠ ' + day + ' is check-out day: a staying group has the rooms ' + DEPART_WORD +
+    ' (a morning, half-day price). This room is ' + venueDaysSel(v.key) + ' day' + (venueDaysSel(v.key) === 1 ? '' : 's') +
+    ' with no days picked, so the check-out day is priced as a full day: pick the days to make it a morning.</div>';
+  return '<div class="departwarn staffedit-ui">⚠ ' + day + ' is check-out day: a staying group has the rooms ' + DEPART_WORD +
+    ' (a morning, half-day price). ' + (bad === "full" ? 'A full day' : 'An afternoon') + ' is saved here, priced as sent: tap the day to make it a morning.</div>';
+}
 function eventDays(){
   if(!Q.dateStart) return [];
   const out = [Q.dateStart];
@@ -5257,15 +5647,19 @@ function syncVenueCount(key){
 function venueDaysWords(key){
   const m = venueDayMap(key);
   if(!m) return "";
-  return Object.keys(m).sort().map(iso => dayLabel(iso) + " " + VDAY_WORD[m[iso]].toLowerCase()).join(", ");
+  const dep = venueDepartIso(key);
+  return Object.keys(m).sort().map(iso => dayLabel(iso) + " " + VDAY_WORD[m[iso]].toLowerCase() +
+    (iso === dep && m[iso] === "am" ? " (" + DEPART_WORD + ")" : "")).join(", ");
 }
 function cycleVenueDay(key, iso){
   const v = VENUES.find(x => x.key === key);
   if(!v) return;
+  if(CONF_SINGLES.indexOf(key) >= 0) VENUE_SWITCH_ASK = false;
   if(lockStop(v.fullId, "venue")) return;
   if(!Q.sel.venueDays) Q.sel.venueDays = {};
   const cur = (Q.sel.venueDays[key] || {})[iso] || "";
-  const next = VDAY_NEXT[cur];
+  /* the check-out day of a staying group is a morning or nothing (15 Oct 2026) */
+  const next = vdayNext(cur, iso, key);
   if(next && !cur){
     /* switching a day on: same rules as the + button, then this particular day */
     const blk = venueBlockedBy(v);
@@ -5292,18 +5686,25 @@ function venueDaysHTML(v){
   const m = venueDayMap(v.key) || {};
   const legacy = !venueDayMap(v.key) && venueDaysSel(v.key) > 0;
   const shared = venueSharedRooms(v);
+  const dep = venueDepartIso(v.key);
   return '<div class="vdays" data-key="' + esc(v.key) + '">' +
     '<span class="vdlab">' + (asOrg() && lockedItem(v.fullId, "venue") ? 'The days we have set aside for you'
-      : (legacy ? 'Which days? Tap each day you need it' : 'Tap a day: full day, then morning, then afternoon, then off')) + '</span>' +
+      : (legacy ? 'Which days? Tap each day you need it' : 'Tap a day: full day, then morning, then afternoon, then off')) +
+      (dep ? ' · check-out day: mornings only, ' + DEPART_WORD : '') + '</span>' +
     days.map(iso => {
       const st = m[iso] || "";
       const a = venueDayAvail(v, iso);
       const taken = !shared && a !== null && Number(a) <= 0;
       const tight = shared && a !== null && Number(a) < shared;
       const lockOut = asOrg() && ((taken && !st) || lockedItem(v.fullId, "venue"));
-      const word = taken && !st ? "Booked" : (tight && !st ? "Shared" : VDAY_WORD[st]);
-      return '<button type="button" class="vday' + (st ? ' ' + st : '') + (taken ? ' taken' : '') + (tight ? ' tight' : '') + '" data-key="' + esc(v.key) + '" data-iso="' + iso + '"' +
-        (lockOut ? ' disabled' : '') + ' title="' + esc(shortDate(iso) + ': ' + (taken ? 'already booked in RMS' : (tight ? 'another group is in, tell us your meal times' : VDAY_WORD[st]))) + '">' +
+      const isDep = iso === dep;
+      /* the check-out day: "Morning, until 12 noon"; a full day or afternoon saved before the
+         rule shows as it is (amber for staff) */
+      const word = taken && !st ? "Booked" : (tight && !st ? "Shared" : (isDep && st === "am" ? "Morning, " + DEPART_WORD : VDAY_WORD[st]));
+      const bad = isDep && (st === "full" || st === "pm");
+      return '<button type="button" class="vday' + (st ? ' ' + st : '') + (taken ? ' taken' : '') + (tight ? ' tight' : '') + (isDep ? ' vdep' : '') + (bad && !asOrg() ? ' vdepbad' : '') + '" data-key="' + esc(v.key) + '" data-iso="' + iso + '"' +
+        (lockOut ? ' disabled' : '') + ' title="' + esc(shortDate(iso) + ': ' + (taken ? 'already booked in RMS' : (tight ? 'another group is in, tell us your meal times'
+          : (isDep ? 'check-out day: the rooms are yours in the morning, ' + DEPART_WORD + ' (' + VDAY_WORD[st].toLowerCase() + ' now)' : VDAY_WORD[st])))) + '">' +
         '<b>' + esc(dayLabel(iso)) + '</b><span>' + esc(word) + '</span></button>';
     }).join('') +
     (legacy ? '<span class="vdhint">You asked for ' + venueDaysSel(v.key) + ' day' + (venueDaysSel(v.key) === 1 ? '' : 's') + '; picking days here replaces that number.</span>' : '') +
@@ -5421,7 +5822,8 @@ function venueCanAdd(v){
     if(days.length){
       const m = venueDayMap(v.key) || {};
       const open = days.filter(iso => !m[iso] && !(venueDayAvail(v, iso) !== null && Number(venueDayAvail(v, iso)) <= 0));
-      if(!open.length && !Object.keys(m).some(iso => m[iso] !== "full")) return {ok: false, why: Object.keys(m).length ? "Every vacant day is already picked" : "Already booked " + takenDaysWords(a.taken)};
+      const dep = venueDepartIso(v.key);   // the check-out day's morning is as much as it can have
+      if(!open.length && !Object.keys(m).some(iso => iso !== dep && m[iso] !== "full")) return {ok: false, why: Object.keys(m).length ? "Every vacant day is already picked" : "Already booked " + takenDaysWords(a.taken)};
       return {ok: true, why: ""};
     }
     if(a.known && !a.free && venueDaysSel(v.key) <= 0) return {ok: false, why: "Already booked " + takenDaysWords(a.taken)};
@@ -5517,12 +5919,14 @@ function caterRowPeople(id){
   const c = (Q.sel.cater || {})[id];
   return c ? (Number(c.ppl) || 0) : 0;
 }
+/* morning and afternoon tea carry no dietary surcharge (Joel, 15 Oct 2026) */
+function caterNoDiet(id){ return !!((RATE[id] || {}).noDiet) || id === "mtea" || id === "atea"; }
 function caterRowCost(id){
   const c = (Q.sel.cater || {})[id];
   if(!c || !catEntry(id).on) return 0;
   const days = Math.max(0, Number(c.days) || 0);
   if(!days) return 0;
-  if(kidsOn()) return days * bandCost(mealBands(id), catEntry(id).price);
+  if(kidsOn()) return days * bandCost(caterNoDiet(id) ? Object.assign(mealBands(id), {diet: 0, dietKids: 0}) : mealBands(id), catEntry(id).price);
   return (Number(c.ppl) || 0) * days * catEntry(id).price;
 }
 /* how many days a meal runs over the stay if nobody says otherwise: breakfast and
@@ -5530,7 +5934,8 @@ function caterRowCost(id){
 function defaultMealDays(id){
   const days = eventDays();
   if(!days.length) return 0;
-  return String(id).indexOf("lunch") === 0 ? days.length : Math.max(1, days.length - 1);
+  /* the teas, like lunch, run every day of the event */
+  return /^(lunch|mtea|atea)/.test(String(id)) ? days.length : Math.max(1, days.length - 1);
 }
 function selCaterSub(){
   return caterItems().reduce((s, it) => {
@@ -5549,11 +5954,16 @@ function selCaterSub(){
       cancelBigDays out, up to cancelPct until cancelDays out; smaller groups can
       cancel anything free until cancelDays out; nothing free inside cancelDays
    5. the balance, due balanceDays before arrival (Oct 2026: the day before, so it is
-      paid before anyone asks for keys; 0 = on arrival)
-   6. catering numbers and final numbers due before arrival */
+      paid before anyone asks for keys; 0 = on arrival). A due day on a Saturday or Sunday
+      moves back to the Friday before (Joel, 15 Oct 2026)
+   6. menu choices, names and room set-ups on the Final Confirmation form formDays before
+      arrival (14, Joel 15 Oct 2026); catering numbers and final numbers before arrival
+   A booking with no cabins and no sites (conference rooms only) pays depositRoomOnly for each
+   conference room or space it is charged for (Joel, 15 Oct 2026: $100); with cabins or sites
+   the rooms carry depositRoom (none by default). */
 const KD_VERSION = 3;
-const KD_DEFAULTS = {depositPer: 100, depositSite: 50, depositRoom: 0, depositDays: 7, halfPct: 50, halfDays: 90, balanceDays: 1,
-  cateringDays: 10, finalDays: 10, bigUnits: 20, cancelPct: 20, cancelBigDays: 28, cancelDays: 10, holdDays: 14, priceDays: 14,
+const KD_DEFAULTS = {depositPer: 100, depositSite: 50, depositRoom: 0, depositRoomOnly: 100, depositDays: 7, halfPct: 50, halfDays: 90, balanceDays: 1,
+  formDays: 14, cateringDays: 10, finalDays: 10, bigUnits: 20, cancelPct: 20, cancelBigDays: 28, cancelDays: 10, holdDays: 14, priceDays: 14,
   farMonths: 12, farDepositDays: 21};
 /* keys whose meaning changed with the 2026 rules: a value saved under the old rules is dropped */
 const KD_CHANGED = ["cateringDays", "finalDays", "bigUnits", "cancelDays"];
@@ -5565,6 +5975,16 @@ function kdClean(o){
   /* v3 (Sept 2026): conference rooms carry no deposit by default; an older saved $100 is dropped */
   delete c.depositRoom;
   return c;
+}
+/* the day the deposit is due: depositDays after the invoice, but never after the balance (an
+   event or arrival that is close is asked for it by the day the balance is due, or today when
+   that has gone), the same as Deposit.gs 1.13 (depDepositDue_) */
+function depositDueIso(issued, days){
+  const due = isoAddDays(issued, Number(days) || 0);
+  const bal = Q.dateStart ? balanceDueIso() : "";
+  if(!bal || due <= bal) return due;
+  const t = isoDate(today);
+  return bal < t ? t : bal;
 }
 function depositWhenPhrase(c){
   c = c || kdCfg();
@@ -5614,12 +6034,55 @@ function leadPhrase(days){
   if(n % 7 === 0) return (n / 7) + " week" + (n === 7 ? "" : "s");
   return n + " day" + (n === 1 ? "" : "s");
 }
-/* when the balance is due, in words: "the day before arrival", "3 days before arrival", "on arrival" */
+/* when the balance is due, in words: "the day before arrival (or the Friday before, if that's
+   a weekend)", "3 days before arrival (...)", "on arrival" */
+const BAL_WEEKEND_WORDS = " (or the Friday before, if that's a weekend)";
 function balanceWhenPhrase(c){
   const n = Math.max(0, Math.round(Number((c || kdCfg()).balanceDays) || 0));
   if(n === 0) return "on arrival";
-  if(n === 1) return "the day before arrival";
-  return leadPhrase(n) + " before arrival";
+  if(n === 1) return "the day before arrival" + BAL_WEEKEND_WORDS;
+  return leadPhrase(n) + " before arrival" + BAL_WEEKEND_WORDS;
+}
+/* the day the balance is due: balanceDays before arrival, and a Saturday or Sunday moves back
+   to the Friday before (Joel, 15 Oct 2026). On arrival (0) stays the arrival day. */
+function balanceDueIso(c, arrive){
+  c = c || kdCfg();
+  arrive = arrive || Q.dateStart;
+  if(!arrive) return "";
+  const n = Math.max(0, Math.round(Number(c.balanceDays) || 0));
+  let iso = isoAddDays(arrive, -n);
+  if(n > 0){
+    const wd = new Date(iso + "T12:00:00").getDay();
+    if(wd === 6) iso = isoAddDays(iso, -1);
+    else if(wd === 0) iso = isoAddDays(iso, -2);
+  }
+  return iso;
+}
+/* the same rule said for one date: "the day before arrival", or "the Friday before arrival
+   (the day before is a weekend)" when it moved */
+function balanceWhenOn(c, arrive){
+  c = c || kdCfg();
+  const n = Math.max(0, Math.round(Number(c.balanceDays) || 0));
+  if(n === 0) return "on arrival";
+  arrive = arrive || Q.dateStart;
+  const plain = n === 1 ? "the day before arrival" : leadPhrase(n) + " before arrival";
+  if(!arrive) return plain + BAL_WEEKEND_WORDS;
+  const moved = balanceDueIso(c, arrive) !== isoAddDays(arrive, -n);
+  return moved ? "the Friday before arrival, as " + (n === 1 ? "the day before" : leadPhrase(n) + " before") + " is a weekend" : plain;
+}
+/* "14 days", "10 days": the two final-details deadlines are always said in days (Joel, 15 Oct 2026) */
+function daysPhrase(days){
+  const n = Math.max(0, Math.round(Number(days) || 0));
+  return n + " day" + (n === 1 ? "" : "s");
+}
+/* the two final-details deadlines in one sentence, said the same way everywhere (Joel, 15 Oct 2026) */
+function finalBothWords(c){
+  c = c || kdCfg();
+  const form = Number(c.formDays) > 0 ? "Menu choices, names and room set-ups are due on your Final Confirmation form " + daysPhrase(c.formDays) + " before arrival" : "";
+  const fin = Number(c.finalDays) > 0 ? "final numbers " + daysPhrase(c.finalDays) + " before arrival" : "";
+  if(form && fin) return form + "; " + fin + ".";
+  if(form) return form + ".";
+  return fin ? "Final numbers are due " + daysPhrase(c.finalDays) + " before arrival." : "";
 }
 /* deposit & key dates, worked out from the selection and the template's rules,
    unless staff have edited the rows for this quote (Q.kdOver) on the preview */
@@ -5678,14 +6141,71 @@ function unitsSelected(){ return unitsSplit().total; }
 function depositTotal(c){
   c = c || kdCfg();
   const u = unitsSplit();
+  if(u.total === 0 && roomOnlyDepositOn()) return roomOnlyDepositInfo(c).total;
   return (c.depositPer * u.cabins) + (c.depositRoom * venuesSelected()) + (c.depositSite * u.sites);
+}
+/* ---------- a conference-room-only booking (Joel, 15 Oct 2026) ----------
+   No cabins and no sites on the quote: the deposit is depositRoomOnly ($100) for every
+   conference room or space booked and charged: Conference Room 1, 2, 3 or 5, the combined
+   Conference Rooms 1, 2 & 3 (one space, one deposit) and the Auditorium. The Marquee and the
+   Dining Room don't count, and nor does a room at no charge (a school package).
+   Held per quote (Q.features.roomOnlyDeposit, like the Dining Room rule): a quote made before
+   it was sent as "no deposit", and keeps that. Never more than the booking total (Rooms 1, 2
+   and 3 booked singly at the all-three half-day deal of $250 would be $300), as Deposit.gs 1.13
+   asks: then the deposit is the booking total, on one line. */
+const ROOM_ONLY_DEPOSIT_KEYS = ["fr13", "fr1", "fr2", "fr3", "fr5", "aud"];
+function roomOnlyDepositOn(){ return !!(Q && Q.features && Q.features.roomOnlyDeposit); }
+function roomsOnlyBooking(){ return unitsSplit().total === 0; }
+/* a rooms-only booking that carries the rooms-only deposit (this quote has the rule) */
+function roomsOnlyDepositRule(){ return roomOnlyDepositOn() && roomsOnlyBooking(); }
+function roomOnlyDepositVenues(){
+  return VENUES.filter(v => ROOM_ONLY_DEPOSIT_KEYS.indexOf(v.key) >= 0 && (Number((Q.sel.venues || {})[v.key]) || 0) > 0 &&
+    catEntry(v.fullId).on && !venueIsFree(v) && venueDayTotal(v, Number(Q.sel.venues[v.key]) || 0) > 0);
+}
+/* {list, per, full, total, capped}: the rooms, the deposit each, and the deposit asked for */
+function roomOnlyDepositInfo(c){
+  c = c || kdCfg();
+  const list = roomOnlyDepositVenues(), per = Math.max(0, Number(c.depositRoomOnly) || 0);
+  const full = per * list.length;
+  let quoted = 0;
+  try{ quoted = Math.round((Number(totals().total) || 0) * 100) / 100; }catch(e){ quoted = 0; }
+  const capped = full > 0 && quoted > 0 && full > quoted + 0.004;
+  return {list: list, per: per, full: full, total: capped ? quoted : full, capped: capped};
+}
+/* the rooms that carry a deposit on this quote, and at what each */
+function depositRoomList(c){
+  c = c || kdCfg();
+  if(roomsOnlyDepositRule()) return {list: roomOnlyDepositVenues(), per: c.depositRoomOnly};
+  return {list: VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on && !venueIsFree(v)), per: c.depositRoom};
+}
+/* the booked rooms that carry no rooms-only deposit (the Dining Room, the Marquee, a room at
+   no charge), by name, for the wording beside the deposit */
+function roomOnlyNoDepositNames(){
+  const dep = roomOnlyDepositVenues().map(v => v.key);
+  return VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on && dep.indexOf(v.key) < 0).map(v => theVenue(v.name));
+}
+/* "the Auditorium", "the Dining Room", "the Marquee"; a numbered room keeps its name */
+function theVenue(n){ return /^(Auditorium|Dining Room|Marquee)$/.test(String(n)) ? "the " + n : String(n); }
+/* "your event" for a booking with nobody staying, else "arrival" */
+function arrivalWord(){ return roomsOnlyBooking() ? "your event" : "arrival"; }
+/* a phrase about arrival, said for a day booking: "the day before your event", "on the day of
+   your event" (the words Deposit.gs 1.13 uses for a rooms-only booking) */
+function eventWords(p){
+  p = String(p || "");
+  if(p === "on arrival") return "on the day of your event";
+  return p.replace(/\barrival\b/g, "your event");
 }
 /* what the deposit invoice is made of; travels with a submission so the server can raise it */
 function depositBreakdown(){
-  const c = kdCfg(), u = unitsSplit(), rooms = venuesSelected();
+  const c = kdCfg(), u = unitsSplit(), dr = depositRoomList(c);
+  const rooms = dr.per > 0 ? dr.list.length : (u.total === 0 ? 0 : venuesSelected());
+  const ro = roomsOnlyDepositRule() ? roomOnlyDepositInfo(c) : null;
   return {cabins: u.cabins, sites: u.sites, rooms: rooms, perCabin: c.depositPer, perSite: c.depositSite,
-          perRoom: c.depositRoom, total: depositTotal(c), days: c.depositDays,
-          halfPct: c.halfPct, halfDays: c.halfDays, balanceDays: c.balanceDays, halfAmount: Math.round(partShareBase() * c.halfPct) / 100};
+          perRoom: dr.per, roomsOnly: u.total === 0, roomNames: dr.per > 0 ? dr.list.map(v => v.name) : [], total: depositTotal(c), days: c.depositDays,
+          capped: !!(ro && ro.capped),
+          halfPct: c.halfPct, halfDays: c.halfDays, balanceDays: c.balanceDays, balanceDue: balanceDueIso(c),
+          formDays: c.formDays, finalDays: c.finalDays, cateringDays: c.cateringDays,
+          halfAmount: Math.round(partShareBase() * c.halfPct) / 100};
 }
 /* the security bond: $100 a cabin for a church / ACNC group or a school, everyone else
    $100 a cabin or $2,000, whichever is higher. Campsites don't count. Staff can type
@@ -5730,10 +6250,12 @@ function keyDates(){
   return {
     arrive: Q.dateStart,
     catering: isoAddDays(Q.dateStart, -c.cateringDays),
+    form: isoAddDays(Q.dateStart, -c.formDays),
+    formDays: c.formDays,
     finalNums: isoAddDays(Q.dateStart, -c.finalDays),
     finalDays: c.finalDays,
     half: isoAddDays(Q.dateStart, -c.halfDays),
-    balance: isoAddDays(Q.dateStart, -c.balanceDays),
+    balance: balanceDueIso(c),
     cancelBig: isoAddDays(Q.dateStart, -c.cancelBigDays),
     cancel: isoAddDays(Q.dateStart, -c.cancelDays),
     big: unitsSelected() > c.bigUnits
@@ -6096,7 +6618,7 @@ function lightUpdate(inputEl){
 
 function totalsHTML(t, grandLabel){
   return '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
-    (t.church > 0 ? '<div class="savings"><span>Church discount − ' + t.churchPct + '% (accommodation &amp; venue hire)</span><span>−' + money(t.church) + '</span></div>' : '') +
+    (t.church > 0 ? '<div class="savings"><span>Church or Charity Discount − ' + t.churchPct + '% (accommodation &amp; venue hire)</span><span>−' + money(t.church) + '</span></div>' : '') +
     discLinesHTML(t) +
     '<div class="grand"><span>' + grandLabel + '</span><span>' + money(t.total) + '</span></div>' +
     '<div><span>Includes GST (' + GST_PCT + '%)</span><span>' + money(t.gst) + '</span></div>';
@@ -6242,6 +6764,8 @@ function setSplit(v){
 }
 function stepVenue(key, dir){
   const v0 = VENUES.find(x => x.key === key);
+  /* changing a single room answers the "switch to one space?" question by itself */
+  if(CONF_SINGLES.indexOf(key) >= 0) VENUE_SWITCH_ASK = false;
   if(v0 && lockStop(v0.fullId, "venue")) return;
   const cur = Number((Q.sel.venues || {})[key]) || 0;
   if(dir > 0){
@@ -6286,10 +6810,13 @@ function stepVenue(key, dir){
         openDay = days.find(iso => !m[iso]);
         if(openDay) showToast("Over availability: RMS shows " + v.name + " already booked on " + shortDate(openDay) + ". Added anyway: it is marked in red.", true);
       }
-      const halfDay = days.find(iso => m[iso] === "am" || m[iso] === "pm");
-      if(openDay) m[openDay] = "full";
+      /* a staying group's check-out day is a morning at most (15 Oct 2026): + opens it as a
+         morning and never turns it into a full day */
+      const dep = venueDepartIso(key);
+      const halfDay = days.find(iso => iso !== dep && (m[iso] === "am" || m[iso] === "pm"));
+      if(openDay) m[openDay] = openDay === dep ? "am" : "full";
       else if(halfDay) m[halfDay] = "full";
-      else { showToast("Every event day is already picked for this room.", true); return; }
+      else { showToast(dep && m[dep] ? "Every event day is already picked for this room (on the check-out day it is yours " + DEPART_WORD + ")." : "Every event day is already picked for this room.", true); return; }
     } else {
       const picked = Object.keys(m).sort();
       const last = picked[picked.length - 1];
@@ -6910,6 +7437,9 @@ const MENU_GROUPS = [
   {key:"bf_cont", title:"Continental breakfast", itemIds:["bf_cont"], options:[
     {k:"bfc_main", name:"Continental buffet", detail:"Selection of breads; cereals; tinned fruit; yogurt; condiments; juice; tea; coffee; water."}
   ]},
+  {key:"bf_pack", title:"Breakfast Pack", itemIds:["bf_pack"], options:[
+    {k:"bfp_main", name:"Breakfast pack", detail:"Cereal, milk, juice, diced fruit, bowl & spoon, packed for each person."}
+  ]},
   {key:"lunch_sit", title:"Dine-in lunch: the group picks one", itemIds:["lunch_sit"], options:[
     {k:"l_pasta", name:"Pasta", detail:"Beef mince or Mediterranean vegetable mix · penne or spiral · Napoletana, Carbonara, Bolognaise or Pesto · garlic bread, parmesan & garden salad"},
     {k:"l_fish", name:"Fish", detail:"Battered fillets or grilled/steamed · choice of potato · salad or seasonal vegetables · sauces"},
@@ -6940,10 +7470,12 @@ const MENU_GROUPS = [
     {k:"ds_cake", name:"Chocolate cake"},
     {k:"ds_sticky", name:"Sticky date pudding with caramel sauce"}
   ]},
-  {key:"mtea", title:"Morning tea", itemIds:[], options:[
+  /* priced on the rate card from 15 Oct 2026 (Joel: $10 a head); a quote whose own rate card
+     has no tea still offers them on request (menuGroupPriced) */
+  {key:"mtea", title:"Morning tea", itemIds:["mtea"], options:[
     {k:"mt_muffins", name:"Assorted muffins"}, {k:"mt_biscuits", name:"Assorted biscuits"}, {k:"mt_fruit", name:"Fruit platter"}
   ]},
-  {key:"atea", title:"Afternoon tea", itemIds:[], options:[
+  {key:"atea", title:"Afternoon tea", itemIds:["atea"], options:[
     {k:"at_pastries", name:"Mini pastries"}, {k:"at_cake", name:"Cake slices"}, {k:"at_cheese", name:"Cheese & crackers platter"}, {k:"at_fruit", name:"Fruit platter"}
   ]},
   {key:"bev", title:"Beverages", itemIds:[], options:[
@@ -6953,8 +7485,11 @@ const MENU_GROUPS = [
 function menuOptOn(k){ return !Q.menu || Q.menu[k] !== false; }
 function enabledOptions(g){ return g.options.filter(o => menuOptOn(o.k)); }
 function menuGroupsForItem(id){ return MENU_GROUPS.filter(g => g.itemIds.indexOf(id) >= 0); }
+/* a menu group whose meal is on this quote's rate card (an older quote's card has no teas) */
+function menuGroupPriced(g){ return g.itemIds.some(id => !!RATE[id]); }
 function menuExtrasText(){
-  const parts = MENU_GROUPS.filter(g => !g.itemIds.length)
+  /* the drinks, and the teas on an older quote whose card has no price for them */
+  const parts = MENU_GROUPS.filter(g => !menuGroupPriced(g) && (!g.itemIds.length || g.key === "mtea" || g.key === "atea"))
     .map(g => { const o = enabledOptions(g); return o.length ? g.title.toLowerCase() + " (" + o.map(x => x.name.toLowerCase()).join(", ") + ")" : null; })
     .filter(Boolean);
   return parts.length ? "Also available for your event, " + parts.join("; ") + ". Just ask our team when finalising catering." : "";
@@ -6962,7 +7497,8 @@ function menuExtrasText(){
 function menuSectionText(){
   const parts = [];
   MENU_GROUPS.forEach(g => {
-    const linked = g.itemIds.length ? g.itemIds.some(id => RATE[id] && catEntry(id).on) : quoteHasCater();
+    const linked = menuGroupPriced(g) ? g.itemIds.some(id => RATE[id] && catEntry(id).on)
+      : ((!g.itemIds.length || g.key === "mtea" || g.key === "atea") && quoteHasCater());
     if(!linked) return;
     const opts = enabledOptions(g);
     if(!opts.length) return;
@@ -6972,7 +7508,8 @@ function menuSectionText(){
 }
 
 /* ---------- church / ACNC eligibility ---------- */
-const MAIN_MEAL_IDS = ["bf_hot", "bf_cont", "lunch_sit", "lunch_pack", "din1", "din2"];
+/* the Breakfast Pack is a breakfast, as the packed lunch is a lunch (15 Oct 2026); the teas are not main meals */
+const MAIN_MEAL_IDS = ["bf_hot", "bf_cont", "bf_pack", "lunch_sit", "lunch_pack", "din1", "din2"];
 function mainMealServices(){
   return MAIN_MEAL_IDS.reduce((s, id) => {
     const c = (Q.sel.cater || {})[id];
@@ -7188,15 +7725,20 @@ function renderPrep(){
         (incl ? venueInclLineHTML(v, incl) + venueInclDaysHTML(v, incl)
           : venueInclHeadHTML(v) +
             (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') +
+            /* the Dining Room on a new quote (15 Oct 2026): booked days are charged; their meals
+               there, and the hours around them, never need booking */
+            (v.key === DINING_KEY && diningMealsOnlyOn() ? '<div class="cb-note">' + (d > 0 ? 'charged as a function space; ' : '') +
+              'meals are served here at no charge, with the room theirs for the hours around each meal (no booking needed for that)</div>' : '') +
+            venueDepartWarnHTML(v) +
             (venueCreditFor(v) > 0 ? '<div class="cb-free">venue credit −' + money(venueCreditFor(v)) + ' (from ' + esc(vcMoney(venueCreditPerDay())) + ' a day, shared)</div>' : '') +
             (vov ? '<span class="overnote">⚠ Over availability: picked on ' + esc(takenDaysWords(vov.days)) + ', when RMS shows it already booked</span>' : '') +
-            venueAvailNote(v) + venueSwitchAskHTML(v, true)) +
-        (v.key === "fr3" ? venueOneSpaceBarHTML() : '') + '</div>' +
+            venueAvailNote(v)) + '</div>' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
       (incl ? venueInclPillHTML(v, incl)
         : stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0, canUp: can.ok || !!(v.members && venueBlockedBy(v)), upTitle: can.why})) +
       '<div class="pkgsub">' + (incl ? '<span class="incltag">Included</span>' : (d > 0 ? (free ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : '<span class="fmuted">-</span>')) + '</div>' +
+      (incl ? '' : venueSwitchAskHTML(v, true) + (v.key === "fr3" ? venueOneSpaceBarHTML() : '')) +
     '</div>';
   }).join("");
 
@@ -7209,7 +7751,7 @@ function renderPrep(){
     const d = selc ? (Number(selc.days) || 0) : 0;
     const ppl = selc ? selc.ppl : (Number(Q.guests) || "");
     /* same maths as the organiser's page, so the two screens can't disagree */
-    const sub = (selc && d > 0) ? (kidsOn() ? d * bandCost(mealBands(it.id), c.price) : (Number(selc.ppl) || 0) * d * c.price) : 0;
+    const sub = (selc && d > 0) ? (kidsOn() ? d * bandCost(caterNoDiet(it.id) ? Object.assign(mealBands(it.id), {diet: 0, dietKids: 0}) : mealBands(it.id), c.price) : (Number(selc.ppl) || 0) * d * c.price) : 0;
     return '<div class="preprow' + (c.on ? '' : ' off') + '">' +
       '<input type="checkbox" class="prepon rc-cb" data-kind="cater" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this meal on this quote">' +
       '<div><span class="pkgname">' + esc(it.name) + '</span>' + lockBtnHTML(it.id, "this meal") + '</div>' +
@@ -7342,17 +7884,19 @@ function kdFieldsHTML(c, cls, list){
     grp("Deposit (invoiced when the quote is accepted)") +
     row("Per cabin", '<span class="kdu">$</span>' + f("depositPer", 10)) +
     row("Per campsite", '<span class="kdu">$</span>' + f("depositSite", 10)) +
-    row("Per conference room", '<span class="kdu">$</span>' + f("depositRoom", 10)) +
+    row("Per conference room (with cabins or sites)", '<span class="kdu">$</span>' + f("depositRoom", 10)) +
+    row("Conference rooms only (no cabins or sites)", '<span class="kdu">$</span>' + f("depositRoomOnly", 10) + '<span class="kdu">per room or space charged (quotes made from 15 Oct 2026)</span>', true) +
     row("Invoice due", f("depositDays") + '<span class="kdu">days after acceptance</span>') +
     row("Events more than", f("farMonths") + '<span class="kdu">months away: due</span>' + f("farDepositDays") + '<span class="kdu">days after acceptance</span>', true) +
     grp("Part payment") +
     row("Share of the total bill", f("halfPct") + '<span class="kdu">%, due</span>' + f("halfDays") + '<span class="kdu">days before arrival</span>', true) +
-    row("Balance (the rest of the total)", f("balanceDays") + '<span class="kdu">days before arrival (1 = the day before, 0 = on arrival)</span>', true) +
+    row("Balance (the rest of the total)", f("balanceDays") + '<span class="kdu">days before arrival (1 = the day before, 0 = on arrival; a Saturday or Sunday moves to the Friday before)</span>', true) +
     grp("Cancellation without penalty") +
     row("A bigger group is more than", f("bigUnits") + '<span class="kdu">cabins &amp; sites</span>') +
     row("Bigger groups: more than", f("cancelPct") + '<span class="kdu">% until</span>' + f("cancelBigDays") + '<span class="kdu">days out</span>', true) +
     row("Anyone: up to that % (smaller groups: anything) until", f("cancelDays") + '<span class="kdu">days before arrival</span>', true) +
     grp("Numbers") +
+    row("Final Confirmation form (menu, names, set-ups)", f("formDays") + '<span class="kdu">days before arrival</span>', true) +
     row("Catering numbers", f("cateringDays") + '<span class="kdu">days before arrival</span>') +
     row("Final numbers", f("finalDays") + '<span class="kdu">days before arrival</span>') +
     row("Dates held for", f("holdDays") + '<span class="kdu">days from the quote date</span>') +
@@ -7735,31 +8279,98 @@ function findCheapest(){
    days as the arrival did, days that fall outside the new stay drop off (a meal only goes
    back to every day of its kind when none are left), and the package is worked out again so
    the package lines, the notes, the "Your group" panel and the total all agree. */
-function schoolFollowDates(shift){
+/* prev = the dates before the change, {start, end}. The meals move by as many days as the
+   arrival did; a meal that was on every day it could be (dinner every night, say) stays on
+   every day of the new stay, so an added night gets its dinner; and a lunch on the departure
+   day (the bus lunch) stays on the departure day. The cabins on the quote are kept as they
+   are (staff may have added or dated some by hand): only the package is worked out again. */
+function schoolIsoRange(a, b){
+  const out = [];
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(a || "")) || !/^\d{4}-\d{2}-\d{2}$/.test(String(b || "")) || b < a) return out;
+  let d = a, guard = 0;
+  out.push(d);
+  while(d < b && guard++ < 62){ d = isoAddDays(d, 1); out.push(d); }
+  return out;
+}
+function schoolFollowDates(prev){
   if(!schoolOn() || !Q.dateStart) return;
+  prev = prev || {};
   const S = Q.school, raw = S.meals;
+  const shift = /^\d{4}-\d{2}-\d{2}$/.test(String(prev.start || "")) ? isoDiffDays(prev.start, Q.dateStart) : 0;
+  const oldDays = schoolIsoRange(prev.start, prev.end);
+  const oldEnd = oldDays.length ? oldDays[oldDays.length - 1] : "";
+  const newEnd = (Q.dateEnd && Q.dateEnd >= Q.dateStart) ? Q.dateEnd : Q.dateStart;
   if(raw && typeof raw === "object"){
     const meals = {};
     Object.keys(raw).forEach(id => {
       const m = schoolAddon(id);
       if(!m) return;
       const valid = schoolMealDays(m.kind);
-      const days = (Array.isArray(raw[id] && raw[id].days) ? raw[id].days : [])
-        .map(d => shift ? isoAddDays(d, shift) : d)
-        .filter((d, i, a) => valid.indexOf(d) >= 0 && a.indexOf(d) === i);
+      const chosen = Array.isArray(raw[id] && raw[id].days) ? raw[id].days : [];
+      const oldValid = !oldDays.length ? [] : (m.kind === "night" ? oldDays.slice(0, Math.max(1, oldDays.length - 1)) : oldDays);
+      let days;
+      if(oldValid.length && oldValid.every(d => chosen.indexOf(d) >= 0)) days = valid.slice();
+      else days = chosen.map(d => (m.kind === "day" && d === oldEnd) ? newEnd : (shift ? isoAddDays(d, shift) : d));
+      days = days.filter((d, i, a) => valid.indexOf(d) >= 0 && a.indexOf(d) === i);
       meals[id] = {days: (days.length ? days : valid).slice().sort()};
     });
     Q.school = Object.assign({}, S, {meals: meals});
   }
-  schoolNumbers(Q.school, Q.school.counts);
+  const keepWas = Q.school.keepRooms;
+  schoolNumbers(Object.assign({}, Q.school, {keepRooms: true}), Q.school.counts);
+  if(keepWas === undefined) delete Q.school.keepRooms; else Q.school.keepRooms = keepWas;
   const fn = document.getElementById("f-notes");
   if(fn && document.activeElement !== fn) fn.value = Q.notes;
+}
+/* the staff "First day" / "Last day" boxes on a school quote: the dates from before the edit,
+   held until the box is left (its change event), so the meals follow once, not per keystroke */
+let SCHOOL_DATE_EDIT = null;
+function schoolDateBoxInput(which, was){
+  if(!schoolOn() || CLIENT_MODE) return;
+  if(!SCHOOL_DATE_EDIT) SCHOOL_DATE_EDIT = {start: which === "start" ? was : Q.dateStart, end: which === "end" ? was : Q.dateEnd};
+  /* a new first day moves the whole stay: the nights stay the same while it is typed */
+  const p = SCHOOL_DATE_EDIT, n = isoDiffDays(p.start, p.end);
+  if(which === "start" && /^\d{4}-\d{2}-\d{2}$/.test(String(Q.dateStart || "")) && n > 0){
+    Q.dateEnd = isoAddDays(Q.dateStart, n);
+    const b = document.getElementById("f-date-end");
+    if(b){ b.value = Q.dateEnd; b.min = Q.dateStart; }
+  }
+}
+/* true when it dealt with the change (a school quote); otherwise clampEventDates does */
+function schoolDateBoxChange(which){
+  if(!schoolOn() || CLIENT_MODE || !SCHOOL_DATE_EDIT) return false;
+  const p = SCHOOL_DATE_EDIT;
+  SCHOOL_DATE_EDIT = null;
+  const iso = s => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ""));
+  if(!iso(Q.dateStart) || !iso(p.start) || !iso(p.end)) return false;
+  if(which === "start"){
+    /* the whole stay moves, as on the dates panel: cabins' own dates, room days and meals too */
+    const from = Q.dateStart, n = Math.max(1, isoDiffDays(p.start, p.end));
+    Q.dateStart = p.start;
+    Q.dateEnd = p.end;
+    setEventDates(from, n);
+    if(from !== p.start) showToast("School quote: the whole stay moved to " + fmtDate(Q.dateStart) + " to " + fmtDate(Q.dateEnd) + " (" + n + " night" + (n === 1 ? "" : "s") + "). Change the last day to make it longer or shorter.");
+    return true;
+  }
+  /* a new last day: the stay gets longer or shorter from the end */
+  if(!iso(Q.dateEnd) || Q.dateEnd <= Q.dateStart){
+    Q.dateEnd = p.end > Q.dateStart ? p.end : isoAddDays(Q.dateStart, 1);
+    showToast("The last day must be after the first day, so it is back on " + fmtDate(Q.dateEnd) + ".");
+  }
+  schoolFollowDates(p);
+  const a = document.getElementById("f-date-start"), b = document.getElementById("f-date-end");
+  if(a) a.value = Q.dateStart || "";
+  if(b){ b.value = Q.dateEnd || ""; b.min = Q.dateStart || ""; }
+  refresh();
+  scheduleRmsPull();
+  return true;
 }
 function setEventDates(from, nights){
   if(!from) return;
   if(schoolDatesLocked()){ showToast("To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au"); return; }
   const n = Math.max(1, Number(nights) || 1);
   const shift = (Q.dateStart && from) ? isoDiffDays(Q.dateStart, from) : 0;
+  const prevDates = {start: Q.dateStart, end: Q.dateEnd};
   Q.dateStart = from;
   Q.dateEnd = isoAddDays(from, n);
   if(shift){
@@ -7774,7 +8385,7 @@ function setEventDates(from, nights){
       Q.sel.venueDays[k] = moved;
     });
   }
-  schoolFollowDates(shift);
+  schoolFollowDates(prevDates);
   const a = document.getElementById("f-date-start"), b = document.getElementById("f-date-end");
   if(a) a.value = Q.dateStart;
   if(b) b.value = Q.dateEnd;
@@ -7791,13 +8402,17 @@ function setEventDates(from, nights){
    server what is free right now (nothing is stored), so nothing that has gone since the
    page was opened can be booked. */
 const AVAIL_CHECK = {busy: false, at: 0};
+/* what the quote server's availability check reads from the selection (RMS.gs rmsDemand_ and
+   rmsVenueRuns_; code.gs quoteAvailabilityCheck puts the probe's sel in place of the stored one) */
+const AVAIL_PROBE_SEL = ["accom", "venues", "venueDays", "prefUnits"];
 function serverAvailCheck(done){
   const run = (typeof google !== "undefined" && google.script && google.script.run) ? google.script.run : null;
-  if(!CLIENT_MODE || STAFF_VIEW || !run || !Q.token){ done(null); return; }
+  if(!CLIENT_MODE || STAFF_VIEW || !Q.token || (!run && !sheetEndpoint())){ done(null); return; }
   AVAIL_CHECK.busy = true;
   updateSubmitState();
   const probe = {dateStart: Q.dateStart || "", dateEnd: Q.dateEnd || "", sel: JSON.parse(JSON.stringify(Q.sel || {}))};
-  run.withSuccessHandler(r => {
+  const failed = () => { AVAIL_CHECK.busy = false; done(null); };
+  const answered = r => {
     AVAIL_CHECK.busy = false;
     if(r && r.ok){
       if(!Q.availCal) Q.availCal = {};
@@ -7814,8 +8429,26 @@ function serverAvailCheck(done){
       AVAIL_CHECK.at = Date.now();
     }
     done(r && r.ok ? r : null);
-  }).withFailureHandler(() => { AVAIL_CHECK.busy = false; done(null); })
-    .quoteAvailabilityCheck(Q.token, probe);
+  };
+  if(run){ run.withSuccessHandler(answered).withFailureHandler(failed).quoteAvailabilityCheck(Q.token, probe); return; }
+  /* no google.script.run (the page from quote.html, 15 Oct 2026): the same question as a plain
+     GET, ?avail=<token>&probe=<the probe as JSON>. Only the parts of the selection the check
+     reads go (RMS.gs rmsDemand_: the cabins and sites, the rooms and their days, the units asked
+     for), so the organiser's free text (their message, room times) never lengthens the address.
+     A slow server never holds the Accept button: after 25 seconds it counts as not answered. */
+  let over = false;
+  const once = f => v => { if(over) return; over = true; clearTimeout(timer); f(v); };
+  const ok = once(answered), bad = once(failed);
+  const ctl = (typeof AbortController === "function") ? new AbortController() : null;
+  const timer = setTimeout(() => { if(ctl) try{ ctl.abort(); }catch(e){} bad(); }, 25000);
+  try{
+    const q = {dateStart: probe.dateStart, dateEnd: probe.dateEnd, sel: {}};
+    AVAIL_PROBE_SEL.forEach(k => { if(probe.sel && probe.sel[k] !== undefined) q.sel[k] = probe.sel[k]; });
+    const url = sheetEndpoint();
+    fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "avail=" + encodeURIComponent(Q.token) + "&probe=" + encodeURIComponent(JSON.stringify(q)),
+          Object.assign({credentials: "omit", cache: "no-store"}, ctl ? {signal: ctl.signal} : {}))
+      .then(r => r.json()).then(r => ok(r || null), () => bad());
+  }catch(e){ bad(); }
 }
 /* the Accept button: ask RMS first; anything gone since the page opened stops it */
 function onAcceptClick(){
@@ -7826,10 +8459,22 @@ function onAcceptClick(){
   if(overLines().length || shortStaysBlocking().length){ updateSubmitState(); return; }
   const sb = document.getElementById("submitBtn");
   if(sb){ sb.disabled = true; sb.textContent = "Checking what is free…"; }
+  /* the quote server has the last word on whether this quote can still be accepted (it also
+     reads a status changed by hand on the Quotes tab): ask it first (15 Oct 2026) */
+  serverAcceptBlockCheck(blocked => {
+  if(blocked){
+    refresh();
+    syncSideNote();
+    const b = quoteAcceptBlock();
+    showToast((b ? b.title : "This quote is no longer available.") + " " + ACCEPT_BLOCK_CALL, true);
+    return;
+  }
   serverAvailCheck(r => {
     if(r && shortStaysBlocking().length){
       refresh();
-      showToast("Our minimum stay for your dates is longer than the stay you picked. Please add a night or pick other dates, then accept again.", true);
+      showToast(lockedDates()
+        ? "Our minimum stay for your dates is longer than your stay. To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au"
+        : "Our minimum stay for your dates is longer than the stay you picked. Please add a night or pick other dates, then accept again.", true);
       const z = document.getElementById("submitZone");
       if(z) z.scrollIntoView({behavior: "smooth", block: "center"});
       return;
@@ -7843,6 +8488,7 @@ function onAcceptClick(){
     }
     /* could not ask RMS: go ahead; the booking itself only ever takes what is free */
     doSubmit();
+  });
   });
 }
 function stepNights(dir){
@@ -8234,8 +8880,8 @@ function wslrDepositInvoiceHtml(d) {
     "<tr><td class=\"k\">" + (bill ? "Date" : "Invoice date") + "</td><td>" + e(d.date || "") + "</td></tr>" +
     "<tr><td class=\"k\">" + (bill ? "Payments due" : "Due date") + "</td><td><b>" + e(d.due || "") + "</b></td></tr>" +
     "<tr><td class=\"k\">Reservation</td><td>" + e(d.reservation || "") + (d.reservationNote ? " (" + e(d.reservationNote) + ")" : "") + "</td></tr>" +
-    (d.stay ? "<tr><td class=\"k\">Stay</td><td>" + e(d.stay) + "</td></tr>" : "") +
-    (d.quoteNum ? "<tr><td class=\"k\">Your reference</td><td>Quote " + e(d.quoteNum) + "</td></tr>" : "") +
+    (d.stay ? "<tr><td class=\"k\">" + e(d.stayLabel || "Stay") + "</td><td>" + e(d.stay) + "</td></tr>" : "") +
+    (d.quoteNum ? "<tr><td class=\"k\">Quote</td><td>" + e(d.quoteNum) + "</td></tr>" : "") +
     "</table></td><td style=\"width:50%\"><div class=\"box\"><div style=\"color:#4f5b66;font-size:9pt;margin-bottom:2px\">BILL TO</div><b>" + e(b.name) + "</b>" +
     (b.group ? "<br>" + e(b.group) : "") + (b.address ? "<br>" + e(b.address) : "") + (b.email ? "<br>" + e(b.email) : "") + (b.phone ? "<br>" + e(b.phone) : "") + "</div></td></tr></table>";
   h += "<table class=\"lines\"><tr><th>Description</th><th class=\"r\" style=\"width:50px\">Qty</th><th class=\"r\" style=\"width:90px\">Unit</th><th class=\"r\" style=\"width:100px\">Amount</th></tr>";
@@ -8270,7 +8916,8 @@ function wslrDepositInvoiceHtml(d) {
     h += "<div class=\"msg\">" + (d.message ? e(d.message).replace(/\n/g, "<br>") : "") +
       (d.schedule && d.schedule.length ? (d.message ? "<br><br>" : "") + "<b>Key dates</b><br>" + d.schedule.map(function (s, i) { return (i + 1) + ". " + e(s); }).join("<br>") : "") + "</div>";
   }
-  var ref = d.quoteNum ? String(d.quoteNum) : "";
+  /* the reservation number (15 Oct 2026); the quote number only when there is no reservation at all */
+  var ref = d.payRef ? String(d.payRef) : (d.quoteNum ? String(d.quoteNum) : "");
   h += "<div class=\"pay\"><div style=\"color:#0b5c8e;font-weight:bold;margin-bottom:3px\">HOW TO PAY</div>" +
     "<b>Bank transfer</b>: " + e(bank.name) + ", BSB " + e(bank.bsb) + ", account " + e(bank.acc) + ". " +
     "Please quote <b>" + e(ref || "your quote number") + "</b> as the payment reference.<br>" +
@@ -8347,7 +8994,11 @@ function freshDepositLines(){
   const lines = [];
   if(b.cabins) lines.push({desc: "Deposit per cabin", sub: typeMix(false), qty: b.cabins, unit: b.perCabin, amount: b.cabins * b.perCabin});
   if(b.sites) lines.push({desc: "Deposit per campsite", sub: typeMix(true), qty: b.sites, unit: b.perSite, amount: b.sites * b.perSite});
-  if(b.rooms) lines.push({desc: "Deposit per conference room", sub: VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on && !venueIsFree(v)).map(v => v.name).join(", "), qty: b.rooms, unit: b.perRoom, amount: b.rooms * b.perRoom});
+  /* a rooms-only deposit never more than the booking: then it is the booking total, on one line
+     (the words Deposit.gs 1.13 puts on the emailed invoice) */
+  if(b.rooms && b.capped) lines.push({desc: "Deposit for your conference rooms", sub: depositRoomList().list.map(v => v.name).join(", ") +
+    " (your booking total, as it is less than " + money0(b.perRoom) + " a room)", qty: 1, unit: b.total, amount: b.total});
+  else if(b.rooms) lines.push({desc: "Deposit per conference room", sub: depositRoomList().list.map(v => v.name).join(", "), qty: b.rooms, unit: b.perRoom, amount: b.rooms * b.perRoom});
   return lines.filter(l => l.amount > 0);
 }
 function depositInvoiceData(){
@@ -8357,7 +9008,11 @@ function depositInvoiceData(){
   const b = depositBreakdown();
   const c = kdCfg();
   const issued = dep && dep.sentAt ? isoDate(new Date(dep.sentAt)) : isoDate(Q.submittedAt ? new Date(Q.submittedAt) : today);
-  const due = dep && dep.due ? dep.due : isoAddDays(issued, b.days);
+  const due = dep && dep.due ? dep.due : depositDueIso(issued, b.days);
+  /* nobody stays on a conference-room-only booking: no nights, no keys, "your event"
+     (as the emailed invoice from Deposit.gs 1.13 says it) */
+  const roomsOnly = b.cabins + b.sites === 0;
+  const what = roomsOnly ? "your event" : "arrival";
   const short = iso => iso ? new Date(iso + "T12:00:00").toLocaleDateString("en-AU", {day: "numeric", month: "short", year: "numeric"}) : "";
   const lines = (dep && Array.isArray(dep.lines) && dep.lines.length) ? dep.lines : freshDepositLines();
   const depTotal = dep && dep.total ? Number(dep.total) : lines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
@@ -8369,29 +9024,61 @@ function depositInvoiceData(){
   const halfDue = Q.dateStart ? isoAddDays(Q.dateStart, -c.halfDays) : "";
   /* the deposit counts towards the part payment (director, Sept 2026) */
   const halfPay = Math.max(0, Math.round((half - depTotal) * 100) / 100);
-  const balance = Math.max(0, Math.round((total - depTotal - halfPay) * 100) / 100);
-  const payments = [{label: "Deposit (this invoice" + (dep && dep.number ? ", " + dep.number : "") + ")", due: short(due) + (dep && dep.status === "paid" ? " (paid)" : ""), amount: depTotal}];
   /* the same test as the key dates (15 Oct 2026): only with cabins or sites on the booking and
-     more than 50c left to pay, so the page and the invoice never disagree */
-  if(c.halfPct > 0 && half > 0 && halfPay > 0.5 && unitsSplit().total > 0) payments.push({label: c.halfPct + "% of the total, less the deposit",
+     more than 50c left to pay, so the page and the invoice never disagree. With no part
+     payment its half stays in the balance, so the plan still adds up to the quote total. */
+  const showHalf = c.halfPct > 0 && half > 0 && halfPay > 0.5 && unitsSplit().total > 0;
+  const balance = Math.max(0, Math.round((total - depTotal - (showHalf ? halfPay : 0)) * 100) / 100);
+  const payments = [{label: "Deposit (this invoice" + (dep && dep.number ? ", " + dep.number : "") + ")", due: short(due) + (dep && dep.status === "paid" ? " (paid)" : ""), amount: depTotal}];
+  if(showHalf) payments.push({label: c.halfPct + "% of the total, less the deposit",
     due: halfDue && kdPassed(halfDue) ? "As soon as possible" : short(halfDue), amount: halfPay,
     note: c.halfPct + "% of the total is " + money(half) + "; the " + money(depTotal) + " deposit counts towards it"});
-  const balDue = Q.dateStart ? isoAddDays(Q.dateStart, -c.balanceDays) : "";
-  if(Q.dateStart) payments.push({label: "Balance", amount: balance,
-    due: c.balanceDays > 0 ? (kdPassed(balDue) ? "As soon as possible" : short(balDue)) : "On arrival, " + short(Q.dateStart),
-    note: (c.balanceDays > 0 ? "Due " + balanceWhenPhrase(c) + "; p" : "P") + "aid before keys are handed over"});
+  /* the day before arrival, or the Friday before when that is a weekend (15 Oct 2026) */
+  const balDue = Q.dateStart ? balanceDueIso(c) : "";
+  /* a deposit that is the whole booking (a rooms-only deposit capped at the total) leaves
+     nothing to pay: no $0.00 balance row */
+  const covered = total > 0 && depTotal >= total - 0.004 && balance <= 0.004;
+  if(Q.dateStart && !covered) payments.push({label: "Balance", amount: balance,
+    due: c.balanceDays > 0 ? (kdPassed(balDue) ? "As soon as possible" : short(balDue)) : (roomsOnly ? "On the day, " : "On arrival, ") + short(Q.dateStart),
+    note: roomsOnly ? (c.balanceDays > 0 ? "Due " + eventWords(balanceWhenOn(c)) : "Paid on the day")
+      : (c.balanceDays > 0 ? "Due " + balanceWhenOn(c) + "; p" : "P") + "aid before keys are handed over"});
   const schedule = [];
-  if(Q.dateStart && c.finalDays > 0) schedule.push("Final numbers & catering numbers due " + short(isoAddDays(Q.dateStart, -Math.max(c.finalDays, c.cateringDays))));
+  /* both final-details deadlines (Joel, 15 Oct 2026), earliest first; one already gone reads
+     "as soon as possible (normally ...)". The numbers as Deposit.gs 1.13 gives them: one line
+     when the final and catering numbers fall on the same day, both named when a catered
+     booking's catering numbers are due on another day; "& catering numbers" only when we cater. */
+  if(Q.dateStart){
+    const lead = days => daysPhrase(days) + " before " + what;
+    const keyWhen = (iso, days) => kdPassed(iso) ? "as soon as possible (normally " + lead(days) + ")" : short(iso) + " (" + lead(days) + ")";
+    const catered = caterServicesOn().length > 0;
+    const rows = [];
+    if(c.formDays > 0) rows.push({days: c.formDays, label: "Menu choices, names and room set-ups due on your Final Confirmation form"});
+    if(c.finalDays > 0){
+      if(catered && c.cateringDays > 0 && c.cateringDays !== c.finalDays){
+        rows.push({days: c.cateringDays, label: "Catering numbers due"});
+        rows.push({days: c.finalDays, label: "Final numbers due"});
+      } else rows.push({days: c.finalDays, label: (catered && c.cateringDays === c.finalDays ? "Final numbers & catering numbers" : "Final numbers") + " due"});
+    }
+    rows.sort((x, y) => y.days - x.days).forEach(x => schedule.push(x.label + " " + keyWhen(isoAddDays(Q.dateStart, -x.days), x.days)));
+  }
   const nights = Q.dateStart ? nightsCount() : 0;
   const units = b.cabins + b.sites;
+  const venueNames = VENUES.filter(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 && catEntry(v.fullId).on).map(v => v.name);
+  const endIso = Q.dateEnd && Q.dateEnd > Q.dateStart ? Q.dateEnd : "";
   return {
     logo: INV_LOGO,
     number: dep && dep.number ? dep.number : (prev && prev.number ? "Being issued (replaces " + prev.number + ")" : "Being issued"),
     date: short(issued),
     due: short(due),
     reservation: h.groupId ? String(h.groupId) : "Being created",
-    reservationNote: units + (units === 1 ? " cabin or site" : " cabins and sites") + ", unconfirmed until the deposit is paid",
-    stay: Q.dateStart ? short(Q.dateStart) + " to " + short(Q.dateEnd || Q.dateStart) + (nights ? " (" + nights + " night" + (nights === 1 ? "" : "s") + ")" : "") : "",
+    payRef: h.groupId ? String(h.groupId) : (payRefNumber() || (bookingsOnSubmit() || h.deposit ? "your reservation number (on the deposit invoice we email you)" : "")),
+    /* a conference-room-only booking lists its rooms, not "0 cabins and sites" */
+    reservationNote: (roomsOnly && venueNames.length ? venueNames.join(", ") : units + (units === 1 ? " cabin or site" : " cabins and sites")) +
+      ", unconfirmed until the deposit is paid",
+    stayLabel: roomsOnly && venueNames.length ? "Event" : "",
+    stay: Q.dateStart ? (roomsOnly
+        ? short(Q.dateStart) + (endIso ? " to " + short(endIso) : "")
+        : short(Q.dateStart) + " to " + short(Q.dateEnd || Q.dateStart) + (nights ? " (" + nights + " night" + (nights === 1 ? "" : "s") + ")" : "")) : "",
     quoteNum: Q.num,
     bill: {name: Q.contact || "", group: Q.org || "", address: addressText(), email: Q.email || "", phone: Q.mobile || ""},
     groups: [{label: "Deposit" + (Q.event ? ", " + Q.event : ""), lines: lines}],
@@ -8422,7 +9109,7 @@ function fullBillData(){
     groups[g].lines.push({desc: l.name, sub: bits.join(" · "), qty: qty, unit: qty ? Math.round(amount / qty * 100) / 100 : amount, amount: amount});
   });
   const credits = [];
-  if(t.church > 0) credits.push({label: "Church & not-for-profit discount (" + t.churchPct + "%)", amount: Math.round(t.church * 100) / 100});
+  if(t.church > 0) credits.push({label: "Church or Charity Discount (" + t.churchPct + "%)", amount: Math.round(t.church * 100) / 100});
   (t.discLines || []).forEach(x => credits.push({label: x.label, amount: Math.round(x.amount * 100) / 100}));
   const dep = cd.dep || cd.prev;
   const paid = dep && dep.status === "paid" ? (Number(dep.paid) || Number(dep.total) || Number(dep.amount) || 0)
@@ -8535,10 +9222,10 @@ function openDepositScreen(){
   const note = document.getElementById("depNote");
   const msg = dep && dep.status === "paid" ? "✓ Deposit received, thank you. Your booking is being confirmed."
     : (dep && dep.number
-        ? "Our functions team emails this invoice to " + (Q.email || "you") + ". Please quote " + Q.num + " when you pay."
+        ? "Our functions team emails this invoice to " + (Q.email || "you") + ". Please quote " + payRefWords() + " when you pay."
         : (cd.prev && cd.prev.number
-            ? "This is your updated deposit for your latest booking details. It replaces invoice " + cd.prev.number + ", so please pay this amount instead. Our functions team will email the updated invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay."
-            : "Your invoice number and reservation number are being created now. Our functions team will email the invoice to " + (Q.email || "you") + " shortly. Please quote " + Q.num + " when you pay."));
+            ? "This is your updated deposit for your latest booking details. It replaces invoice " + cd.prev.number + ", so please pay this amount instead. Our functions team will email the updated invoice to " + (Q.email || "you") + " shortly. Please quote " + payRefWords() + " when you pay."
+            : "Your invoice number and reservation number are being created now. Our functions team will email the invoice to " + (Q.email || "you") + " shortly. Please quote " + payRefWords() + " when you pay."));
   note.textContent = msg; note.style.display = "block";
   document.getElementById("depTitle").textContent = "Deposit invoice" + (dep && dep.number ? " " + dep.number : "") + " · Quote " + Q.num;
   renderFcNext();
@@ -8572,7 +9259,7 @@ function waitForBooking(){
   if(DEP_WAIT) clearInterval(DEP_WAIT.timer);
   const mine = Q.submittedAt, start = Date.now(), LIMIT = 60000;
   const steps = ["Selection received", "Booking your cabins and rooms", "Creating your deposit invoice", "Setting up your confirmation form"];
-  const st = {booked: false, done: false, busy: false, fails: 0};
+  const st = {booked: false, done: false, busy: false, fails: 0, answered: false, seen: false};
   DEP_WAIT = st;
   document.getElementById("depTitle").textContent = "Quote " + Q.num + " · making your booking";
   scr.classList.add("open", "waiting");
@@ -8602,7 +9289,13 @@ function waitForBooking(){
     draw();
     /* the submission bounced (no connection): doSubmit has already put things back */
     if(Q.submittedAt !== mine){ clearInterval(st.timer); DEP_WAIT = null; scr.classList.remove("open", "waiting"); box.hidden = true; document.body.style.overflow = ""; return; }
-    if(Date.now() - start > LIMIT){ finish(); return; }
+    if(Date.now() - start > LIMIT){
+      /* the server answered every time, but never with this submission: it did not take it,
+         so there is no invoice to show (15 Oct 2026) */
+      if(st.answered && !st.seen && typeof SUBMIT_UNDO === "function"){ clearInterval(st.timer); SUBMIT_UNDO("unconfirmed"); return; }
+      finish();
+      return;
+    }
     if(st.busy) return;
     st.busy = true;
     bookingStatus(r => {
@@ -8610,10 +9303,13 @@ function waitForBooking(){
       if(DEP_WAIT !== st || !r) return;
       /* the server cannot be asked (an older server, say): show the invoice as it stands */
       if(r.failed){ if(++st.fails >= 2) finish(); return; }
+      st.answered = true;
+      if(r.submittedAt === mine) st.seen = true;
       /* staff withdrew the quote after this page was opened: the server refused the
          acceptance (code.gs 13.18), so nothing was booked. Say so instead of waiting. */
-      if((r.status === "Expired" || r.status === "Declined") && r.submittedAt !== mine && typeof SUBMIT_UNDO === "function"){
+      if(r.submittedAt !== mine && (r.status === "Expired" || r.status === "Declined" || (r.acceptBlock && r.acceptBlock.title)) && typeof SUBMIT_UNDO === "function"){
         clearInterval(st.timer);
+        noteServerAcceptBlock(r);
         SUBMIT_UNDO("unavailable");
         return;
       }
@@ -8634,6 +9330,60 @@ function waitForBooking(){
   st.timer = setInterval(poll, 2500);
   setTimeout(poll, 4000);
 }
+/* ---------- a booking with no deposit: wait for the server to say it took it (15 Oct 2026) ----------
+   There is no deposit screen to wait on, so the accepted box says "we are confirming your
+   booking" until the quote server has stored this submission and finished with it. If the
+   server refuses it (the quote expired or was withdrawn, including by a status typed on the
+   Quotes tab) or never records it, the page goes back and says so, instead of telling the
+   organiser a confirmation is coming. */
+const NO_DEP_PENDING = "Thank you! We are confirming your booking now. This takes a few seconds.";
+let NO_DEP_WAIT = null;
+function waitForNoDeposit(){
+  if(NO_DEP_WAIT) clearInterval(NO_DEP_WAIT.timer);
+  const mine = Q.submittedAt, start = Date.now(), LIMIT = 60000;
+  const st = {busy: false, fails: 0, answered: false, seen: false};
+  NO_DEP_WAIT = st;
+  const finish = () => {
+    clearInterval(st.timer);
+    if(NO_DEP_WAIT !== st) return;
+    NO_DEP_WAIT = null;
+    renderClient();
+    showToast(NO_DEP_THANKS);
+  };
+  const poll = () => {
+    if(NO_DEP_WAIT !== st){ clearInterval(st.timer); return; }
+    /* the submission bounced (no connection): doSubmit has already put things back */
+    if(Q.submittedAt !== mine){ clearInterval(st.timer); NO_DEP_WAIT = null; return; }
+    if(Date.now() - start > LIMIT){
+      /* the server answered every time, but never with this submission: it did not take it */
+      if(st.answered && !st.seen && typeof SUBMIT_UNDO === "function"){ clearInterval(st.timer); NO_DEP_WAIT = null; SUBMIT_UNDO("unconfirmed"); return; }
+      finish();
+      return;
+    }
+    if(st.busy) return;
+    st.busy = true;
+    bookingStatus(r => {
+      st.busy = false;
+      if(NO_DEP_WAIT !== st) return;
+      /* nothing to ask (a page with no quote server behind it): as before */
+      if(!r){ finish(); return; }
+      if(r.failed){ if(++st.fails >= 2) finish(); return; }
+      st.answered = true;
+      if(r.submittedAt === mine) st.seen = true;
+      if(r.submittedAt !== mine && (r.status === "Expired" || r.status === "Declined" || (r.acceptBlock && r.acceptBlock.title)) && typeof SUBMIT_UNDO === "function"){
+        clearInterval(st.timer);
+        NO_DEP_WAIT = null;
+        noteServerAcceptBlock(r);
+        SUBMIT_UNDO("unavailable");
+        return;
+      }
+      if(r.confirmation && r.confirmation.url) Q.confirmation = r.confirmation;
+      if(r.submitDone && r.submitDone === mine){ if(r.rmsHold) Q.rmsHold = r.rmsHold; finish(); }
+    });
+  };
+  st.timer = setInterval(poll, 2500);
+  setTimeout(poll, 1500);
+}
 /* ---------- their Final Confirmation form (6 Oct 2026) ----------
    When the quote server has had the website make the organiser's Final Confirmation form
    (rooming list, meals, dietary needs, conference room set-ups), Q.confirmation holds its
@@ -8641,17 +9391,26 @@ function waitForBooking(){
    on the organiser's page under the accepted box whenever they come back. */
 function fcLink(){ return (Q.confirmation && Q.confirmation.url) ? String(Q.confirmation.url) : ""; }
 function fcDueWords(){
-  const d = Q.confirmation && Q.confirmation.deadline;
+  let d = Q.confirmation && Q.confirmation.deadline;
+  /* the server's deadline when it gave one, else the house rule: 14 days before arrival (15 Oct 2026) */
+  if(!d && Q.dateStart){ const c = kdCfg(); const f = c.formDays > 0 ? isoAddDays(Q.dateStart, -c.formDays) : ""; if(f && !kdPassed(f)) d = f; }
   return d ? ' by <b>' + esc(fmtDate(d)) + '</b>' : '';
+}
+/* the second deadline, said with the first (Joel, 15 Oct 2026: say both everywhere) */
+function fcFinalWords(){
+  const c = kdCfg();
+  if(!Q.dateStart || !(c.finalDays > 0)) return '';
+  const f = isoAddDays(Q.dateStart, -c.finalDays);
+  return ' Final numbers are due ' + (kdPassed(f) ? 'as soon as possible' : esc(fmtDate(f))) + ' (' + daysPhrase(c.finalDays) + ' before ' + arrivalWord() + ').';
 }
 function fcNextHTML(compact){
   const url = fcLink();
   if(!url || !asOrg()) return '';
   const btn = '<a class="btn accept" href="' + esc(url) + '" target="_blank" rel="noopener">Start your confirmation form →</a>';
   if(compact){
-    return '<div><b>Next step: your confirmation form</b><div class="fcwhat">Tell us who is in each room, your meal choices and any dietary needs' + fcDueWords() + '. You can start now or come back to it any time from your quote page or the email we have sent you.</div></div>' + btn;
+    return '<div><b>Next step: your confirmation form</b><div class="fcwhat">Tell us who is in each room, your meal choices and any dietary needs' + fcDueWords() + '.' + fcFinalWords() + ' You can start now or come back to it any time from your quote page or the email we have sent you.</div></div>' + btn;
   }
-  return '<div class="fcbox"><h3>Your confirmation form</h3>Tell us who is in each room, your meal choices, any dietary needs and how you would like your rooms set up' + fcDueWords() + '. It saves as you go, so you can come back to it as often as you like.' +
+  return '<div class="fcbox"><h3>Your confirmation form</h3>Tell us who is in each room, your meal choices, any dietary needs and how you would like your rooms set up' + fcDueWords() + '.' + fcFinalWords() + ' It saves as you go, so you can come back to it as often as you like.' +
     '<div class="fcrow">' + btn + '<span class="fcsmall">The same link is in the email we sent to ' + esc(Q.email || 'you') + '.</span></div></div>';
 }
 function renderFcNext(){
@@ -8691,6 +9450,20 @@ function bookingsOnSubmit(){
   try{ return !!getRmsSettings().pencils; }catch(e){ return false; }
 }
 const PAY_BANK = {name: "Wollongong Surf Leisure Resort", bsb: "032-685", acct: "300044"};
+/* the payment reference (Joel, 15 Oct 2026): the RESERVATION number, always, for the deposit,
+   the part payment and the balance. Before the RMS booking exists it is "your reservation
+   number (on your deposit invoice)"; with bookings switched off and no reservation at all,
+   the quote number. */
+const PAY_REF_PENDING = "your reservation number (on your deposit invoice)";
+function payRefNumber(){
+  const h = Q.rmsHold || {}, l = Q.rmsLink || {};
+  return h.groupId ? String(h.groupId) : (l.groupId ? String(l.groupId) : "");
+}
+function payRefWords(){
+  const n = payRefNumber();
+  if(n) return n;
+  return (bookingsOnSubmit() || (Q.rmsHold && Q.rmsHold.deposit)) ? PAY_REF_PENDING : String(Q.num || "your quote number");
+}
 /* the deposit invoice and how to pay it, shown once the organiser has submitted */
 function depositPayHTML(){
   if(!bookingsOnSubmit() && !(Q.rmsHold && Q.rmsHold.deposit)) return '';
@@ -8702,30 +9475,46 @@ function depositPayHTML(){
   if(dep && dep.status === "paid"){
     return '<div class="paybox paid"><h3>✓ Deposit received</h3>Thank you, your deposit' + (dep.number ? ' for invoice ' + esc(dep.number) : '') + ' has been received. Your booking is now being confirmed.</div>';
   }
+  /* confirmed with no deposit (or changed since, and our team is in touch): nothing to pay here */
+  if(!dep && (bookedNoDeposit() || confirmedNoDepositNowDue()) && (Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted)) return '';
   const b = depositBreakdown();
   const amount = dep && Number(dep.amount) > 0 ? Number(dep.amount) : b.total;
   if(!(amount > 0)) return '';
-  const base = dep && dep.due ? dep.due : isoAddDays(isoDate(Q.submittedAt ? new Date(Q.submittedAt) : today), b.days);
+  const issuedIso = isoDate(Q.submittedAt ? new Date(Q.submittedAt) : today);
+  const base = dep && dep.due ? dep.due : depositDueIso(issuedIso, b.days);
+  /* brought forward to the balance date because the booking is close (the server marks its own) */
+  const shortDue = dep && dep.due ? !!dep.shortDue : base !== isoAddDays(issuedIso, b.days);
   const parts = [];
   if(b.cabins) parts.push(b.cabins + ' cabin' + (b.cabins === 1 ? '' : 's') + ' × ' + money0(b.perCabin));
   if(b.sites) parts.push(b.sites + ' campsite' + (b.sites === 1 ? '' : 's') + ' × ' + money0(b.perSite));
-  if(b.rooms) parts.push(b.rooms + ' conference room' + (b.rooms === 1 ? '' : 's') + ' × ' + money0(b.perRoom));
-  const ref = Q.num;
+  if(b.capped) parts.push('your booking total, as it is less than ' + money0(b.perRoom) + ' a conference room');
+  else if(b.rooms && b.perRoom > 0) parts.push(b.rooms + ' conference room' + (b.rooms === 1 ? '' : 's') + ' × ' + money0(b.perRoom));
+  /* what follows the deposit: the part payment only where the payment plan has one (cabins or
+     sites, and more than 50c left after the deposit); a rooms-only booking has no keys */
+  const roomsOnly = b.cabins + b.sites === 0;
+  const halfPay = Math.round(((Number(b.halfAmount) || 0) - b.total) * 100) / 100;
+  const showHalf = !roomsOnly && b.halfPct > 0 && halfPay > 0.5;
+  const left = Math.round((partShareBase() - b.total) * 100) / 100;
+  const balWords = roomsOnly ? eventWords(balanceWhenPhrase(b)) : balanceWhenPhrase(b);
+  const after = (b.capped || (partShareBase() > 0 && left <= 0.004)) ? 'The deposit is your whole booking total, so there is nothing more to pay unless your booking changes.'
+    : showHalf ? 'After the deposit, ' + b.halfPct + '% of the total is due ' + leadPhrase(b.halfDays) + ' before arrival, and the balance ' + balWords + ', before keys are handed over.'
+    : 'After the deposit, the balance is due ' + balWords + (roomsOnly ? '' : ', before keys are handed over') + '.';
+  const refN = payRefNumber(), ref = payRefWords();
   return '<div class="paybox' + (dep && dep.status === "overdue" ? ' wait' : '') + '">' +
     '<h3>' + (dep && dep.status === "overdue" ? 'Your deposit is now due' : 'Next step: pay your deposit') + '</h3>' +
     'Your booking is held as <b>unconfirmed</b> until the deposit is paid.' +
     '<div class="payamt">' + money(amount) + '</div>' +
     (parts.length && !(dep && dep.amount) ? '<div class="paysmall" style="margin-top:0">' + esc(parts.join(' + ')) + '</div>' : '') +
     '<div class="paygrid">' +
-      '<b>Due by</b><span>' + esc(fmtDate(base)) + ' (' + leadPhrase(b.days) + ' from the invoice)</span>' +
+      '<b>Due by</b><span>' + esc(fmtDate(base)) + ' (' + (shortDue ? 'your booking is close, so it is due by the day the balance is due' : leadPhrase(b.days) + ' from the invoice') + ')</span>' +
       '<b>Invoice</b><span>' + (dep && dep.number ? esc(dep.number) + ', emailed to ' + esc(Q.email || 'you') : 'on its way to ' + esc(Q.email || 'your email') + ' (please check your junk folder)') + '</span>' +
       '<b>Account name</b><span>' + PAY_BANK.name + '</span>' +
       '<b>BSB</b><span>' + PAY_BANK.bsb + '</span>' +
       '<b>Account</b><span>' + PAY_BANK.acct + '</span>' +
-      '<b>Reference</b><span>' + esc(ref) + '</span>' +
+      '<b>Reference</b><span>' + esc(ref) + (refN ? ' (your reservation number)' : '') + '</span>' +
     '</div>' +
     '<div>Card payments can be taken over the phone on ' + VENUE_PHONE + ', or ask us for a payment link.</div>' +
-    (b.halfPct > 0 ? '<div class="paysmall">After the deposit, ' + b.halfPct + '% of the total is due ' + leadPhrase(b.halfDays) + ' before arrival, and the balance ' + balanceWhenPhrase(b) + ', before keys are handed over.</div>' : '') +
+    '<div class="paysmall">' + esc(after) + '</div>' +
     '<div class="paysmall">We do not accept American Express.</div>' +
     '</div>';
 }
@@ -8740,7 +9529,11 @@ function changeZoneHTML(dirty, askBtn){
     : (miss.length ? ' disabled title="Add your postal address first"' : ''));
   return '<div class="changebox">' +
     '<b>Need to change something?</b> Change your rooms, days, meals, dates or details above, then press <b>Submit changes</b>. You can do this as many times as you need' +
-    (bookingsOnSubmit() ? '; we update your booking and send you an updated deposit invoice' : '') + '.' +
+    (bookingsOnSubmit() ? (noDepositBooking() && !depositOnRecord()
+      ? '; we update your booking and email you an updated confirmation'
+      : confirmedNoDeposit()
+      ? '; we update your booking, and if your changes carry a deposit our functions team will be in touch about it'
+      : '; we update your booking and send you an updated deposit invoice') : '') + '.' +
     (Q.rmsHold && Q.rmsHold.deposit && Q.rmsHold.deposit.status === "paid" ? '<div class="changenote">Your deposit is paid. Reducing numbers may be subject to our cancellation conditions; we will confirm with you.</div>' : '') +
     (n || when ? '<div class="changemeta">' + (n ? 'Version ' + n : 'Submitted') + (when ? ' · last sent ' + esc(when) : '') + '</div>' : '') +
     '</div>' +
@@ -8869,7 +9662,7 @@ function onePageTotals(t, showPrices, pm){
   const line = (lab, val, cls) => '<div class="' + (cls || "") + '"><span>' + lab + '</span><span>' + val + '</span></div>';
   return '<div class="onetot">' +
     line("Subtotal", money(t.sub)) +
-    (t.church > 0 ? line("Church discount − " + t.churchPct + "% (accommodation &amp; venue hire)", "−" + money(t.church), "cred") : "") +
+    (t.church > 0 ? line("Church or Charity Discount − " + t.churchPct + "% (accommodation &amp; venue hire)", "−" + money(t.church), "cred") : "") +
     (t.discLines || []).map(x => line(esc(x.label), "−" + money(x.amount), "cred")).join("") +
     (pm === "nototal" ? "" : line("<b>Total (inc GST)</b>", "<b>" + money(t.total) + "</b>", "grand")) +
     (pm === "nototal" ? "" : line("Includes GST (" + GST_PCT + "%)", money(t.gst), "gst")) +
@@ -9044,6 +9837,34 @@ function cocBlocks(){ return cocNeeded() && !(Q.cocAgreed && Q.cocAgreed.at); }
    cases and answers "expired" or "unavailable". */
 const ACCEPT_BLOCK_CALL = "Call us on (02) 4283 6999 or email functions@wslr.com.au and we'll refresh it for you.";
 let ACCEPT_BLOCK_REPLY = null;           // what the server said when it refused, if it could be read
+/* what the quote server says about taking an acceptance ({code, title} or null), read with the
+   booking status (quoteBookingStatus, code.gs 13.18). The server also reads a status changed by
+   hand on the Quotes tab row, which the page itself never sees, so its word wins. */
+let ACCEPT_BLOCK_SERVER = null;
+function noteServerAcceptBlock(r){
+  if(!r || r.failed || !Object.prototype.hasOwnProperty.call(r, "acceptBlock")) return;
+  const b = r.acceptBlock;
+  ACCEPT_BLOCK_SERVER = (b && b.title) ? {code: b.code === "expired" ? "expired" : "unavailable", title: String(b.title)} : null;
+}
+/* ask the server before accepting; done(true) when it will not take one */
+function serverAcceptBlockCheck(done){
+  if(!CLIENT_MODE || STAFF_VIEW || !Q.token){ done(false); return; }
+  let answered = false;
+  const fin = v => { if(answered) return; answered = true; done(v); };
+  setTimeout(() => fin(false), 8000);      // a slow server never holds the button
+  bookingStatus(r => { noteServerAcceptBlock(r); fin(!!ACCEPT_BLOCK_SERVER); });
+}
+/* the hint in the side card */
+function sideNoteText(){
+  if(quoteAcceptBlock()) return quoteAcceptBlock().title + " " + ACCEPT_BLOCK_CALL;
+  return quoteLocked()
+    ? "This quote is set by our team: read it through and accept it at the foot of the page, or ask us for a change and we will update it for you."
+    : "Adjust anything below, availability and totals update as you go. Submit when you're ready; nothing is locked in until our team confirms it with you.";
+}
+function syncSideNote(){
+  const sideNote = document.querySelector(".sidecard p");
+  if(sideNote && CLIENT_MODE) sideNote.textContent = sideNoteText();
+}
 function sydneyTodayISO(){
   try{
     const p = new Intl.DateTimeFormat("en-AU", {timeZone: "Australia/Sydney", year: "numeric", month: "2-digit", day: "2-digit"}).formatToParts(new Date());
@@ -9063,13 +9884,17 @@ function quoteExpiredByDate(){
 /* null = may be accepted, else {code: "expired" | "unavailable", title} */
 function quoteAcceptBlock(){
   if(!CLIENT_MODE) return null;
+  if(ACCEPT_BLOCK_SERVER) return ACCEPT_BLOCK_SERVER;
   const st = String(Q.status || "").trim();
-  if(st === "Submitted" || st === "Accepted" || Q.accepted) return null;
   const passed = quoteExpiredByDate();
   const expiredWords = "This quote expired on " + fmtDate(quoteValidUntilISO()) + ".";
-  if(st === "Expired" || st === "Declined" || ACCEPT_BLOCK_REPLY === "unavailable")
+  /* the server refused the last submission (a reply we could read) */
+  if(ACCEPT_BLOCK_REPLY === "unavailable") return {code: "unavailable", title: "This quote is no longer available."};
+  if(ACCEPT_BLOCK_REPLY === "expired") return {code: "expired", title: passed ? expiredWords : "This quote has expired."};
+  if(st === "Submitted" || st === "Accepted" || Q.accepted) return null;
+  if(st === "Expired" || st === "Declined")
     return {code: "unavailable", title: st !== "Declined" && passed ? expiredWords : "This quote is no longer available."};
-  if(passed || ACCEPT_BLOCK_REPLY === "expired") return {code: "expired", title: passed ? expiredWords : "This quote has expired."};
+  if(passed) return {code: "expired", title: expiredWords};
   return null;
 }
 function acceptBlockHTML(b){
@@ -9117,15 +9942,77 @@ document.addEventListener("click", e => {
    deposit: there is no deposit, the booking is confirmed when they accept, and the organiser
    gets a confirmation email (Deposit.gs 1.12 uses the same words). */
 const NO_DEP_THANKS = "Thank you! Your booking is confirmed and a confirmation email is on its way. There is no deposit to pay.";
+/* a booking confirmed with no deposit, changed to something that carries one: Deposit.gs 1.13
+   sends no deposit invoice for it (the organiser was told it is confirmed); staff decide */
+const NO_DEP_CHANGED = "Your booking is confirmed. The changes you sent now carry a deposit, so our functions team will be in touch with you about it.";
 function noDepositBooking(){ return depositTotal() <= 0.005; }
+/* a deposit invoice already raised for this booking and not cancelled */
+function depositOnRecord(){ const d = Q.rmsHold && Q.rmsHold.deposit; return !!(d && d.status !== "cancelled"); }
+/* the deposit on what was last SENT to us (not what is on screen now): null if unknown */
+function submittedDepositTotal(){
+  if(!Q.submittedSel) return null;
+  let s = null;
+  try{ s = JSON.parse(Q.submittedSel); }catch(e){ return null; }
+  if(!s || !s.sel) return null;
+  const keepSel = Q.sel, keepLines = Q.lines;
+  try{ Q.sel = s.sel; if(Array.isArray(s.lines)) Q.lines = s.lines; return depositTotal(); }
+  catch(e){ return null; }
+  finally{ Q.sel = keepSel; Q.lines = keepLines; }
+}
+/* the accepted booking had nothing to put a deposit on, and no deposit invoice was ever
+   raised for it: only then is it "confirmed, no deposit to pay" (Deposit.gs 1.12 sends the
+   confirmation in exactly that case; an old open invoice gets nothing new) */
+function bookedNoDeposit(){
+  if(depositOnRecord()) return false;
+  /* the server's own record wins over working it out again with today's rules: a booking it
+     confirmed with no deposit stays confirmed (review fix, 15 Oct 2026) */
+  if(confirmedNoDeposit()) return !confirmedNoDepositNowDue();
+  const t = submittedDepositTotal();
+  return t === null ? noDepositBooking() : t <= 0.005;
+}
+/* the quote server confirmed this booking with no deposit (Deposit.gs 1.12 records
+   rmsHold.noDeposit when it emails "Your booking is confirmed"), and no deposit invoice has
+   been raised since */
+function confirmedNoDeposit(){ return !!(Q.rmsHold && Q.rmsHold.noDeposit) && !depositOnRecord(); }
+/* ...but what they last sent us now carries a deposit (they added cabins, say). Deposit.gs 1.13
+   sends them nothing for it, as they were told the booking is confirmed: our team decides and
+   gets in touch. */
+function confirmedNoDepositNowDue(){
+  if(!confirmedNoDeposit()) return false;
+  /* only a submission sent AFTER the server's confirmation can have changed it: the one it
+     confirmed stays "no deposit", whatever today's rules would say about it */
+  const at = Date.parse((Q.rmsHold.noDeposit || {}).at || ""), sent = Date.parse(Q.submittedAt || "");
+  if(!(sent > at)) return false;
+  const t = submittedDepositTotal();
+  return t !== null && t > 0.005;
+}
 /* "the day before your event": the balance rule, said for a day booking */
 function noDepBalanceWhen(){
   const p = balanceWhenPhrase(kdCfg());
-  return p === "on arrival" ? "on the day of your event" : p.replace(/arrival$/, "your event");
+  return p === "on arrival" ? "on the day of your event" : p.replace(/arrival(?= \(|$)/, "your event");
 }
 function noDepAcceptWords(){
   return "When you accept: " + (venuesSelected() > 0 ? "we book your conference rooms" : "we make your booking") + " and email you a confirmation. " +
     "There is no deposit for this booking. The full amount is due " + noDepBalanceWhen() + ".";
+}
+/* the line under Accept & book on a booking with a deposit. Rooms only (15 Oct 2026): "a deposit
+   of $100 per conference room ($300)" */
+function depositAcceptWords(d){
+  const c = kdCfg(), showP = (Q.priceMode || "full") !== "noprices";
+  if(roomsOnlyDepositRule()){
+    const ro = roomOnlyDepositInfo(c), n = ro.list.length, others = roomOnlyNoDepositNames();
+    /* the rooms it is for are named when the count could puzzle them (the Dining Room booked too) */
+    const names = listWords(ro.list.map(v => theVenue(v.name)));
+    return "Accepting makes an unconfirmed booking for your conference room" + (n + others.length === 1 ? "" : "s") + " and emails you a deposit invoice" +
+      (showP ? (ro.capped
+        ? ": a deposit of " + money0(d) + " (your booking total, as it is less than " + money0(ro.per) + " a conference room)"
+        : (others.length && n === 1)
+        ? ": a deposit of " + money0(d) + " for " + names
+        : ": a deposit of " + money0(c.depositRoomOnly) + " per conference room (" + money0(d) + (others.length ? ", for " + names : "") + ")") : "") +
+      ", due within " + leadPhrase(c.depositDays) + ". Your booking is confirmed once the deposit is paid.";
+  }
+  return "Accepting makes an unconfirmed booking for what you have picked and emails you a deposit invoice" +
+    (d > 0 && showP ? " for " + money0(d) : "") + ", due within " + leadPhrase(c.depositDays) + ". Your booking is confirmed once the deposit is paid.";
 }
 function submitZoneBaseHTML(){
   const anySel = hasSel(Q) || Q.lines.some(l => (Number(l.qty) || 0) > 0);
@@ -9134,8 +10021,10 @@ function submitZoneBaseHTML(){
     const dirty = submitDirty();
     const booked = bookingsOnSubmit() || !!(Q.rmsHold && Q.rmsHold.deposit);
     return '<div class="submitted-box">✓ ' + (booked ? 'Quote accepted' : 'Selection received') + ', ' + esc(firstName(Q.contact)) + '.' +
-      (booked && noDepositBooking()
-        ? '<span>' + NO_DEP_THANKS + '</span>' + fcNextHTML(false) + '</div>'
+      (booked && bookedNoDeposit()
+        ? '<span>' + (NO_DEP_WAIT ? NO_DEP_PENDING : NO_DEP_THANKS) + '</span>' + fcNextHTML(false) + '</div>'
+        : booked && confirmedNoDepositNowDue()
+        ? '<span>' + NO_DEP_CHANGED + '</span>' + fcNextHTML(false) + '</div>'
         : booked
         ? '<span>We have made an unconfirmed booking for you and emailed your deposit invoice. Pay it to confirm your booking.</span>' +
           '<div class="depopen"><button type="button" class="btn accept" id="depOpenBtn">' + ((Q.rmsHold && Q.rmsHold.deposit && Q.rmsHold.deposit.status === "paid") ? '✓ Deposit paid · view invoice' : 'View deposit invoice &amp; how to pay') + '</button></div>' + fcNextHTML(false) + '</div>'
@@ -9155,8 +10044,7 @@ function submitZoneBaseHTML(){
       '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + block + '>Accept ' + (quoteLocked() ? 'this quote' : 'quote') + ' &amp; book</button>' + askBtn + '</div>' +
       (noDepositBooking()
         ? '<p class="qp-aud" style="text-align:center; margin-top:6px">' + esc(noDepAcceptWords()) + '</p>'
-        : '<p class="qp-aud" style="text-align:center; margin-top:6px">Accepting makes an unconfirmed booking for what you have picked and emails you a deposit invoice' +
-          (d > 0 && (Q.priceMode || "full") !== "noprices" ? ' for ' + money0(d) : '') + ', due within ' + leadPhrase(kdCfg().depositDays) + '. Your booking is confirmed once the deposit is paid.</p>');
+        : '<p class="qp-aud" style="text-align:center; margin-top:6px">' + esc(depositAcceptWords(d)) + '</p>');
   }
   return schoolCallBarHTML() + cocTickHTML() +
     '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? (schoolCallBlocks() ? ' disabled title="Please call us about your numbers first"' : (cocBlocks() ? ' disabled title="Please tick the code of conduct first"' : '')) : ' disabled title="Choose at least one item first"') + '>' +
@@ -9192,7 +10080,7 @@ function cbTotalsHTML(t, pm){
     return '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>';
   return '<div class="cb-total">' +
     '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
-    (t.church > 0 ? '<div class="savings"><span>Church discount − ' + t.churchPct + '% (accommodation &amp; venue hire)</span><span>−' + money(t.church) + '</span></div>' : '') +
+    (t.church > 0 ? '<div class="savings"><span>Church or Charity Discount − ' + t.churchPct + '% (accommodation &amp; venue hire)</span><span>−' + money(t.church) + '</span></div>' : '') +
     discLinesHTML(t) +
     '<div class="grand"><span>Your total</span><span>' + money(t.total) + '</span></div>' +
     '<div><span>Includes GST (' + GST_PCT + '%)</span><span>' + money(t.gst) + '</span></div>' +
@@ -9211,13 +10099,32 @@ function keyDatesAutoRows(showPrices){
   const dated = [];
   const c = kdCfg();
   const split = unitsSplit();
+  /* a booking with nobody staying: "your event", no keys (15 Oct 2026) */
+  const arr = split.total === 0 ? 'your event' : 'arrival';
+  /* the server confirmed it with no deposit: it stays that way (review fix) */
+  const total = confirmedNoDeposit() && !confirmedNoDepositNowDue() ? 0 : depositTotal(c);
   /* 1 & 2: the unconfirmed booking and the deposit invoice */
   if((u + vs) > 0){
     const what = [], per = [];
     if(split.cabins > 0){ what.push(split.cabins + ' cabin' + (split.cabins === 1 ? '' : 's')); per.push(money0(c.depositPer) + ' per cabin'); }
     if(split.sites > 0){ what.push(split.sites + ' campsite' + (split.sites === 1 ? '' : 's')); per.push(money0(c.depositSite) + ' per campsite'); }
-    if(vs > 0){ what.push(vs + ' conference room' + (vs === 1 ? '' : 's')); if(c.depositRoom > 0) per.push(money0(c.depositRoom) + ' per conference room'); }
-    const total = depositTotal(c);
+    if(vs > 0){
+      what.push(vs + ' conference room' + (vs === 1 ? '' : 's'));
+      /* rooms only: $100 for each conference room or space charged (15 Oct 2026), named, so
+         an organiser with the Dining Room booked as well knows why it is not three */
+      const dr = depositRoomList(c);
+      if(dr.per > 0 && dr.list.length){
+        if(roomsOnlyDepositRule()){
+          const ro = roomOnlyDepositInfo(c), others = roomOnlyNoDepositNames();
+          const none = others.length ? '; ' + listWords(others) + (others.length === 1 ? ' carries' : ' carry') + ' no deposit' : '';
+          per.push(ro.capped
+            ? 'your booking total, as it is less than ' + money0(dr.per) + ' a conference room'
+            : dr.list.length > 1
+              ? money0(dr.per) + ' per conference room × ' + dr.list.length + ': ' + listWords(dr.list.map(v => theVenue(v.name))) + none
+              : (others.length ? money0(dr.per) + ' for ' + theVenue(dr.list[0].name) + none : money0(dr.per) + ' per conference room'));
+        } else per.push(money0(dr.per) + ' per conference room');
+      }
+    }
     rows.push(['When you accept', total <= 0.005
       ? 'we book your ' + listWords(what) + ' and email you a confirmation. There is no deposit for this booking'
       : 'we make an unconfirmed booking for your ' + listWords(what) + ' and email you the deposit invoice']);
@@ -9263,20 +10170,37 @@ function keyDatesAutoRows(showPrices){
           : 'last day to cancel cabins and sites without penalty (' + leadPhrase(c.cancelDays) + ' before arrival). After this nothing can be cancelled without penalty, so all numbers are final');
       }
     }
-    /* 6: numbers */
-    if(anyCater && c.cateringDays > 0) at(kd.catering, kdPassed(kd.catering)
-      ? 'final catering numbers due as soon as possible (normally ' + leadPhrase(c.cateringDays) + ' before arrival)'
-      : 'final catering numbers due, no later than ' + leadPhrase(c.cateringDays) + ' before arrival');
-    if(c.finalDays > 0) at(kd.finalNums, kdPassed(kd.finalNums)
-      ? 'final numbers & details due as soon as possible (normally ' + leadPhrase(kd.finalDays) + ' before arrival)'
-      : 'final numbers & details due (' + leadPhrase(kd.finalDays) + ' before arrival)');
-    /* 5: the balance, due balanceDays before arrival (the day before by default) */
+    /* 6: the Final Confirmation form (menu choices, names, room set-ups) and the numbers: both
+       deadlines, said the same way everywhere (Joel, 15 Oct 2026) */
+    if(c.formDays > 0) at(kd.form, kdPassed(kd.form)
+      ? 'menu choices, names and room set-ups due on your Final Confirmation form as soon as possible (normally ' + daysPhrase(c.formDays) + ' before ' + arr + ')'
+      : 'menu choices, names and room set-ups due on your Final Confirmation form (' + daysPhrase(c.formDays) + ' before ' + arr + ')');
+    const lateWords = anyCater ? '. Extra people after the final numbers are $10 per person per meal' : '';
+    if(anyCater && c.cateringDays > 0 && c.cateringDays === c.finalDays){
+      at(kd.finalNums, kdPassed(kd.finalNums)
+        ? 'final numbers & catering numbers due as soon as possible (normally ' + daysPhrase(c.finalDays) + ' before ' + arr + ')' + lateWords
+        : 'final numbers & catering numbers due (' + daysPhrase(c.finalDays) + ' before ' + arr + ')' + lateWords);
+    } else {
+      if(anyCater && c.cateringDays > 0) at(kd.catering, kdPassed(kd.catering)
+        ? 'final catering numbers due as soon as possible (normally ' + daysPhrase(c.cateringDays) + ' before ' + arr + ')'
+        : 'final catering numbers due, no later than ' + daysPhrase(c.cateringDays) + ' before ' + arr);
+      if(c.finalDays > 0) at(kd.finalNums, kdPassed(kd.finalNums)
+        ? 'final numbers due as soon as possible (normally ' + daysPhrase(kd.finalDays) + ' before ' + arr + ')' + lateWords
+        : 'final numbers due (' + daysPhrase(kd.finalDays) + ' before ' + arr + ')' + lateWords);
+    }
+    /* 5: the balance, due balanceDays before arrival (the day before by default). A rooms-only
+       deposit capped at the booking total leaves no balance; nobody is handed keys on a
+       rooms-only booking. */
+    const bw = split.total === 0 ? eventWords(balanceWhenOn(c)) : balanceWhenOn(c);
+    const covered = total > 0 && partShareBase() > 0 && total >= partShareBase() - 0.004;
     if(c.balanceDays > 0){
-      at(kd.balance, kdPassed(kd.balance)
-        ? 'the remaining balance is due as soon as possible (normally ' + balanceWhenPhrase(c) + ')'
-        : 'the remaining balance is due (' + balanceWhenPhrase(c) + ')');
-      dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), 'arrival. Keys are handed over once the balance is paid']});
-    } else dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), 'arrival. The remaining balance must be paid before keys are handed over']});
+      if(!covered) at(kd.balance, kdPassed(kd.balance)
+        ? 'the remaining balance is due as soon as possible (normally ' + bw + ')'
+        : 'the remaining balance is due (' + bw + ')');
+      dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), split.total === 0 ? 'your event' : 'arrival. Keys are handed over once the balance is paid']});
+    } else dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), split.total === 0
+      ? (covered ? 'your event' : 'your event. The remaining balance is paid on the day')
+      : 'arrival. The remaining balance must be paid before keys are handed over']});
     dated.sort((a, b) => (a.iso < b.iso ? -1 : (a.iso > b.iso ? 1 : 0)));
     /* same day, one line (e.g. the 10 day cancellation cut-off and the numbers) */
     const merged = [];
@@ -9590,7 +10514,8 @@ function renderClient(){
         const d = Number((Q.sel.venues || {})[v.key]) || 0;
         const isFree = venueIsFree(v);
         const can = venueCanAdd(v);
-        const freeHint = (v.key === DINING_KEY || v.key === MARQUEE_KEY)
+        const freeHint = (v.key === DINING_KEY && diningMealsOnlyOn()) ? diningHintHTML(showPrices)
+          : (v.key === DINING_KEY || v.key === MARQUEE_KEY)
           ? (isFree
               ? '<div class="cb-free">Included at no charge ' + esc(venueFreeReason(v)) + '</div>'
               : '<div class="cb-note">(' + (v.key === DINING_KEY
@@ -9603,7 +10528,6 @@ function renderClient(){
         if(incl) return '<div class="cb-row cb-included">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
             '<div class="pkgmeta">' + esc(v.cap) + '</div>' + venueInclLineHTML(v, incl) + venueInclDaysHTML(v, incl) +
-            (v.key === "fr3" ? venueOneSpaceBarHTML() : '') +
           '</div>' +
           venueInclPillHTML(v, incl) +
           '<div class="pkgsub"><span class="incltag">Included</span></div>' +
@@ -9622,20 +10546,21 @@ function renderClient(){
         return '<div class="cb-row">' +
           '<div><span class="pkgname">' + esc(v.name) + '</span>' + tourLink(v.tour) +
             '<div class="pkgmeta">' + esc(v.cap) + '</div>' + venueInclHeadHTML(v) + freeHint + schoolFree + pairHint + creditHint + venueAvailNote(v) +
-            venueSwitchAskHTML(v, showPrices) +
             (showPrices ? (isFree ? '<div class="cb-price"><s>' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</s></div>' : '<div class="cb-price">' + money(c.price) + ' full day · ' + money(ch.price) + ' half day</div>') +
               (asOrg() ? '' : '<div class="sprice staffedit-ui">$<input type="number" class="spNum" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price for this quote"> full · $<input type="number" class="spNum" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price for this quote"> half</div>') : '') +
-            ((d > 0 || venueDayMap(v.key)) ? venueDaysHTML(v) : '') +
+            ((d > 0 || venueDayMap(v.key)) ? venueDaysHTML(v) + venueDepartWarnHTML(v) : '') +
             (d > 0 ? (function(){
               const sh = venueSharedRooms(v);
               const busy = sh && (function(){ const i = venueAvailInfo(v); return i.known && !i.free; })();
               return '<input type="text" class="vtimeInp' + (busy ? ' needtimes' : '') + '" data-key="' + esc(v.key) + '" placeholder="' +
                 (sh ? 'meal times and notes (e.g. breakfast 8am, dinner 6pm)' : 'times and notes (e.g. 9am to 4pm, projector, 40 seated theatre style)') +
                 '" value="' + esc((Q.sel.venueTimes || {})[v.key] || '') + '">';
-            })() : '') + (v.key === "fr3" ? venueOneSpaceBarHTML() : '') +
+            })() : '') +
           '</div>' +
           stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0, canUp: can.ok || !!(v.members && venueBlockedBy(v)), upTitle: can.why, lock: lockedItem(v.fullId, "venue")}) +
           '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
+          /* the two questions span the whole row, so they read well on a phone */
+          venueSwitchAskHTML(v, showPrices) + (v.key === "fr3" ? venueOneSpaceBarHTML() : '') +
         '</div>';
       }).join('') + '</div>'
     : '';
@@ -9700,8 +10625,8 @@ function renderClient(){
                   '<label>adults &amp; 13+<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatA" min="0" value="' + b.adults + '"></label>' +
                   ((Number(w2.k412) || 0) > 0 ? '<label>children 4–12<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatK" min="0" value="' + b.k412 + '"></label>' : '') +
                   ((Number(w2.k13) || 0) > 0 ? '<label>infants 0–3 (free)<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatT" min="0" value="' + b.k13 + '"></label>' : '') +
-                  ((Number(w2.diet) || 0) > 0 ? '<label>special dietary, 13+<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatD" min="0" value="' + b.diet + '"></label>' : '') +
-                  ((Number(w2.dietKids) || 0) > 0 ? '<label>special dietary, 12 &amp; under<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatDK" min="0" value="' + b.dietKids + '"></label>' : '') +
+                  ((Number(w2.diet) || 0) > 0 && !caterNoDiet(it.id) ? '<label>special dietary, 13+<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatD" min="0" value="' + b.diet + '"></label>' : '') +
+                  ((Number(w2.dietKids) || 0) > 0 && !caterNoDiet(it.id) ? '<label>special dietary, 12 &amp; under<input type="number" class="bandInp" data-id="' + esc(it.id) + '" data-b="eatDK" min="0" value="' + b.dietKids + '"></label>' : '') +
                 '</div>';
               })()
             : '') +
@@ -9716,7 +10641,7 @@ function renderClient(){
   const churchPct = Number(Q.sel.church) || 0;
   const f50 = fiftyCheck();
   const churchHtml = Q.acnc
-    ? '<div class="cb-sec"><h3>Church &amp; charitable discount</h3>' +
+    ? '<div class="cb-sec"><h3>Church or Charity Discount</h3>' +
       '<p class="cb-hint">as a registered church / ACNC charity your group can choose a concessional tier, the full conditions are in the important information below</p>' +
       '<select id="cbChurch">' +
       '<option value="0"' + (churchPct === 0 ? ' selected' : '') + '>Not applicable</option>' +
@@ -10536,11 +11461,26 @@ function matchAccomId(name){
   return (best && bestScore >= 0.7) ? best.id : "";
 }
 /* their meal choices are free text inside a known slot, so the slot does the work */
+/* Morning and afternoon tea from the website (its calculator, round 2, 15 Oct 2026). The Quotes tab
+   has no column for them, so they come in the enquiry's own copy, meals.teas ("Morning tea,
+   Afternoon tea"); a row read back without it still has the "TEAS: Morning + Afternoon tea (in
+   catering)." note in what the booking system told them. "" when they picked none. */
+function interestTeasText(e){
+  const m = (e && e.meals) || {};
+  if(m.teas !== undefined && m.teas !== null && String(m.teas).trim()) return String(m.teas);
+  const note = /TEAS:\s*([^.]*?)\s*tea\s*\(in catering\)/i.exec(String((e && e.restrictions) || ""));
+  if(!note) return "";
+  return note[1].split(/\s*\+\s*/).filter(Boolean).map(w => w.trim() + " tea").join(", ");
+}
 function matchCaterId(slot, text){
   const t = String(text || "").toLowerCase();
   if(!t.trim()) return "";
-  if(slot === "breakfast") return /hot/.test(t) ? "bf_hot" : (/cont/.test(t) ? "bf_cont" : "");
-  if(slot === "lunch")     return /pack|take|bag/.test(t) ? "lunch_pack" : (/sit|plated|served/.test(t) ? "lunch_sit" : "");
+  /* the Breakfast Pack ($20, round 2 on the website and here, 15 Oct 2026) */
+  if(slot === "breakfast") return /hot/.test(t) ? "bf_hot" : (/cont/.test(t) ? "bf_cont" : (/pack/.test(t) ? "bf_pack" : ""));
+  /* morning and afternoon tea ("Morning tea", "Afternoon tea"; the restrictions note says "Morning + Afternoon tea") */
+  if(slot === "teas") return /morning/.test(t) ? "mtea" : (/afternoon/.test(t) ? "atea" : "");
+  /* the website calls the sit-down lunch "Lunch (Dine In)" (15 Oct 2026: it was not matched) */
+  if(slot === "lunch")     return /pack|take|bag/.test(t) ? "lunch_pack" : (/sit|plated|served|dine/.test(t) ? "lunch_sit" : "");
   if(slot === "dinner")    return /\b2\b|two|second/.test(t) ? "din2" : (/\b1\b|one/.test(t) ? "din1" : "");
   return "";
 }
@@ -10625,6 +11565,10 @@ function buildQuoteFromInterest(ref){
   Q.guests = Number(e.guests) || "";
 
   const missed = [];
+  /* a school camp priced on the website's school box: it becomes a school package (below) */
+  const sc = interestSchoolOf(e);
+  if(sc && sc.base && schoolBaseFor(sc.level) && sc.base !== schoolBaseFor(sc.level))
+    missed.push("the website showed " + money0(sc.base) + " per person per night for " + sc.level + " but the house rate is " + money0(schoolBaseFor(sc.level)) + " (the quote starts at the website price)");
   /* the cabins */
   const accom = [];
   (e.cabinTypes || []).forEach(c => {
@@ -10664,7 +11608,9 @@ function buildQuoteFromInterest(ref){
   /* the meals */
   const covers = Number(e.guests) || 0;
   const nights = Math.max(1, (e.nights ? Number(e.nights) : 0) || nightsCount());
-  if(Array.isArray(e.catering) && e.catering.length){
+  if(sc){
+    /* a school camp's meals go on the school package, not the ordinary catering rows */
+  } else if(Array.isArray(e.catering) && e.catering.length){
     /* calculator 2.0: each meal by its rate card id, with its own number of days */
     e.catering.forEach(c => {
       if(!c || !RATE[c.id]){ missed.push((c && c.name) || "a meal"); return; }
@@ -10672,15 +11618,22 @@ function buildQuoteFromInterest(ref){
       if(!Q.sel.cater) Q.sel.cater = {};
       Q.sel.cater[c.id] = {ppl: Number(c.eaters) || covers || "", days: Math.max(1, Math.round(Number(c.days) || 1))};
     });
-  } else ["breakfast", "lunch", "dinner"].forEach(slot => {
-    const text = String(((e.meals || {})[slot] !== undefined ? (e.meals || {})[slot] : "") || "");
-    const picked = text || (Number((e.covers || {})[slot]) > 0 ? slot : "");
+  } else ["breakfast", "lunch", "dinner", "teas"].forEach(slot => {
+    /* each slot is the website's list of what was picked, "Breakfast (Hot), Breakfast Pack": every
+       one becomes its own row (15 Oct 2026; only the first used to be kept) */
+    const text = slot === "teas" ? interestTeasText(e) : String(((e.meals || {})[slot] !== undefined ? (e.meals || {})[slot] : "") || "");
+    const picked = text || (slot !== "teas" && Number((e.covers || {})[slot]) > 0 ? slot : "");
     if(!picked) return;
-    const id = matchCaterId(slot, text);
-    if(!id || !RATE[id]){ missed.push(slot + (text ? ": " + text : "")); return; }
-    setCat(id, "on", true);
-    if(!Q.sel.cater) Q.sel.cater = {};
-    Q.sel.cater[id] = {ppl: covers || "", days: slot === "lunch" ? nights + 1 : nights};
+    const parts = text ? text.split(/\s*,\s*/).filter(Boolean) : [""];
+    parts.forEach(part => {
+      const id = matchCaterId(slot, part);
+      if(!id || !RATE[id]){ missed.push(slot + (part ? ": " + part : "")); return; }
+      setCat(id, "on", true);
+      if(!Q.sel.cater) Q.sel.cater = {};
+      /* lunch on every day of the stay; breakfast, dinner and the teas once a night, as the
+         website priced them */
+      if(!Q.sel.cater[id]) Q.sel.cater[id] = {ppl: covers || "", days: slot === "lunch" ? nights + 1 : nights};
+    });
   });
 
   /* the church / not-for-profit rate they ticked on the website */
@@ -10706,6 +11659,54 @@ function buildQuoteFromInterest(ref){
     (missed.length ? " " + missed.length + " thing" + (missed.length === 1 ? " they picked is" : "s they picked are") + " in the internal notes to add by hand." : "") +
     " Prices are being pulled from RMS now, check them before you send." + note,
     missed.length > 0);
+  if(sc) schoolFromInterest(sc);
+}
+/* The website's school box (Interest.gs 3.2 sends "school", cleaned): level, rate, students,
+   teachers, bus drivers and the days each meal was ticked. Null for any other enquiry. */
+function interestSchoolOf(e){
+  const s = e && e.school;
+  if(!s || typeof s !== "object" || (s.level !== "Primary" && s.level !== "High school")) return null;
+  const n = x => Math.max(0, Math.round(Number(x) || 0));
+  const meals = {};
+  Object.keys(s.meals || {}).forEach(id => {
+    const d = Array.isArray(s.meals[id]) ? s.meals[id].filter(x => /^\d{4}-\d{2}-\d{2}$/.test(String(x))) : [];
+    if(d.length) meals[id] = d.slice().sort();
+  });
+  return {level: s.level, base: Number(s.base) > 0 ? Number(s.base) : 0, students: n(s.students), teachers: n(s.teachers), drivers: n(s.drivers), meals: meals};
+}
+/* Opens the school package form with the website's numbers and meals, for staff to check and
+   press Build the quote. The website does not ask boys and girls, so each group starts split down
+   the middle. Dinner and packed lunch are package meals; a sit-down lunch or a hot breakfast is a
+   school extra, ticked on (for everyone paying, on that many days) once the package is built. */
+function schoolFromInterest(sc){
+  const half = x => [Math.ceil(x / 2), Math.floor(x / 2)];
+  const st = half(sc.students), te = half(sc.teachers);
+  Q.school = Object.assign({}, Q.school || {}, {counts: {ms: st[0], fs: st[1], xs: 0, mt: te[0], ft: te[1], xt: 0, bd: sc.drivers}});
+  const days = eventDays();
+  const meals = {};
+  ["din2", "lunch_pack"].forEach(id => {
+    const d = (sc.meals[id] || []).filter(x => days.indexOf(x) >= 0);
+    if(d.length && schoolAddon(id)) meals[id] = {days: d};
+  });
+  /* no package meal ticked: an empty "meals" would bring back the template's dinner every night */
+  const noMeals = !Object.keys(meals).length;
+  applySchoolTemplate({level: sc.level, base: sc.base || schoolBaseFor(sc.level), meals: meals});
+  const go = document.getElementById("sgGo");
+  if(!go) return;
+  if(noMeals){
+    /* the form ticks dinner on a new school quote: take it off again, as the school did not ask for it */
+    const tick = document.querySelector('.sgMealTick[data-src="dlg"][data-meal="din2"]');
+    if(tick && tick.checked){ tick.checked = false; tick.dispatchEvent(new Event("change")); }
+  }
+  const extras = ["lunch_sit", "bf_hot"].filter(id => (sc.meals[id] || []).length && RATE[id]);
+  if(!extras.length) return;
+  go.addEventListener("click", () => {
+    if(document.body.contains(go)) return;   // the form stayed open (no numbers yet): nothing was built
+    const charged = schoolTotals(schoolCounts((Q.school || {}).counts)).charged || (sc.students + sc.teachers);
+    if(!Q.sel.cater) Q.sel.cater = {};
+    extras.forEach(id => { setCat(id, "on", true); Q.sel.cater[id] = {ppl: charged, days: sc.meals[id].length}; });
+    refresh();
+  });
 }
 
 /* ---------- drawing it ---------- */
@@ -10716,7 +11717,10 @@ function interestFactsHTML(e){
   if(e.arrival) bits.push("<span><b>" + esc(e.departure && e.departure !== e.arrival ? fmtRange(e.arrival, e.departure) : shortDateY(e.arrival)) + "</b>" +
     (Number(e.nights) ? " · " + e.nights + " night" + (Number(e.nights) === 1 ? "" : "s") : "") + "</span>");
   if(Number(e.guests)) bits.push("<span>" + e.guests + " guest" + (Number(e.guests) === 1 ? "" : "s") + "</span>");
-  if(Number(e.cabins)) bits.push("<span>" + e.cabins + " cabin" + (Number(e.cabins) === 1 ? "" : "s") + "</span>");
+  const sc = interestSchoolOf(e);
+  if(sc) bits.push("<span><b>School camp</b> · " + esc(sc.level) + (sc.base ? " at " + money0(sc.base) + " pp" : "") + " · " +
+    sc.students + " students, " + sc.teachers + " teachers" + (sc.drivers ? ", " + sc.drivers + " bus driver" + (sc.drivers === 1 ? "" : "s") : "") + "</span>");
+  if(Number(e.cabins)) bits.push("<span>" + (sc ? "about " + e.cabins + " rooms" : e.cabins + " cabin" + (Number(e.cabins) === 1 ? "" : "s")) + "</span>");
   const rooms = interestVenuePlan(e.venues).map(p => {
     const v = VENUES.find(x => x.key === p.key);
     return (v ? v.name : p.key) + " × " + (p.days === 0.5 ? "half day" : p.days + (p.days === 1 ? " day" : " days"));
@@ -10735,8 +11739,9 @@ function interestRowHTML(e){
   const t = e.totals || {};
   const bits = [];
   if(e.arrival) bits.push(e.departure && e.departure !== e.arrival ? fmtRange(e.arrival, e.departure) : shortDateY(e.arrival));
+  if(interestSchoolOf(e)) bits.push("School camp");
   if(Number(e.guests)) bits.push(e.guests + " guest" + (Number(e.guests) === 1 ? "" : "s"));
-  if(Number(e.cabins)) bits.push(e.cabins + " cabin" + (Number(e.cabins) === 1 ? "" : "s"));
+  if(Number(e.cabins)) bits.push(interestSchoolOf(e) ? "about " + e.cabins + " rooms" : e.cabins + " cabin" + (Number(e.cabins) === 1 ? "" : "s"));
   if(Number(t.grand)) bits.push(money0(t.grand));
   return '<button type="button" class="eirow' + (worked ? ' worked' : '') + '" data-ref="' + esc(e.ref) + '">' +
     '<span class="eiref">' + esc(e.ref) + '</span>' +
@@ -11246,7 +12251,10 @@ function doSubmit(){
   }
   const expBlk = quoteAcceptBlock();
   if(expBlk){ renderClient(); showToast(expBlk.title + " " + ACCEPT_BLOCK_CALL, true); return; }
-  const noDep = noDepositBooking();
+  const noDep = noDepositBooking(), oldDep = depositOnRecord();
+  /* already confirmed with no deposit, and these changes carry one: no invoice is sent for it
+     (Deposit.gs 1.13), our team gets in touch instead */
+  const confirmedNoDep = confirmedNoDeposit() && !noDep;
   const wasStatus = Q.status, wasSel = Q.submittedSel, wasAt = Q.submittedAt;
   const wasHist = Array.isArray(Q.history) ? Q.history.slice() : null;
   Q.status = "Submitted";
@@ -11265,27 +12273,50 @@ function doSubmit(){
     Q.status = wasStatus; Q.submittedSel = wasSel; Q.submittedAt = wasAt; Q.history = wasHist; Q.accepted = wasStatus === "Accepted";
     /* the quote server refused it: past its "valid until" date, or Expired / Declined (code.gs 13.18) */
     const k = String(reply || "").trim();
-    if(k === "expired" || k === "unavailable"){
-      ACCEPT_BLOCK_REPLY = k;
+    if(k === "expired" || k === "unavailable" || k === "unconfirmed"){
+      if(k !== "unconfirmed") ACCEPT_BLOCK_REPLY = k;
       if(DEP_WAIT){ clearInterval(DEP_WAIT.timer); DEP_WAIT = null; }
+      if(NO_DEP_WAIT){ clearInterval(NO_DEP_WAIT.timer); NO_DEP_WAIT = null; }
       const scr = document.getElementById("depScreen");
+      const box = document.getElementById("depWait");
       if(scr) scr.classList.remove("open", "waiting");
+      if(box) box.hidden = true;
       document.body.style.overflow = "";
       renderClient();
+      syncSideNote();
+      if(k === "unconfirmed"){
+        showToast("We could not confirm your booking yet. Please call us on " + VENUE_PHONE + " or email " + VENUE_EMAIL + " so we can check it for you.", true);
+        return;
+      }
       const b = quoteAcceptBlock();
       showToast((b ? b.title : "This quote is no longer available.") + " " + ACCEPT_BLOCK_CALL, true);
       return;
     }
     renderClient();
+    /* the quote server read it and hit a snag ("error: ..." in a reply the page could read, from
+       quote.html only, 15 Oct 2026): their connection worked, so the message doesn't blame it */
+    if(k === "error"){
+      showToast("Our booking system hit a snag and did not take your acceptance. Please press Submit again in a minute. If it keeps failing, call " + VENUE_PHONE + " or email " + VENUE_EMAIL + ".", true);
+      return;
+    }
     showToast("That did not reach us, please check your connection and press Submit again. If it keeps failing, call " + VENUE_PHONE + " or email " + VENUE_EMAIL + ".");
   } : null);
+  /* no deposit: the accepted box says "confirming" until the server has taken it */
+  const noDepWait = CLIENT_MODE && bookingsOnSubmit() && noDep && !oldDep;
+  if(noDepWait) waitForNoDeposit();
   renderClient();
   renderPrevOptions();
   renderPipeline();
-  if(CLIENT_MODE && bookingsOnSubmit() && depositTotal() > 0) setTimeout(waitForBooking, 300);
+  /* the waiting screen only for a submission still standing: a quick refusal ("expired", or no
+     connection) can put the page back inside these 300 ms (15 Oct 2026) */
+  const sentAt = Q.submittedAt;
+  if(CLIENT_MODE && bookingsOnSubmit() && depositTotal() > 0 && !confirmedNoDep) setTimeout(() => { if(Q.submittedAt === sentAt && Q.status === "Submitted") waitForBooking(); }, 300);
   showToast(CLIENT_MODE
     ? (bookingsOnSubmit()
-        ? (noDep ? NO_DEP_THANKS : "Thank you! Your unconfirmed booking is being made and your deposit invoice is on its way to " + (Q.email || "your email") + ".")
+        ? (noDepWait ? NO_DEP_PENDING
+          : confirmedNoDep ? "Thank you, we have your changes. " + NO_DEP_CHANGED
+          : noDep ? "Thank you, we have your changes. There is nothing to put a deposit on now, so our functions team will be in touch about your deposit invoice."
+          : "Thank you! Your unconfirmed booking is being made and your deposit invoice is on its way to " + (Q.email || "your email") + ".")
         : "Selection submitted, thank you! Our functions team has been notified and will confirm availability and final pricing with you.")
     : "Selection for " + Q.num + " submitted and logged to the tracker sheet. In the live version this also emails the functions team, who confirm availability and final pricing.");
 }
@@ -11340,7 +12371,7 @@ function copyFromQuote(num){
     delete Q.catalog[id].price;
     delete Q.catalog[id].avail;
   });
-  ["freeRooms", "venueCredit", "vcCabin", "vcSite", "caterFuture"].forEach(k => {
+  ["freeRooms", "venueCredit", "vcCabin", "vcSite", "caterFuture", "diningMealsOnly", "roomOnlyDeposit"].forEach(k => {
     if(!Q.features) Q.features = {}; if(k in fresh.features) Q.features[k] = fresh.features[k]; else delete Q.features[k];
   });
   Q.caterSched = fresh.caterSched;
@@ -12861,7 +13892,7 @@ function renderRoomDisc(){
   };
   const church = Number(Q.sel.church) || 0;
   host.innerHTML = '<b>Rooms at their own %</b> <span class="hint">Staff only. For example, the priest\'s room at 50% while the group has ' +
-      (church > 0 ? 'the church ' + church + '%' : 'no church discount') + '. These rooms come out of the church discount and take their own % instead. ' +
+      (church > 0 ? 'the church or charity ' + church + '%' : 'no church or charity discount') + '. These rooms come out of the church or charity discount and take their own % instead. ' +
       'Each one is its own line on the quote at the lower price, e.g. “Motel, 50% off: Fr Michael\'s room” with “usually $x a unit” under it.</span>' +
     (rows.length ? '<div class="rdhead"><span>Room type</span><span>Rooms</span><span>%</span><span>Note on the quote (optional)</span><span></span></div>' : '') +
     rows.map((r, i) => '<div class="rdrow" data-i="' + i + '">' +
@@ -12931,9 +13962,9 @@ BINDINGS.forEach(pair => {
   el.addEventListener("input", () => {
     const was = Q[pair[1]];
     Q[pair[1]] = (el.type === "number") ? (el.value === "" ? "" : Number(el.value)) : el.value;
-    /* a school quote's meals and package follow the new dates (15 Oct 2026) */
-    if((pair[1] === "dateStart" || pair[1] === "dateEnd") && schoolOn() && Q.dateStart && (!Q.dateEnd || Q.dateEnd >= Q.dateStart))
-      schoolFollowDates(pair[1] === "dateStart" && was && /^\d{4}-\d{2}-\d{2}$/.test(String(was)) ? isoDiffDays(was, Q.dateStart) : 0);
+    /* a school quote: the whole stay moves with a new first day, and the meals and package
+       follow once the box is left (schoolDateBoxChange, 15 Oct 2026) */
+    if(pair[1] === "dateStart" || pair[1] === "dateEnd") schoolDateBoxInput(pair[1] === "dateStart" ? "start" : "end", was);
     if(pair[1] === "prepBy"){ try{ localStorage.setItem(LS_PREPBY, el.value); }catch(e){} }
     if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
     if(pair[1] === "dateStart" || pair[1] === "dateEnd"){
@@ -12946,6 +13977,9 @@ BINDINGS.forEach(pair => {
   });
 });
 function syncForm(){
+  /* a different quote (or the same one reloaded): nothing half-asked carries over */
+  VENUE_SWITCH_ASK = false;
+  SCHOOL_DATE_EDIT = null;
   BINDINGS.forEach(pair => { document.getElementById(pair[0]).value = Q[pair[1]]; });
   renderBondField();
   syncDiscForm();
@@ -12965,6 +13999,8 @@ function syncForm(){
   document.getElementById("f-feat-freerooms-row").style.display = freeRoomsOn() ? "" : "none";
   document.getElementById("f-feat-venuecredit").checked = venueCreditOn();
   document.getElementById("f-feat-caterfuture").checked = caterFutureOn();
+  document.getElementById("f-feat-diningmeals").checked = diningMealsOnlyOn();
+  document.getElementById("f-feat-roomdeposit").checked = roomOnlyDepositOn();
   document.querySelectorAll(".cfFromWord").forEach(el => { el.textContent = shortDateY(caterFutureSched().from); });
   ["cabin", "site"].forEach(k => {
     const el = document.getElementById("f-vc-" + k);
@@ -13017,7 +14053,7 @@ function renderLockSwitch(){
     : '<span class="swstate">OFF</span>The organiser can change the dates, cabins, rooms and catering on their page before they submit.') +
     (locks.length ? '<br>Locked on their own: ' + esc(locks.map(id => (RATE[id] || {}).name || id).join(", ")) + '.' : '');
 }
-[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"], ["f-feat-cabmap", "cabinMap"], ["f-feat-freerooms", "freeRooms"], ["f-feat-venuecredit", "venueCredit"], ["f-feat-autoform", "autoForm"]].forEach(pair => {
+[["f-feat-pp", "perPerson"], ["f-feat-deposit", "depositDates"], ["f-feat-kids", "kids"], ["f-feat-cheap", "cheapest"], ["f-feat-cabmap", "cabinMap"], ["f-feat-freerooms", "freeRooms"], ["f-feat-venuecredit", "venueCredit"], ["f-feat-autoform", "autoForm"], ["f-feat-diningmeals", "diningMealsOnly"], ["f-feat-roomdeposit", "roomOnlyDeposit"]].forEach(pair => {
   document.getElementById(pair[0]).addEventListener("change", e => {
     if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
     Q.features[pair[1]] = e.target.checked;
@@ -13026,12 +14062,12 @@ function renderLockSwitch(){
 });
 ["start", "end"].forEach(which => {
   const el = document.getElementById(which === "start" ? "f-date-start" : "f-date-end");
-  if(el) el.addEventListener("change", () => clampEventDates(which));
+  if(el) el.addEventListener("change", () => { if(!schoolDateBoxChange(which)) clampEventDates(which); });
 });
 document.getElementById("f-church").addEventListener("change", e => {
   setChurchTier(e.target.value);
   showToast(Number(e.target.value) > 0
-    ? e.target.value + "% church discount preset on this quote, it applies to accommodation and venue hire, and the conditions appear on the quote."
+    ? e.target.value + "% church or charity discount preset on this quote, it applies to accommodation and venue hire, and the conditions appear on the quote."
     : "No tier preset, the organiser can pick their own.");
 });
 document.getElementById("f-acnc").addEventListener("change", e => {
@@ -13041,7 +14077,7 @@ document.getElementById("f-acnc").addEventListener("change", e => {
   refresh();
   showToast(Q.acnc
     ? "Marked as a registered church / ACNC charity, the 20%/50% conditions now appear and the organiser can pick a tier."
-    : "Church/ACNC unticked, church discount content removed from the quote.");
+    : "Church/ACNC unticked, church or charity discount content removed from the quote.");
 });
 document.querySelectorAll(".bulkbtn").forEach(el => el.addEventListener("click", e => {
   setGroupOn(e.currentTarget.dataset.kind, e.currentTarget.dataset.on === "1");
@@ -13377,14 +14413,14 @@ else document.getElementById("appLogo").style.display = "none";
   }
   lsSet(FLAG, true);
 })();
-/* the single conference rooms: fill them into a rate card saved before they existed
-   (no flag: it is a no-op once they are there, and the shared copy from the sheet
-   goes through the same fill-in when it lands) */
+/* the single conference rooms, the Breakfast Pack and the teas: fill them into a rate card
+   saved before they existed (no flag: it is a no-op once they are there, and the shared copy
+   from the sheet goes through the same fill-in when it lands) */
 (function(){
   const stored = lsGet(LS_RATECARD, null);
   if(!stored || !stored.length) return;
   const before = JSON.stringify(stored);
-  withRoomItems(stored);
+  withNewItems(stored);
   if(JSON.stringify(stored) !== before) lsSet(LS_RATECARD, stored);
 })();
 /* the combined rooms are no longer mapped to one RMS room of their own: they follow
@@ -13412,13 +14448,20 @@ if(CLIENT_MODE){
   refresh();
   switchTab("client");
   /* a quote they have already sent opens on its deposit invoice; the orange button takes them to their selection */
-  if((Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted) && (bookingsOnSubmit() || (Q.rmsHold && Q.rmsHold.deposit)) && depositTotal() > 0){
+  if((Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted) && (bookingsOnSubmit() || (Q.rmsHold && Q.rmsHold.deposit)) && depositTotal() > 0 &&
+     !bookedNoDeposit() && !confirmedNoDepositNowDue()){
     setTimeout(openDepositScreen, 50);
   }
-  const sideNote = document.querySelector(".sidecard p");
-  if(sideNote) sideNote.textContent = quoteLocked()
-    ? "This quote is set by our team: read it through and accept it at the foot of the page, or ask us for a change and we will update it for you."
-    : "Adjust anything below, availability and totals update as you go. Submit when you're ready; nothing is locked in until our team confirms it with you.";
+  syncSideNote();
+  /* the quote server's word on whether this quote can still be accepted (it also sees a status
+     typed on the Quotes tab), so an expired or withdrawn quote says so straight away */
+  if(!STAFF_VIEW && Q.token && !(Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted)){
+    bookingStatus(r => {
+      const had = !!ACCEPT_BLOCK_SERVER;
+      noteServerAcceptBlock(r);
+      if(!!ACCEPT_BLOCK_SERVER !== had){ renderClient(); syncSideNote(); }
+    });
+  }
 } else {
   Q = blankQuote(nextQuoteNum());
   renderTplOptions();
