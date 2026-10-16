@@ -3062,6 +3062,9 @@ let PIPE_STATE = "idle";     // idle | loading | ok | offline
 let SHEET_REACHABLE = true;  // as at the last write or sync, drives the warning on Email quote
 let PIPE_LAST_OK = 0;        // when the last successful pull finished
 let PULL_BUSY = false;
+/* why the last save to the tracker sheet did or didn't get through (16 Oct 2026):
+   "ok" | "refused" (the server turned down this computer's staff key) | "network" (no answer at all) */
+let FLUSH_LAST = {kind: "", msg: "", at: 0};
 
 function queuePost(payload){
   OUTBOX.push({payload: payload, t: new Date().toISOString()});
@@ -3092,14 +3095,16 @@ function flushOutbox(done){
       .then(t => {
         /* refused for the key: keep it queued, stop, and ask for the key */
         if(String(t).trim() === "bad token"){
+          FLUSH_LAST = {kind: "refused", msg: "bad token", at: Date.now()};
           SHEET_REACHABLE = true; FLUSH_BUSY = false; staffKeyNeeded(true); renderPipeSync(); if(done) done(); return;
         }
+        FLUSH_LAST = {kind: "ok", msg: "", at: Date.now()};
         SHEET_REACHABLE = true;
         OUTBOX.shift();
         lsSet(LS_OUTBOX, OUTBOX);
         step();
       })
-      .catch(() => { SHEET_REACHABLE = false; FLUSH_BUSY = false; renderPipeSync(); if(done) done(); }); // still offline; try again next sync
+      .catch(e => { FLUSH_LAST = {kind: "network", msg: String((e && e.message) || e || ""), at: Date.now()}; SHEET_REACHABLE = false; FLUSH_BUSY = false; renderPipeSync(); if(done) done(); }); // still offline; try again next sync
   };
   step();
 }
@@ -12361,17 +12366,30 @@ function doGetLink(){
   });
   const ms = document.getElementById("lnkSent");
   if(ms) ms.addEventListener("click", () => { closeWslrModal(); doSend(); });
-  /* the link works once the quote has reached the tracker sheet: watch the outbox empty */
+  /* the link works once the quote has reached the tracker sheet: watch the outbox empty.
+     16 Oct 2026: the box says WHY it hasn't (sign-in refused, no connection, or just slow)
+     and keeps trying for 5 minutes, turning to "Ready" as soon as the save lands. */
   const num = Q.num, started = Date.now();
+  let lastTry = 0;
+  const say = (html) => { const st = document.getElementById("lnkState"); if(st && st.innerHTML !== html) st.innerHTML = html; };
   const watch = () => {
-    const st = document.getElementById("lnkState");
-    if(!st) return;                                  // the box was closed
-    if(!outboxTouches(num)){ st.textContent = "Ready: the link works now."; return; }
-    if((!FLUSH_BUSY && !SHEET_REACHABLE) || Date.now() - started > 45000){
-      st.innerHTML = '<span class="pinwarn">The tracker sheet could not be reached, so the link won\'t work until this computer is back online with the tool open.</span>';
+    if(!document.getElementById("lnkState")) return;  // the box was closed
+    if(!outboxTouches(num)){ say("Ready: the link works now. The quote is saved in the tracker sheet."); return; }
+    const age = Date.now() - started;
+    const fresh = FLUSH_LAST.at >= started ? FLUSH_LAST : {kind: ""};
+    if(fresh.kind === "refused" || !staffKey()){
+      say('<span class="pinwarn">Not saved yet: the quote server did not accept this computer\'s sign-in (the staff password may have changed). Sign in again: the quote is kept on this computer and saves as soon as you do. The link works once it says Ready here.</span>');
+    } else if(fresh.kind === "network"){
+      say('<span class="pinwarn">Not saved yet: this computer could not reach the quote server at script.google.com' + (fresh.msg ? ' (' + esc(fresh.msg) + ')' : '') +
+        '. Check the internet connection, or whether a firewall or Microsoft Defender is blocking script.google.com. Keep the tool open: it tries again every few seconds, and the link works once it says Ready here.</span>');
+    } else if(age > 45000){
+      say('<span class="pinwarn">Still saving: the quote server is slow to answer. Keep the tool open; the link works once it says Ready here.</span>');
+    }
+    if(age > 300000){
+      say('<span class="pinwarn">Not saved after 5 minutes, so the link does not work yet. The quote is kept on this computer and the tool keeps trying while it is open. Check the Pipeline in a while, or tell Joel.</span>');
       return;
     }
-    if(!FLUSH_BUSY) flushOutbox();
+    if(!FLUSH_BUSY && staffKey() && Date.now() - lastTry > (fresh.kind === "network" ? 5000 : 600)){ lastTry = Date.now(); flushOutbox(); }
     setTimeout(watch, 600);
   };
   setTimeout(watch, 300);
