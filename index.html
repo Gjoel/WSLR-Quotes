@@ -1481,6 +1481,17 @@
   <!-- ================= TAB 4 : SETTINGS ================= -->
   <section id="tab-settings" class="panel">
 
+    <div class="card" id="plCard">
+      <div class="cardhead">
+        <h2>Price list (Google Sheet)</h2>
+        <span class="hint">the WSLR Function Price List: rooms, catering (and the later catering prices), dietary, school rates and extras, venue credit, deposits, part payment, balance day, bond and the neighbouring rooms deal for new quotes come from it, instead of the figures on this tab. Change prices there. A quote keeps the prices it was made with.</span>
+      </div>
+      <p class="hint" id="plState" style="margin:6px 0"></p>
+      <label style="display:block">Price list link <span class="hint">(blank = the WSLR Function Price List; "off" = use this tab's figures)</span>
+        <input type="text" id="s-price-sheet" class="pin" placeholder="https://docs.google.com/spreadsheets/d/..." style="width:100%"></label>
+      <button type="button" class="btn" id="plRead" style="margin-top:6px">Read the price list now</button>
+    </div>
+
     <p class="hint" style="margin:0 0 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap"><span id="syncBadge"></span> Everything on this tab is shared: edits save to the tracker sheet and load on every computer that opens the tool. If the sheet can't be reached, changes keep working on this computer and share next time it connects.</p>
 
     <div class="card" id="userCard">
@@ -1827,6 +1838,7 @@ const CATER_FUTURE = {from: "2027-09-27",   /* Monday 27 Sept 2027, same as the 
            bf_pack: 20, mtea: 10, atea: 10}};   /* the pack and the teas stay the same (Joel, 15 Oct 2026) */
 let CF_HOUSE_CACHE = null;
 function caterFutureHouse(){
+  if(PL.fut) return JSON.parse(JSON.stringify(PL.fut));   // the price list sheet (16 Oct 2026)
   if(CF_HOUSE_CACHE) return JSON.parse(JSON.stringify(CF_HOUSE_CACHE));
   let d = {};
   try { d = getDefaults() || {}; } catch(e) {}
@@ -1850,6 +1862,144 @@ const CUSTOM_ITEM = {id:"custom", name:"Custom item (type your own)", unit:"flat
 let RATE_GROUPS = [];
 let RATE = {};
 let ITEM_GROUP = {};
+
+/* ---------- the price list Google Sheet (16 Oct 2026, Joel) ----------
+   "WSLR Function Price List", Prices tab: Code | Item | Price | Per | From | ... One sheet for the
+   quote tool, the confirmation builder and the invoice tool. A price that changes from a date is a
+   second row with the same code and a later From date. Staff side only: it sets the house rate
+   card and the house rules new quotes are made from, and wins over the Settings tab's own figures.
+   A quote's own prices (typed on it, its rate card snapshot, its catering schedule) never change,
+   and the organiser's page never reads it. Read with Google's script answer (a plain fetch is
+   refused), kept in this browser, read again after an hour; never read = the built-in prices. */
+const PRICE_SHEET_DEFAULT = "1hB6ncEhDj977z2eoF0am-lLmgtLbeI_y";
+const PL_KEY = "wslr_price_list_v1";
+const PL = {rows: [], at: "", err: "", busy: false, fut: null};
+/* rate card ids -> price list codes (venue ids get _full / _half from the sheet) */
+const PL_RATE = {bf_hot: "catering_bf_hot", bf_cont: "catering_bf_cont", bf_pack: "catering_bf_pack", lunch_sit: "catering_lunch_sit",
+  lunch_pack: "catering_lunch_pack", din2: "catering_dinner_2", din1: "catering_dinner_1", mtea: "catering_mtea", atea: "catering_atea",
+  diet: "dietary_adult",
+  fr13_full: "venue_rooms_123_full", fr13_half: "venue_rooms_123_half", fr1_full: "venue_room_1_full", fr1_half: "venue_room_1_half",
+  fr2_full: "venue_room_2_full", fr2_half: "venue_room_2_half", fr3_full: "venue_room_3_full", fr3_half: "venue_room_3_half",
+  fr5_full: "venue_room_5_full", fr5_half: "venue_room_5_half", aud_full: "venue_auditorium_full", aud_half: "venue_auditorium_half",
+  marq_full: "venue_marquee_full", marq_half: "venue_marquee_half", din_full: "venue_dining_full", din_half: "venue_dining_half"};
+const PL_SCHOOL = {bf_hot: "school_bf_hot", lunch_pack: "school_lunch_pack", lunch_sit: "school_lunch_sit", din2: "school_dinner_2",
+  mtea: "school_tea", atea: "school_tea", diet: "school_dietary"};
+/* the organiser's page never reads it; nor does a test browser unless the test asks (localStorage wslr_price_list_test) */
+const PL_ON = !(typeof BOOT !== "undefined" && BOOT) &&
+  !(typeof navigator !== "undefined" && navigator.webdriver && !(function(){ try { return localStorage.getItem("wslr_price_list_test"); } catch(e) { return null; } })());
+function plSheetId(){
+  let v = "";
+  try { v = String(((typeof getDefaults === "function" ? getDefaults() : {}) || {}).priceSheet || "").trim(); } catch(e) {}
+  if(/^off$/i.test(v)) return "";
+  if(!v) return PRICE_SHEET_DEFAULT;
+  const m = v.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+  return m ? m[1] : (/^[a-zA-Z0-9_-]{25,}$/.test(v) ? v : "");
+}
+function plToday(){ const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function plIso(v, f){
+  const s = String(v === null || v === undefined ? "" : v).trim();
+  let m = s.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})/);   // Google's dates: months from 0
+  if(m) return m[1] + "-" + String(Number(m[2]) + 1).padStart(2, "0") + "-" + String(m[3]).padStart(2, "0");
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[0].slice(0, 10);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
+  m = String(f || s).match(/^(\d{1,2}) ([A-Za-z]{3})[a-z]* (\d{4})$/);
+  if(m){ const mi = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"].indexOf(m[2].toLowerCase()); if(mi >= 0) return m[3] + "-" + String(mi + 1).padStart(2, "0") + "-" + m[1].padStart(2, "0"); }
+  return "";
+}
+function plParse(resp){
+  const t = resp && resp.table;
+  if(!t || !Array.isArray(t.cols) || !Array.isArray(t.rows)) return null;
+  const lab = t.cols.map(c => String((c && c.label) || "").trim().toLowerCase());
+  const col = re => lab.findIndex(l => re.test(l));
+  const ci = col(/^code\b/), pi = col(/^price\b/), fi = col(/^from\b/);
+  if(ci < 0 || pi < 0 || fi < 0) return null;
+  const out = [];
+  t.rows.forEach(r => {
+    const c = (r && r.c) || [];
+    const code = String((c[ci] && c[ci].v) || "").trim().toLowerCase();
+    const pv = c[pi] && c[pi].v, fv = c[fi];
+    const p = Number(String(pv === null || pv === undefined ? "" : pv).replace(/[$,\s]/g, ""));
+    const from = fv ? plIso(fv.v, fv.f) : "";
+    if(!/^[a-z0-9_]+$/.test(code) || pv === null || pv === undefined || String(pv).trim() === "" || !isFinite(p) || p < 0 || !from) return;
+    out.push([code, Math.round(p * 100) / 100, from]);
+  });
+  return out;
+}
+/* the price for a code in force on a date (default today), or null */
+function plGet(code, iso){
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(String(iso || "")) ? iso : plToday();
+  let best = null, bf = "";
+  PL.rows.forEach(r => { if(r[0] === code && r[2] <= d && (best === null || r[2] >= bf)){ best = r[1]; bf = r[2]; } });
+  return best;
+}
+function plLoadCache(){
+  if(!PL_ON) return;
+  try { const c = JSON.parse(localStorage.getItem(PL_KEY) || "null"); if(c && Array.isArray(c.rows) && c.id === plSheetId()){ PL.rows = c.rows; PL.at = c.at || ""; } } catch(e) {}
+}
+function plFetch(force){
+  const id = PL_ON ? plSheetId() : "";
+  if(!id || PL.busy) return Promise.resolve(false);
+  if(!force && PL.at && Date.now() - new Date(PL.at).getTime() < 3600e3) return Promise.resolve(false);
+  PL.busy = true;
+  /* Google answers this page (gjoel.github.io) directly; the answer is JSON wrapped in a function call */
+  const url = "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(id) + "/gviz/tq?tqx=out:json&headers=1&sheet=Prices&_=" + Date.now();
+  const ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = setTimeout(() => { if(ctl) ctl.abort(); }, 15000);
+  return fetch(url, ctl ? {signal: ctl.signal} : {}).then(r => r.text()).then(text => {
+    let resp = null;
+    try { const a = text.indexOf("{"), b = text.lastIndexOf("}"); resp = a >= 0 && b > a ? JSON.parse(text.slice(a, b + 1)) : null; } catch(e) { resp = null; }
+    const rows = resp && resp.status === "ok" ? plParse(resp) : null;
+    if(!rows || !rows.length) throw new Error(rows ? "The price list's Prices tab had no prices this tool could read." : "The price list did not open: is it shared \"Anyone with the link can view\", with a Prices tab (Code, Price, From)?");
+    PL.rows = rows; PL.at = new Date().toISOString(); PL.err = "";
+    try { localStorage.setItem(PL_KEY, JSON.stringify({id: id, at: PL.at, rows: rows})); } catch(e) {}
+    return true;
+  }).catch(e => {
+    PL.err = (e && e.name === "AbortError") ? "The price list took too long to answer." : ((e && /price list/.test(e.message)) ? e.message : "Could not reach Google to read the price list.");
+    return false;
+  }).finally(() => { clearTimeout(timer); PL.busy = false; });
+}
+/* the house rate card's prices from the sheet (today's rows) */
+function plApplyRate(){
+  if(!PL_ON || !PL.rows.length) return;
+  Object.keys(PL_RATE).forEach(id => { const v = plGet(PL_RATE[id]); if(v !== null && RATE[id]) RATE[id].price = v; });
+}
+/* everything else: school extras and rates, the later catering prices, the rules */
+function plApply(){
+  if(!PL_ON || !PL.rows.length) return;
+  plApplyRate();
+  Object.keys(PL_SCHOOL).forEach(id => { const v = plGet(PL_SCHOOL[id]); if(v !== null && SCHOOL_EXTRAS[id] !== undefined) SCHOOL_EXTRAS[id] = v; });
+  SCHOOL_MEAL_ADDONS.forEach(m => { const v = plGet(PL_SCHOOL[m.id]); if(v !== null) m.add = v; });
+  const sp = plGet("school_rate_primary"), sh = plGet("school_rate_high");
+  if(sp !== null) SCHOOL_ROOMS_DEFAULT.base["Primary"] = sp;
+  if(sh !== null) SCHOOL_ROOMS_DEFAULT.base["High school"] = sh;
+  const dk = plGet("dietary_child"); if(dk !== null) DIET_KIDS_RATE = dk;
+  const pf = plGet("venue_pair_full"), ph = plGet("venue_pair_half");
+  if(pf !== null) PAIR_ROOM_FULL = pf;
+  if(ph !== null) PAIR_ROOM_HALF = ph;
+  const bc = plGet("bond_per_cabin"), bm = plGet("bond_minimum");
+  if(bc !== null) BOND_PER_CABIN = bc;
+  if(bm !== null) BOND_MIN = bm;
+  /* the later catering prices: the first date after today a catering price changes, and every catering price on it */
+  const today = plToday();
+  const later = PL.rows.filter(r => /^catering_/.test(r[0]) && r[2] > today).map(r => r[2]).sort()[0];
+  if(later){
+    const prices = {};
+    Object.keys(PL_RATE).forEach(id => { if(/^catering_/.test(PL_RATE[id])){ const v = plGet(PL_RATE[id], later); if(v !== null) prices[id] = v; } });
+    PL.fut = {from: later, prices: prices};
+  } else PL.fut = null;
+  CF_HOUSE_CACHE = null;
+}
+/* the house key dates (deposit, part payment, balance) from the sheet: a quote's own still wins */
+function plKd(k){
+  const code = {depositPer: "deposit_cabin", depositSite: "deposit_site", halfPct: "part_payment_pct", balanceDays: "balance_days"}[k];
+  return code ? plGet(code) : null;
+}
+function plStatusHtml(){
+  if(!plSheetId()) return "Switched off: the rate card and Settings figures are used.";
+  const when = PL.at ? new Date(PL.at).toLocaleString("en-AU", {day: "numeric", month: "short", hour: "numeric", minute: "2-digit"}) : "";
+  return (PL.rows.length ? "Read " + when + ": " + PL.rows.length + " prices, used for new quotes instead of the rate card's." : "Not read yet: the rate card is used.")
+    + (PL.err ? ' <span style="color:#b3261e">' + PL.err.replace(/</g, "&lt;") + (PL.rows.length ? " The copy read before is used." : "") + "</span>" : "");
+}
 /* The single conference rooms (1, 2 and 3 on their own) arrived after most rate
    cards were saved, on this computer and on the tracker sheet. Any saved card that
    lacks them gets them from the defaults, slotted in under the combined rooms, so
@@ -1947,6 +2097,7 @@ function buildRate(stored){
     RATE[it.id] = it;
     ITEM_GROUP[it.id] = g.group;
   }));
+  plApplyRate();   // 16 Oct 2026: the price list sheet's prices (staff side, once read)
 }
 
 /* ---------- guided package builder config ---------- */
@@ -3288,7 +3439,7 @@ function blankQuote(num){
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
     caterSched: caterFutureHouse(), // the new catering prices and the date they start, as they were when this quote was made
-    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, roomOnlyDeposit: true, vcCabin: (d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin, autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
+    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
     minStay: {},        // RMS minimum stays for the quoted rate: {itemId: {"2026-10-03": {s: 2, a: 0}}}, only nights with a rule
     staffShort: null,   // stays staff sent below the minimum on purpose: ["itemId|from|to", ...]
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
@@ -3548,7 +3699,9 @@ function schoolCfg(){
     perDriver: Number(d.perDriver) > 0 ? Number(d.perDriver) : SCHOOL_ROOMS_DEFAULT.perDriver,
     studentTypes: (Array.isArray(d.studentTypes) && d.studentTypes.length ? d.studentTypes : SCHOOL_ROOMS_DEFAULT.studentTypes).filter(id => RATE[id]),
     teacherTypes: (Array.isArray(d.teacherTypes) && d.teacherTypes.length ? d.teacherTypes : SCHOOL_ROOMS_DEFAULT.teacherTypes).filter(id => RATE[id]),
-    base: Object.assign({}, SCHOOL_ROOMS_DEFAULT.base, (d.base && typeof d.base === "object") ? d.base : {}),
+    base: Object.assign({}, SCHOOL_ROOMS_DEFAULT.base, (d.base && typeof d.base === "object") ? d.base : {},
+      (PL.rows.length && plGet("school_rate_primary") !== null) ? {"Primary": plGet("school_rate_primary")} : {},
+      (PL.rows.length && plGet("school_rate_high") !== null) ? {"High school": plGet("school_rate_high")} : {}),
     /* people per cabin for one unit type, beating the general number above:
        {"acc_1br_std": {student: 5, teacher: 2}} (blank = use the general number) */
     perCabin: (d.perCabin && typeof d.perCabin === "object") ? d.perCabin : {}
@@ -3579,10 +3732,12 @@ const SCHOOL_OFF = ["acc_4br_house", "acc_2br_ter", "acc_2br_bung", "acc_2br_std
 /* the school prices for the extras the organiser can add on top of the package.
    Only the ones in SCHOOL_EXTRAS_ON are offered to start with; the rest keep their
    school price for when staff tick them on by hand. */
-const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, din1: 30, din2: 14, diet: 5};
+/* 16 Oct 2026 (Joel): no main-only dinner at a school price (a school dinner is 2 courses), and
+   morning and afternoon tea are offered at $10 a head, as on the invoice tool and the form */
+const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, din2: 14, mtea: 10, atea: 10, diet: 5};
 /* packed lunch and the 2 course dinner are ticked in "Your meals" at the package price,
    so they are not offered a second time as paid extras */
-const SCHOOL_EXTRAS_ON = ["bf_hot", "diet"];
+const SCHOOL_EXTRAS_ON = ["bf_hot", "mtea", "atea", "diet"];
 /* bed & breakfast is the base; every other meal is ticked on and priced per person for
    the days it is wanted, so a group can have dinner every night and one packed lunch. */
 function schoolBaseFor(level){ return Number(schoolCfg().base[level]) || 0; }
@@ -4603,7 +4758,7 @@ function dietPerMeal(){
   return Number((RATE.diet || {}).price) || 0;
 }
 /* children 12 and under: $5 a meal, never more than the adult surcharge (a school package is $5 for everyone) */
-const DIET_KIDS_RATE = 5;
+let DIET_KIDS_RATE = 5;   // the price list's dietary_child when read
 function dietKidsPerMeal(){ return Math.min(DIET_KIDS_RATE, dietPerMeal()); }
 function caterFutureOn(){ return !!(Q && Q.features && Q.features.caterFuture); }
 function caterFutureApplies(){
@@ -5096,7 +5251,8 @@ function vcNum_(v, dflt){ const n = Number(v); return (v === "" || v === null ||
 /* the amounts on this quote: its own (Prepare tab), else the house ones (Settings), else $25 / $15 */
 function vcRates(){
   const f = (Q && Q.features) || {}, d = getDefaults() || {};
-  const cabin = vcNum_(f.vcCabin, vcNum_(d.vcCabin, VENUE_CREDIT_CABIN));
+  const sheet = plGet("credit_cabin");
+  const cabin = vcNum_(f.vcCabin, sheet !== null ? sheet : vcNum_(d.vcCabin, VENUE_CREDIT_CABIN));
   return {cabin: cabin, site: cabin / 2};
 }
 function vcMoney(n){ return Math.round(n) === n ? money0(n) : money(n); }
@@ -5124,7 +5280,7 @@ function isWinterDay(iso){ return /^\d{4}-\d{2}-\d{2}$/.test(String(iso || "")) 
    half day) instead of its own price. All three booked on their own on the same day are
    charged what All Conference Rooms 1, 2 & 3 costs. Rooms 1 & 3 on their own are not
    neighbours. The saving shows as its own line under each room. */
-const PAIR_ROOM_FULL = 200, PAIR_ROOM_HALF = 100;
+let PAIR_ROOM_FULL = 200, PAIR_ROOM_HALF = 100;   // the price list's venue_pair_full / _half when read
 /* every conference room and the Auditorium, day by day: [{day, iso, key, use, price, pair}]
    where price is after the pair deal and pair is what the deal took off */
 function venueDayRows(){
@@ -5995,8 +6151,9 @@ function kdCfg(){
   const mine = kdClean(Q.kdCfg);
   const out = {};
   Object.keys(KD_DEFAULTS).forEach(k => {
+    const sheet = plKd(k);
     const raw = (mine[k] !== undefined && mine[k] !== null && mine[k] !== "") ? mine[k]
-      : ((house[k] !== undefined && house[k] !== null && house[k] !== "") ? house[k] : KD_DEFAULTS[k]);
+      : (sheet !== null ? sheet : ((house[k] !== undefined && house[k] !== null && house[k] !== "") ? house[k] : KD_DEFAULTS[k]));
     const n = Number(raw);
     out[k] = isNaN(n) ? KD_DEFAULTS[k] : n;
   });
@@ -6210,7 +6367,7 @@ function depositBreakdown(){
 /* the security bond: $100 a cabin for a church / ACNC group or a school, everyone else
    $100 a cabin or $2,000, whichever is higher. Campsites don't count. Staff can type
    their own figure on the quote (Q.bondManual); clearing it goes back to the rule. */
-const BOND_PER_CABIN = 100, BOND_MIN = 2000;
+let BOND_PER_CABIN = 100, BOND_MIN = 2000;   // the price list's bond_per_cabin / bond_minimum when read
 function bondIsConcession(){ return !!Q.acnc || !!(Q.school && schoolBaseRate(Q.school)); }
 function bondAuto(){
   const per = BOND_PER_CABIN * unitsSplit().cabins;
@@ -12733,6 +12890,9 @@ function renderSecEditor(){
 }
 function renderSettings(){
   const d = getDefaults();
+  /* the price list sheet (16 Oct 2026) */
+  const pls = document.getElementById("plState"); if(pls) pls.innerHTML = plStatusHtml();
+  const pli = document.getElementById("s-price-sheet"); if(pli && document.activeElement !== pli) pli.value = d.priceSheet || "";
   document.getElementById("s-notes").value = d.notes;
   document.getElementById("s-terms").value = d.terms;
   document.getElementById("s-subject").value = d.subject;
@@ -14433,6 +14593,15 @@ else document.getElementById("appLogo").style.display = "none";
   if(JSON.stringify(s) !== before) lsSet(LS_RMS, s);
 })();
 buildRate(lsGet(LS_RATECARD, null));
+/* the price list sheet (16 Oct 2026): staff side only */
+if(!CLIENT_MODE){
+  const plIn = document.getElementById("s-price-sheet"), plBtn = document.getElementById("plRead");
+  if(plIn) plIn.addEventListener("change", () => { saveDefaults({priceSheet: plIn.value.trim()}); PL.rows = []; PL.at = ""; PL.err = ""; PL.fut = null;
+    plFetch(true).then(ok => { if(ok) plApply(); renderSettings(); refresh(); }); });
+  if(plBtn) plBtn.addEventListener("click", () => { document.getElementById("plState").textContent = "Reading..."; plFetch(true).then(ok => { if(ok) plApply(); renderSettings(); refresh(); }); });
+  plLoadCache(); plApply();
+  plFetch(false).then(ok => { if(!ok) return; plApply(); try { renderSettings(); refresh(); } catch(e) {} });
+}
 if(CLIENT_MODE){
   /* the emailed quote link: same page, organiser's view only */
   document.body.classList.add("clientmode");
