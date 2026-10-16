@@ -11855,7 +11855,7 @@ function schoolFromInterest(sc){
     const tick = document.querySelector('.sgMealTick[data-src="dlg"][data-meal="din2"]');
     if(tick && tick.checked){ tick.checked = false; tick.dispatchEvent(new Event("change")); }
   }
-  const extras = ["lunch_sit", "bf_hot"].filter(id => (sc.meals[id] || []).length && RATE[id]);
+  const extras = ["lunch_sit", "bf_hot", "mtea", "atea"].filter(id => (sc.meals[id] || []).length && RATE[id]);   // teas: the website school box offers them (16 Oct 2026)
   if(!extras.length) return;
   go.addEventListener("click", () => {
     if(document.body.contains(go)) return;   // the form stayed open (no numbers yet): nothing was built
