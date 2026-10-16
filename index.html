@@ -13665,7 +13665,7 @@ function rmsPipeChip(r){
   const chk = RMS_CHECK[r.num] || {};
   const hold = chk.hold || (r.rmsHold ? {status: r.rmsHold.status, groupId: r.rmsHold.groupId, units: (r.rmsHold.units || []).length,
     partial: !!r.rmsHold.partial, missed: r.rmsHold.missed || 0,
-    deposit: r.rmsHold.deposit ? r.rmsHold.deposit.status : ""} : null);
+    deposit: r.rmsHold.deposit ? r.rmsHold.deposit.status : "", quoteNo: r.rmsHold.quoteNo || null} : null);
   const bits = [];
   if(hold){
     if(hold.status === "held") bits.push('<span class="rmschip ' + (hold.partial ? 'warn' : 'held') + '" title="' + (hold.partial ? 'Only part of this quote is booked in RMS: ' + (hold.missed || 'some') + ' line(s) could not be held and need doing by hand. ' : '') + 'Unconfirmed reservation in RMS, group ' + esc(hold.groupId) + ', ' + hold.units + ' unit' + (hold.units === 1 ? '' : 's') + (hold.deposit ? ', deposit ' + esc(hold.deposit) : '') + '">' + esc(hold.groupId) + ' · ' + hold.units + (hold.partial ? ' · part' : '') + '</span>');
@@ -13677,6 +13677,15 @@ function rmsPipeChip(r){
     else if(hold.deposit === "overdue") bits.push('<span class="rmschip short" title="The deposit invoice is past its due date and nothing has been received in RMS. Decide whether to cancel the unconfirmed reservation.">dep overdue</span>');
     else if(hold.deposit === "invoiced") bits.push('<span class="rmschip muted" title="The deposit invoice has been emailed to the organiser">dep invoiced</span>');
     else if(hold.deposit === "failed") bits.push('<span class="rmschip warn" title="The deposit invoice could not be sent; see the email">dep inv failed</span>');
+    /* the quote number on the RMS group master (RMS.gs 5.0, 16 Oct 2026). The label is what RMS calls the field. */
+    const qn = hold.quoteNo;
+    if(hold.status === "held" && qn && !qn.ok){
+      const lab = qn.label || 'custom field 5';
+      bits.push('<span class="rmschip ' + (qn.skipped ? 'warn' : 'short') + '" title="' + esc(qn.skipped
+        ? 'RMS group master ' + (qn.masterId || '') + ' already holds ' + (qn.existing || '') + ' in ' + lab + ', so ' + (qn.value || '') + ' was not written. Change it by hand if this group now belongs to this quote.'
+        : lab + ' was NOT written on RMS group master ' + (qn.masterId || '') + ': ' + (qn.error || 'unknown') + '. Type ' + (qn.value || '') + ' into ' + lab + ' on the master by hand.') + '">' +
+        esc(lab) + (qn.skipped ? ' differs' : ' not in RMS') + '</span>');
+    }
   }
   /* their Final Confirmation form (6 Oct 2026) */
   const fc = r.confirmation || null;
