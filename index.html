@@ -8021,8 +8021,62 @@ function renderPrep(){
   /* the last day is the departure date, so the picker greys out anything before
      the first day, whichever way the dates were set */
   const endEl = document.getElementById("f-date-end");
-  if(endEl) endEl.min = Q.dateStart || "";
-  if(Q.dateStart && Q.dateEnd && Q.dateEnd > Q.dateStart) LAST_DATES = {start: Q.dateStart, end: Q.dateEnd};
+  /* only when it changes: Chrome wipes a half-typed day when min is set, even to the same date */
+  if(endEl && endEl.min !== (Q.dateStart || "")) endEl.min = Q.dateStart || "";
+  /* not while a date is being typed: the stay's length is the one from before the typing */
+  if(Q.dateStart && Q.dateEnd && Q.dateEnd > Q.dateStart && !dateBeingTyped(document.getElementById("f-date-start")) && !dateBeingTyped(endEl))
+    LAST_DATES = {start: Q.dateStart, end: Q.dateEnd};
+}
+/* ---------- dates typed into a date box (20 Oct 2026) ----------
+   Chrome sends "input" and "change" on every key typed into a date box: typing 15 over 12
+   sends 01 first, a date with one part still being typed sends an empty value, and a year
+   goes 0002, 0020, 0202, 2027. Each of those used to count as a date someone had chosen: the
+   last day was put back to the first day, the box was written over while it was being typed
+   in (which wiped it), and the stay's length was taken from a half-typed date. So typed dates
+   turned into other dates, and the cabin prices followed them (Joel, 20 Oct 2026: "the prices
+   are not correct" after the dates were changed). A box being typed in now only follows whole
+   dates, and is checked once, when it is left or Enter is pressed. A date picked from the
+   calendar counts straight away, as before. While the box is being typed in, the tool doesn't
+   write to it either, not even its min (Chrome wipes a half-typed day when min is set).
+   "Being typed" runs from the first key to leaving the box: not document.activeElement, which
+   Chrome empties for a moment when it moves from the day to the month. */
+function dateBeingTyped(el){ return !!(el && el.dataset.typing === "1"); }
+let DATE_KEY_AT = 0;   // the last key pressed in a date box: RMS is asked once the typing pauses
+/* part of a date: something in the box but not a whole date yet, or a year still being typed */
+function dateHalfTyped(el){
+  const v = String((el && el.value) || "");
+  if(v === "") return !!(el && el.validity && el.validity.badInput);
+  return !/^\d{4}-\d{2}-\d{2}$/.test(v) || v < "2000-01-01";
+}
+/* done(was) runs once the typing is over; was = what before() gave when the first key went in */
+function watchDateTyping(el, before, done){
+  if(!el) return;
+  const finish = () => {
+    if(el.dataset.typing !== "1") return;
+    el.dataset.typing = "";
+    done(el.dataset.typedFrom || "");
+  };
+  el.addEventListener("keydown", e => {
+    if(e.key === "Enter"){ finish(); return; }
+    if(e.key === "Tab" || e.key === "Shift" || e.key === "Escape") return;
+    DATE_KEY_AT = Date.now();
+    if(el.dataset.typing === "1") return;
+    el.dataset.typedFrom = before();
+    el.dataset.typing = "1";
+  });
+  el.addEventListener("blur", finish);
+}
+/* A first day typed past the last day takes the stay's length with it as it is typed, measured
+   from the dates before the typing, and gives the last day back if the typing comes back before
+   it. So the screen shows the stay it will be, never one from a half-typed date. */
+function typedStartKeepsLength(was){
+  const p = String(was || "").split("|"), s0 = p[0] || "", e0 = p[1] || "";
+  if(!s0 || !e0 || e0 <= s0 || !Q.dateStart) return;
+  const end = Q.dateStart >= e0 ? isoAddDays(Q.dateStart, isoDiffDays(s0, e0)) : e0;
+  if(end === Q.dateEnd) return;
+  Q.dateEnd = end;
+  const b = document.getElementById("f-date-end");
+  if(b && !dateBeingTyped(b)) b.value = end;
 }
 /* typed dates get past the picker's min, so they are corrected on the way out of
    the field: moving the first day carries the length of the stay with it. */
@@ -8043,7 +8097,7 @@ function clampEventDates(changed){
   if(a) a.value = Q.dateStart || "";
   if(b){ b.value = Q.dateEnd || ""; b.min = Q.dateStart || ""; }
   refresh();
-  scheduleRmsPull();
+  datesMovedPull();
 }
 /* tells staff when the event is inside the usual lead times, so they know why the
    timeline reads "As soon as possible" rather than a deadline that has already
@@ -8551,7 +8605,7 @@ function schoolDateBoxChange(which){
   if(a) a.value = Q.dateStart || "";
   if(b){ b.value = Q.dateEnd || ""; b.min = Q.dateStart || ""; }
   refresh();
-  scheduleRmsPull();
+  datesMovedPull();
   return true;
 }
 function setEventDates(from, nights){
@@ -8584,7 +8638,7 @@ function setEventDates(from, nights){
     serverAvailCheck(r => { if(r) clientTrim("On your new dates,"); refresh(); });
   }
   refresh();
-  scheduleRmsPull();
+  datesMovedPull();
 }
 /* ---------- asking RMS again from the organiser's page (Sept 2026) ----------
    When they move their dates, and the moment they press Accept, the page asks the quote
@@ -11087,9 +11141,17 @@ function renderClient(){
   wireSelSteppers(page);
   const splitCb = document.getElementById("cbSplit");
   if(splitCb) splitCb.addEventListener("change", e => setSplit(e.target.checked));
-  /* the "your dates" panel */
+  /* the "your dates" panel: a typed arrival date counts once the box is left (watchDateTyping),
+     a little after, so the click that left it lands before the page is redrawn */
   const dpF = document.getElementById("dpFrom");
-  if(dpF) dpF.addEventListener("change", e => { if(e.target.value) setEventDates(e.target.value, nightsCount()); });
+  if(dpF){
+    const moveTo = () => {
+      if(!dpF.value || dateHalfTyped(dpF)){ dpF.value = Q.dateStart || ""; return; }
+      if(dpF.value !== Q.dateStart) setEventDates(dpF.value, nightsCount());
+    };
+    dpF.addEventListener("change", () => { if(!dateBeingTyped(dpF)) moveTo(); });
+    watchDateTyping(dpF, () => Q.dateStart || "", () => setTimeout(moveTo, 200));
+  }
   const dpR = document.getElementById("dpRequest");
   if(dpR) dpR.addEventListener("click", requestPrices);
   const dpW = document.getElementById("dpFindWk");
@@ -11130,8 +11192,16 @@ function renderClient(){
     el.addEventListener("click", e => setEventDates(e.currentTarget.dataset.from, Number(e.currentTarget.dataset.n) || 2)));
   page.querySelectorAll(".addblock").forEach(el => el.addEventListener("click", e => addAccomBlock(e.currentTarget.dataset.id)));
   page.querySelectorAll(".blkx").forEach(el => el.addEventListener("click", e => removeAccomBlock(Number(e.currentTarget.dataset.i))));
-  page.querySelectorAll(".blkFrom").forEach(el => el.addEventListener("change", e => setBlockDates(Number(e.target.dataset.i), e.target.value, null)));
-  page.querySelectorAll(".blkTo").forEach(el => el.addEventListener("change", e => setBlockDates(Number(e.target.dataset.i), null, e.target.value)));
+  /* a part stay's own dates: typed ones count once the box is left, as above */
+  [[".blkFrom", "from"], [".blkTo", "to"]].forEach(([sel, k]) => page.querySelectorAll(sel).forEach(el => {
+    const i = Number(el.dataset.i);
+    const apply = () => {
+      if(!el.value || dateHalfTyped(el)){ refresh(); return; }   // the part stay's own dates show again
+      setBlockDates(i, k === "from" ? el.value : null, k === "to" ? el.value : null);
+    };
+    el.addEventListener("change", () => { if(!dateBeingTyped(el)) apply(); });
+    watchDateTyping(el, () => el.value, () => setTimeout(apply, 200));
+  }));
   page.querySelectorAll(".menuTgl").forEach(el => el.addEventListener("click", e => {
     const id = e.currentTarget.dataset.id;
     MENU_OPEN[id] = !MENU_OPEN[id];
@@ -13143,6 +13213,8 @@ function rmsAsAt(iso){
   return d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}).toLowerCase().replace(/\s/g, "") + (sameDay ? "" : " " + shortDate(isoDate(d)));
 }
 let RMS_PULLING = false, RMS_PULL_TIMER = null, RMS_AUTO_SIG = "", RMS_CHECK = {}, RMS_CHECK_AT = 0, RMS_CHECK_BUSY = false;
+/* which quote RMS_AUTO_SIG was asked for, and the quote whose dates were changed here (20 Oct 2026) */
+let RMS_AUTO_Q = null, RMS_DATES_MOVED = null;
 let RMS_CAT_BUSY = false;
 /* Google answers with its own HTML page when the script itself fails (not deployed as a
    new version, a file that did not paste completely, or a run that took too long) */
@@ -13489,10 +13561,12 @@ function pullRmsRates(manual){
      tab first, and nothing loads until this is pressed. */
   if(!getRmsSettings().enabled) setRmsSettings({enabled: true});
   clearTimeout(RMS_PULL_TIMER);
-  RMS_AUTO_SIG = w.from + "|" + w.to;   // this window has now been asked for
+  const forQ = Q, sig = w.from + "|" + w.to;
+  RMS_AUTO_SIG = sig; RMS_AUTO_Q = forQ;   // this window has now been asked for, for this quote
   RMS_PULLING = true; renderImp3();
   ensureRmsCatalog(false).then(() => rmsGet({rms: "grid", from: w.from, to: w.to, fresh: manual ? 1 : 0})).then(g => {
     RMS_PULLING = false;
+    if(rmsPullOvertaken(forQ, sig)) return;
     const items = Object.keys(g.rates || {}).length;
     Q.rmsBase = null; Q.rmsOver = null; Q.impError = null; Q.needsTariff = false;
     Q.rates = g.rates || {};
@@ -13522,8 +13596,20 @@ function pullRmsRates(manual){
     showToast(notes.concat(errs).join(" · "), errs.length > 0);
   }).catch(e => {
     RMS_PULLING = false; renderImp3();
+    if(rmsPullOvertaken(forQ, sig)) return;
     showToast("RMS could not be reached: " + e.message + ". Type a nightly price on each cabin, or drop in the rates report instead.", true);
   });
+}
+/* The dates were changed, or another quote was opened, while RMS was answering (20 Oct 2026).
+   The answer is for nights the quote on screen no longer has, so it is not used, and that
+   quote asks for its own dates. Before, the answer landed on whatever was on screen and the
+   newer dates were never asked for: their nights kept no price, or the other quote's. */
+function rmsPullOvertaken(forQ, sig){
+  const w = rmsWindow();
+  if(Q === forQ && w && w.from + "|" + w.to === sig) return false;
+  renderImp3();
+  scheduleRmsPull(250);
+  return true;
 }
 /* ---- rates load themselves once the dates are in ------------------------
    Nothing is fetched when the page opens, and nothing is fetched for a quote
@@ -13532,17 +13618,21 @@ function pullRmsRates(manual){
    on its own, so nobody has to visit the Settings tab or remember the button.
    Three things it will not do:
      - touch a quote that has already been sent; it keeps the prices it went out
-       with until someone presses the button on purpose,
+       with until someone presses the button on purpose, or changes its dates
+       (20 Oct 2026: those prices were for other nights, so new dates are priced
+       as a new quote for them would be),
      - run when the live link is switched off on the Settings tab,
-     - ask twice for the same window; a failed pull is not retried on a loop, the
-       button is there for that.
+     - ask twice for the same window for the same quote; a failed pull is not
+       retried on a loop, the button is there for that.
+   Dates changed while RMS is still answering are asked for as soon as it has
+   (rmsPullOvertaken), and a date being typed is asked for once the typing pauses.
    ↻ Live from RMS stays exactly where it was and still works: it forces a
    fresh pull, ignoring anything the server has cached.
    ----------------------------------------------------------------------- */
 function rmsAutoOk(){
   if(CLIENT_MODE) return false;
   if(!getRmsSettings().enabled) return false;
-  if(Q.status && Q.status !== "Draft") return false;
+  if(Q.status && Q.status !== "Draft" && RMS_DATES_MOVED !== Q) return false;
   const lastNight = stayNightsList().slice(-1)[0] || Q.dateStart;
   if(lastNight && lastNight < isoDate(today)) return false;   /* a stay already gone: nothing to price */
   return !!rmsWindow();
@@ -13551,13 +13641,23 @@ function scheduleRmsPull(delay){
   clearTimeout(RMS_PULL_TIMER);
   if(!rmsAutoOk()) return;
   RMS_PULL_TIMER = setTimeout(() => {
+    /* a pull still on its way asks again when it lands, if the dates moved meanwhile */
     if(!rmsAutoOk() || RMS_PULLING) return;
+    /* a date being typed: once the typing pauses, not for each half-typed date on the way */
+    const sinceKey = Date.now() - DATE_KEY_AT;
+    if(sinceKey < 2500){ scheduleRmsPull(2500 - sinceKey); return; }
     const w = rmsWindow();
     if(!w) return;
     const sig = w.from + "|" + w.to;
-    if(sig === RMS_AUTO_SIG) return;   // already asked for this window
+    if(sig === RMS_AUTO_SIG && RMS_AUTO_Q === Q) return;   // already asked for this window, for this quote
     pullRmsRates(false);
   }, Math.max(250, Number(delay) || 900));
+}
+/* the event dates were changed here (the date boxes, the dates panel, the nights stepper,
+   cheapest dates): whatever the quote's status, its prices were for other nights */
+function datesMovedPull(delay){
+  if(!CLIENT_MODE) RMS_DATES_MOVED = Q;
+  scheduleRmsPull(delay);
 }
 /* opening a draft that has dates but no prices is the same situation as typing
    the dates, so it loads them too */
@@ -14292,18 +14392,22 @@ document.getElementById("f-bond").addEventListener("input", e => {
 });
 BINDINGS.forEach(pair => {
   const el = document.getElementById(pair[0]);
+  const isDate = pair[1] === "dateStart" || pair[1] === "dateEnd";
   el.addEventListener("input", () => {
+    /* half a typed date: the quote keeps its last whole date until the rest is in (20 Oct 2026) */
+    if(isDate && dateBeingTyped(el) && dateHalfTyped(el)) return;
     const was = Q[pair[1]];
     Q[pair[1]] = (el.type === "number") ? (el.value === "" ? "" : Number(el.value)) : el.value;
     /* a school quote: the whole stay moves with a new first day, and the meals and package
        follow once the box is left (schoolDateBoxChange, 15 Oct 2026) */
-    if(pair[1] === "dateStart" || pair[1] === "dateEnd") schoolDateBoxInput(pair[1] === "dateStart" ? "start" : "end", was);
+    if(isDate) schoolDateBoxInput(pair[1] === "dateStart" ? "start" : "end", was);
+    if(pair[1] === "dateStart" && dateBeingTyped(el) && !schoolOn()) typedStartKeepsLength(el.dataset.typedFrom);
     if(pair[1] === "prepBy"){ try{ localStorage.setItem(LS_PREPBY, el.value); }catch(e){} }
     if(pair[1] === "prepEmail"){ try{ localStorage.setItem(LS_PREPEMAIL, el.value); }catch(e){} }
-    if(pair[1] === "dateStart" || pair[1] === "dateEnd"){
+    if(isDate){
       applyFixedRates();   // a set price still follows the dates
       refresh(); // block nights are clamped to the new stay length automatically
-      scheduleRmsPull();   // and RMS is asked for this window a moment later
+      datesMovedPull();    // and RMS is asked for this window a moment later (a typed date: once the typing pauses)
       return;
     }
     softRefresh();
@@ -14395,7 +14499,24 @@ function renderLockSwitch(){
 });
 ["start", "end"].forEach(which => {
   const el = document.getElementById(which === "start" ? "f-date-start" : "f-date-end");
-  if(el) el.addEventListener("change", () => { if(!schoolDateBoxChange(which)) clampEventDates(which); });
+  if(!el) return;
+  const key = which === "start" ? "dateStart" : "dateEnd";
+  const done = () => { if(!schoolDateBoxChange(which)) clampEventDates(which); };
+  /* a date picked from the calendar is checked straight away; a typed one once its box is
+     left (watchDateTyping), because Chrome sends a change for every key (20 Oct 2026) */
+  el.addEventListener("change", () => { if(!dateBeingTyped(el)) done(); });
+  watchDateTyping(el, () => Q.dateStart + "|" + Q.dateEnd, was => {
+    const said = [], half = dateHalfTyped(el);
+    if(half){
+      el.value = Q[key] || "";
+      said.push("That " + (which === "start" ? "first" : "last") + " day was not finished, so it is back to " + (Q[key] ? fmtDate(Q[key]) : "empty") + ".");
+    }
+    if(was !== Q.dateStart + "|" + Q.dateEnd && which === "start" && !schoolOn() && String(was).split("|")[1] !== Q.dateEnd)
+      said.push("The last day moved to " + fmtDate(Q.dateEnd) + ", it cannot be before the first day.");
+    if(said.length) showToast(said.join(" "), half);
+    if(was === Q.dateStart + "|" + Q.dateEnd){ SCHOOL_DATE_EDIT = null; return; }   // typed back to what it was
+    done();
+  });
 });
 document.getElementById("f-church").addEventListener("change", e => {
   setChurchTier(e.target.value);
