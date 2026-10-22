@@ -474,6 +474,11 @@
   .qp-event{color:var(--ink2); font-size:13.5px; margin-bottom:16px}
   .qp-table th{font-size:11px}
   .qp-table td{font-size:14px}
+  /* the printed quote's section headings (22 Oct 2026) */
+  .qp-table tr.psec td{font-size:11.5px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; padding-top:14px; border-bottom:1px solid var(--grid)}
+  .qp-table tbody tr.psec:first-child td{padding-top:6px}
+  .qp-table .psecnote{text-transform:none; letter-spacing:0; font-weight:400; color:var(--ink2); margin-left:8px}
+  .qp-table tr.pcred td{color:#3d6f2a}
   .cwhen{color:var(--ink2); font-size:12.5px; margin-top:2px}
   .qp-totals{margin:12px 0 0 auto; max-width:300px; font-variant-numeric:tabular-nums}
   .qp-totals > div{display:flex; justify-content:space-between; padding:3px 8px; font-size:14px; color:var(--ink2)}
@@ -501,6 +506,27 @@
   .sidecard p:last-child{margin-bottom:0}
 
   /* ---------- pipeline ---------- */
+  /* contact column, search and the details row under a quote (22 Oct 2026) */
+  #pipeFind{margin-left:auto; width:250px; max-width:100%; padding:5px 9px; font-size:13px}
+  .pipe tr.prow{cursor:pointer}
+  .pipe .pdTog{appearance:none; border:none; background:none; cursor:pointer; color:var(--ink2); font-size:11px; padding:0 2px 0 0; width:12px}
+  .pipe .pcname{max-width:130px}
+  /* the Contact column is paid for by narrower client and event names below 1340px */
+  @media (max-width:1340px){ .pipe .pcname{max-width:70px} .pipe .tcut.pcname{max-width:70px} }
+  @media (min-width:1120px) and (max-width:1340px){ #tab-pipeline .pipe .tcut:not(.pcname){max-width:92px} #tab-pipeline .pipe .sentInp{width:96px} }
+  /* a narrow window has no room for it: the name, email and phone are in the details row */
+  @media (max-width:1119px){ .pipe thead th:nth-child(3), .pipe tr.prow td:nth-child(3){display:none} }
+  .pcico{text-decoration:none; font-size:13px; margin-left:4px}
+  .pipe tr.prow.open td{border-bottom-color:transparent}
+  .pipe tr.pdet td{white-space:normal; padding:4px 12px 14px 22px; background:#fbfcfd; border-bottom:1px solid var(--border); cursor:default}
+  .pdgrid{display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:10px 24px}
+  .pdblock h4{margin:4px 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink2)}
+  .pdrow{display:flex; gap:10px; font-size:12.5px; padding:2px 0; line-height:1.4}
+  .pdrow>span{flex:0 0 96px; color:var(--muted)}
+  .pdrow>b{font-weight:600; min-width:0; overflow-wrap:anywhere}
+  .pdrow .pcico{margin-left:0; font-size:inherit}
+  .pdnotes{margin-top:10px; font-size:12.5px; white-space:pre-wrap; background:#fff; border:1px solid var(--grid); border-radius:8px; padding:8px 10px}
+  .pdnotes>b{display:block; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--ink2); margin-bottom:3px; white-space:normal}
   .tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px}
   @media (max-width:860px){ .tiles{grid-template-columns:repeat(2,1fr)} }
   .tile{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px}
@@ -1476,15 +1502,17 @@
       <div class="cardhead">
         <h2>Every quote, one page</h2>
         <span class="hint" id="pipeSync"></span>
-        <button class="btn ghost" id="syncNowBtn" title="Pull the latest quotes and statuses from the tracker sheet now" style="margin-left:auto">↻ Sync now</button>
+        <input type="search" id="pipeFind" placeholder="Find a name, email, phone, quote no…" title="Shows only the quotes whose number, organisation, contact, email, phone, event or notes contain this">
+        <button class="btn ghost" id="pipeOpenAll" title="Open or close the details of every quote shown">Open all details</button>
+        <button class="btn ghost" id="syncNowBtn" title="Pull the latest quotes and statuses from the tracker sheet now">↻ Sync now</button>
       </div>
       <div class="tablewrap">
         <table class="pipe">
-          <thead><tr><th>Quote</th><th>Client</th><th>Event</th><th>Event date</th><th>Date sent</th><th class="num">Value</th><th>Status</th><th>Follow-up</th><th></th></tr></thead>
+          <thead><tr><th>Quote</th><th>Client</th><th>Contact</th><th>Event</th><th>Event date</th><th>Date sent</th><th class="num">Value</th><th>Status</th><th>Follow-up</th><th></th></tr></thead>
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
-      <p class="hint" style="margin-top:10px">This pipeline is shared: quotes made on any computer appear here for everyone, pulled from the tracker sheet whenever the tool opens, this tab is shown, or you press Sync now. Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span>, the tracker sheet colours its rows the same way. Change a status or date sent (here, on another computer, or by hand in the sheet) and everywhere else follows. <b>Edit</b> reopens a quote that is still a draft, sent or viewed (not yet submitted or accepted) on tab 1 under its own number; press Save changes or Email quote when you are done and the organiser's link shows the new version. The × removes a quote for everyone, including its row in the tracker sheet.</p>
+      <p class="hint" style="margin-top:10px">This pipeline is shared: quotes made on any computer appear here for everyone, pulled from the tracker sheet whenever the tool opens, this tab is shown, or you press Sync now. Click a row (or its ▸) to open everything we have on that quote: who to contact and how, their address, the cabins, rooms and meals, the RMS booking, the dates it was sent and accepted, and the notes. The ✉ and ☎ beside a contact email or ring them. Row colours: <span style="background:rgba(84,150,58,.13); padding:1px 7px; border-radius:4px">green = catered group</span> · <span style="background:rgba(191,144,0,.13); padding:1px 7px; border-radius:4px">amber = self-catering stay</span>, the tracker sheet colours its rows the same way. Change a status or date sent (here, on another computer, or by hand in the sheet) and everywhere else follows. <b>Edit</b> reopens a quote that is still a draft, sent or viewed (not yet submitted or accepted) on tab 1 under its own number; press Save changes or Email quote when you are done and the organiser's link shows the new version. The × removes a quote for everyone, including its row in the tracker sheet.</p>
     </div>
 
   </section>
@@ -4648,7 +4676,7 @@ function displayLines(){
     const mine = rdParts.filter(p => p.block === bi);
     const rest = qty - mine.reduce((t, p) => t + p.n, 0);
     if(rest > 0) out.push({
-      name: it.name, qty: rest,
+      sec: "accom", name: it.name, qty: rest,
       nights: 0, nightsWord: "nights", part: partial,
       beds: bedsLine(it), sleeps: it.sleeps || 0,
       price: Math.round(unitPrice * 100) / 100, disc: 0,
@@ -4659,7 +4687,7 @@ function displayLines(){
     mine.forEach(p => {
       const each = p.unit * (1 - p.pct / 100);
       out.push({
-        name: it.name + ", " + (p.pct >= 100 ? "no charge" : p.pct > 0 ? p.pct + "% off" : "full price") + (p.note ? ": " + p.note : ""), qty: p.n,
+        sec: "accom", name: it.name + ", " + (p.pct >= 100 ? "no charge" : p.pct > 0 ? p.pct + "% off" : "full price") + (p.note ? ": " + p.note : ""), qty: p.n,
         nights: 0, nightsWord: "nights", part: partial,
         beds: bedsLine(it), sleeps: it.sleeps || 0,
         price: Math.round(each * 100) / 100, disc: 0, roomDisc: p.pct,
@@ -4680,14 +4708,16 @@ function displayLines(){
     const freeTag = venueIsFree(v) ? " (included at no charge " + venueFreeReason(v) + ")" : "";
     /* 12 Oct 2026 (Joel): the room at its full price, then each saving on its own line
        straight under it, so the group sees exactly what comes off and why */
-    if(full > 0) out.push({name: (RATE[v.fullId] || {name: v.name + " - full day"}).name + freeTag, qty: full, nights: 0, beds: "", price: venueRate(v, false), disc: 0, unit: "per day", when: vt, total: full * venueRate(v, false)});
-    if(half > 0) out.push({name: (RATE[v.halfId] || {name: v.name + " - half day"}).name + freeTag, qty: half, nights: 0, beds: "", price: venueRate(v, true), disc: 0, unit: "per half day", when: (full > 0 ? "" : vt), total: half * venueRate(v, true)});
-    const adj = (name, amt) => { amt = Math.round(amt * 100) / 100; if(amt > 0) out.push({name: name, qty: 1, nights: 0, beds: "", price: -amt, disc: 0, unit: "discount", when: "", total: -amt, venueAdj: true}); };
+    /* sec / vkey / vday / adj (22 Oct 2026) let the printed quote put each room in its section,
+       count two half days as one day and move the venue credit into a section of its own */
+    if(full > 0) out.push({sec: "venue", vkey: v.key, vday: "full", name: (RATE[v.fullId] || {name: v.name + " - full day"}).name + freeTag, qty: full, nights: 0, beds: "", price: venueRate(v, false), disc: 0, unit: "per day", when: vt, total: full * venueRate(v, false)});
+    if(half > 0) out.push({sec: "venue", vkey: v.key, vday: "half", name: (RATE[v.halfId] || {name: v.name + " - half day"}).name + freeTag, qty: half, nights: 0, beds: "", price: venueRate(v, true), disc: 0, unit: "per half day", when: (full > 0 ? "" : vt), total: half * venueRate(v, true)});
+    const adj = (kind, name, amt) => { amt = Math.round(amt * 100) / 100; if(amt > 0) out.push({sec: "venue", vkey: v.key, adj: kind, name: name, qty: 1, nights: 0, beds: "", price: -amt, disc: 0, unit: "discount", when: "", total: -amt, venueAdj: true}); };
     const pw = venuePairWhy(v);
-    adj(pw === "all3" ? "↳ All three rooms booked: charged as Conference Rooms 1, 2 & 3 (combined)"
+    adj("pair", pw === "all3" ? "↳ All three rooms booked: charged as Conference Rooms 1, 2 & 3 (combined)"
       : pw === "12" ? "↳ Rooms 1 & 2 booked together: " + money0(PAIR_ROOM_FULL) + " a day each"
       : "↳ Rooms 2 & 3 booked together: " + money0(PAIR_ROOM_FULL) + " a day each", venuePairFor(v));
-    adj("↳ Venue credit with your stay (" + venueCreditShort() + ")", vca.byKey[v.key] || 0);
+    adj("credit", "↳ Venue credit with your stay (" + venueCreditShort() + ")", vca.byKey[v.key] || 0);
   });
   if(kidsOn()){
     let dietMeals = 0, dietKidMeals = 0;
@@ -4704,10 +4734,10 @@ function displayLines(){
          school quote calls the students "adults & 13+" (15 Oct 2026) */
       if(schoolOn() && SCHOOL_MEAL_IDS.indexOf(it.id) >= 0 && !(Number(p) > 0)){
         const all = b.adults + b.k412;
-        if(all > 0) out.push({name: it.name, qty: all, nights: dTag, nightsWord: "days", beds: "", price: 0, disc: 0, unit: "per person", when: "", total: 0, pkg: true});
+        if(all > 0) out.push({sec: "cater", name: it.name, qty: all, nights: dTag, nightsWord: "days", beds: "", price: 0, disc: 0, unit: "per person", when: "", total: 0, pkg: true});
       } else {
-        if(b.adults > 0) out.push({name: it.name + (schoolOn() ? "" : ", adults & 13+"), qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
-        if(b.k412 > 0) out.push({name: it.name + ", children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
+        if(b.adults > 0) out.push({sec: "cater", name: it.name + (schoolOn() ? "" : ", adults & 13+"), qty: b.adults, nights: dTag, nightsWord: "days", beds: "", price: p, disc: 0, unit: "per person", when: "", total: b.adults * days * p});
+        if(b.k412 > 0) out.push({sec: "cater", name: it.name + ", children 4–12 (half rate)", qty: b.k412, nights: dTag, nightsWord: "days", beds: "", price: p / 2, disc: 0, unit: "per person", when: "", total: b.k412 * days * p / 2});
       }
       /* infants 0–3 eat free, so they add no line; the teas carry no dietary surcharge */
       if(!caterNoDiet(it.id)){
@@ -4717,11 +4747,11 @@ function displayLines(){
     });
     if(dietMeals > 0){
       const dietRate = dietPerMeal();
-      if(dietRate > 0) out.push({name: "Special dietary surcharge (medically diagnosed)" + (dietKidMeals > 0 && !schoolOn() ? ", adults & 13+" : ""), qty: dietMeals, nights: 0, nightsWord: "meals", beds: "", price: dietRate, disc: 0, unit: "per meal", when: "", total: dietMeals * dietRate});
+      if(dietRate > 0) out.push({sec: "cater", name: "Special dietary surcharge (medically diagnosed)" + (dietKidMeals > 0 && !schoolOn() ? ", adults & 13+" : ""), qty: dietMeals, nights: 0, nightsWord: "meals", beds: "", price: dietRate, disc: 0, unit: "per meal", when: "", total: dietMeals * dietRate});
     }
     if(dietKidMeals > 0){
       const kidRate = dietKidsPerMeal();
-      if(kidRate > 0) out.push({name: "Special dietary surcharge (medically diagnosed), children 12 and under", qty: dietKidMeals, nights: 0, nightsWord: "meals", beds: "", price: kidRate, disc: 0, unit: "per meal", when: "", total: dietKidMeals * kidRate});
+      if(kidRate > 0) out.push({sec: "cater", name: "Special dietary surcharge (medically diagnosed), children 12 and under", qty: dietKidMeals, nights: 0, nightsWord: "meals", beds: "", price: kidRate, disc: 0, unit: "per meal", when: "", total: dietKidMeals * kidRate});
     }
   } else {
     caterItems().forEach(it => {
@@ -4729,20 +4759,109 @@ function displayLines(){
       if(!c || !catEntry(it.id).on) return;
       const ppl = Number(c.ppl) || 0, days = Number(c.days) || 0;
       if(ppl <= 0 || days <= 0) return;
-      out.push({name: it.name, qty: ppl, nights: days > 1 ? days : 0, nightsWord: "days", beds: "", price: catEntry(it.id).price, disc: 0, unit: "per person", when: "", total: ppl * days * catEntry(it.id).price,
+      out.push({sec: "cater", name: it.name, qty: ppl, nights: days > 1 ? days : 0, nightsWord: "days", beds: "", price: catEntry(it.id).price, disc: 0, unit: "per person", when: "", total: ppl * days * catEntry(it.id).price,
         pkg: schoolOn() && SCHOOL_MEAL_IDS.indexOf(it.id) >= 0 && !(Number(catEntry(it.id).price) > 0)});
     });
   }
   Q.lines.filter(l => (Number(l.qty) || 0) > 0).forEach(l => {
     const it = lineItem(l);
     out.push({
-      name: lineName(l), qty: l.qty,
+      sec: fixedLineSec(l), name: lineName(l), qty: l.qty,
       nights: lineNights(l) > 1 ? lineNights(l) : 0, nightsWord: "nights",
       beds: "", price: Number(l.price) || 0, disc: lineDiscPct(l),
       unit: lineUnit(l), when: it.meal ? fmtWhen(l.when) : "", total: lineTotal(l), fixed: true
     });
   });
   return out;
+}
+/* which section of the printed quote a fixed extra belongs in */
+function fixedLineSec(l){
+  const d = String(l.desc || "");
+  if(isAccomLine(l) || /^School package/.test(d)) return "accom";
+  if(isVenueLine(l)) return "venue";
+  if(ITEM_GROUP[l.id] === CATER_GROUP || l.pkgMeal || /^School meal:/.test(d)) return "cater";
+  return "other";
+}
+
+/* ---------- the printed quote, in sections ----------
+   22 Oct 2026 (Joel): accommodation, conference rooms and catering each print under their
+   own heading with their own total; a room booked for two half days prints as one day (a
+   full day and two half days = 2 days at the full-day price); and the venue credit comes off
+   in a section of its own after the charges instead of under each room. Print only: the
+   quote's money, the sheet copy and the deposit invoice are worked out as before. */
+const PRINT_SECS = [
+  {key: "accom",  title: "Accommodation"},
+  {key: "venue",  title: "Conference rooms"},
+  {key: "cater",  title: "Catering"},
+  {key: "other",  title: "Other items"},
+  {key: "credit", title: "Venue credit with your stay"}
+];
+/* 1.5 -> "1½" */
+function qtyWords(q){
+  q = Number(q) || 0;
+  const w = Math.floor(q), h = Math.abs(q - w - 0.5) < 0.001;
+  return h ? (w ? w + "½" : "½") : String(q);
+}
+function printSections(){
+  const by = {};
+  PRINT_SECS.forEach(s => by[s.key] = []);
+  const rooms = {};                     // vkey -> the room's one printed row
+  pricedLines().forEach(l => {
+    if(l.adj === "credit"){
+      const v = VENUES.find(x => x.key === l.vkey);
+      by.credit.push(Object.assign({}, l, {name: "Off " + (v ? v.name : "your conference rooms"), unit: "", when: "", credit: true}));
+      return;
+    }
+    if(l.vkey && l.vday){
+      const r = rooms[l.vkey];
+      if(!r){
+        rooms[l.vkey] = Object.assign({}, l, {parts: {full: l.vday === "full" ? l : null, half: l.vday === "half" ? l : null}});
+        by.venue.push(rooms[l.vkey]);
+      } else r.parts[l.vday] = l;
+      return;
+    }
+    (by[l.sec] || by.other).push(l);
+  });
+  /* each room: a full day and two half days at half the full-day price add up to whole days */
+  by.venue = by.venue.map(r => {
+    if(!r.parts) return r;
+    const f = r.parts.full, h = r.parts.half;
+    const fq = f ? Number(f.qty) || 0 : 0, hq = h ? Number(h.qty) || 0 : 0;
+    const fp = f ? Number(f.price) || 0 : 0, hp = h ? Number(h.price) || 0 : 0;
+    const halfIsHalf = !h || !f || Math.abs(hp * 2 - fp) < 0.005;
+    if(!h || (!f && hq < 2) || !halfIsHalf){
+      /* a single half day stays a half day; odd half-day prices keep their own lines */
+      return [f, h].filter(Boolean);
+    }
+    const dayPrice = f ? fp : hp * 2;
+    const days = fq + hq / 2;
+    const name = String((f || h).name).replace(/\s*-\s*(full|half) day/i, "");
+    const how = (fq ? fq + " full day" + (fq === 1 ? "" : "s") + " + " : "") + hq + " half day" + (hq === 1 ? "" : "s") + " = " + qtyWords(days) + " day" + (days === 1 ? "" : "s");
+    return Object.assign({}, f || h, {
+      name: name, qty: days, qtyText: qtyWords(days), price: dayPrice, unit: "per day",
+      when: [how, (f && f.when) || (h && h.when) || ""].filter(Boolean).join(" · "),
+      total: (f ? Number(f.total) || 0 : 0) + Number(h.total || 0), parts: null
+    });
+  }).reduce((a, x) => a.concat(x), []);
+  const credNote = venueCreditPerDay() > 0 ? venueCreditShort() : "";
+  return PRINT_SECS.filter(s => by[s.key].length).map(s => ({
+    key: s.key, title: s.title,
+    note: s.key === "credit" ? credNote : "",
+    rows: by[s.key],
+    total: by[s.key].reduce((t, l) => t + (Number(l.total) || 0), 0)
+  }));
+}
+/* the rows of a printed table: a heading row per section (with its total when there is more
+   than one section), then its lines. row(l) draws one line; cols is how many columns. */
+function printSectionRows(showPrices, cols, row){
+  const secs = printSections();
+  const many = secs.length > 1;
+  return secs.map(s =>
+    '<tr class="psec' + (s.key === "credit" ? ' pcred' : '') + '"><td colspan="' + (showPrices && many ? cols - 1 : cols) + '">' + esc(s.title) +
+      (s.note ? '<span class="psecnote">' + esc(s.note) + '</span>' : '') + '</td>' +
+      (showPrices && many ? '<td class="n num">' + money(s.total) + '</td>' : '') + '</tr>' +
+    s.rows.map(row).join("")
+  ).join("");
 }
 
 /* ---------- status chips ---------- */
@@ -9992,17 +10111,17 @@ function webLinksHTML(secs){
    are told when that happens.
    ========================================================================= */
 function onePageRows(showPrices){
-  return pricedLines().map(l => {
+  return printSectionRows(showPrices, showPrices ? 4 : 2, l => {
     const bits = [];
-    if(l.unit && l.unit !== "flat") bits.push(l.unit);
+    if(l.unit && l.unit !== "flat" && l.unit !== "discount") bits.push(l.unit);
     if(l.nights > 1) bits.push("× " + l.nights + " " + String(l.nightsWord || "nights").replace(/s$/, "") + (l.nights === 1 ? "" : "s"));
     if(l.when) bits.push(l.when);
-    return '<tr><td><b>' + esc(l.name) + '</b>' +
+    return '<tr' + (l.credit ? ' class="pcred"' : '') + '><td><b>' + esc(l.name) + '</b>' +
         (bits.length ? '<div class="sub">' + esc(bits.join(" · ")) + '</div>' : '') + '</td>' +
-      '<td class="n">' + l.qty + '</td>' +
-      (showPrices ? '<td class="n">' + money(l.price) + '</td><td class="n">' + money(l.total) + '</td>' : '') +
+      '<td class="n">' + (l.credit ? '' : esc(l.qtyText || String(l.qty))) + '</td>' +
+      (showPrices ? '<td class="n">' + (l.credit ? '' : money(l.price)) + '</td><td class="n">' + money(l.total) + '</td>' : '') +
     '</tr>';
-  }).join("");
+  });
 }
 function onePageTotals(t, showPrices, pm){
   if(!showPrices) return '<div class="onepricenote">Pricing for this package is available from our functions team, contact us any time.</div>';
@@ -10052,6 +10171,10 @@ function onePageQuoteHtml(){
     'table.it td{padding:5px 6px 5px 0;border-bottom:1px solid #eef1f4;vertical-align:top}' +
     'table.it .n{text-align:right;white-space:nowrap}' +
     'table.it .sub{font-size:9px;color:#6b7580;margin-top:1px;line-height:1.4}' +
+    'table.it tr.psec td{padding:9px 6px 3px 0;font-size:8.5px;letter-spacing:1px;text-transform:uppercase;font-weight:700;color:#1c1c1a;border-bottom:1px solid #cfd6dd}' +
+    'table.it tbody tr.psec:first-child td{padding-top:4px}' +
+    'table.it .psecnote{text-transform:none;letter-spacing:0;font-weight:400;color:#6b7580;margin-left:8px}' +
+    'table.it tr.pcred td{color:#3d6f2a}' +
     '.onetot{margin:9px 0 0;margin-left:auto;width:62%;font-size:10.5px}' +
     '.onetot>div{display:flex;justify-content:space-between;gap:12px;padding:2.5px 0}' +
     '.onetot .cred{color:#54963a}' +
@@ -11048,15 +11171,15 @@ function renderClient(){
 
   const submitBlock = '<div id="submitZone" data-sig="' + esc(submitStateSig()) + '">' + submitZoneHTML() + '</div>';
 
-  const printRows = pricedLines().map(l =>
-    '<tr><td>' + esc(l.name) +
-      (l.unit && l.unit !== 'flat' ? '<span class="cwhen"> · ' + esc(l.unit) + '</span>' : '') +
+  const printRows = printSectionRows(showPrices, showPrices ? 4 : 2, l =>
+    '<tr' + (l.credit ? ' class="pcred"' : '') + '><td>' + esc(l.name) +
+      (l.unit && l.unit !== 'flat' && l.unit !== 'discount' ? '<span class="cwhen"> · ' + esc(l.unit) + '</span>' : '') +
       (l.beds ? '<div class="cwhen">' + esc(l.beds) + '</div>' : '') +
       (l.when ? '<div class="cwhen">' + esc(l.when) + '</div>' : '') + '</td>' +   /* the venue times box is the organiser's own free text */
-    '<td class="num">' + l.qty + (l.nights > 1 ? '<div class="cwhen">× ' + l.nights + ' ' + String(l.nightsWord || 'nights').replace(/s$/, '') + (l.nights === 1 ? '' : 's') + '</div>' : '') + '</td>' +
-    (showPrices ? '<td class="num">' + money(l.price) + '</td>' : '') +
+    '<td class="num">' + (l.credit ? '' : esc(l.qtyText || String(l.qty))) + (l.nights > 1 ? '<div class="cwhen">× ' + l.nights + ' ' + String(l.nightsWord || 'nights').replace(/s$/, '') + (l.nights === 1 ? '' : 's') + '</div>' : '') + '</td>' +
+    (showPrices ? '<td class="num">' + (l.credit ? '' : money(l.price)) + '</td>' : '') +
     (showPrices ? '<td class="num">' + money(l.total) + '</td>' : '') + '</tr>'
-  ).join('');
+  );
   const printTotals = pm === "full"
     ? '<div class="qp-totals">' + totalsHTML(t, "Total") + '</div>' + perPersonHTML(t) + '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>'
     : (pm === "nototal" ? '<div class="qp-aud">All prices are in Australian dollars (AUD) and include GST</div>'
@@ -12207,6 +12330,109 @@ function interestDelete(ref){
   renderInterest();
   showToast(ref + " deleted from the External interest tab.");
 }
+/* ---------- pipeline details (22 Oct 2026, Joel: "heaps more details, like name, email,
+   phone number") ----------
+   The table stays one line a quote. A Contact column carries the name with ✉ / ☎, and a
+   click on a row opens everything the saved copy holds underneath it. Which rows are open
+   is kept for this visit only. */
+let PIPE_OPEN = {};
+function pipeSrc(r){ return r.mine ? Q : r; }   // the quote on tab 1 shows as it is now
+function pipeFindText(r){
+  const s = pipeSrc(r);
+  return [r.num, s.org, s.contact, s.email, s.mobile, String(s.mobile || "").replace(/\D/g, ""), s.event,
+    s.prepBy, s.internalNotes, s.sel && s.sel.message, s.rmsHold && s.rmsHold.groupId]
+    .map(x => String(x || "")).join(" ").toLowerCase();
+}
+/* email them the way this computer sends quotes (Outlook on the web, or the mail app) */
+function pipeMailHref(email, r){
+  const subject = "Quote " + r.num + (r.event ? " - " + r.event : "");
+  return getEmailVia() === "app"
+    ? "mailto:" + email + "?bcc=" + encodeURIComponent(CORRO_BCC) + "&subject=" + encodeURIComponent(subject)
+    : "https://outlook.office.com/mail/deeplink/compose?to=" + encodeURIComponent(email) +
+      "&bcc=" + encodeURIComponent(CORRO_BCC) + "&subject=" + encodeURIComponent(subject);
+}
+function pipeTelHref(ph){ return "tel:" + String(ph).replace(/[^\d+]/g, ""); }
+function pipeMailLink(em, r, text){
+  return '<a class="pcico" href="' + esc(pipeMailHref(em, r)) + '"' + (getEmailVia() === "app" ? '' : ' target="_blank" rel="noopener"') +
+    ' title="Email ' + esc(em) + '">' + text + '</a>';
+}
+function pipeContactCell(r){
+  const s = pipeSrc(r);
+  const name = String(s.contact || "").trim(), em = String(s.email || "").trim(), ph = String(s.mobile || "").trim();
+  return '<span class="tcut pcname" title="' + esc([name, em, ph].filter(Boolean).join(" · ")) + '">' + esc(name || "-") + '</span>' +
+    (em ? pipeMailLink(em, r, "✉") : '') +
+    (ph ? '<a class="pcico" href="' + esc(pipeTelHref(ph)) + '" title="Ring ' + esc(ph) + '">☎</a>' : '');
+}
+function pipeWhen(x){
+  if(!x) return "";
+  const d = new Date(x);
+  if(isNaN(d)) return esc(String(x));
+  return esc(fmtDate(isoDate(d)) + (String(x).length > 10 ? ", " + d.toLocaleTimeString("en-AU", {hour: "numeric", minute: "2-digit"}) : ""));
+}
+function pipeDetailsHTML(r){
+  const s = pipeSrc(r);
+  const sel = s.sel || {};
+  const cat = s.catalog || {};
+  const off = id => !!(cat[id] && cat[id].on === false);
+  const row = (label, val) => val ? '<div class="pdrow"><span>' + label + '</span><b>' + val + '</b></div>' : '';
+  const block = (title, body) => body ? '<div class="pdblock"><h4>' + title + '</h4>' + body + '</div>' : '';
+  const em = String(s.email || "").trim(), ph = String(s.mobile || "").trim();
+  const a = s.address || {};
+  const addr = [a.line1, [a.town, a.state, a.postcode].filter(Boolean).join(" ")].map(x => String(x || "").trim()).filter(Boolean).join(", ");
+  const nights = (s.dateStart && s.dateEnd) ? Math.round((new Date(s.dateEnd + "T12:00:00") - new Date(s.dateStart + "T12:00:00")) / 86400000) : 0;
+  const cabins = (sel.accom || []).filter(b => (Number(b.qty) || 0) > 0 && !off(b.id)).map(b =>
+    esc(b.qty + " × " + ((RATE[b.id] || {}).name || b.id) + ((b.from || b.to) ? " (" + shortRange(b.from || s.dateStart, b.to || s.dateEnd) + ")" : "")));
+  const rooms = VENUES.filter(v => (Number((sel.venues || {})[v.key]) || 0) > 0 && !off(v.fullId)).map(v => {
+    const d = Number(sel.venues[v.key]);
+    return esc(v.name + " · " + qtyWords(d) + " day" + (d === 1 ? "" : "s"));
+  });
+  const meals = Object.keys(sel.cater || {}).filter(id => (Number((sel.cater[id] || {}).days) || 0) > 0 && !off(id)).map(id => {
+    const c = sel.cater[id], d = Number(c.days);
+    return esc(((RATE[id] || {}).name || id) + " × " + d + (Number(c.ppl) > 0 ? " (" + c.ppl + " people)" : ""));
+  });
+  const extras = (s.lines || []).filter(l => (Number(l.qty) || 0) > 0).map(l => esc(l.qty + " × " + (String(l.desc || "").trim() || (RATE[l.id] || {}).name || "item")));
+  const hold = s.rmsHold || null, dep = hold && hold.deposit;
+  const fc = s.confirmation || null;
+  const ch = Number(sel.church) || 0;
+  return '<div class="pdgrid">' +
+    block("Contact",
+      row("Name", esc(s.contact || "")) +
+      row("Organisation", esc(s.org || "")) +
+      row("Email", em ? pipeMailLink(em, r, esc(em)) : "") +
+      row("Phone", ph ? '<a href="' + esc(pipeTelHref(ph)) + '">' + esc(ph) + '</a>' : "") +
+      row("Address", esc(addr)) +
+      row("Discount", ch ? esc(ch + "% Church or Charity Discount") : "") +
+      row("Charity", s.acnc ? "ACNC registered" : "") +
+      (!s.contact && !em && !ph && !addr ? '<div class="pdrow fmuted">No contact details saved on this quote.</div>' : '')) +
+    block("Event",
+      row("Event", esc(s.event || "")) +
+      row("Dates", s.dateStart ? esc(fmtRange(s.dateStart, s.dateEnd) + (nights > 0 ? " · " + nights + " night" + (nights === 1 ? "" : "s") : "")) : "") +
+      row("Guests", esc(s.guests || "")) +
+      row("School", s.school ? esc((s.school.level || "School") + " school package") : "") +
+      row("Prepared by", esc(s.prepBy || "")) +
+      row("Value", (r.total === null || r.total === undefined) ? "" : esc(money(r.total)))) +
+    block("On the quote",
+      row("Cabins & sites", cabins.join("<br>")) +
+      row("Rooms", rooms.join("<br>")) +
+      row("Catering", meals.join("<br>")) +
+      row("Extras", extras.join("<br>")) +
+      (!cabins.length && !rooms.length && !meals.length && !extras.length ? '<div class="pdrow fmuted">Nothing picked yet.</div>' : '')) +
+    block("Progress",
+      row("Status", esc(r.status || "")) +
+      row("Last saved", pipeWhen(s.savedAt)) +
+      row("Sent", pipeWhen(r.sentAt)) +
+      row("Submitted", pipeWhen(s.submittedAt)) +
+      row("Accepted", pipeWhen(r.acceptedAt)) +
+      row("Valid until", r.validUntil ? esc(fmtDate(String(r.validUntil).slice(0, 10))) : "") +
+      row("Versions", Array.isArray(s.history) && s.history.length > 1 ? esc(s.history.length + " submitted") : "") +
+      row("RMS group", hold && hold.groupId ? esc(hold.groupId + ((hold.units || []).length ? " · " + hold.units.length + " unit" + (hold.units.length === 1 ? "" : "s") : "") + (hold.status && hold.status !== "held" ? " · " + hold.status : "")) : "") +
+      row("Deposit", dep ? esc([dep.number, dep.status, Number(dep.total || dep.amount) > 0 ? money(dep.total || dep.amount) : ""].filter(Boolean).join(" · ")) : "") +
+      row("Form", fc && fc.url ? '<a href="' + esc(fc.editUrl || fc.url) + '" target="_blank" rel="noopener">confirmation form ↗</a>' + (fc.deadline ? esc(" · due " + fmtDate(fc.deadline)) : "") : "") +
+      row("Their page", r.token ? '<a href="' + esc(staffLinkForToken(r.token)) + '" target="_blank" rel="noopener">open as they see it ↗</a>' : "")) +
+    '</div>' +
+    (String(s.internalNotes || "").trim() ? '<div class="pdnotes"><b>Internal notes</b>' + esc(s.internalNotes) + '</div>' : '') +
+    (String(sel.message || "").trim() ? '<div class="pdnotes"><b>Their notes</b>' + esc(sel.message) + '</div>' : '');
+}
 function renderPipeline(){
   renderEditBar();   // tab 1's "editing a sent quote" bar follows the same events the pipeline does
   const rows = pipelineRows();
@@ -12231,13 +12457,22 @@ function renderPipeline(){
 
   const tb = document.getElementById("pipeBody");
   if(!rows.length){
-    tb.innerHTML = '<tr class="emptyrow"><td colspan="9">No quotes yet. Build one on tab 1 and email it or mark it as sent; it will appear here and in the tracker sheet.</td></tr>';
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="10">No quotes yet. Build one on tab 1 and email it or mark it as sent; it will appear here and in the tracker sheet.</td></tr>';
     return;
   }
-  tb.innerHTML = rows.map(r =>
-    '<tr class="' + (r.mine ? "mine " : "") + (r.catered ? "catered" : (r.selfcater ? "selfcater" : "")) + '">' +
-      '<td><b>' + esc(r.num) + '</b>' + (r.token ? ' <a class="qlink" href="' + esc(staffLinkForToken(r.token)) + '" target="_blank" rel="noopener" title="Open their page as they see it (staff view: nothing can be changed or submitted, and it does not count as them opening it)">↗</a>' : '') + (r.mine ? '<span class="you">' + (r.unsaved ? "editing now" : "this quote") + '</span>' : '') + '</td>' +
+  const find = String((document.getElementById("pipeFind") || {}).value || "").trim().toLowerCase();
+  const shown = find ? rows.filter(r => pipeFindText(r).indexOf(find) >= 0) : rows;
+  const allBtn = document.getElementById("pipeOpenAll");
+  if(allBtn) allBtn.textContent = shown.length && shown.every(r => PIPE_OPEN[r.num]) ? "Close all details" : "Open all details";
+  if(!shown.length){
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="10">No quote matches “' + esc(find) + '”.</td></tr>';
+    return;
+  }
+  tb.innerHTML = shown.map(r =>
+    '<tr data-num="' + esc(r.num) + '" class="prow ' + (PIPE_OPEN[r.num] ? "open " : "") + (r.mine ? "mine " : "") + (r.catered ? "catered" : (r.selfcater ? "selfcater" : "")) + '">' +
+      '<td><button type="button" class="pdTog" data-num="' + esc(r.num) + '" aria-expanded="' + (PIPE_OPEN[r.num] ? "true" : "false") + '" title="Show or hide everything on this quote">' + (PIPE_OPEN[r.num] ? "▾" : "▸") + '</button><b>' + esc(r.num) + '</b>' + (r.token ? ' <a class="qlink" href="' + esc(staffLinkForToken(r.token)) + '" target="_blank" rel="noopener" title="Open their page as they see it (staff view: nothing can be changed or submitted, and it does not count as them opening it)">↗</a>' : '') + (r.mine ? '<span class="you">' + (r.unsaved ? "editing now" : "this quote") + '</span>' : '') + '</td>' +
       '<td><span class="tcut" title="' + esc(r.org || r.contact || "") + '">' + esc(r.org || r.contact || "-") + '</span></td>' +
+      '<td>' + pipeContactCell(r) + '</td>' +
       '<td><span class="tcut" title="' + esc(r.event || "") + '">' + esc(r.event || "-") + '</span></td>' +
       '<td>' + esc(shortRange(r.dateStart, r.dateEnd)) + rmsPipeChip(r) + '</td>' +
       '<td>' + (r.unsaved ? '<span class="fmuted">-</span>' : '<input type="date" class="sentInp" data-num="' + esc(r.num) + '" value="' + esc(String(r.sentAt || "").slice(0, 10)) + '" title="Change the date sent">') + '</td>' +
@@ -12245,9 +12480,17 @@ function renderPipeline(){
       '<td>' + chip(r.status) + (r.unsaved ? '' : statusSel(r.num, r.status)) + '</td>' +
       '<td><span class="fcell">' + followCell(followFor(r)) + '</span></td>' +
       '<td>' + (Array.isArray(r.history) && r.history.length > 1 ? '<button class="histBtn" data-num="' + esc(r.num) + '" title="Every version the organiser has submitted">History ' + r.history.length + '</button>' : '') + editCell(r) + (r.unsaved ? '' : '<button class="xBtn delQ" data-num="' + esc(r.num) + '" title="Delete this quote here and in the tracker sheet">×</button>') + '</td>' +
-    '</tr>'
+    '</tr>' +
+    (PIPE_OPEN[r.num] ? '<tr class="pdet"><td colspan="10">' + pipeDetailsHTML(r) + '</td></tr>' : '')
   ).join("");
 
+  /* a click anywhere on a row opens its details, except on its own buttons, boxes and links */
+  tb.querySelectorAll("tr.prow").forEach(el => el.addEventListener("click", e => {
+    if(e.target.closest("a, button:not(.pdTog), input, select, label")) return;
+    const n = el.dataset.num;
+    if(PIPE_OPEN[n]) delete PIPE_OPEN[n]; else PIPE_OPEN[n] = true;
+    renderPipeline();
+  }));
   tb.querySelectorAll(".editQ").forEach(el => el.addEventListener("click", e => {
     openQuoteForEdit(e.currentTarget.dataset.num);
   }));
@@ -14978,6 +15221,16 @@ if(CLIENT_MODE){
     };
     setTimeout(attempt, 250);
   })();
+  const pipeFind = document.getElementById("pipeFind");
+  if(pipeFind) pipeFind.addEventListener("input", () => renderPipeline());
+  const pipeAll = document.getElementById("pipeOpenAll");
+  if(pipeAll) pipeAll.addEventListener("click", () => {
+    const find = String(pipeFind && pipeFind.value || "").trim().toLowerCase();
+    const shown = pipelineRows().filter(r => !find || pipeFindText(r).indexOf(find) >= 0);
+    if(shown.length && shown.every(r => PIPE_OPEN[r.num])) PIPE_OPEN = {};
+    else shown.forEach(r => PIPE_OPEN[r.num] = true);
+    renderPipeline();
+  });
   const syncBtn = document.getElementById("syncNowBtn");
   if(syncBtn) syncBtn.addEventListener("click", () => { pullPipeline(true); fetchInterest(true); });
   /* website enquiries: read once on load, then whenever the pipeline is opened */
