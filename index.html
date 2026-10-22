@@ -209,6 +209,9 @@
   .preprow.over, .cb-row.over{background:rgba(214,40,40,.10); box-shadow:inset 4px 0 0 #d62828}
   .overnote{display:block; color:#b01c1c; font-weight:700; font-size:12px; margin-top:2px}
   .overnote.soft{font-weight:600; color:#b54a4a}
+  .hasnote{display:block; color:#1d6b3a; font-weight:700; font-size:12px; margin-top:2px}
+  .hasnote em{display:block; font-style:normal; font-weight:400; color:#4a6b55}
+  .cb-has{color:#1d6b3a; font-weight:700; font-size:13px; margin-top:2px}
   /* the organiser: something on their quote is no longer free */
   .availblock{background:#fdecec; border:1.5px solid #c62828; border-radius:10px; padding:10px 14px; margin:0 0 12px; font-size:14px; line-height:1.6; text-align:left}
   .availblock b{color:#a01a1a}
@@ -510,6 +513,12 @@
   .pfilt .pfcount{margin-left:auto; color:var(--ink2)}
   .pcico{text-decoration:none; font-size:13px; margin-left:4px}
   .pipe .pclink{color:var(--accent); text-decoration:none}
+  /* click-to-sort headings (22 Oct 2026) */
+  .pipe th[data-sort]{cursor:pointer; user-select:none}
+  .pipe th[data-sort]:hover{color:var(--ink)}
+  .pipe th.sortup, .pipe th.sortdown{color:var(--accent)}
+  .pipe th.sortup::before{content:"▲ "; font-size:9px}
+  .pipe th.sortdown::before{content:"▼ "; font-size:9px}
   .pipe .pclink:hover{text-decoration:underline}
   .pipe tr.prow.open td{border-bottom-color:transparent}
   .pipe tr.pdet td{white-space:normal; padding:4px 12px 14px 22px; background:#fbfcfd; border-bottom:1px solid var(--border); cursor:default}
@@ -1503,7 +1512,7 @@
       <div class="pfilt" id="pipeFilt"></div>
       <div class="tablewrap">
         <table class="pipe">
-          <thead><tr><th class="c-q">Quote</th><th>Client</th><th class="c-ct">Contact</th><th class="c-em">Email</th><th class="c-ph">Phone</th><th>Event</th><th class="c-ed">Event date</th><th class="c-sent">Date sent</th><th class="num c-val">Value</th><th class="c-st">Status</th><th class="c-fu">Follow-up</th><th class="c-act"></th></tr></thead>
+          <thead id="pipeHead"><tr><th class="c-q" data-sort="num">Quote</th><th data-sort="client">Client</th><th class="c-ct" data-sort="contact">Contact</th><th class="c-em" data-sort="email">Email</th><th class="c-ph" data-sort="phone">Phone</th><th data-sort="event">Event</th><th class="c-ed" data-sort="evdate">Event date</th><th class="c-sent" data-sort="sent">Date sent</th><th class="num c-val" data-sort="value">Value</th><th class="c-st" data-sort="status">Status</th><th class="c-fu" data-sort="follow">Follow-up</th><th class="c-act"></th></tr></thead>
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
@@ -3786,7 +3795,9 @@ const SCHOOL_OFF = ["acc_4br_house", "acc_2br_ter", "acc_2br_bung", "acc_2br_std
 const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, din2: 14, mtea: 10, atea: 10, diet: 5};
 /* packed lunch and the 2 course dinner are ticked in "Your meals" at the package price,
    so they are not offered a second time as paid extras */
-const SCHOOL_EXTRAS_ON = ["bf_hot", "mtea", "atea", "diet"];
+/* 23 Oct 2026 (Joel): the hot breakfast, sit-down lunch and both teas are ticked in "Meals" too,
+   so only the special dietary meals are left as a paid extra */
+const SCHOOL_EXTRAS_ON = ["diet"];
 /* bed & breakfast is the base; every other meal is ticked on and priced per person for
    the days it is wanted, so a group can have dinner every night and one packed lunch. */
 function schoolBaseFor(level){ return Number(schoolCfg().base[level]) || 0; }
@@ -3807,18 +3818,36 @@ function schoolPerRoom(){
   const n = (v, d) => { const x = Math.round(Number(v) || 0); return x > 0 ? x : d; };
   return {perStudent: n(p.student, c.perStudent), perTeacher: n(p.teacher, c.perTeacher), perDriver: n(p.driver, c.perDriver)};
 }
+/* in the order of the day. The ids and kinds match the invoice tool's "Meals on top of a school
+   rate", so the days ticked here come across to the invoice (23 Oct 2026: hot breakfast,
+   morning tea, sit-down lunch and afternoon tea added, Joel) */
 const SCHOOL_MEAL_ADDONS = [
-  {id: "din2",       label: "Dinner, 2 courses", add: 14, kind: "night", note: "served in the private dining room"},
-  {id: "lunch_pack", label: "Packed lunch",      add: 15, kind: "day",   note: "salad roll, juice and fruit, ready to take off site"}
+  {id: "bf_hot",     label: "Hot breakfast upgrade", add: 17, kind: "morning", note: "hot breakfast instead of continental"},
+  {id: "mtea",       label: "Morning tea",       add: 10, kind: "day",   note: "tea, coffee and juice with a light bite (muffins, biscuits or fruit)"},
+  {id: "lunch_pack", label: "Packed lunch",      add: 15, kind: "day",   note: "salad roll, juice and fruit, ready to take off site"},
+  {id: "lunch_sit",  label: "Sit-down lunch",    add: 25, kind: "day",   note: "1 course meal in the dining room with soft drinks, iced water and tea or coffee"},
+  {id: "atea",       label: "Afternoon tea",     add: 10, kind: "day",   note: "tea, coffee and juice with a light bite (pastries, cake or cheese and crackers)"},
+  {id: "din2",       label: "Dinner, 2 courses", add: 14, kind: "night", note: "served in the private dining room"}
 ];
-const SCHOOL_MEAL_IDS = ["bf_cont", "din2", "din1", "lunch_pack", "lunch_sit"];
+const SCHOOL_MEAL_IDS = ["bf_cont", "bf_hot", "din2", "din1", "lunch_pack", "lunch_sit", "mtea", "atea"];
 function schoolAddon(id){ return SCHOOL_MEAL_ADDONS.filter(m => m.id === id)[0] || null; }
-/* the days each meal can be had: dinner and breakfast follow the nights, lunches
-   include the day they leave (the bus lunch) */
+/* the days each meal can be had: dinner follows the nights, breakfast the mornings after
+   them, lunches and teas include the day they leave (the bus lunch) */
 function schoolMealDays(kind){
   const days = eventDays();
   if(!days.length) return [];
+  if(kind === "morning") return days.length > 1 ? days.slice(1) : days;
   return kind === "night" ? days.slice(0, Math.max(1, days.length - 1)) : days;
+}
+/* one lunch a day: the days a lunch is put on come off the other lunch */
+function schoolOneLunch(meals, id, days){
+  if(!/^lunch_/.test(id)) return meals;
+  Object.keys(meals).forEach(o => {
+    if(o === id || !/^lunch_/.test(o)) return;
+    const left = meals[o].days.filter(d => days.indexOf(d) < 0);
+    if(left.length) meals[o] = {days: left}; else delete meals[o];
+  });
+  return meals;
 }
 function schoolMealsOf(S){
   const out = {};
@@ -3861,7 +3890,7 @@ function schoolPricing(S, counts){
     const sel = meals[m.id];
     if(!sel || !sel.days.length) return;
     const add = Number((S.rates || {})[m.id]) > 0 ? Number(S.rates[m.id]) : m.add;
-    rows.push({id: m.id, label: m.label, per: add, days: sel.days.length, unit: m.kind === "night" ? "night" : "day",
+    rows.push({id: m.id, label: m.label, per: add, days: sel.days.length, unit: m.kind === "night" || m.kind === "morning" ? m.kind : "day",
                dates: sel.days.slice().sort(), amount: t.charged * add * sel.days.length});
   });
   const total = rows.reduce((s, r) => s + r.amount, 0);
@@ -4143,7 +4172,10 @@ function schoolNumbers(sc, counts){
     setCat("bf_cont", "on", true);
     setCat("bf_cont", "price", 0);
     setCat("bf_cont", "lock", true);
-    Q.sel.cater.bf_cont = {ppl: t.people, days: pr.nights};
+    /* a hot breakfast upgrade morning is not a continental one too (23 Oct 2026) */
+    const hot = pr.rows.filter(r => r.id === "bf_hot").reduce((s, r) => s + r.days, 0);
+    const cont = Math.max(0, pr.nights - hot);
+    if(cont > 0) Q.sel.cater.bf_cont = {ppl: t.people, days: cont};
   }
   pr.rows.forEach(r => {
     if(r.id === "base" || !RATE[r.id]) return;
@@ -4194,7 +4226,7 @@ function schoolMealToggle(id, on){
   const m = schoolAddon(id);
   if(!m) return;
   const meals = schoolMealsOf(S);
-  if(on) meals[id] = {days: schoolMealDays(m.kind)};
+  if(on){ meals[id] = {days: schoolMealDays(m.kind)}; schoolOneLunch(meals, id, meals[id].days); }
   else delete meals[id];
   Q.school = Object.assign({}, S, {meals: meals});
   schoolNumbers(Q.school, Q.school.counts);
@@ -4205,7 +4237,7 @@ function schoolMealDayToggle(id, iso){
   const meals = schoolMealsOf(S);
   if(!meals[id]) return;
   const days = meals[id].days.filter(d => d !== iso);
-  if(days.length === meals[id].days.length) days.push(iso);
+  if(days.length === meals[id].days.length){ days.push(iso); schoolOneLunch(meals, id, [iso]); }
   if(!days.length) delete meals[id]; else meals[id] = {days: days.sort()};
   Q.school = Object.assign({}, S, {meals: meals});
   schoolNumbers(Q.school, Q.school.counts);
@@ -4399,7 +4431,7 @@ function applySchoolTemplate(sc){
     dlg.querySelectorAll('.sgMealTick[data-src="dlg"]').forEach(el => el.addEventListener("change", e => {
       const m = schoolAddon(e.target.dataset.meal);
       const meals = schoolMealsOf(pack);
-      if(e.target.checked) meals[m.id] = {days: schoolMealDays(m.kind)}; else delete meals[m.id];
+      if(e.target.checked){ meals[m.id] = {days: schoolMealDays(m.kind)}; schoolOneLunch(meals, m.id, meals[m.id].days); } else delete meals[m.id];
       pack = Object.assign({}, pack, {meals: meals});
       paint();
     }));
@@ -4408,7 +4440,7 @@ function applySchoolTemplate(sc){
       const meals = schoolMealsOf(pack);
       if(!meals[id]) return;
       const days = meals[id].days.filter(d => d !== iso);
-      if(days.length === meals[id].days.length) days.push(iso);
+      if(days.length === meals[id].days.length){ days.push(iso); schoolOneLunch(meals, id, [iso]); }
       if(!days.length) delete meals[id]; else meals[id] = {days: days.sort()};
       pack = Object.assign({}, pack, {meals: meals});
       paint();
@@ -5025,11 +5057,61 @@ function usedOn(id, iso){
    can take more than is free: not the steppers, not moving their dates, not part-stay dates,
    and their page asks RMS again the moment they accept. */
 /* this quote's own reservations in RMS count as free for it (the organiser's page is
-   served with them already counted, so this is for the staff tool only) */
+   served with them already counted, so this is for the staff tool only).
+   23 Oct 2026: a quote on an existing group that is not linked yet (it links when it is
+   saved or sent) counts the group's reservations as read from RMS, on both pages: the
+   server only counts them once they are linked. */
 function ownHeldOn(id, iso){
+  if(!iso) return 0;
+  const on = list => list.filter(u => u && u.itemId === id && u.from <= iso && iso < u.to).length;
   const h = Q.rmsHold;
-  if(CLIENT_MODE || !h || h.status !== "held" || !Array.isArray(h.units) || !iso) return 0;
-  return h.units.filter(u => u && u.itemId === id && u.from <= iso && iso < u.to).length;
+  if(h && h.status === "held" && Array.isArray(h.units)) return CLIENT_MODE ? 0 : on(h.units);
+  const l = Q.rmsLink;
+  return (l && l.groupId && Array.isArray(l.units)) ? on(l.units) : 0;
+}
+/* ---------- what an existing group already has (23 Oct 2026) ----------
+   Joel: a quote on a booking already in RMS keeps what the group has (say 27 one bedroom
+   units) and offers more on top. Staff see how many each cabin type already has; the
+   organiser sees "You already have 27 booked" and can add more but not go below it (to
+   have fewer, they ask us). Linked: the units that were there before the quote (pre);
+   not linked yet: the ones read from RMS. */
+function groupUnits(){
+  const l = Q.rmsLink;
+  if(!(l && l.groupId)) return [];
+  const h = Q.rmsHold;
+  if(h && h.status === "held" && Array.isArray(h.units)) return h.kind === "existing" ? h.units.filter(u => u && u.pre) : [];
+  return Array.isArray(l.units) ? l.units : [];
+}
+/* how many of a cabin or site type the group already has on a night; with no night, the
+   most it has on any night */
+function groupHasOn(id, iso){
+  const us = groupUnits().filter(u => u && u.itemId === id && !u.venue);
+  if(iso) return us.filter(u => u.from <= iso && iso < u.to).length;
+  const per = {};
+  us.forEach(u => { let d = u.from, g = 0; while(d && d < u.to && g++ < 400){ per[d] = (per[d] || 0) + 1; d = isoAddDays(d, 1); } });
+  return Object.keys(per).reduce((m, d) => Math.max(m, per[d]), 0);
+}
+function groupHas(id){ return groupHasOn(id, null); }
+/* the organiser's page: the fewest of a type they may have (what the group already has) */
+function groupFloor(id){ return asOrg() ? groupHas(id) : 0; }
+/* the organiser's page: how many more of a type are free on top of what they have; null = not known */
+function groupMoreFree(id){
+  const nights = stayNightsList();
+  let min = null;
+  nights.forEach(d => {
+    const c = capOn(id, d);
+    if(c === null) return;
+    const more = Math.max(0, c - Math.max(groupHasOn(id, d), usedOn(id, d)));
+    if(min === null || more < min) min = more;
+  });
+  return min;
+}
+function groupFloorStop(id, after){
+  const f = groupFloor(id);
+  if(!f || after >= f) return false;
+  showToast("Your group already has " + f + " " + ((RATE[id] || {}).name || "of these") + " booked, so this can't go below " + f +
+    ". To have fewer, please call us on " + VENUE_PHONE + " or email functions@wslr.com.au", true);
+  return true;
 }
 /* how many of a type are free for this quote on a night; null when nothing is known */
 function freeOn(id, iso){
@@ -5068,7 +5150,9 @@ function venueTakenOn(v, iso){
   if(venueSharedRooms(v)) return false;
   const a = venueDayAvail(v, iso);
   if(a === null || Number(a) > 0) return false;
-  return !(ownHeldOn(v.fullId, iso) > 0 || ownHeldOn(v.halfId, iso) > 0);
+  if(ownHeldOn(v.fullId, iso) > 0 || ownHeldOn(v.halfId, iso) > 0) return false;
+  /* the combined space when every one of its rooms is this group's own */
+  return !(v.members && v.members.every(k => { const m = VENUES.find(x => x.key === k); return m && (ownHeldOn(m.fullId, iso) > 0 || ownHeldOn(m.halfId, iso) > 0); }));
 }
 /* every line that is over what may be taken, worst night first:
    [{kind: "accom", id, name, iso, want, free, by} | {kind: "venue", key, name, days}] */
@@ -6984,6 +7068,7 @@ function stepAccom(id, dir){
     if(dir <= 0) return;
     Q.sel.accom.push({id: id, qty: 1, from: null, to: null});
   } else {
+    if(dir < 0 && groupFloorStop(id, accomQtyTotal(id) + dir)) return;
     b.qty = Math.max(0, (Number(b.qty) || 0) + dir);
   }
   cleanupAccom();
@@ -6996,6 +7081,7 @@ function stepBlockQty(i, dir){
     availToast(b.id);
     if(CLIENT_MODE) return;               // staff can go over, in red
   }
+  if(dir < 0 && groupFloorStop(b.id, accomQtyTotal(b.id) + dir)) return;
   b.qty = Math.max(0, (Number(b.qty) || 0) + dir);
   cleanupAccom();
   refresh();
@@ -7042,6 +7128,8 @@ function addAccomBlock(id){
   refresh();
 }
 function removeAccomBlock(i){
+  const b = Q.sel.accom[i];
+  if(b && groupFloorStop(b.id, accomQtyTotal(b.id) - (Number(b.qty) || 0))) return;
   Q.sel.accom.splice(i, 1);
   refresh();
 }
@@ -7949,6 +8037,7 @@ function renderPrep(){
     const ov = ovById[it.id];
     const nf = ov ? "" : (c.on ? noneFree(it.id) : "");
     const q = accomQtyTotal(it.id);
+    const has = groupHas(it.id);
     const blocks = (Q.sel.accom || []).filter(b => b.id === it.id);
     const sub = blocks.reduce((s, b) => s + blockTotal(b), 0);
     const canUp = canAddOver(it.id, stayNightsList());
@@ -7996,7 +8085,10 @@ function renderPrep(){
       '<input type="checkbox" class="prepon rc-cb" data-kind="accom" data-id="' + esc(it.id) + '"' + (c.on ? ' checked' : '') + ' title="Offer this cabin type on this quote">' +
       '<div><span class="pkgname">' + esc(it.name) + '</span>' + lockBtnHTML(it.id, "these cabins") + sleepsPill(it) +
         (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') +
-        (ov ? '<span class="overnote">⚠ Over availability: ' + ov.want + ' on ' + esc(shortDate(ov.iso)) + ', RMS shows ' + (ov.free > 0 ? 'only ' + ov.free : 'none') + ' free</span>'
+        (has ? '<span class="hasnote">✓ ' + has + ' already booked for this group in RMS' +
+          (q > has ? ' · ' + (q - has) + ' more on this quote' : q < has ? ' · ' + (has - q) + ' fewer on this quote' : '') +
+          '<em>The organiser sees them as theirs and can add more, but not go below ' + has + '.</em></span>' : '') +
+        (ov ? '<span class="overnote">⚠ Over availability: ' + ov.want + ' on ' + esc(shortDate(ov.iso)) + ', RMS shows ' + (ov.free > 0 ? 'only ' + ov.free : 'none') + ' free' + (has ? ' (counting the ' + has + ' they have)' : '') + '</span>'
           : (nf ? '<span class="overnote soft">None free on ' + esc(shortDate(nf)) + '</span>' : '')) + '</div>' +
       priceCell +
       availCell +
@@ -8664,7 +8756,8 @@ function schoolFollowDates(prev){
       if(!m) return;
       const valid = schoolMealDays(m.kind);
       const chosen = Array.isArray(raw[id] && raw[id].days) ? raw[id].days : [];
-      const oldValid = !oldDays.length ? [] : (m.kind === "night" ? oldDays.slice(0, Math.max(1, oldDays.length - 1)) : oldDays);
+      const oldValid = !oldDays.length ? [] : (m.kind === "night" ? oldDays.slice(0, Math.max(1, oldDays.length - 1))
+        : m.kind === "morning" ? (oldDays.length > 1 ? oldDays.slice(1) : oldDays) : oldDays);
       let days;
       if(oldValid.length && oldValid.every(d => chosen.indexOf(d) >= 0)) days = valid.slice();
       else days = chosen.map(d => (m.kind === "day" && d === oldEnd) ? newEnd : (shift ? isoAddDays(d, shift) : d));
@@ -10918,7 +11011,11 @@ function renderClient(){
       (Q.sel.accom || []).forEach((b, i) => { if(b.id === it.id) blocks.push({b: b, i: i}); });
       const sub = blocks.reduce((s, x) => s + blockTotal(x.b), 0);
       const avail = availDisplay(it.id);
-      const meta = avail !== null ? ('up to ' + avail + ' available on your dates') : '';
+      /* an existing booking: what they have, and how many more are free on top (23 Oct 2026) */
+      const has = groupHas(it.id), more = has ? groupMoreFree(it.id) : null;
+      const meta = has ? (more === null ? '' : more > 0 ? 'up to ' + more + ' more available on your dates' : 'no more available on your dates')
+        : avail !== null ? ('up to ' + avail + ' available on your dates') : '';
+      const hasNote = has ? '<div class="cb-has">✓ You already have ' + has + ' booked' + (q > has ? ', plus ' + (q - has) + ' more on this quote' : '') + '</div>' : '';
       /* rooms at their own % (staff, under Discount): said in brackets here, and the
          price beside the stepper is what this room type costs with them in it */
       const rdMine = rdParts.filter(p => blocks.some(x => x.i === p.block));
@@ -10950,11 +11047,11 @@ function renderClient(){
       return '<div class="cb-row">' +
         '<div><span class="pkgname">' + esc(it.name) + '</span>' + sleepsPill(it) + tourLink(tourFor(it.id)) +
           (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') +
-          (meta ? '<div class="cb-price">' + esc(meta) + '</div>' : '') + rdNote +
+          hasNote + (meta ? '<div class="cb-price">' + esc(meta) + '</div>' : '') + rdNote +
           staffAccomPrice(it.id, showPrices) + '</div>' +
         (split
           ? '<div class="cb-avail" style="text-align:right">' + q + ' selected</div>'
-          : stepperHTML("accom", it.id, q, {canDown: q > 0, canUp: asOrg() ? canAddOver(it.id, stayNightsList()) : true, lock: lockedItem(it.id, "accom")})) +
+          : stepperHTML("accom", it.id, q, {canDown: q > groupFloor(it.id), canUp: asOrg() ? canAddOver(it.id, stayNightsList()) : true, lock: lockedItem(it.id, "accom")})) +
         '<div class="pkgsub">' + (q > 0 && showPrices ? (schoolIncludes(it.id) ? SCHOOL_INCL_WORD : money(sub - rdSave)) : (q > 0 ? q + ' ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         blockHtml +
       '</div>';
@@ -11331,7 +11428,7 @@ function renderClient(){
     refresh();
     const m = schoolAddon(e.target.dataset.meal);
     showToast(e.target.checked
-      ? m.label + " added for every " + (m.kind === "night" ? "night" : "day") + " of your stay. Tap a day to take it off."
+      ? m.label + " added for every " + (m.kind === "night" || m.kind === "morning" ? m.kind : "day") + " of your stay. Tap a day to take it off."
       : m.label + " taken off your quote.");
   }));
   page.querySelectorAll('.sgday[data-src="client"]').forEach(el => el.addEventListener("click", e => {
@@ -12171,15 +12268,15 @@ function interestSchoolOf(e){
 }
 /* Opens the school package form with the website's numbers and meals, for staff to check and
    press Build the quote. The website does not ask boys and girls, so each group starts split down
-   the middle. Dinner and packed lunch are package meals; a sit-down lunch or a hot breakfast is a
-   school extra, ticked on (for everyone paying, on that many days) once the package is built. */
+   the middle. Every meal the website box offers is a package meal, ticked on the days it asked for. */
 function schoolFromInterest(sc){
   const half = x => [Math.ceil(x / 2), Math.floor(x / 2)];
   const st = half(sc.students), te = half(sc.teachers);
   Q.school = Object.assign({}, Q.school || {}, {counts: {ms: st[0], fs: st[1], xs: 0, mt: te[0], ft: te[1], xt: 0, bd: sc.drivers}});
   const days = eventDays();
   const meals = {};
-  ["din2", "lunch_pack"].forEach(id => {
+  /* 23 Oct 2026: the hot breakfast, sit-down lunch and teas are package meals too now */
+  ["bf_hot", "mtea", "lunch_pack", "lunch_sit", "atea", "din2"].forEach(id => {
     const d = (sc.meals[id] || []).filter(x => days.indexOf(x) >= 0);
     if(d.length && schoolAddon(id)) meals[id] = {days: d};
   });
@@ -12193,15 +12290,6 @@ function schoolFromInterest(sc){
     const tick = document.querySelector('.sgMealTick[data-src="dlg"][data-meal="din2"]');
     if(tick && tick.checked){ tick.checked = false; tick.dispatchEvent(new Event("change")); }
   }
-  const extras = ["lunch_sit", "bf_hot", "mtea", "atea"].filter(id => (sc.meals[id] || []).length && RATE[id]);   // teas: the website school box offers them (16 Oct 2026)
-  if(!extras.length) return;
-  go.addEventListener("click", () => {
-    if(document.body.contains(go)) return;   // the form stayed open (no numbers yet): nothing was built
-    const charged = schoolTotals(schoolCounts((Q.school || {}).counts)).charged || (sc.students + sc.teachers);
-    if(!Q.sel.cater) Q.sel.cater = {};
-    extras.forEach(id => { setCat(id, "on", true); Q.sel.cater[id] = {ppl: charged, days: sc.meals[id].length}; });
-    refresh();
-  });
 }
 
 /* ---------- drawing it ---------- */
@@ -12389,6 +12477,53 @@ function pipeShown(rows, skipStatus){
     (skipStatus || !PIPE_FILTER.hide[r.status]) &&
     !(PIPE_FILTER.past && pipePast(r)));
 }
+/* ---- sorting (22 Oct 2026, Joel: "click the header and be able to sort by alphabetical
+   order etc."). A click sorts by that column A to Z (or oldest / smallest first), a second
+   click reverses it, a third goes back to the usual newest-quote-first order. Blanks always
+   go last. Kept per computer, like the filters. */
+const LS_PIPE_SORT = "wslr_pipe_sort_v1";
+let PIPE_SORT = (() => { const v = lsGet(LS_PIPE_SORT, null); return (v && v.key && (v.dir === 1 || v.dir === -1)) ? v : {key: "", dir: 1}; })();
+const PIPE_SORT_KEYS = {
+  num:     r => Number(String(r.num || "").replace(/\D/g, "")) || null,
+  client:  r => String(r.org || r.contact || "").trim().toLowerCase() || null,
+  contact: r => String(pipeSrc(r).contact || "").trim().toLowerCase() || null,
+  email:   r => String(pipeSrc(r).email || "").trim().toLowerCase() || null,
+  phone:   r => String(pipeSrc(r).mobile || "").replace(/\D/g, "") || null,
+  event:   r => String(r.event || "").trim().toLowerCase() || null,
+  evdate:  r => String(r.dateStart || "").slice(0, 10) || null,
+  sent:    r => String(r.sentAt || "").slice(0, 10) || null,
+  value:   r => (r.total === null || r.total === undefined || r.total === "") ? null : Number(r.total) || 0,
+  status:  r => STATUSES.indexOf(r.status) >= 0 ? STATUSES.indexOf(r.status) : null,
+  /* "confirm selection" is the most urgent, then the most overdue */
+  follow:  r => { const f = followFor(r); return f === "confirm" ? -1e9 : (f === null || f === undefined ? null : f); }
+};
+function pipeSorted(rows){
+  const get = PIPE_SORT_KEYS[PIPE_SORT.key];
+  if(!get) return rows;
+  const dir = PIPE_SORT.dir;
+  return rows.map((r, i) => ({r: r, i: i, v: get(r)})).sort((a, b) => {
+    if(a.v === null && b.v === null) return a.i - b.i;
+    if(a.v === null) return 1;
+    if(b.v === null) return -1;
+    const c = (typeof a.v === "number" && typeof b.v === "number") ? a.v - b.v : String(a.v).localeCompare(String(b.v), "en", {numeric: true});
+    return c ? c * dir : a.i - b.i;
+  }).map(x => x.r);
+}
+function renderPipeSortHead(){
+  document.querySelectorAll("#pipeHead th[data-sort]").forEach(th => {
+    const on = th.dataset.sort === PIPE_SORT.key;
+    th.classList.toggle("sortup", on && PIPE_SORT.dir === 1);
+    th.classList.toggle("sortdown", on && PIPE_SORT.dir === -1);
+    th.title = on ? (PIPE_SORT.dir === 1 ? "Sorted A to Z / oldest first: click to reverse" : "Sorted Z to A / newest first: click to go back to the usual order") : "Click to sort by this column";
+  });
+}
+function pipeSortClick(key){
+  if(PIPE_SORT.key !== key) PIPE_SORT = {key: key, dir: 1};
+  else if(PIPE_SORT.dir === 1) PIPE_SORT = {key: key, dir: -1};
+  else PIPE_SORT = {key: "", dir: 1};
+  lsSet(LS_PIPE_SORT, PIPE_SORT);
+  renderPipeline();
+}
 function renderPipeFilters(rows, shown){
   const box = document.getElementById("pipeFilt");
   if(!box) return;
@@ -12513,8 +12648,9 @@ function renderPipeline(){
     return;
   }
   const find = String((document.getElementById("pipeFind") || {}).value || "").trim().toLowerCase();
-  const shown = pipeShown(rows);
+  const shown = pipeSorted(pipeShown(rows));
   renderPipeFilters(rows, shown);
+  renderPipeSortHead();
   const allBtn = document.getElementById("pipeOpenAll");
   if(allBtn) allBtn.textContent = shown.length && shown.every(r => PIPE_OPEN[r.num]) ? "Close all details" : "Open all details";
   if(!shown.length){
@@ -14446,7 +14582,10 @@ function applyResBooking(g, opts){
     Q.resRates = JSON.parse(JSON.stringify(g.resRates || {}));
     Q.rmsLink = {groupId: g.groupId, askedFor: g.askedFor, at: new Date().toISOString(), paid: Number(g.paid) || 0,
                  members: g.members || 0, unmapped: (g.unmapped || []).map(u => u.name + " (" + u.area + ")"),
-                 priced: Object.keys(g.resRates || {}), rateSource: g.rateSource || "", status: g.masterStatus || ""};
+                 priced: Object.keys(g.resRates || {}), rateSource: g.rateSource || "", status: g.masterStatus || "",
+                 /* what the group already has, night by night: theirs, not taken (ownHeldOn, groupUnits) */
+                 units: (g.units || []).filter(u => u && u.itemId && u.from && u.to)
+                   .map(u => Object.assign({itemId: u.itemId, from: u.from, to: u.to}, u.venue ? {venue: true} : {}, u.meals ? {meals: true} : {}))};
     Q.internalNotes = [String(g.masterNotes || "").trim(), pastRatesNote(g)].filter(Boolean).join("\n\n");
   }
   /* where this quote came from, so it can be turned into a school group later with the
@@ -15276,6 +15415,7 @@ if(CLIENT_MODE){
     };
     setTimeout(attempt, 250);
   })();
+  document.querySelectorAll("#pipeHead th[data-sort]").forEach(th => th.addEventListener("click", () => pipeSortClick(th.dataset.sort)));
   const pipeFind = document.getElementById("pipeFind");
   if(pipeFind) pipeFind.addEventListener("input", () => renderPipeline());
   const pipeAll = document.getElementById("pipeOpenAll");
