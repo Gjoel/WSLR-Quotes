@@ -2018,6 +2018,9 @@ function plApply(){
   if(sp !== null) SCHOOL_ROOMS_DEFAULT.base["Primary"] = sp;
   if(sh !== null) SCHOOL_ROOMS_DEFAULT.base["High school"] = sh;
   const dk = plGet("dietary_child"); if(dk !== null) DIET_KIDS_RATE = dk;
+  const sdp = plGet("school_dietary"), sdh = plGet("school_dietary_high");
+  if(sdp !== null) SCHOOL_DIET["Primary"] = sdp;
+  if(sdh !== null) SCHOOL_DIET["High school"] = sdh;
   const pf = plGet("venue_pair_full"), ph = plGet("venue_pair_half");
   if(pf !== null) PAIR_ROOM_FULL = pf;
   if(ph !== null) PAIR_ROOM_HALF = ph;
@@ -3864,6 +3867,12 @@ const SCHOOL_EXTRAS = {bf_hot: 17, lunch_pack: 15, lunch_sit: 25, din2: 14, mtea
 /* 23 Oct 2026 (Joel): the hot breakfast, sit-down lunch and both teas are ticked in "Meals" too,
    so only the special dietary meals are left as a paid extra */
 const SCHOOL_EXTRAS_ON = ["diet"];
+/* 23 Oct 2026 (Joel): medically necessary dietary meals on a school package are $5 for a primary
+   school and $10 for a high school. The price list's school_dietary sets primary, school_dietary_high
+   sets high school. A quote keeps the price it was made with until its school package is saved again. */
+const SCHOOL_DIET = {"Primary": 5, "High school": 10};
+function schoolDietFor(level){ return SCHOOL_DIET[level] !== undefined ? SCHOOL_DIET[level] : SCHOOL_EXTRAS.diet; }
+function schoolExtraPrice(id, level){ return id === "diet" ? schoolDietFor(level) : SCHOOL_EXTRAS[id]; }
 /* bed & breakfast is the base; every other meal is ticked on and priced per person for
    the days it is wanted, so a group can have dinner every night and one packed lunch. */
 function schoolBaseFor(level){ return Number(schoolCfg().base[level]) || 0; }
@@ -3991,7 +4000,7 @@ function schoolNotes(sc){
     "• We do not run organised programs; the onsite activities are there for you to use during your stay.\n" +
     "• Groups over the dining room capacity (120 seated) may need more than one meal sitting, or another dining area, subject to availability.\n" +
     "• Catering is booked at least 1 month before your stay and is subject to availability.\n" +
-    "• Medical or special dietary meals (gluten free, vegetarian, intolerances) are $5.00 per person per meal.\n" +
+    "• Medical or special dietary meals (gluten free, vegetarian, intolerances) are " + money(schoolDietFor(sc.level)) + " per person per meal.\n" +
     "• {finalboth}";
 }
 /* fill rooms from the cheapest types out, capped by what RMS says is free */
@@ -4235,7 +4244,7 @@ function schoolNumbers(sc, counts){
     if(id === "bf_cont") return;
     setCat(id, "on", false);
     setCat(id, "lock", false);
-    if(SCHOOL_EXTRAS[id] !== undefined) setCat(id, "price", SCHOOL_EXTRAS[id]);
+    if(SCHOOL_EXTRAS[id] !== undefined) setCat(id, "price", schoolExtraPrice(id, sc.level));
   });
   if(RATE.bf_cont){
     setCat("bf_cont", "on", true);
@@ -4643,7 +4652,7 @@ function buildSchoolQuote(sc, counts){
   });
   Object.keys(SCHOOL_EXTRAS).forEach(id => {
     if(!RATE[id]) return;
-    setCat(id, "price", SCHOOL_EXTRAS[id]);
+    setCat(id, "price", schoolExtraPrice(id, sc.level));
     setCat(id, "on", SCHOOL_EXTRAS_ON.indexOf(id) >= 0);
   });
   /* the per-room numbers are set BEFORE the rooming is worked out, so schoolGroups()
@@ -4654,13 +4663,15 @@ function buildSchoolQuote(sc, counts){
   /* the rooms, the meals, the price and the wording all follow the numbers */
   const plan = schoolNumbers(Q.school, c);
   const pr = schoolPricing(Q.school, c);
-  /* the standing wording quotes $10 for special diets; a school group pays $5 */
+  /* the standing wording quotes $10 for special diets; a school group pays its level's price
+     ($5 primary, $10 high school), one price for everyone */
   const kids = (sectionContent("children") || INFO_SECTIONS.find(x => x.id === "children") || {}).text || "";
   if(kids){
     if(!Q.secText) Q.secText = {};
     /* one $5 for everyone on a school quote, not "$5.00 ... ($5.00 for children 12 and under)" */
-    Q.secText.children = {text: kids.split("$10.00 per person per meal ($5.00 for children 12 and under)").join("$5.00 per person per meal")
-      .split("$10.00 per person per meal").join("$5.00 per person per meal")};
+    const dm = money(schoolDietFor(sc.level)) + " per person per meal";
+    Q.secText.children = {text: kids.split("$10.00 per person per meal ($5.00 for children 12 and under)").join(dm)
+      .split("$10.00 per person per meal").join(dm).split("$5.00 per person per meal").join(dm)};
   }
   /* the cabins are ours to work out, so they are locked; the group's own numbers and
      meals stay theirs to change, and the rooms follow whatever they type */
@@ -4926,6 +4937,16 @@ function qtyWords(q){
   const w = Math.floor(q), h = Math.abs(q - w - 0.5) < 0.001;
   return h ? (w ? w + "½" : "½") : String(q);
 }
+/* 23 Oct 2026 (Joel): the RMS reservation number on the quote, the same number the payment reference uses */
+function quoteResNo(){ return payRefNumber(); }
+/* 23 Oct 2026 (Joel: "in brackets mention the $10 per necessary dietary change"): the catering heading says
+   what a medically necessary dietary change costs, at this quote's own rate */
+function dietNoteText(){
+  const rate = dietPerMeal();
+  if(!(rate > 0) || !catEntry("diet").on) return "";
+  const kids = kidsOn() && !schoolOn() && dietKidsPerMeal() < rate ? ", " + money0(dietKidsPerMeal()) + " for children 12 and under" : "";
+  return "(medically necessary dietary changes " + money0(rate) + " per person per meal" + kids + ")";
+}
 function printSections(){
   const by = {};
   PRINT_SECS.forEach(s => by[s.key] = []);
@@ -4968,9 +4989,10 @@ function printSections(){
     });
   }).reduce((a, x) => a.concat(x), []);
   const credNote = venueCreditPerDay() > 0 ? venueCreditShort() : "";
+  const dietNote = dietNoteText();
   return PRINT_SECS.filter(s => by[s.key].length).map(s => ({
     key: s.key, title: s.title,
-    note: s.key === "credit" ? credNote : "",
+    note: s.key === "credit" ? credNote : s.key === "cater" ? dietNote : "",
     rows: by[s.key],
     total: by[s.key].reduce((t, l) => t + (Number(l.total) || 0), 0)
   }));
@@ -10454,6 +10476,7 @@ function onePageTotals(t, showPrices, pm){
     (t.discLines || []).map(x => line(esc(x.label), "−" + money(x.amount), "cred")).join("") +
     (pm === "nototal" ? "" : line("<b>Total (inc GST)</b>", "<b>" + money(t.total) + "</b>", "grand")) +
     (pm === "nototal" ? "" : line("Includes GST (" + GST_PCT + "%)", money(t.gst), "gst")) +
+    (pm === "nototal" ? "" : perPersonHTML(t)) +
   '</div>';
 }
 function onePageLinksHTML(){
@@ -10502,6 +10525,7 @@ function onePageQuoteHtml(){
     '.onetot .cred{color:#54963a}' +
     '.onetot .grand{border-top:1.5px solid #1c1c1a;margin-top:3px;padding-top:5px;font-size:13px}' +
     '.onetot .gst{color:#6b7580;font-size:9.5px}' +
+    '.onetot .ppLine{display:block;text-align:right;color:#1b2a38;font-size:9.5px;padding-top:4px}' +
     '.onepricenote{margin-top:10px;font-size:10.5px;color:#6b7580}' +
     '.oneincl{margin-top:9px;padding:6px 10px;background:#f2f7f1;border-left:3px solid #54963a;border-radius:5px;font-size:9.5px;line-height:1.45}' +
     '.oneincl b{display:block;color:#3d6f2a;font-size:8.5px;letter-spacing:.5px;text-transform:uppercase}' +
@@ -10529,6 +10553,7 @@ function onePageQuoteHtml(){
       '<div class="addr">' + VENUE_ADDR1 + '<br>' + VENUE_ADDR2 + '<br>' + VENUE_ABN + '</div></div>' +
       '<div class="meta"><div class="qn">Quote ' + esc(Q.num) + '</div>' +
         '<div>Issued ' + issued + '</div><div>Valid until ' + valid + '</div>' +
+        (quoteResNo() ? '<div>Reservation <b>' + esc(quoteResNo()) + '</b></div>' : '') +
         (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
         '<div style="margin-top:4px">Phone ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>www.wslr.com.au</div></div></div>' +
     '<div class="for">Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : '') + '</div>' +
@@ -11531,6 +11556,7 @@ function renderClient(){
       '<div class="qp-brand">' + LOGO_QP + '<div class="qp-tag">FUNCTIONS &amp; EVENTS</div>' +
         '<div class="qp-addr">' + VENUE_ADDR1 + '<br>' + VENUE_ADDR2 + '<br>' + VENUE_ABN + '</div></div>' +
       '<div class="qp-meta"><div><b>Quote ' + esc(Q.num) + '</b></div>' +
+      (quoteResNo() ? '<div>Reservation <b>' + esc(quoteResNo()) + '</b></div>' : '') +
       '<div>Issued ' + ((CLIENT_MODE && BOOT.quote.display && BOOT.quote.display.issued) ? fmtDate(BOOT.quote.display.issued) : fmtDate(today)) + '</div>' +
       '<div>Valid until ' + ((CLIENT_MODE && Q.validUntil) ? fmtDate(Q.validUntil) : fmtDate(plusDays(today, Number(Q.validDays)||14))) +
         (quoteAcceptBlock() && quoteExpiredByDate() ? ' <span class="expiredtag">(expired)</span>' : '') + '</div>' +
