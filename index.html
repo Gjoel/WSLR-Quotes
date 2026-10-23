@@ -209,6 +209,8 @@
   .preprow.over, .cb-row.over{background:rgba(214,40,40,.10); box-shadow:inset 4px 0 0 #d62828}
   .overnote{display:block; color:#b01c1c; font-weight:700; font-size:12px; margin-top:2px}
   .overnote.soft{font-weight:600; color:#b54a4a}
+  .sgmealhead input.sgMealPrice{width:64px; padding:1px 4px; border:1px solid #9db4c8; border-radius:6px; font:inherit; color:inherit}
+  .sgown{font-size:12px; color:#8a5000; font-weight:600}
   .hasnote{display:block; color:#1d6b3a; font-weight:700; font-size:12px; margin-top:2px}
   .hasnote em{display:block; font-style:normal; font-weight:400; color:#4a6b55}
   .cb-has{color:#1d6b3a; font-weight:700; font-size:13px; margin-top:2px}
@@ -3118,8 +3120,42 @@ let PULL_BUSY = false;
 /* why the last save to the tracker sheet did or didn't get through (16 Oct 2026):
    "ok" | "refused" (the server turned down this computer's staff key) | "network" (no answer at all) */
 let FLUSH_LAST = {kind: "", msg: "", at: 0};
+/* 23 Oct 2026: "no answer at all" can also be the quote server falling over on one change (Q-1106:
+   a quote too big for its sheet cell, refused after the server had answered). The queue goes in
+   order, so that one change held up every save behind it. Now, when the server answers a plain
+   read straight after, it is that change: it is tried 3 times, then set aside here (kept, with a
+   Try again button on the Pipeline) and the rest go on. */
+const LS_OUTBOX_STUCK = "wslr_outbox_stuck_v1";
+let OUTBOX_STUCK = lsGet(LS_OUTBOX_STUCK, []);
+const OUTBOX_TRIES = 3;
+function outboxNum(o){ const p = (o && o.payload) || {}; return p.num || (p.quote && p.quote.num) || ""; }
+function stuckTouches(num){ return OUTBOX_STUCK.some(o => outboxNum(o) === num); }
+/* does the quote server answer at all? (a light read that needs no key) */
+function serverAnswers(){
+  const url = sheetEndpoint();
+  if(!url) return Promise.resolve(false);
+  const ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = setTimeout(() => { if(ctl) ctl.abort(); }, 15000);
+  return fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "settings=1&_=" + Date.now(), ctl ? {signal: ctl.signal} : {})
+    .then(r => r.ok, () => false).finally(() => clearTimeout(timer));
+}
+function retryStuck(){
+  if(!OUTBOX_STUCK.length) return;
+  OUTBOX = OUTBOX_STUCK.map(o => Object.assign({}, o, {fails: 0})).concat(OUTBOX);
+  OUTBOX_STUCK = [];
+  lsSet(LS_OUTBOX, OUTBOX); lsSet(LS_OUTBOX_STUCK, OUTBOX_STUCK);
+  renderPipeSync();
+  flushOutbox();
+}
+document.addEventListener("click", e => { if(e.target && e.target.id === "pipeStuckRetry") retryStuck(); });
+/* the quote server stores a big quote whole (Code.gs 13.22.1 says bigQuotes on GET ?list=1) */
+let SERVER_BIG = !!lsGet("wslr_server_big", false);
 
 function queuePost(payload){
+  /* 23 Oct 2026: a newer copy of the same quote replaces one still waiting (never the one being sent) */
+  if(payload && (payload.action === "sent" || payload.action === "submitted") && payload.quote && payload.quote.num){
+    OUTBOX = OUTBOX.filter((o, i) => (FLUSH_BUSY && i === 0) || !(o.payload && o.payload.action === payload.action && o.payload.quote && o.payload.quote.num === payload.quote.num));
+  }
   OUTBOX.push({payload: payload, t: new Date().toISOString()});
   lsSet(LS_OUTBOX, OUTBOX);
   renderPipeSync();
@@ -3157,7 +3193,29 @@ function flushOutbox(done){
         lsSet(LS_OUTBOX, OUTBOX);
         step();
       })
-      .catch(e => { FLUSH_LAST = {kind: "network", msg: String((e && e.message) || e || ""), at: Date.now()}; SHEET_REACHABLE = false; FLUSH_BUSY = false; renderPipeSync(); if(done) done(); }); // still offline; try again next sync
+      .catch(e => {
+        const msg = String((e && e.message) || e || "");
+        serverAnswers().then(up => {
+          const head = OUTBOX[0];
+          if(up && head){
+            head.fails = (Number(head.fails) || 0) + 1;
+            if(head.fails >= OUTBOX_TRIES){
+              /* the server is there but falls over on this change: set it aside, carry on */
+              OUTBOX.shift();
+              OUTBOX_STUCK.push(Object.assign({}, head, {setAside: new Date().toISOString(), why: msg}));
+              lsSet(LS_OUTBOX, OUTBOX); lsSet(LS_OUTBOX_STUCK, OUTBOX_STUCK);
+              FLUSH_LAST = {kind: "stuck", msg: msg, at: Date.now(), num: outboxNum(head)};
+              SHEET_REACHABLE = true;
+              renderPipeSync();
+              step();
+              return;
+            }
+            lsSet(LS_OUTBOX, OUTBOX);
+          }
+          FLUSH_LAST = {kind: up ? "server" : "network", msg: msg, at: Date.now(), tries: head ? Number(head.fails) || 0 : 0};
+          SHEET_REACHABLE = !!up; FLUSH_BUSY = false; renderPipeSync(); if(done) done();   // still offline; try again next sync
+        });
+      });
   };
   step();
 }
@@ -3180,6 +3238,7 @@ function pullPipeline(force){
         PULL_BUSY = false;
         if(data && data.error === "bad token") staffKeyNeeded(true);
         if(!data || !data.ok || !Array.isArray(data.quotes)) throw new Error("bad response");
+        if(!!data.bigQuotes !== SERVER_BIG){ SERVER_BIG = !!data.bigQuotes; lsSet("wslr_server_big", SERVER_BIG); }
         mergeServerQuotes(data.quotes);
         SHEET_REACHABLE = true;
         PIPE_STATE = "ok";
@@ -3201,6 +3260,7 @@ function serverSnap(sq){
   const s = JSON.parse(JSON.stringify(sq));
   delete s.display; delete s.meals; delete s.rooms; delete s.link;
   delete s.ratecard; delete s.rates; delete s.availCal;   /* the sheet keeps these, this computer doesn't need them */
+  delete s.orgDraft; delete s.rmsTariff;                   /* 23 Oct 2026: nor these (the organiser's page reads its own) */
   s.status = STATUSES.includes(s.status) ? s.status : (s.status || "Sent");
   s.accepted = s.status === "Accepted";
   s._synced = true;
@@ -3291,9 +3351,15 @@ function mergeServerQuotes(list){
 function renderPipeSync(){
   const el = document.getElementById("pipeSync");
   if(!el) return;
-  const waiting = OUTBOX.length
+  const stuckNums = OUTBOX_STUCK.map(outboxNum).filter((n, i, a) => n && a.indexOf(n) === i);
+  const waiting = (OUTBOX.length
     ? ' · <span class="manualbadge">' + OUTBOX.length + ' change' + (OUTBOX.length === 1 ? "" : "s") + ' waiting to reach the sheet</span>'
-    : "";
+    : "") +
+    (OUTBOX_STUCK.length
+      ? ' · <span class="pinwarn">' + OUTBOX_STUCK.length + ' change' + (OUTBOX_STUCK.length === 1 ? "" : "s") +
+        (stuckNums.length ? ' to ' + esc(stuckNums.join(", ")) : '') + ' the quote server could not save (kept on this computer)</span>' +
+        ' <button type="button" class="secauto" id="pipeStuckRetry">Try again</button>'
+      : "");
   if(PIPE_STATE === "loading"){
     el.innerHTML = '<span class="autobadge">syncing with the tracker sheet…</span>' + waiting;
   } else if(PIPE_STATE === "ok"){
@@ -4024,6 +4090,9 @@ function quoteRoomWords(){
 }
 /* is this school package built on the rooms the quote already has? */
 function schoolKeepsRooms(sc){
+  /* 23 Oct review: on the organiser's page a group already in RMS always keeps its cabins (a fresh
+     plan would drop the rooms it has, below what is booked) */
+  if(asOrg() && Q.rmsLink && Q.rmsLink.groupId && groupUnits().length && quoteRoomCount() > 0) return true;
   return !!((sc || {}).keepRooms) && quoteRoomCount() > 0;
 }
 /* a quote that was filled in from a booking in RMS, or from a stay being repeated */
@@ -4204,20 +4273,44 @@ function schoolDayChips(id, kind, chosen, cls){
     '<button type="button" class="sgday' + (on[iso] ? ' on' : '') + '" data-meal="' + esc(id) + '" data-iso="' + iso + '"' +
       (cls ? ' data-src="' + esc(cls) + '"' : '') + '>' + esc(dayLabel(iso)) + '</button>').join('') + '</div>';
 }
-/* the meal tick boxes, used on both the staff dialog and the organiser's page */
+/* the meal tick boxes, used on both the staff dialog and the organiser's page.
+   23 Oct 2026 (Joel): staff can type this quote's own price for a meal (S.rates, which the
+   invoice tool also reads); blank goes back to the price list */
 function schoolMealsHTML(S, cls){
   const meals = schoolMealsOf(S);
   const showPrices = (Q.priceMode || "full") !== "noprices";
+  const canPrice = !asOrg() && (cls === "dlg" || cls === "client");
   return '<div class="sgmeals">' + SCHOOL_MEAL_ADDONS.map(m => {
     const sel = meals[m.id];
-    const add = Number((S.rates || {})[m.id]) > 0 ? Number(S.rates[m.id]) : m.add;
+    const own = Number((S.rates || {})[m.id]) > 0;
+    const add = own ? Number(S.rates[m.id]) : m.add;
+    const priceHTML = canPrice
+      ? ' <span class="sgadd">+$<input type="number" class="sgMealPrice" min="0" step="0.5" data-meal="' + esc(m.id) + '" data-src="' + esc(cls) + '" value="' + add + '"' +
+          ' title="The price per person on this quote. Clear it to go back to the price list (' + money0(m.add) + ')." aria-label="' + esc(m.label) + ' price per person"> per person per ' + m.kind + '</span>' +
+          (own ? ' <span class="sgown">price for this quote · price list ' + money0(m.add) + '</span>' : '')
+      : (showPrices ? ' <span class="sgadd">+' + money0(add) + ' per person per ' + m.kind + '</span>' : '');
     return '<div class="sgmeal' + (sel ? ' on' : '') + '">' +
       '<label class="sgmealhead"><input type="checkbox" class="sgMealTick" data-meal="' + esc(m.id) + '" data-src="' + esc(cls) + '"' + (sel ? ' checked' : '') + '>' +
-        '<b>' + esc(m.label) + '</b>' + (showPrices ? ' <span class="sgadd">+' + money0(add) + ' per person per ' + m.kind + '</span>' : '') +
+        '<b>' + esc(m.label) + '</b>' + priceHTML +
         '<span class="sgnote">' + esc(m.note) + '</span></label>' +
       (sel ? schoolDayChips(m.id, m.kind, sel.days, cls) : '') +
     '</div>';
   }).join('') + '</div>';
+}
+/* a typed meal price into a school package's rates: blank, 0 or the price list's own figure
+   clears it (a meal left off is unticked, not priced at $0) */
+function schoolRatesWith(rates, id, typed){
+  const m = schoolAddon(id);
+  const out = Object.assign({}, rates || {});
+  const n = Math.round((Number(typed) || 0) * 100) / 100;
+  if(!m || String(typed).trim() === "" || !(n > 0) || n === m.add) delete out[id]; else out[id] = n;
+  return Object.keys(out).length ? out : null;
+}
+function schoolMealPrice(id, typed){
+  const S = Q.school;
+  if(!S) return;
+  Q.school = Object.assign({}, S, {rates: schoolRatesWith(S.rates, id, typed)});
+  schoolNumbers(Q.school, Q.school.counts);
 }
 /* turn a meal on or off, or tap one of its days */
 function schoolMealToggle(id, on){
@@ -4365,7 +4458,7 @@ function applySchoolTemplate(sc){
     : (prevS.keepRooms !== undefined ? !!prevS.keepRooms : cameFromBooking()));
   const perNow = schoolPerRoom();
   let pack = Object.assign({level: sc.level, base: Number(sc.base) > 0 ? Number(sc.base) : schoolBaseRate(sc),
-    packName: sc.packName || "", rates: Object.assign({}, sc.rates || {}), keepRooms: keepDefault,
+    packName: sc.packName || "", rates: Object.assign({}, prevS.level === sc.level ? (prevS.rates || {}) : {}, sc.rates || {}), keepRooms: keepDefault,
     per: {student: perNow.perStudent, teacher: perNow.perTeacher, driver: perNow.perDriver},
     teachersOwn: sc.teachersOwn !== undefined ? sc.teachersOwn : (prevS.teachersOwn !== undefined ? prevS.teachersOwn : true)},
     {meals: Object.keys(schoolMealsOf(sc)).length ? schoolMealsOf(sc) : schoolMealsOf(prevS)});
@@ -4433,6 +4526,10 @@ function applySchoolTemplate(sc){
       const meals = schoolMealsOf(pack);
       if(e.target.checked){ meals[m.id] = {days: schoolMealDays(m.kind)}; schoolOneLunch(meals, m.id, meals[m.id].days); } else delete meals[m.id];
       pack = Object.assign({}, pack, {meals: meals});
+      paint();
+    }));
+    dlg.querySelectorAll('.sgMealPrice[data-src="dlg"]').forEach(el => el.addEventListener("change", e => {
+      pack = Object.assign({}, pack, {rates: schoolRatesWith(pack.rates, e.target.dataset.meal, e.target.value)});
       paint();
     }));
     dlg.querySelectorAll('.sgday[data-src="dlg"]').forEach(el => el.addEventListener("click", e => {
@@ -5079,21 +5176,59 @@ function groupUnits(){
   const l = Q.rmsLink;
   if(!(l && l.groupId)) return [];
   const h = Q.rmsHold;
-  if(h && h.status === "held" && Array.isArray(h.units)) return h.kind === "existing" ? h.units.filter(u => u && u.pre) : [];
+  /* reservations staff added to the group by hand after it was quoted (foundLater) are the group's
+     own for availability, but they are not what the organiser was told they already have */
+  if(h && h.status === "held" && Array.isArray(h.units)) return h.kind === "existing" ? h.units.filter(u => u && u.pre && !u.foundLater) : [];
   return Array.isArray(l.units) ? l.units : [];
 }
 /* how many of a cabin or site type the group already has on a night; with no night, the
-   most it has on any night */
+   most it has on any night of this quote's stay (23 Oct review: nights outside the stay no
+   longer count, so moved dates don't leave a floor behind) */
 function groupHasOn(id, iso){
   const us = groupUnits().filter(u => u && u.itemId === id && !u.venue);
   if(iso) return us.filter(u => u.from <= iso && iso < u.to).length;
-  const per = {};
-  us.forEach(u => { let d = u.from, g = 0; while(d && d < u.to && g++ < 400){ per[d] = (per[d] || 0) + 1; d = isoAddDays(d, 1); } });
-  return Object.keys(per).reduce((m, d) => Math.max(m, per[d]), 0);
+  if(!us.length) return 0;
+  return stayNightsList().reduce((m, d) => Math.max(m, us.filter(u => u.from <= d && d < u.to).length), 0);
 }
 function groupHas(id){ return groupHasOn(id, null); }
+/* how many more than the group already has the quote puts on, at the busiest night */
+function groupExtra(id){
+  return stayNightsList().reduce((m, d) => Math.max(m, usedOn(id, d) - groupHasOn(id, d)), 0);
+}
+/* is the quote at what the group already has on some night (so the organiser's minus stops)? */
+function groupAtFloor(id){
+  return !!groupFloor(id) && stayNightsList().some(d => groupHasOn(id, d) > 0 && usedOn(id, d) <= groupHasOn(id, d));
+}
 /* the organiser's page: the fewest of a type they may have (what the group already has) */
 function groupFloor(id){ return asOrg() ? groupHas(id) : 0; }
+/* the organiser's page: how far below what the group already has the quote is, type by night
+   ({id|iso: n}); a change may never make any of these bigger */
+function groupFloorGaps(){
+  const gaps = {};
+  if(!asOrg() || !groupUnits().length) return gaps;
+  const ids = [];
+  groupUnits().forEach(u => { if(u && !u.venue && ids.indexOf(u.itemId) < 0) ids.push(u.itemId); });
+  ids.forEach(id => stayNightsList().forEach(d => { const g = groupHasOn(id, d) - usedOn(id, d); if(g > 0) gaps[id + "|" + d] = g; }));
+  return gaps;
+}
+/* the first type a change took further below what the group has ("" = none) */
+function groupFloorBroken(before){
+  const now = groupFloorGaps();
+  const k = Object.keys(now).find(x => now[x] > ((before || {})[x] || 0));
+  return k ? k.split("|")[0] : "";
+}
+/* run a change to the cabins on the organiser's page; put it back if it takes the group below
+   what it already has (part-stay blocks, removing a block: checked night by night) */
+function withGroupFloor(fn){
+  if(!asOrg() || !groupUnits().length){ fn(); return true; }
+  const was = JSON.stringify(Q.sel.accom || []), wasSplit = !!Q.sel.split, gaps = groupFloorGaps();
+  fn();
+  const id = groupFloorBroken(gaps);
+  if(!id) return true;
+  Q.sel.accom = JSON.parse(was); Q.sel.split = wasSplit;
+  groupFloorStop(id, -1);
+  return false;
+}
 /* the organiser's page: how many more of a type are free on top of what they have; null = not known */
 function groupMoreFree(id){
   const nights = stayNightsList();
@@ -5108,7 +5243,7 @@ function groupMoreFree(id){
 }
 function groupFloorStop(id, after){
   const f = groupFloor(id);
-  if(!f || after >= f) return false;
+  if(!f || (after >= f && after !== -1)) return false;
   showToast("Your group already has " + f + " " + ((RATE[id] || {}).name || "of these") + " booked, so this can't go below " + f +
     ". To have fewer, please call us on " + VENUE_PHONE + " or email functions@wslr.com.au", true);
   return true;
@@ -5150,9 +5285,7 @@ function venueTakenOn(v, iso){
   if(venueSharedRooms(v)) return false;
   const a = venueDayAvail(v, iso);
   if(a === null || Number(a) > 0) return false;
-  if(ownHeldOn(v.fullId, iso) > 0 || ownHeldOn(v.halfId, iso) > 0) return false;
-  /* the combined space when every one of its rooms is this group's own */
-  return !(v.members && v.members.every(k => { const m = VENUES.find(x => x.key === k); return m && (ownHeldOn(m.fullId, iso) > 0 || ownHeldOn(m.halfId, iso) > 0); }));
+  return !(ownHeldOn(v.fullId, iso) > 0 || ownHeldOn(v.halfId, iso) > 0);   // the group's own rooms: see venueDayAvail
 }
 /* every line that is over what may be taken, worst night first:
    [{kind: "accom", id, name, iso, want, free, by} | {kind: "venue", key, name, days}] */
@@ -6126,19 +6259,28 @@ function venueBlockedBy(v){
    page derives it from the three rooms itself when the server did not.
    Result: {known, free, taken: [iso...], days: n} for the event days. */
 function venueDayAvail(v, iso){
-  const a = availOn(v.fullId, iso);
-  if(a !== null) return a;
+  /* 23 Oct review: a room this quote's group already has counts as theirs (ownHeldOn: the linked
+     booking, or the group read from RMS before it is linked), in every view of the rooms */
+  const one = x => {
+    const a = availOn(x.fullId, iso);
+    if(a === null) return null;
+    const own = ownHeldOn(x.fullId, iso) + ownHeldOn(x.halfId, iso);
+    if(venueSharedRooms(x)) return Number(a) + own;
+    return own > 0 ? Math.max(1, Number(a)) : Number(a);
+  };
   if(v.members){
     let worst = null;
     for(const k of v.members){
       const m = VENUES.find(x => x.key === k);
-      const ma = m ? availOn(m.fullId, iso) : null;
-      if(ma === null) return null;                 // any unknown room makes the space unknown
+      const ma = m ? one(m) : null;
+      if(ma === null){ worst = null; break; }      // any unknown room makes the space unknown
       worst = worst === null ? ma : Math.min(worst, ma);
     }
+    const a = one(v);
+    if(a !== null && (worst === null || a > 0)) return a;
     return worst;
   }
-  return null;
+  return one(v);
 }
 function venueAvailInfo(v){
   const days = stayNightsList();
@@ -6795,6 +6937,64 @@ function datedSpan(map){
   }));
   return (from && to) ? {from: from, to: to} : null;
 }
+/* ---------- the tariff the quote server writes into RMS (23 Oct 2026, Joel) ----------
+   "by default the tariff is on master, the discounts should come through and be applied and
+   generally the tariff should match what is on the quote". RMS.gs rmsApplyTariff_ writes it:
+     accom: each cabin/site line, its nightly price BEFORE discounts and the % off it gets here
+       (the church discount, rooms at their own %, the Accommodation and whole-quote discounts);
+       disc "church" when that % is the church discount alone, so RMS uses "Church Group n%".
+       A school package: its accommodation-and-breakfast total shared over its cabins' nights.
+     venues: each conference room day, its price after the neighbouring-rooms deal and before the
+       venue credit (the invoice tool works the credit out from the rooms' prices), with the
+       church and whole-quote %; free: rooms on the quote at no charge. */
+function rmsTariffPlan(){
+  const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+  const out = {v: 1, school: false, accom: [], venues: [], free: []};
+  const d = Q.disc || {};
+  const c = churchPctNow() / 100;
+  let aPct = 0, allPct = 0;
+  if(d.on){
+    const b = discBases();
+    if(d.accom && Number(d.accom.v) > 0) aPct = d.accom.t === "amt" ? Math.min(1, (Number(d.accom.v) || 0) / Math.max(1, b.accom)) : Math.min(100, Number(d.accom.v)) / 100;
+    allPct = Math.min(100, Number(d.all) || 0) / 100;
+  }
+  const pctOf = (own, accom) => r2((1 - (1 - own) * (1 - (accom ? aPct : 0)) * (1 - allPct)) * 100);
+  const kindOf = (own, accom, church) => (church && own > 0 && !(accom && aPct) && !allPct) ? "church" : "";
+  const blocks = (Q.sel.accom || []).map((b, i) => ({b: b, i: i, nights: blockNightsList(b)})).filter(x => (Number(x.b.qty) || 0) > 0 && catEntry(x.b.id).on && x.nights.length);
+  const span = x => ({from: x.nights[0], to: isoAddDays(x.nights[x.nights.length - 1], 1)});
+  if(schoolOn()){
+    /* a school package is priced per person: its accommodation share goes on the cabins evenly */
+    out.school = true;
+    const pr = schoolPricing(Q.school, Q.school.counts);
+    const base = (pr.rows.find(r => r.id === "base") || {}).amount || 0;
+    const cabinNights = blocks.reduce((n, x) => n + (Number(x.b.qty) || 0) * x.nights.length, 0);
+    const per = cabinNights > 0 ? r2(base / cabinNights) : 0;
+    blocks.forEach(x => {
+      const nights = {};
+      x.nights.forEach(iso => { nights[iso] = per; });
+      out.accom.push(Object.assign({id: x.b.id, qty: Number(x.b.qty) || 0, nights: nights, pct: 0, disc: ""}, span(x)));
+    });
+  } else {
+    const rd = roomDiscCalc().parts;
+    blocks.forEach(x => {
+      const nights = {};
+      x.nights.forEach(iso => { nights[iso] = r2(nightlyRate(x.b.id, iso)); });
+      let left = Number(x.b.qty) || 0;
+      rd.filter(p => p.block === x.i).forEach(p => {
+        const own = (Number(p.pct) || 0) / 100;
+        out.accom.push(Object.assign({id: x.b.id, qty: p.n, nights: nights, pct: pctOf(own, true), disc: kindOf(own, true, false)}, span(x)));
+        left -= p.n;
+      });
+      if(left > 0) out.accom.push(Object.assign({id: x.b.id, qty: left, nights: nights, pct: pctOf(c, true), disc: kindOf(c, true, true)}, span(x)));
+    });
+  }
+  venueDayRows().forEach(r => {
+    if(!r.iso) return;
+    out.venues.push({key: r.key, iso: r.iso, price: r2(r.price), pct: pctOf(c, false), disc: kindOf(c, false, true)});
+  });
+  VENUES.forEach(v => { if(venueDaysSel(v.key) > 0 && catEntry(v.fullId).on && venueIsFree(v)) out.free.push(v.key); });
+  return out;
+}
 function snapshotQ(){
   const t = totals();
   return {
@@ -6832,6 +7032,7 @@ function snapshotQ(){
     internalNotes: String(Q.internalNotes || ""),
     cocAgreed: Q.cocAgreed ? JSON.parse(JSON.stringify(Q.cocAgreed)) : null,
     rmsLink: Q.rmsLink ? JSON.parse(JSON.stringify(Q.rmsLink)) : null,
+    rmsTariff: (() => { try { return rmsTariffPlan(); } catch(e){ return null; } })(),   // 23 Oct 2026: RMS.gs 5.1.1
     submittedAt: Q.submittedAt || null,
     submittedSel: Q.submittedSel || null,
     lines: JSON.parse(JSON.stringify(Q.lines)),
@@ -7068,8 +7269,7 @@ function stepAccom(id, dir){
     if(dir <= 0) return;
     Q.sel.accom.push({id: id, qty: 1, from: null, to: null});
   } else {
-    if(dir < 0 && groupFloorStop(id, accomQtyTotal(id) + dir)) return;
-    b.qty = Math.max(0, (Number(b.qty) || 0) + dir);
+    if(!withGroupFloor(() => { b.qty = Math.max(0, (Number(b.qty) || 0) + dir); })){ refresh(); return; }
   }
   cleanupAccom();
   refresh();
@@ -7081,12 +7281,22 @@ function stepBlockQty(i, dir){
     availToast(b.id);
     if(CLIENT_MODE) return;               // staff can go over, in red
   }
-  if(dir < 0 && groupFloorStop(b.id, accomQtyTotal(b.id) + dir)) return;
-  b.qty = Math.max(0, (Number(b.qty) || 0) + dir);
+  if(!withGroupFloor(() => { b.qty = Math.max(0, (Number(b.qty) || 0) + dir); })){ refresh(); return; }
   cleanupAccom();
   refresh();
 }
 function setBlockDates(i, from, to){
+  if(asOrg() && groupUnits().length){
+    /* 23 Oct review: the organiser moving a block's dates must not take the group below what it has */
+    const was = JSON.stringify(Q.sel.accom || []), gaps = groupFloorGaps();
+    setBlockDatesInner(i, from, to);
+    const id = groupFloorBroken(gaps);
+    if(id){ Q.sel.accom = JSON.parse(was); groupFloorStop(id, -1); refresh(); }
+    return;
+  }
+  setBlockDatesInner(i, from, to);
+}
+function setBlockDatesInner(i, from, to){
   const b = Q.sel.accom[i];
   if(!b) return;
   const was = {from: b.from, to: b.to, qty: b.qty};
@@ -7128,12 +7338,16 @@ function addAccomBlock(id){
   refresh();
 }
 function removeAccomBlock(i){
-  const b = Q.sel.accom[i];
-  if(b && groupFloorStop(b.id, accomQtyTotal(b.id) - (Number(b.qty) || 0))) return;
-  Q.sel.accom.splice(i, 1);
+  if(!withGroupFloor(() => { Q.sel.accom.splice(i, 1); })){ refresh(); return; }
   refresh();
 }
 function setSplit(v){
+  if(asOrg() && groupUnits().length && !v && (Q.sel.accom || []).some(b => b.from || b.to)){
+    /* 23 Oct review: merging part-stay blocks would reshape what the group already has */
+    showToast("Your group already has cabins booked for part of the stay, so these stay as they are. To change them, please call us on " + VENUE_PHONE + " or email functions@wslr.com.au", true);
+    refresh();
+    return;
+  }
   Q.sel.split = !!v;
   if(!v){
     const byId = {};
@@ -7978,7 +8192,10 @@ function lockedItem(id, kind){
 /* an organiser can't move a school group's dates themselves: the package, its meals and the
    rooming are worked out by our team around them (15 Oct 2026) */
 function schoolDatesLocked(){ return !!(CLIENT_MODE && schoolOn()); }
-function lockedDates(){ return quoteLocked() || schoolDatesLocked(); }
+/* 23 Oct review: a quote on a booking already in RMS keeps its dates on the organiser's page;
+   moving them would leave the existing reservations on the old dates */
+function existingDatesLocked(){ return !!(asOrg() && Q.rmsLink && Q.rmsLink.groupId && groupUnits().length); }
+function lockedDates(){ return quoteLocked() || schoolDatesLocked() || existingDatesLocked(); }
 /* every cabin on offer is locked: the organiser is being shown a rooming, not a menu */
 function accomAllLocked(){
   const on = accomItems().filter(it => catEntry(it.id).on);
@@ -8086,7 +8303,7 @@ function renderPrep(){
       '<div><span class="pkgname">' + esc(it.name) + '</span>' + lockBtnHTML(it.id, "these cabins") + sleepsPill(it) +
         (it.beds ? '<div class="pkgmeta">' + esc(it.beds) + '</div>' : '') +
         (has ? '<span class="hasnote">✓ ' + has + ' already booked for this group in RMS' +
-          (q > has ? ' · ' + (q - has) + ' more on this quote' : q < has ? ' · ' + (has - q) + ' fewer on this quote' : '') +
+          (groupExtra(it.id) > 0 ? ' · ' + groupExtra(it.id) + ' more on this quote' : stayNightsList().some(d => usedOn(it.id, d) < groupHasOn(it.id, d)) ? ' · fewer on this quote' : '') +
           '<em>The organiser sees them as theirs and can add more, but not go below ' + has + '.</em></span>' : '') +
         (ov ? '<span class="overnote">⚠ Over availability: ' + ov.want + ' on ' + esc(shortDate(ov.iso)) + ', RMS shows ' + (ov.free > 0 ? 'only ' + ov.free : 'none') + ' free' + (has ? ' (counting the ' + has + ' they have)' : '') + '</span>'
           : (nf ? '<span class="overnote soft">None free on ' + esc(shortDate(nf)) + '</span>' : '')) + '</div>' +
@@ -8817,7 +9034,7 @@ function schoolDateBoxChange(which){
 }
 function setEventDates(from, nights){
   if(!from) return;
-  if(schoolDatesLocked()){ showToast("To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au"); return; }
+  if(schoolDatesLocked() || existingDatesLocked()){ showToast("To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au"); return; }
   const n = Math.max(1, Number(nights) || 1);
   const shift = (Q.dateStart && from) ? isoDiffDays(Q.dateStart, from) : 0;
   const prevDates = {start: Q.dateStart, end: Q.dateEnd};
@@ -11015,7 +11232,7 @@ function renderClient(){
       const has = groupHas(it.id), more = has ? groupMoreFree(it.id) : null;
       const meta = has ? (more === null ? '' : more > 0 ? 'up to ' + more + ' more available on your dates' : 'no more available on your dates')
         : avail !== null ? ('up to ' + avail + ' available on your dates') : '';
-      const hasNote = has ? '<div class="cb-has">✓ You already have ' + has + ' booked' + (q > has ? ', plus ' + (q - has) + ' more on this quote' : '') + '</div>' : '';
+      const hasNote = has ? '<div class="cb-has">✓ You already have ' + has + ' booked' + (groupExtra(it.id) > 0 ? ', plus ' + groupExtra(it.id) + ' more on this quote' : '') + '</div>' : '';
       /* rooms at their own % (staff, under Discount): said in brackets here, and the
          price beside the stepper is what this room type costs with them in it */
       const rdMine = rdParts.filter(p => blocks.some(x => x.i === p.block));
@@ -11051,7 +11268,7 @@ function renderClient(){
           staffAccomPrice(it.id, showPrices) + '</div>' +
         (split
           ? '<div class="cb-avail" style="text-align:right">' + q + ' selected</div>'
-          : stepperHTML("accom", it.id, q, {canDown: q > groupFloor(it.id), canUp: asOrg() ? canAddOver(it.id, stayNightsList()) : true, lock: lockedItem(it.id, "accom")})) +
+          : stepperHTML("accom", it.id, q, {canDown: q > 0 && !groupAtFloor(it.id), canUp: asOrg() ? canAddOver(it.id, stayNightsList()) : true, lock: lockedItem(it.id, "accom")})) +
         '<div class="pkgsub">' + (q > 0 && showPrices ? (schoolIncludes(it.id) ? SCHOOL_INCL_WORD : money(sub - rdSave)) : (q > 0 ? q + ' ✓' : '<span class="fmuted">-</span>')) + '</div>' +
         blockHtml +
       '</div>';
@@ -11430,6 +11647,11 @@ function renderClient(){
     showToast(e.target.checked
       ? m.label + " added for every " + (m.kind === "night" || m.kind === "morning" ? m.kind : "day") + " of your stay. Tap a day to take it off."
       : m.label + " taken off your quote.");
+  }));
+  page.querySelectorAll('.sgMealPrice[data-src="client"]').forEach(el => el.addEventListener("change", e => {
+    if(asOrg()) return;
+    schoolMealPrice(e.target.dataset.meal, e.target.value);
+    refresh();
   }));
   page.querySelectorAll('.sgday[data-src="client"]').forEach(el => el.addEventListener("click", e => {
     schoolMealDayToggle(e.currentTarget.dataset.meal, e.currentTarget.dataset.iso);
@@ -12786,11 +13008,29 @@ function sheetQuotePayload(snap){
     notes: fillQuoteText(snap.notes),
     terms: fillQuoteText(snap.terms)
   });
+  /* 23 Oct 2026: the group's units read from RMS only matter until the server has linked the
+     group (it then keeps them itself, on rmsHold) */
+  if(payload.rmsLink && Array.isArray(payload.rmsLink.units) && Q.rmsHold && Q.rmsHold.status === "held"){
+    payload.rmsLink = Object.assign({}, payload.rmsLink);
+    delete payload.rmsLink.units;
+  }
   const size = () => JSON.stringify(payload).length;
+  /* how much fits: the quote server adds back what it keeps itself (the RMS booking, the Final
+     Confirmation form, the change history), so that comes off the cell. A server that keeps a
+     big quote over several cells (Code.gs 13.22.1 says bigQuotes) needs no trimming at all. */
+  const kept = (() => {
+    if(SERVER_BIG) return 0;
+    const s = SAVED.find(x => x.num === Q.num) || {};
+    return ["rmsHold", "confirmation", "history"].reduce((n, k) => { const v = s[k] || Q[k]; return n + (v ? JSON.stringify(v).length + k.length + 4 : 0); }, 0);
+  })();
+  /* a server that keeps big quotes still gets a sensible size, so the pipeline and the daily
+     jobs that read every quote stay quick (cell-limit audit, 23 Oct 2026) */
+  const SAFE = SERVER_BIG ? 120000 : Math.max(15000, SHEET_SAFE_SIZE - kept);
+  const LIMIT = SERVER_BIG ? 450000 : SHEET_CELL_LIMIT - kept;
   let trimmedRates = false;
-  if(size() > SHEET_SAFE_SIZE){
+  if(size() > SAFE){
     const pads = [180, 120, 90, 60, 30, 14, 7, 0];
-    for(let i = 0; i < pads.length && size() > SHEET_SAFE_SIZE; i++){
+    for(let i = 0; i < pads.length && size() > SAFE; i++){
       payload.rates = pruneDated(snap.rates, stayWindow(pads[i]), 62);
       payload.rateFixed = pruneDated(snap.rateFixed, stayWindow(pads[i]), 62);
       payload.availCal = pruneDated(snap.availCal, stayWindow(pads[i]), 62);
@@ -12798,12 +13038,12 @@ function sheetQuotePayload(snap){
     }
   }
   const dropped = [];
-  if(size() > SHEET_SAFE_SIZE && payload.display && payload.display.sections && payload.display.sections.length){
+  if(size() > SAFE && payload.display && payload.display.sections && payload.display.sections.length){
     payload.display.sections = [];            // the quote page rebuilds these from the settings wording
     payload.display.sectionsOmitted = true;
     dropped.push("the standard information wording");
   }
-  if(size() > SHEET_SAFE_SIZE && payload.ratecard){
+  if(size() > SAFE && payload.ratecard){
     delete payload.ratecard;                  // the emailed page falls back to the shared rate card
     dropped.push("the rate card copy");
   }
@@ -12816,7 +13056,7 @@ function sheetQuotePayload(snap){
     showToast("This quote was too big for the tracker sheet, so " + dropped.join(", ") +
       " was left out of the copy sent there. Your own copy is unchanged, but the organiser's page falls back to the current shared wording and rate card for whatever is missing, so later rate card edits could move their venue and catering prices. Shorter notes and terms will avoid this.");
   }
-  if(size() > SHEET_CELL_LIMIT){
+  if(size() > LIMIT){
     showToast("Warning: quote " + Q.num + " is still over the tracker sheet's size limit (" +
       Math.round(size() / 1000) + "k characters). Shorten the notes, terms or information wording, then save again.");
   }
@@ -13021,11 +13261,19 @@ function doGetLink(){
   const say = (html) => { const st = document.getElementById("lnkState"); if(st && st.innerHTML !== html) st.innerHTML = html; };
   const watch = () => {
     if(!document.getElementById("lnkState")) return;  // the box was closed
+    if(stuckTouches(num)){
+      say('<span class="pinwarn">Not saved: the quote server answered, but could not save this quote (' + OUTBOX_TRIES + ' tries). It is kept on this computer. ' +
+        'Press Try again on the Pipeline later, or tell Joel: the quote server may need updating.</span>');
+      return;
+    }
     if(!outboxTouches(num)){ say("Ready: the link works now. The quote is saved in the tracker sheet."); return; }
     const age = Date.now() - started;
     const fresh = FLUSH_LAST.at >= started ? FLUSH_LAST : {kind: ""};
     if(fresh.kind === "refused" || !staffKey()){
       say('<span class="pinwarn">Not saved yet: the quote server did not accept this computer\'s sign-in (the staff password may have changed). Sign in again: the quote is kept on this computer and saves as soon as you do. The link works once it says Ready here.</span>');
+    } else if(fresh.kind === "server"){
+      say('<span class="pinwarn">Not saved yet: the quote server is answering, but fell over saving this' + (fresh.msg ? ' (' + esc(fresh.msg) + ')' : '') +
+        '. Trying again (' + (fresh.tries || 1) + ' of ' + OUTBOX_TRIES + ').</span>');
     } else if(fresh.kind === "network"){
       say('<span class="pinwarn">Not saved yet: this computer could not reach the quote server at script.google.com' + (fresh.msg ? ' (' + esc(fresh.msg) + ')' : '') +
         '. Check the internet connection, or whether a firewall or Microsoft Defender is blocking script.google.com. Keep the tool open: it tries again every few seconds, and the link works once it says Ready here.</span>');
@@ -13036,7 +13284,7 @@ function doGetLink(){
       say('<span class="pinwarn">Not saved after 5 minutes, so the link does not work yet. The quote is kept on this computer and the tool keeps trying while it is open. Check the Pipeline in a while, or tell Joel.</span>');
       return;
     }
-    if(!FLUSH_BUSY && staffKey() && Date.now() - lastTry > (fresh.kind === "network" ? 5000 : 600)){ lastTry = Date.now(); flushOutbox(); }
+    if(!FLUSH_BUSY && staffKey() && Date.now() - lastTry > (fresh.kind === "network" || fresh.kind === "server" ? 5000 : 600)){ lastTry = Date.now(); flushOutbox(); }
     setTimeout(watch, 600);
   };
   setTimeout(watch, 300);
@@ -14477,6 +14725,11 @@ function quoteFromRes(repeat){
     .then(data => {
       g = data;
       if(g.linkedQuote && !confirm("RMS group " + g.groupId + " is already on quote " + g.linkedQuote + ". Make another quote on it anyway?")) throw new Error("__stop");
+      /* 23 Oct review: a group that has already arrived can't be changed from a quote (the quote
+         server leaves an event that has started alone), so say so before going on */
+      if(!g.past && !repeat && g.arrival && g.arrival < isoDate(today) &&
+         !confirm("RMS group " + g.groupId + " arrived on " + shortDateY(g.arrival) + " and is still in house.\n\n" +
+                  "A quote on it can be priced and sent, but accepting it will NOT change the booking in RMS (it has started).\n\nGo on anyway?")) throw new Error("__stop");
       /* a booking that has already happened: quoting "on" it would put past dates on a
          new quote and, if accepted, try to add rooms to a finished group. Repeating it
          is what staff almost always mean, so offer that instead. */
@@ -14547,8 +14800,12 @@ function applyResBooking(g, opts){
   /* a repeat moves the whole booking onto the new dates, keeping its shape */
   const shiftDays = (repeat && /^\d{4}-\d{2}-\d{2}$/.test(String(opts.newStart || "")) && g.arrival) ? isoDiffDays(g.arrival, opts.newStart) : 0;
   const mv = iso => (shiftDays && /^\d{4}-\d{2}-\d{2}$/.test(String(iso || ""))) ? isoAddDays(iso, shiftDays) : iso;
-  Q.dateStart = mv(g.arrival || "");
-  Q.dateEnd = mv(g.departure || "");
+  /* 23 Oct review: the stay is the cabins' and sites' stay. A conference room booked on the
+     check-out day runs to the next day in RMS, which used to add a night to the whole quote. */
+  const accomFrom = (g.accom || []).reduce((m, a) => (!m || a.from < m) ? a.from : m, "");
+  const accomTo = (g.accom || []).reduce((m, a) => (!m || a.to > m) ? a.to : m, "");
+  Q.dateStart = mv(accomFrom || g.arrival || "");
+  Q.dateEnd = mv(accomTo || g.departure || "");
   if(Number(g.guests) > 0) Q.guests = Number(g.guests);
   /* cabins and sites: one block per type and dates; a block covering the whole stay has no dates of its own */
   const skipped = [];
@@ -14560,6 +14817,8 @@ function applyResBooking(g, opts){
     Q.sel.accom.push(whole ? {id: a.id, qty: a.qty} : {id: a.id, qty: a.qty, from: from, to: to});
     setCat(a.id, "on", true);
   });
+  /* 23 Oct review: cabins for part of the stay are shown as such (their own dates), for staff and organiser */
+  Q.sel.split = Q.sel.accom.some(b => b.from || b.to);
   /* conference rooms by day */
   Q.sel.venues = {}; Q.sel.venueDays = {};
   Object.keys(g.venues || {}).forEach(key => {
