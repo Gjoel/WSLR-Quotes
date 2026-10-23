@@ -1481,6 +1481,7 @@
         <button class="btn emailbtn staffedit-ui" id="emailQuoteBtn2" style="width:100%; margin-bottom:8px">Email quote →</button>
         <button class="btn staffedit-ui" id="linkBtn2" style="width:100%; margin-bottom:8px" title="Save the quote and show the organiser's link, to send it yourself">Save &amp; get link</button>
         <button class="btn primary" id="pdfBtn" style="width:100%">Download PDF</button>
+        <button class="btn staffedit-ui" id="editPrintBtn" style="width:100%; margin-top:8px" title="Open the one-page printed quote to add or change wording for this print only. The saved quote does not change.">Edit &amp; print</button>
         <div class="pdflink" style="margin-top:8px; flex-direction:column; align-items:stretch"><span>PDF length</span><select class="pdfModeSel" style="width:100%"><option value="full">Full &mdash; everything printed</option><option value="links">Short &mdash; link to the information</option><option value="onepage">One page &mdash; a single sheet</option></select><em id="pdfLinkWhy2"></em></div>
         <p class="hint" style="margin-top:8px">Opens your browser's print box: choose "Save as PDF". The PDF captures the selection as it stands. This page always shows the full wording; only the PDF is shortened.</p>
       </aside>
@@ -3566,7 +3567,7 @@ function blankQuote(num){
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
     caterSched: caterFutureHouse(), // the new catering prices and the date they start, as they were when this quote was made
-    features: {perPerson: false, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
+    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
     minStay: {},        // RMS minimum stays for the quoted rate: {itemId: {"2026-10-03": {s: 2, a: 0}}}, only nights with a rule
     staffShort: null,   // stays staff sent below the minimum on purpose: ["itemId|from|to", ...]
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
@@ -9405,9 +9406,16 @@ function escLink(s){
 function anyLineDisc(){
   return Q.lines.some(l => (Number(l.qty)||0) > 0 && lineDiscPct(l) > 0);
 }
+/* 23 Oct 2026 (Joel): the cost per person shows on every quote, the printed one too. Quotes made
+   before this kept perPerson off only because that was the default, so it shows on them as well;
+   staff unticking "Cost per person" on Prepare (ppSet) is what turns it off. */
+function perPersonOn(){
+  const f = Q.features || {};
+  return !!f.perPerson || !f.ppSet;
+}
 function perPersonHTML(t){
   const g = Number(Q.guests) || 0;
-  if(!(Q.features && Q.features.perPerson) || g <= 0 || !(t.total > 0)) return '';
+  if(!perPersonOn() || g <= 0 || !(t.total > 0)) return '';
   const n = Q.dateStart ? Math.max(1, nightsCount()) : 0;
   const pp = t.total / g;
   let out = '≈ <b>' + money0(pp) + '</b> per person across your ' + g + ' guest' + (g === 1 ? '' : 's');
@@ -10626,6 +10634,93 @@ function printOnePageQuote(){
   document.body.appendChild(f);
   f.srcdoc = onePageQuoteHtml();
 }
+/* ---------- Edit & print (23 Oct 2026, Joel: "manipulate quotes just for printing purposes,
+   they just want me to put some information on there") ----------
+   The one-page printed quote opens in a window over the tool: click any wording to change it, add a
+   note box, take a line off with its ✕, then print or save the PDF. None of it is saved: the quote,
+   its prices and the organiser's page stay exactly as they are, and closing the window throws it away.
+   Totals do not work themselves out again in here, so a line taken off needs its total typed too. */
+function editPrintPrep(doc){
+  const st = doc.createElement("style");
+  st.textContent = '.sheet[contenteditable]{outline:none}.sheet [contenteditable="false"]{user-select:none}' +
+    '.ep-x{position:absolute;right:-26px;width:20px;height:20px;line-height:18px;border-radius:50%;border:1px solid #c9d4dc;background:#fff;color:#b3261e;font:bold 12px/18px Arial;text-align:center;cursor:pointer;padding:0}' +
+    '.ep-row{position:relative}.ep-x:hover{background:#fdecea}' +
+    '.ep-note{border:1.5px dashed #f28c28!important;min-height:1.4em}' +
+    '@media screen{.sheet{box-shadow:0 2px 14px rgba(0,0,0,.18);margin:14px auto}body{background:#e9edf1}}' +
+    '@media print{.ep-x{display:none!important}.ep-note{border:0!important;border-left:3px solid #f28c28!important}}';
+  doc.head.appendChild(st);
+  const sh = doc.querySelector(".sheet");
+  if(!sh) return;
+  sh.setAttribute("contenteditable", "true");
+  sh.setAttribute("spellcheck", "true");
+  /* a ✕ at the end of each item line, key date and "included" box */
+  const rows = Array.from(sh.querySelectorAll("table.it tbody tr, table.kd tr, .oneincl"));
+  rows.forEach(r => {
+    const host = r.tagName === "TR" ? r.lastElementChild : r;
+    if(!host) return;
+    host.classList.add("ep-row");
+    const x = doc.createElement("button");
+    x.type = "button"; x.className = "ep-x"; x.textContent = "✕"; x.title = "Take this off the printout";
+    x.setAttribute("contenteditable", "false");
+    x.addEventListener("click", e => { e.preventDefault(); r.remove(); });
+    host.appendChild(x);
+  });
+}
+function editPrintAddNote(doc){
+  const sh = doc.querySelector(".sheet");
+  if(!sh) return;
+  const n = doc.createElement("div");
+  n.className = "msg ep-note";
+  n.innerHTML = "<b>Note:</b> type your note here";
+  const before = sh.querySelector(".foot");
+  sh.insertBefore(n, before || null);
+  n.scrollIntoView({block: "center"});
+  const r = doc.createRange(); r.selectNodeContents(n.lastChild || n); r.collapse(false);
+  const sel = doc.defaultView.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  n.focus && n.focus();
+}
+function closeEditPrint(){
+  const w = document.getElementById("editPrintWrap");
+  if(w) w.remove();
+}
+function openEditPrint(){
+  closeEditPrint();
+  const wrap = document.createElement("div");
+  wrap.id = "editPrintWrap";
+  wrap.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(20,30,40,.55);display:flex;flex-direction:column;align-items:center;padding:10px;box-sizing:border-box";
+  wrap.innerHTML =
+    '<div style="width:min(900px,100%);background:#fff;border-radius:8px;padding:9px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-sizing:border-box">' +
+      '<b style="margin-right:4px">Edit for printing</b>' +
+      '<span style="flex:1 1 260px;font-size:12.5px;color:#4f5b66">Click any wording to change it. ✕ takes a line off (change the total yourself if needed). Nothing here is saved to the quote.</span>' +
+      '<button type="button" class="btn" id="epNote">+ Add a note</button>' +
+      '<button type="button" class="btn" id="epReset">Start again</button>' +
+      '<button type="button" class="btn primary" id="epPrint">Print / Save PDF</button>' +
+      '<button type="button" class="btn ghost" id="epClose">Close</button>' +
+    '</div>' +
+    '<iframe id="epFrame" title="Printed quote to edit" style="flex:1;width:min(900px,100%);margin-top:8px;border:0;border-radius:8px;background:#e9edf1"></iframe>';
+  document.body.appendChild(wrap);
+  const f = document.getElementById("epFrame");
+  const load = () => { f.onload = () => editPrintPrep(f.contentDocument); f.srcdoc = onePageQuoteHtml(); };
+  load();
+  document.getElementById("epNote").addEventListener("click", () => editPrintAddNote(f.contentDocument));
+  document.getElementById("epReset").addEventListener("click", () => { if(confirm("Throw away your changes and start again from the quote?")) load(); });
+  document.getElementById("epClose").addEventListener("click", closeEditPrint);
+  document.getElementById("epPrint").addEventListener("click", () => {
+    const w = f.contentWindow, d = f.contentDocument;
+    const sh = d.querySelector(".sheet");
+    if(sh) sh.removeAttribute("contenteditable");
+    const fitted = fitOneSheet(d);
+    const was = document.title;
+    document.title = d.title;
+    try{ w.focus(); w.print(); }catch(e){ window.print(); }
+    setTimeout(() => {
+      document.title = was;
+      /* back to editing, at full size */
+      if(sh){ sh.style.zoom = ""; sh.style.width = ""; sh.style.height = ""; sh.style.overflow = ""; sh.setAttribute("contenteditable", "true"); }
+    }, 1500);
+    if(!fitted) showToast("There is too much on this printout to fit one page and still be readable, so it runs onto a second. Take a line or two off to bring it back to one page.", true);
+  });
+}
 function cocLinkHTML(){
   const u = cocUrl();
   if(!u) return '';
@@ -11171,7 +11266,7 @@ function buildDisplayPayload(){
     issued: isoDate(today),
     priceMode: pm,
     sections: resolvedSections(),
-    perPerson: (Q.features && Q.features.perPerson && pm === "full" && g > 0 && t.total > 0)
+    perPerson: (perPersonOn() && pm === "full" && g > 0 && t.total > 0)
       ? ("≈ " + money0(t.total / g) + " per person across " + g + " guest" + (g === 1 ? "" : "s") +
          (Q.dateStart ? (" · " + money0(t.total / g / Math.max(1, nightsCount())) + " per person per night over " +
             Math.max(1, nightsCount()) + " night" + (Math.max(1, nightsCount()) === 1 ? "" : "s")) : "")) : "",
@@ -15166,7 +15261,7 @@ function syncForm(){
   document.getElementById("f-church").value = String((Q.sel && Q.sel.church) || 0);
   document.getElementById("f-acnc").checked = !!Q.acnc;
   document.getElementById("f-church").style.display = Q.acnc ? "" : "none";
-  document.getElementById("f-feat-pp").checked = !!(Q.features && Q.features.perPerson);
+  document.getElementById("f-feat-pp").checked = perPersonOn();
   document.getElementById("f-feat-deposit").checked = !!(Q.features && Q.features.depositDates);
   document.getElementById("f-feat-kids").checked = !!(Q.features && Q.features.kids);
   document.getElementById("f-feat-cheap").checked = !!(Q.features && Q.features.cheapest);
@@ -15233,6 +15328,7 @@ function renderLockSwitch(){
   document.getElementById(pair[0]).addEventListener("change", e => {
     if(!Q.features) Q.features = {perPerson: true, depositDates: true, kids: true, cheapest: true};
     Q.features[pair[1]] = e.target.checked;
+    if(pair[1] === "perPerson") Q.features.ppSet = true;   // a choice made on this quote
     refresh();
   });
 });
@@ -15543,6 +15639,7 @@ function downloadPDF(){
   setTimeout(() => window.print(), 250);
 }
 document.getElementById("pdfBtn").addEventListener("click", downloadPDF);
+{ const eb = document.getElementById("editPrintBtn"); if(eb) eb.addEventListener("click", openEditPrint); }
 document.getElementById("pdfBtn2").addEventListener("click", downloadPDF);
 
 /* ---------- go ---------- */
