@@ -10645,26 +10645,56 @@ function editPrintPrep(doc){
   st.textContent = '.sheet[contenteditable]{outline:none}.sheet [contenteditable="false"]{user-select:none}' +
     '.ep-x{position:absolute;right:-26px;width:20px;height:20px;line-height:18px;border-radius:50%;border:1px solid #c9d4dc;background:#fff;color:#b3261e;font:bold 12px/18px Arial;text-align:center;cursor:pointer;padding:0}' +
     '.ep-row{position:relative}.ep-x:hover{background:#fdecea}' +
+    '.ep-add{position:absolute;right:-50px;width:20px;height:20px;border-radius:50%;border:1px solid #c9d4dc;background:#fff;color:#1f6f43;font:bold 14px/17px Arial;text-align:center;cursor:pointer;padding:0}.ep-add:hover{background:#e7f4ec}' +
+    '.ep-new td{background:#fffbe6}' +
     '.ep-note{border:1.5px dashed #f28c28!important;min-height:1.4em}' +
     '@media screen{.sheet{box-shadow:0 2px 14px rgba(0,0,0,.18);margin:14px auto}body{background:#e9edf1}}' +
-    '@media print{.ep-x{display:none!important}.ep-note{border:0!important;border-left:3px solid #f28c28!important}}';
+    '@media print{.ep-x,.ep-add{display:none!important}.ep-new td{background:none!important}.ep-note{border:0!important;border-left:3px solid #f28c28!important}}';
   doc.head.appendChild(st);
   const sh = doc.querySelector(".sheet");
   if(!sh) return;
   sh.setAttribute("contenteditable", "true");
   sh.setAttribute("spellcheck", "true");
-  /* a ✕ at the end of each item line, key date and "included" box */
-  const rows = Array.from(sh.querySelectorAll("table.it tbody tr, table.kd tr, .oneincl"));
-  rows.forEach(r => {
-    const host = r.tagName === "TR" ? r.lastElementChild : r;
-    if(!host) return;
-    host.classList.add("ep-row");
-    const x = doc.createElement("button");
-    x.type = "button"; x.className = "ep-x"; x.textContent = "✕"; x.title = "Take this off the printout";
-    x.setAttribute("contenteditable", "false");
-    x.addEventListener("click", e => { e.preventDefault(); r.remove(); });
-    host.appendChild(x);
-  });
+  /* a ✕ at the end of each item line, key date and "included" box; item lines and key dates also get
+     a + that puts a new line under them (23 Oct 2026, Joel: "a separate line for breakfast") */
+  Array.from(sh.querySelectorAll("table.it tbody tr, table.kd tr, .oneincl")).forEach(r => editPrintControls(doc, r));
+}
+function editPrintControls(doc, r){
+  const host = r.tagName === "TR" ? r.lastElementChild : r;
+  if(!host) return;
+  host.classList.add("ep-row");
+  const btn = (cls, text, title, fn) => {
+    const b = doc.createElement("button");
+    b.type = "button"; b.className = cls; b.textContent = text; b.title = title;
+    b.setAttribute("contenteditable", "false");
+    b.addEventListener("click", e => { e.preventDefault(); fn(); });
+    host.appendChild(b);
+  };
+  btn("ep-x", "✕", "Take this off the printout", () => r.remove());
+  if(r.tagName === "TR") btn("ep-add", "+", "Add a new line under this one", () => editPrintNewLine(doc, r));
+}
+/* a new line under row r, in the same table: an item line (name, details, qty, unit, total) or a key date.
+   The words are placeholders, selected so typing replaces them; totals do not add themselves up. */
+function editPrintNewLine(doc, r){
+  const table = r.closest("table");
+  const tr = doc.createElement("tr");
+  tr.className = "ep-new";
+  let first;
+  if(table && table.classList.contains("kd")){
+    tr.innerHTML = '<td>Date</td><td>What happens</td>';
+    first = tr.firstElementChild;
+  } else {
+    /* the columns of an ordinary item line (a section heading spans them all) */
+    const cols = (table && table.querySelectorAll("thead th").length) || 4;
+    tr.innerHTML = '<td><b>New line</b><div class="sub">details (optional)</div></td>' +
+      Array.from({length: cols - 1}, () => '<td class="n"></td>').join("");
+    first = tr.firstElementChild.firstElementChild;
+  }
+  r.parentNode.insertBefore(tr, r.nextSibling);
+  editPrintControls(doc, tr);
+  const range = doc.createRange(); range.selectNodeContents(first);
+  const sel = doc.defaultView.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  tr.scrollIntoView({block: "nearest"});
 }
 function editPrintAddNote(doc){
   const sh = doc.querySelector(".sheet");
@@ -10691,7 +10721,7 @@ function openEditPrint(){
   wrap.innerHTML =
     '<div style="width:min(900px,100%);background:#fff;border-radius:8px;padding:9px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-sizing:border-box">' +
       '<b style="margin-right:4px">Edit for printing</b>' +
-      '<span style="flex:1 1 260px;font-size:12.5px;color:#4f5b66">Click any wording to change it. ✕ takes a line off (change the total yourself if needed). Nothing here is saved to the quote.</span>' +
+      '<span style="flex:1 1 260px;font-size:12.5px;color:#4f5b66">Click any wording to change it. + adds a new line under that line, ✕ takes it off (totals do not add up by themselves). Nothing here is saved to the quote.</span>' +
       '<button type="button" class="btn" id="epNote">+ Add a note</button>' +
       '<button type="button" class="btn" id="epReset">Start again</button>' +
       '<button type="button" class="btn primary" id="epPrint">Print / Save PDF</button>' +
