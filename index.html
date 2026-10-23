@@ -9632,6 +9632,9 @@ function wslrDepositInvoiceHtml(d) {
     ".lines{width:100%;margin-top:14px;font-size:10pt}.lines th{background:#0b5c8e;color:#fff;text-align:left;padding:6px 7px;font-size:9.5pt}" +
     ".lines td{padding:5px 7px;border-bottom:1px solid #e3e9ee}.lines tr.g td{background:#eef3f7;font-weight:bold;color:#1c2b36;border-bottom:1px solid #d4dee6}" +
     ".r{text-align:right;white-space:nowrap}.tot td{padding:4px 7px;font-size:10.5pt}.tot td.lbl{white-space:nowrap}.tot .big td{font-size:13pt;font-weight:bold;color:#0b5c8e;border-top:2px solid #0b5c8e;padding-top:7px}" +
+    /* 23 Oct 2026, the full current bill laid out like the printed quote: section totals, the venue credit in green */
+    ".gnote{font-weight:normal;color:#4f5b66;font-size:8.5pt;margin-left:8px}.lines tr.cr td{color:#3d6f2a}.lines tr.g.cr td{background:#eef6ea;color:#3d6f2a}" +
+    ".tot .cred td{color:#3d6f2a}.tot .gstl td{font-size:9pt;color:#4f5b66;padding-top:2px}" +
     ".pay{margin-top:16px;border:1px solid #c9d4dc;background:#f7fafc;padding:9px 12px;font-size:10pt;line-height:1.5}" +
     ".terms{margin-top:14px;font-size:8.5pt;color:#3c4751;line-height:1.4}.msg{margin-top:12px;font-size:10pt;line-height:1.45;border-left:3px solid #f28c28;padding-left:10px}" +
     "tr{page-break-inside:avoid}" +
@@ -9657,17 +9660,27 @@ function wslrDepositInvoiceHtml(d) {
     (b.group ? "<br>" + e(b.group) : "") + (b.address ? "<br>" + e(b.address) : "") + (b.email ? "<br>" + e(b.email) : "") + (b.phone ? "<br>" + e(b.phone) : "") + "</div></td></tr></table>";
   h += "<table class=\"lines\"><tr><th>Description</th><th class=\"r\" style=\"width:50px\">Qty</th><th class=\"r\" style=\"width:90px\">Unit</th><th class=\"r\" style=\"width:100px\">Amount</th></tr>";
   groups.forEach(function (g) {
-    if (g.label) h += "<tr class=\"g\"><td colspan=\"4\">" + e(g.label) + "</td></tr>";
+    var gTot = g.total !== undefined && g.total !== null;
+    if (g.label) h += "<tr class=\"g" + (g.credit ? " cr" : "") + "\"><td colspan=\"" + (gTot ? 3 : 4) + "\">" + e(g.label) + (g.note ? "<span class=\"gnote\">" + e(g.note) + "</span>" : "") + "</td>" +
+      (gTot ? "<td class=\"r\">" + m(g.total) + "</td>" : "") + "</tr>";
     (g.lines || []).forEach(function (l) {
-      h += "<tr><td>" + e(l.desc) + (l.sub ? "<div style=\"color:#4f5b66;font-size:8.5pt\">" + e(l.sub) + "</div>" : "") + "</td><td class=\"r\">" + e(l.qty) + "</td><td class=\"r\">" + m(l.unit) + "</td><td class=\"r\">" + m(l.amount) + "</td></tr>";
+      var noPrice = l.unit === null || l.unit === "";
+      h += "<tr" + (l.credit ? " class=\"cr\"" : "") + "><td>" + e(l.desc) + (l.sub ? "<div style=\"color:#4f5b66;font-size:8.5pt\">" + e(l.sub) + "</div>" : "") + "</td><td class=\"r\">" + e(l.qty) + "</td><td class=\"r\">" + (noPrice ? "" : m(l.unit)) + "</td><td class=\"r\">" + m(l.amount) + "</td></tr>";
     });
   });
   if (!groups.length) h += "<tr><td colspan=\"4\" style=\"color:#4f5b66\">No lines</td></tr>";
   h += "</table>";
-  h += "<table class=\"tot\" style=\"width:100%;margin-top:6px\"><tr><td style=\"width:38%\"></td><td class=\"lbl\">Subtotal (includes GST)</td><td class=\"r\" style=\"width:110px\">" + m(subtotal) + "</td></tr>" +
-    "<tr><td></td><td class=\"lbl\" style=\"color:#4f5b66\">GST included" + (bill ? " (after discounts)" : "") + "</td><td class=\"r\" style=\"color:#4f5b66\">" + m(gst) + "</td></tr>";
-  (d.credits || []).forEach(function (c) { h += "<tr><td></td><td class=\"lbl\">" + e(c.label) + "</td><td class=\"r\">" + m(-c.amount) + "</td></tr>"; });
-  h += "<tr class=\"big\"><td></td><td class=\"lbl\">" + e(d.balanceLabel || "BALANCE DUE") + "</td><td class=\"r\">" + m(balance) + "</td></tr></table>";
+  if (bill) {
+    h += "<table class=\"tot\" style=\"width:100%;margin-top:6px\"><tr><td style=\"width:38%\"></td><td class=\"lbl\">Subtotal</td><td class=\"r\" style=\"width:110px\">" + m(subtotal) + "</td></tr>";
+    (d.credits || []).forEach(function (c) { h += "<tr" + (c.paid ? "" : " class=\"cred\"") + "><td></td><td class=\"lbl\" style=\"white-space:normal\">" + e(c.label) + "</td><td class=\"r\">" + m(-c.amount) + "</td></tr>"; });
+    h += "<tr class=\"big\"><td></td><td class=\"lbl\">" + e(d.balanceLabel || "TOTAL OF BOOKING") + "</td><td class=\"r\">" + m(balance) + "</td></tr>" +
+      "<tr class=\"gstl\"><td></td><td class=\"lbl\">Includes GST (10%)</td><td class=\"r\">" + m(gst) + "</td></tr></table>";
+  } else {
+    h += "<table class=\"tot\" style=\"width:100%;margin-top:6px\"><tr><td style=\"width:38%\"></td><td class=\"lbl\">Subtotal (includes GST)</td><td class=\"r\" style=\"width:110px\">" + m(subtotal) + "</td></tr>" +
+      "<tr><td></td><td class=\"lbl\" style=\"color:#4f5b66\">GST included</td><td class=\"r\" style=\"color:#4f5b66\">" + m(gst) + "</td></tr>";
+    (d.credits || []).forEach(function (c) { h += "<tr><td></td><td class=\"lbl\">" + e(c.label) + "</td><td class=\"r\">" + m(-c.amount) + "</td></tr>"; });
+    h += "<tr class=\"big\"><td></td><td class=\"lbl\">" + e(d.balanceLabel || "BALANCE DUE") + "</td><td class=\"r\">" + m(balance) + "</td></tr></table>";
+  }
   /* the whole booking: the quoted total and every payment that makes it up */
   if (d.plan && d.plan.payments && d.plan.payments.length) {
     var sumPay = 0;
@@ -9866,26 +9879,30 @@ function fullBillData(){
   const d = depositInvoiceData();
   const t = totals();
   const cd = currentDeposit();
-  const groups = [{label: "Accommodation", lines: []}, {label: "Conference rooms", lines: []}, {label: "Catering", lines: []}, {label: "Other items", lines: []}];
-  /* $0 lines carry no money, so they are not rows on a bill */
-  pricedLines().forEach(l => {
-    const u = String(l.unit || "");
-    const g = /^per unit/.test(u) ? 0 : (u === "per day" || u === "per half day" || l.venueAdj) ? 1 : (!l.fixed && /per (person|meal)/.test(u)) ? 2 : 3;
-    const qty = Number(l.qty) || 0;
-    const amount = Math.round((Number(l.total) || 0) * 100) / 100;
-    const bits = [];
-    if(g === 0) bits.push(u.replace(/^per unit for /, ""));
-    if(l.nights > 1) bits.push("× " + l.nights + " " + (l.nightsWord || "days"));
-    if(l.when) bits.push(l.when);
-    groups[g].lines.push({desc: l.name, sub: bits.join(" · "), qty: qty, unit: qty ? Math.round(amount / qty * 100) / 100 : amount, amount: amount});
-  });
+  /* 23 Oct 2026 (Joel: "more clear with the conference room credit etc, like the quote we sent out"):
+     the printed quote's sections, each with its total. A conference room booked as a full day and two
+     half days is one line of whole days, and the venue credit comes off in a section of its own
+     ("Off Conference Room 5") after the charges. $0 lines carry no money, so they are not rows. */
+  const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+  const secs = printSections();
+  const groups = secs.map(sec => ({
+    label: sec.title, note: sec.note || "", credit: sec.key === "credit",
+    total: secs.length > 1 ? r2(sec.total) : null,
+    lines: sec.rows.map(l => {
+      const bits = [];
+      if(!l.credit && l.unit && l.unit !== "flat" && l.unit !== "discount") bits.push(l.unit);
+      if(l.nights > 1) bits.push("× " + l.nights + " " + String(l.nightsWord || "nights").replace(/s$/, "") + "s");
+      if(l.when) bits.push(l.when);
+      return {desc: l.name, sub: bits.join(" · "), qty: l.credit ? "" : (l.qtyText || String(l.qty)), unit: l.credit ? null : r2(l.price), amount: r2(l.total), credit: !!l.credit};
+    })
+  }));
   const credits = [];
-  if(t.church > 0) credits.push({label: "Church or Charity Discount (" + t.churchPct + "%)", amount: Math.round(t.church * 100) / 100});
+  if(t.church > 0) credits.push({label: "Church or Charity Discount − " + t.churchPct + "% (accommodation & venue hire)", amount: Math.round(t.church * 100) / 100});
   (t.discLines || []).forEach(x => credits.push({label: x.label, amount: Math.round(x.amount * 100) / 100}));
   const dep = cd.dep || cd.prev;
   const paid = dep && dep.status === "paid" ? (Number(dep.paid) || Number(dep.total) || Number(dep.amount) || 0)
     : (Q.rmsLink && Number(Q.rmsLink.paid) > 0 ? Number(Q.rmsLink.paid) : 0);
-  if(paid > 0) credits.push({label: (dep && dep.number ? "Less deposit received (" + dep.number + ")" : "Less payments already received"), amount: paid});
+  if(paid > 0) credits.push({label: (dep && dep.number ? "Less deposit received (" + dep.number + ")" : "Less payments already received"), amount: paid, paid: true});
   return Object.assign({}, d, {
     kind: "bill",
     gst: t.gst,
