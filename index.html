@@ -1481,7 +1481,9 @@
         <button class="btn emailbtn staffedit-ui" id="emailQuoteBtn2" style="width:100%; margin-bottom:8px">Email quote →</button>
         <button class="btn staffedit-ui" id="linkBtn2" style="width:100%; margin-bottom:8px" title="Save the quote and show the organiser's link, to send it yourself">Save &amp; get link</button>
         <button class="btn primary" id="pdfBtn" style="width:100%">Download PDF</button>
-        <button class="btn staffedit-ui" id="editPrintBtn" style="width:100%; margin-top:8px" title="Open the one-page printed quote to add or change wording for this print only. The saved quote does not change.">Edit &amp; print</button>
+        <button class="btn staffedit-ui" id="editPrintBtn" style="width:100%; margin-top:8px" title="Edit the one-page printout line by line: quantities, prices, sections, discounts, key dates and notes. The totals work themselves out and are checked. Saved with the quote; the organiser's page and RMS keep the quote's own prices.">Edit &amp; print</button>
+        <div id="printEditInfo" class="staffedit-ui"></div>
+        <div id="totalsCheckSide" class="staffedit-ui"></div>
         <div class="pdflink" style="margin-top:8px; flex-direction:column; align-items:stretch"><span>PDF length</span><select class="pdfModeSel" style="width:100%"><option value="full">Full &mdash; everything printed</option><option value="links">Short &mdash; link to the information</option><option value="onepage">One page &mdash; a single sheet</option></select><em id="pdfLinkWhy2"></em></div>
         <p class="hint" style="margin-top:8px">Opens your browser's print box: choose "Save as PDF". The PDF captures the selection as it stands. This page always shows the full wording; only the PDF is shortened.</p>
       </aside>
@@ -3550,6 +3552,7 @@ function blankQuote(num){
     secText: {},        // per-quote wording overrides for info sections: {sectionId: {title, text}}
     kdOver: null,       // per-quote "Money & key dates" rows: null = automatic, else [{d, t}]
     kdCfg: null,        // per-quote deadline rules; null = the house rules from Settings
+    printEdit: null,    // the edited one-page printout (Edit & print, 26 Oct 2026): null = none
     accomPriced: true,  // made under the import-your-prices rule (see normalizeQuote for older quotes)
     catalog: {},        // per-quote menu curation: {itemId: {on, price, avail}}
     rates: {},          // nightly tariffs for this quote: {itemId: {"2026-08-21": 770, ...}}
@@ -3612,6 +3615,7 @@ function normalizeQuote(q){
   if(!q.secText || typeof q.secText !== "object") q.secText = {};
   if(q.kdOver === undefined || (q.kdOver !== null && !Array.isArray(q.kdOver))) q.kdOver = null;
   if(q.kdCfg === undefined || (q.kdCfg !== null && typeof q.kdCfg !== "object")) q.kdCfg = null;
+  if(!q.printEdit || typeof q.printEdit !== "object" || !Array.isArray(q.printEdit.lines)) q.printEdit = null;
   if(q.acceptedAt === undefined) q.acceptedAt = (q.status === "Accepted" || q.accepted) ? (q.sentAt || null) : null;
   /* quotes made before accommodation required an imported/typed price were silently
      priced from the rate card; freeze that card price into the quote so those older
@@ -7033,6 +7037,7 @@ function snapshotQ(){
     secText: JSON.parse(JSON.stringify(Q.secText || {})),
     kdOver: Array.isArray(Q.kdOver) ? JSON.parse(JSON.stringify(Q.kdOver)) : null,
     kdCfg: Q.kdCfg ? JSON.parse(JSON.stringify(Q.kdCfg)) : null,
+    printEdit: Q.printEdit ? JSON.parse(JSON.stringify(Q.printEdit)) : null,
     accomPriced: Q.accomPriced !== undefined ? Q.accomPriced : true,
     ratecard: JSON.parse(JSON.stringify(editableGroups())), // so the emailed link prices from the same card
     catalog: JSON.parse(JSON.stringify(Q.catalog || {})),
@@ -7234,7 +7239,8 @@ function renderTotals(){
   document.getElementById("totals").innerHTML = totalsHTML(tt, "Total (inc GST)") +
     (tt.venueCredit > 0 ? '<div class="totnote">Includes ' + money(tt.venueCredit) + ' venue credit, already off the conference room prices (' + esc(vcMoney(venueCreditPerDay())) + ' a day)</div>' : '') +
     (pm === "nototal" ? '<div class="hiddenflag">final total hidden on the client quote</div>'
-     : pm === "noprices" ? '<div class="hiddenflag">all prices hidden on the client quote</div>' : '');
+     : pm === "noprices" ? '<div class="hiddenflag">all prices hidden on the client quote</div>' : '') +
+    quoteCheckHTML();
 }
 
 /* ---------- selection mutators (shared by staff pre-fill and the organiser's page) ---------- */
@@ -9414,8 +9420,9 @@ function perPersonOn(){
   return !!f.perPerson || !f.ppSet;
 }
 function perPersonHTML(t){
-  const g = Number(Q.guests) || 0;
-  if(!perPersonOn() || g <= 0 || !(t.total > 0)) return '';
+  /* an edited printout (Edit & print) brings its own guests and its own tick */
+  const g = t.guests !== undefined ? (Number(t.guests) || 0) : (Number(Q.guests) || 0);
+  if((t.ppOff !== undefined ? t.ppOff : !perPersonOn()) || g <= 0 || !(t.total > 0)) return '';
   const n = Q.dateStart ? Math.max(1, nightsCount()) : 0;
   const pp = t.total / g;
   let out = '≈ <b>' + money0(pp) + '</b> per person across your ' + g + ' guest' + (g === 1 ? '' : 's');
@@ -10497,15 +10504,18 @@ function onePageLinksHTML(){
     '<div class="onenote">Your accommodation and the conference rooms, catering and the menu, children’s pricing, check-in and check-out, final numbers, the deposit and cancellation conditions, and what we ask of your group. Would you rather have these on paper? Tell us and we will send them.</div>' +
   '</div>';
 }
-function onePageQuoteHtml(){
-  const t = totals();
+function onePageQuoteHtml(ed){
+  /* ed: an edited printout (Edit & print, 26 Oct 2026); without it, the quote as it is */
+  const t = ed ? peTotals(ed) : totals();
+  const H = ed ? ed.head : {contact: Q.contact, org: Q.org};
   const pm = Q.priceMode || "full";
   const showPrices = pm !== "noprices";
-  const kd = keyDatesRows(showPrices);
+  const kd = ed ? (ed.kd || []).filter(r => String(r[0] || "").trim() || String(r[1] || "").trim()) : keyDatesRows(showPrices);
   const issued = fmtDate(today);
   const valid = fmtDate(plusDays(today, Number(Q.validDays) || 14));
-  const title = "WSLR Quote " + Q.num + (Q.org ? " - " + Q.org : (Q.contact ? " - " + Q.contact : ""));
-  const notes = String(Q.sel && Q.sel.message || "").trim();
+  const title = "WSLR Quote " + Q.num + (H.org ? " - " + H.org : (H.contact ? " - " + H.contact : ""));
+  const notes = ed ? String(ed.msg || "").trim() : String(Q.sel && Q.sel.message || "").trim();
+  const school = ed ? String(ed.head.school || "").trim() : schoolFirstPageText();
   return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' +
     '*{box-sizing:border-box}' +
     'body{margin:0;padding:0;background:#fff;font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#1c1c1a;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
@@ -10546,6 +10556,7 @@ function onePageQuoteHtml(){
     'table.kd td:first-child{white-space:nowrap;font-weight:700;width:118px;color:#1c1c1a}' +
     'table.kd td:last-child{color:#4f5b66}' +
     '.msg{margin-top:9px;font-size:9.5px;color:#4f5b66;line-height:1.5}' +
+    '.enote{border-left:3px solid #f28c28;padding-left:8px}' +
     '.onelinks{margin-top:11px;border:1px solid #cfd6dd;border-radius:7px;padding:8px 11px;background:#f7f9fb}' +
     '.onelinks>b{display:block;font-size:10px;margin-bottom:5px}' +
     '.onelink{display:flex;justify-content:space-between;gap:12px;font-size:9.5px;padding:1.5px 0}' +
@@ -10564,20 +10575,22 @@ function onePageQuoteHtml(){
         (quoteResNo() ? '<div>Reservation <b>' + esc(quoteResNo()) + '</b></div>' : '') +
         (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
         '<div style="margin-top:4px">Phone ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>www.wslr.com.au</div></div></div>' +
-    '<div class="for">Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : '') + '</div>' +
-    '<div class="ev">' + esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests</div>' +
-    (schoolFirstPageText() ? '<div class="ev" style="color:#1b2a38;font-weight:600">' + esc(schoolFirstPageText()) + '</div>' : '') +
-    (pricedLines().length
+    '<div class="for">Prepared for <b>' + esc(H.contact) + '</b>' + (H.org ? ' · ' + esc(H.org) : '') + '</div>' +
+    '<div class="ev">' + (ed ? esc([ed.head.event, ed.head.dates, String(ed.head.guests || "").trim() ? ed.head.guests + ' guests' : ''].filter(x => String(x || '').trim()).join(' · '))
+      : esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests') + '</div>' +
+    (school ? '<div class="ev" style="color:#1b2a38;font-weight:600">' + esc(school) + '</div>' : '') +
+    ((ed ? ed.lines.some(l => l.on) : pricedLines().length)
       ? '<table class="it"><thead><tr><th>Item</th><th class="n">Qty</th>' +
           (showPrices ? '<th class="n">Unit</th><th class="n">Total</th>' : '') + '</tr></thead><tbody>' +
-          onePageRows(showPrices) + '</tbody></table>'
-      : (displayLines().length ? '' : '<div class="msg">Nothing has been selected on this quote yet.</div>')) +
-    includedHTML("oneincl") +
+          (ed ? peRowsHtml(ed, showPrices) : onePageRows(showPrices)) + '</tbody></table>'
+      : (ed || displayLines().length ? '' : '<div class="msg">Nothing has been selected on this quote yet.</div>')) +
+    (ed && !ed.incl ? '' : includedHTML("oneincl")) +
     onePageTotals(t, showPrices, pm) +
     (showPrices ? '<div class="aud">All prices are in Australian dollars (AUD) and include GST</div>' : '') +
     (kd.length ? '<div class="box"><b>Money &amp; key dates for your event</b><table class="kd">' +
       kd.map(r => '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>').join('') + '</table></div>' : '') +
     (notes ? '<div class="msg"><b>You told us:</b> ' + esc(notes) + '</div>' : '') +
+    (ed ? (ed.notes || []).filter(n => String(n || '').trim()).map(n => '<div class="msg enote"><b>Note:</b> ' + esc(n).replace(/\n/g, '<br>') + '</div>').join('') : '') +
     onePageLinksHTML() +
     '<div class="foot">' + VENUE + ' · ' + VENUE_ADDR1 + ', ' + VENUE_ADDR2 + ' · ' + VENUE_ABN +
       ' · Phone ' + VENUE_PHONE + ' · ' + VENUE_EMAIL + '<br>' +
@@ -10610,7 +10623,8 @@ function fitOneSheet(doc){
   sh.style.overflow = "visible";
   return false;
 }
-function printOnePageQuote(){
+/* ed: an edited printout (Edit & print); without it, the quote as it is */
+function printOnePageQuote(ed){
   let f = document.getElementById("onePageFrame");
   if(f) f.remove();
   f = document.createElement("iframe");
@@ -10632,124 +10646,783 @@ function printOnePageQuote(){
     else { let left = imgs.length; imgs.forEach(im => { im.onload = im.onerror = () => { if(--left === 0) go(); }; }); }
   };
   document.body.appendChild(f);
-  f.srcdoc = onePageQuoteHtml();
+  f.srcdoc = onePageQuoteHtml(ed);
 }
-/* ---------- Edit & print (23 Oct 2026, Joel: "manipulate quotes just for printing purposes,
-   they just want me to put some information on there") ----------
-   The one-page printed quote opens in a window over the tool: click any wording to change it, add a
-   note box, take a line off with its ✕, then print or save the PDF. None of it is saved: the quote,
-   its prices and the organiser's page stay exactly as they are, and closing the window throws it away.
-   Totals do not work themselves out again in here, so a line taken off needs its total typed too. */
-function editPrintPrep(doc){
-  const st = doc.createElement("style");
-  st.textContent = '.sheet[contenteditable]{outline:none}.sheet [contenteditable="false"]{user-select:none}' +
-    '.ep-x{position:absolute;right:-26px;width:20px;height:20px;line-height:18px;border-radius:50%;border:1px solid #c9d4dc;background:#fff;color:#b3261e;font:bold 12px/18px Arial;text-align:center;cursor:pointer;padding:0}' +
-    '.ep-row{position:relative}.ep-x:hover{background:#fdecea}' +
-    '.ep-add{position:absolute;right:-50px;width:20px;height:20px;border-radius:50%;border:1px solid #c9d4dc;background:#fff;color:#1f6f43;font:bold 14px/17px Arial;text-align:center;cursor:pointer;padding:0}.ep-add:hover{background:#e7f4ec}' +
-    '.ep-new td{background:#fffbe6}' +
-    '.ep-note{border:1.5px dashed #f28c28!important;min-height:1.4em}' +
-    '@media screen{.sheet{box-shadow:0 2px 14px rgba(0,0,0,.18);margin:14px auto}body{background:#e9edf1}}' +
-    '@media print{.ep-x,.ep-add{display:none!important}.ep-new td{background:none!important}.ep-note{border:0!important;border-left:3px solid #f28c28!important}}';
-  doc.head.appendChild(st);
-  const sh = doc.querySelector(".sheet");
-  if(!sh) return;
-  sh.setAttribute("contenteditable", "true");
-  sh.setAttribute("spellcheck", "true");
-  /* a ✕ at the end of each item line, key date and "included" box; item lines and key dates also get
-     a + that puts a new line under them (23 Oct 2026, Joel: "a separate line for breakfast") */
-  Array.from(sh.querySelectorAll("table.it tbody tr, table.kd tr, .oneincl")).forEach(r => editPrintControls(doc, r));
+/* ---------- Edit & print: the printout editor (26 Oct 2026, Joel: "a more in-depth editor ... similar
+   functionality to the invoice tool ... verification checks to make sure totals line up") ----------
+   The one-page printed quote as lines in sections, discounts, key dates and notes, laid out like the
+   invoice tool's lines: change a quantity, the days or a price and the line works itself out, then
+   its section, the discounts, the total, the GST and the cost per person, with the printout beside
+   it. A tick takes a line off the printout without losing it, ▲ ▼ move it (out of the top or bottom
+   of a section into the next one), + adds a line under it, and lines can come from the price list.
+   Saved with the quote as its printed version (Q.printEdit): it opens again next time, and Download
+   PDF prints it while "Download PDF prints the edited printout" is ticked. The quote itself (the
+   organiser's page, accepting, the deposit invoice and RMS) keeps its own prices; the checks say when
+   the two differ. Staff only.
+   The checks (peChecks here, quoteChecks for the quote itself): every line is quantity × days ×
+   price less its % off; the lines add up to the subtotal; the subtotal less the discounts is the
+   total; the GST is 1/11 of it; no discount is bigger than what it comes off; the venue credit is not
+   bigger than the rooms; the deposit and part payment in the key dates fit the total; the printout
+   and the quote come to the same total, and the quote has not changed since the printout was made. */
+let PE = null;   // the open editor: {ed, dirty, fixes, timer}
+function peR2(n){ return Math.round((Number(n) || 0) * 100) / 100; }
+function peNum(s){ return Number(String(s || "").replace(/[$,\s]/g, "")) || 0; }
+function peId(){ return "p" + Math.random().toString(36).slice(2, 9); }
+function peHash(s){ let h = 5381; for(let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+function peDays(l){ const n = Number(l.nights) || 0; return n > 1 ? n : 1; }
+function peOff(l){ return Math.min(100, Math.max(0, Number(l.off) || 0)); }
+/* what a line comes to: quantity × days × price, less its own % off */
+function peLineCalc(l){ return peR2((Number(l.qty) || 0) * peDays(l) * (Number(l.price) || 0) * (1 - peOff(l) / 100)); }
+/* the dollar figures in a piece of wording: "$3,100 ... $12,345" -> [3100, 12345] */
+function peAmounts(s){
+  const a = [];
+  String(s || "").replace(/\$\s?([\d,]+(?:\.\d{1,2})?)/g, (m, n) => { a.push(peNum(n)); return m; });
+  return a;
 }
-function editPrintControls(doc, r){
-  const host = r.tagName === "TR" ? r.lastElementChild : r;
-  if(!host) return;
-  host.classList.add("ep-row");
-  const btn = (cls, text, title, fn) => {
-    const b = doc.createElement("button");
-    b.type = "button"; b.className = cls; b.textContent = text; b.title = title;
-    b.setAttribute("contenteditable", "false");
-    b.addEventListener("click", e => { e.preventDefault(); fn(); });
-    host.appendChild(b);
-  };
-  btn("ep-x", "✕", "Take this off the printout", () => r.remove());
-  if(r.tagName === "TR") btn("ep-add", "+", "Add a new line under this one", () => editPrintNewLine(doc, r));
+/* a fingerprint of what the quote prints: changes when a line, a price, the total, the guests or the dates do */
+function quotePrintSig(){
+  try{
+    const t = totals();
+    return peHash(JSON.stringify([printSections().map(s => [s.key, s.rows.map(l => [l.name, l.qty, peR2(l.price), peR2(l.total)])]),
+      peR2(t.total), String(Q.guests || ""), Q.dateStart || "", Q.dateEnd || ""]));
+  }catch(e){ return ""; }
 }
-/* a new line under row r, in the same table: an item line (name, details, qty, unit, total) or a key date.
-   The words are placeholders, selected so typing replaces them; totals do not add themselves up. */
-function editPrintNewLine(doc, r){
-  const table = r.closest("table");
-  const tr = doc.createElement("tr");
-  tr.className = "ep-new";
-  let first;
-  if(table && table.classList.contains("kd")){
-    tr.innerHTML = '<td>Date</td><td>What happens</td>';
-    first = tr.firstElementChild;
-  } else {
-    /* the columns of an ordinary item line (a section heading spans them all) */
-    const cols = (table && table.querySelectorAll("thead th").length) || 4;
-    tr.innerHTML = '<td><b>New line</b><div class="sub">details (optional)</div></td>' +
-      Array.from({length: cols - 1}, () => '<td class="n"></td>').join("");
-    first = tr.firstElementChild.firstElementChild;
-  }
-  r.parentNode.insertBefore(tr, r.nextSibling);
-  editPrintControls(doc, tr);
-  const range = doc.createRange(); range.selectNodeContents(first);
-  const sel = doc.defaultView.getSelection(); sel.removeAllRanges(); sel.addRange(range);
-  tr.scrollIntoView({block: "nearest"});
+/* the grey words under a printed item, as onePageRows writes them (the days are added when it prints) */
+function peSubOf(l){
+  const bits = [];
+  if(l.unit && l.unit !== "flat" && l.unit !== "discount") bits.push(l.unit);
+  if(l.when) bits.push(l.when);
+  return bits.join(" · ");
 }
-function editPrintAddNote(doc){
-  const sh = doc.querySelector(".sheet");
-  if(!sh) return;
-  const n = doc.createElement("div");
-  n.className = "msg ep-note";
-  n.innerHTML = "<b>Note:</b> type your note here";
-  const before = sh.querySelector(".foot");
-  sh.insertBefore(n, before || null);
-  n.scrollIntoView({block: "center"});
-  const r = doc.createRange(); r.selectNodeContents(n.lastChild || n); r.collapse(false);
-  const sel = doc.defaultView.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-  n.focus && n.focus();
-}
-function closeEditPrint(){
-  const w = document.getElementById("editPrintWrap");
-  if(w) w.remove();
-}
-function openEditPrint(){
-  closeEditPrint();
-  const wrap = document.createElement("div");
-  wrap.id = "editPrintWrap";
-  wrap.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(20,30,40,.55);display:flex;flex-direction:column;align-items:center;padding:10px;box-sizing:border-box";
-  wrap.innerHTML =
-    '<div style="width:min(900px,100%);background:#fff;border-radius:8px;padding:9px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-sizing:border-box">' +
-      '<b style="margin-right:4px">Edit for printing</b>' +
-      '<span style="flex:1 1 260px;font-size:12.5px;color:#4f5b66">Click any wording to change it. + adds a new line under that line, ✕ takes it off (totals do not add up by themselves). Nothing here is saved to the quote.</span>' +
-      '<button type="button" class="btn" id="epNote">+ Add a note</button>' +
-      '<button type="button" class="btn" id="epReset">Start again</button>' +
-      '<button type="button" class="btn primary" id="epPrint">Print / Save PDF</button>' +
-      '<button type="button" class="btn ghost" id="epClose">Close</button>' +
-    '</div>' +
-    '<iframe id="epFrame" title="Printed quote to edit" style="flex:1;width:min(900px,100%);margin-top:8px;border:0;border-radius:8px;background:#e9edf1"></iframe>';
-  document.body.appendChild(wrap);
-  const f = document.getElementById("epFrame");
-  const load = () => { f.onload = () => editPrintPrep(f.contentDocument); f.srcdoc = onePageQuoteHtml(); };
-  load();
-  document.getElementById("epNote").addEventListener("click", () => editPrintAddNote(f.contentDocument));
-  document.getElementById("epReset").addEventListener("click", () => { if(confirm("Throw away your changes and start again from the quote?")) load(); });
-  document.getElementById("epClose").addEventListener("click", closeEditPrint);
-  document.getElementById("epPrint").addEventListener("click", () => {
-    const w = f.contentWindow, d = f.contentDocument;
-    const sh = d.querySelector(".sheet");
-    if(sh) sh.removeAttribute("contenteditable");
-    const fitted = fitOneSheet(d);
-    const was = document.title;
-    document.title = d.title;
-    try{ w.focus(); w.print(); }catch(e){ window.print(); }
-    setTimeout(() => {
-      document.title = was;
-      /* back to editing, at full size */
-      if(sh){ sh.style.zoom = ""; sh.style.width = ""; sh.style.height = ""; sh.style.overflow = ""; sh.setAttribute("contenteditable", "true"); }
-    }, 1500);
-    if(!fitted) showToast("There is too much on this printout to fit one page and still be readable, so it runs onto a second. Take a line or two off to bring it back to one page.", true);
+/* a new printout, made from the quote as it is now */
+function peSeed(){
+  const t = totals();
+  const secs = [], lines = [];
+  printSections().forEach(s => {
+    const sid = peId();
+    secs.push({id: sid, key: s.key, title: s.title, note: s.note || ""});
+    s.rows.forEach(l => {
+      lines.push({
+        id: peId(), sec: sid, name: String(l.name || ""), sub: l.credit ? "" : peSubOf(l),
+        qty: l.credit ? 1 : (Number(l.qty) || 0), nights: Number(l.nights) > 1 ? Number(l.nights) : 0,
+        nightsWord: String(l.nightsWord || "nights"),
+        price: l.credit ? peR2(l.total) : peR2(l.price), off: Number(l.disc) || 0,
+        amount: peR2(l.total), on: true, credit: !!l.credit
+      });
+    });
   });
+  const secIds = k => secs.filter(s => s.key === k).map(s => s.id);
+  const d = Q.disc || {};
+  const discs = [];
+  /* each discount as a % of what it comes off, so it follows the lines when they change; one that does
+     not come to the quote's own figure that way (rooms at their own %, a $ discount) keeps its amount */
+  if(t.church > 0) discs.push({id: peId(), label: "Church or Charity Discount − " + t.churchPct + "% (accommodation & venue hire)",
+    mode: "pct", value: Number(t.churchPct) || 0, on: secIds("accom").concat(secIds("venue"), secIds("credit")), orig: peR2(t.church)});
+  (t.discLines || []).forEach(x => {
+    let mode = "amt", value = peR2(x.amount), on = [];
+    if(d.on && /^Accommodation discount/.test(x.label) && d.accom && d.accom.t !== "amt"){ mode = "pct"; value = Number(d.accom.v) || 0; on = secIds("accom"); }
+    else if(d.on && /^Catering discount/.test(x.label) && d.cater && d.cater.t !== "amt"){ mode = "pct"; value = Number(d.cater.v) || 0; on = secIds("cater"); }
+    else if(d.on && /^Discount \(/.test(x.label)){ mode = "pct"; value = Number(d.all) || 0; on = []; }
+    discs.push({id: peId(), label: x.label, mode: mode, value: value, on: on, orig: peR2(x.amount)});
+  });
+  const ed = {
+    v: 1, at: null, by: "", use: true,
+    from: {total: peR2(t.total), sig: quotePrintSig()},
+    head: {contact: Q.contact || "", org: Q.org || "", event: Q.event || "", dates: fmtRange(Q.dateStart, Q.dateEnd),
+      guests: String(Q.guests || ""), school: schoolFirstPageText() || ""},
+    secs: secs, lines: lines, discs: discs,
+    pp: perPersonOn(), incl: true,
+    kd: keyDatesRows((Q.priceMode || "full") !== "noprices").map(r => [String(r[0] || ""), String(r[1] || "")]),
+    msg: String(Q.sel && Q.sel.message || "").trim(),
+    notes: []
+  };
+  for(let pass = 0; pass <= discs.length; pass++){
+    const pt = peTotals(ed);
+    const wrong = discs.find((s, i) => s.mode === "pct" && Math.abs(pt.discLines[i].amount - s.orig) >= 0.01);
+    if(!wrong) break;
+    wrong.mode = "amt"; wrong.value = wrong.orig; wrong.on = [];
+  }
+  discs.forEach(s => delete s.orig);
+  return ed;
+}
+/* an older or hand-made printout, made safe to open */
+function peNormal(ed){
+  ed = JSON.parse(JSON.stringify(ed || {}));
+  ed.head = Object.assign({contact: "", org: "", event: "", dates: "", guests: "", school: ""}, ed.head || {});
+  ["secs", "lines", "discs", "kd", "notes"].forEach(k => { if(!Array.isArray(ed[k])) ed[k] = []; });
+  ed.discs.forEach(d => { if(!Array.isArray(d.on)) d.on = []; });
+  if(ed.use === undefined) ed.use = true;
+  if(ed.incl === undefined) ed.incl = true;
+  return ed;
+}
+/* the printout's money: each section, the subtotal, each discount in turn, the total and its GST */
+function peTotals(ed){
+  const secTot = {};
+  (ed.secs || []).forEach(s => secTot[s.id] = 0);
+  let sub = 0;
+  (ed.lines || []).forEach(l => {
+    if(!l.on) return;
+    const a = peR2(l.amount);
+    sub += a;
+    if(l.sec in secTot) secTot[l.sec] = peR2(secTot[l.sec] + a);
+  });
+  sub = peR2(sub);
+  let run = sub;
+  const discLines = [];
+  (ed.discs || []).forEach(d => {
+    const on = (d.on || []).filter(id => id in secTot);
+    const base = peR2(on.length ? on.reduce((a, id) => a + secTot[id], 0) : run);
+    const amount = peR2(d.mode === "pct" ? base * (Number(d.value) || 0) / 100 : Number(d.value) || 0);
+    discLines.push({id: d.id, label: d.label, amount: amount, base: base});
+    run = peR2(run - amount);
+  });
+  return {sub: sub, secTot: secTot, church: 0, churchPct: 0, disc: peR2(sub - run), discLines: discLines,
+    total: run, gst: peR2(run * GST_PCT / (100 + GST_PCT)), guests: Number(ed.head && ed.head.guests) || 0, ppOff: !ed.pp};
+}
+/* the printout's item table rows, drawn like onePageRows */
+function peRowsHtml(ed, showPrices){
+  const t = peTotals(ed);
+  const secs = ed.secs.filter(s => ed.lines.some(l => l.on && l.sec === s.id));
+  const many = secs.length > 1, cols = showPrices ? 4 : 2;
+  return secs.map(s =>
+    '<tr class="psec' + (s.key === "credit" ? ' pcred' : '') + '"><td colspan="' + (showPrices && many ? cols - 1 : cols) + '">' + esc(s.title) +
+      (s.note ? '<span class="psecnote">' + esc(s.note) + '</span>' : '') + '</td>' +
+      (showPrices && many ? '<td class="n num">' + money(t.secTot[s.id]) + '</td>' : '') + '</tr>' +
+    ed.lines.filter(l => l.on && l.sec === s.id).map(l => {
+      const n = peDays(l);
+      const bits = [l.credit ? "" : l.sub, !l.credit && n > 1 ? "× " + n + " " + String(l.nightsWord || "nights") : "", !l.credit && peOff(l) > 0 ? peOff(l) + "% off" : ""].filter(Boolean);
+      return '<tr' + (l.credit ? ' class="pcred"' : '') + '><td><b>' + esc(l.name) + '</b>' +
+          (bits.length ? '<div class="sub">' + esc(bits.join(" · ")) + '</div>' : '') + '</td>' +
+        '<td class="n">' + (l.credit ? '' : esc(qtyWords(l.qty))) + '</td>' +
+        (showPrices ? '<td class="n">' + (l.credit ? '' : money(l.price)) + '</td><td class="n">' + money(l.amount) + '</td>' : '') +
+      '</tr>';
+    }).join("")
+  ).join("");
+}
+/* the deposit and part payment in the key dates against a total. add(level, text, fix) */
+function peKdMaths(rows, total, add, fixable){
+  let n = 0, probs = 0;
+  (rows || []).forEach(r => {
+    const lab = String(r[0] || "").trim(), txt = String(r[1] || "");
+    const pm = txt.match(/(\d+(?:\.\d+)?)% of your total \(about \$([\d,]+)/);
+    if(pm){
+      n++;
+      const want = total * Number(pm[1]) / 100;
+      if(Math.abs(want - peNum(pm[2])) > 1){
+        probs++;
+        add("warn", (lab || "Key dates") + ": " + pm[1] + "% of " + money(total) + " is about " + money0(want) + ", but it says " + money0(peNum(pm[2])) + ".",
+          fixable ? [{label: "Update the key date amounts", act: "kdfix"}] : null);
+      }
+    }
+    const dm = txt.match(/about \$([\d,]+), less your \$([\d,]+) deposit: about \$([\d,]+)/);
+    if(dm){
+      n++;
+      const a = peNum(dm[1]), b = peNum(dm[2]), c = peNum(dm[3]);
+      if(Math.abs(a - b - c) > 1.01){
+        probs++;
+        add("bad", (lab || "Key dates") + ": " + money0(a) + " less the " + money0(b) + " deposit is " + money0(a - b) + ", but it says " + money0(c) + ".",
+          fixable ? [{label: "Update the key date amounts", act: "kdfix"}] : null);
+      }
+    }
+    if(/^deposit\b/i.test(lab)){
+      const a = peAmounts(txt)[0];
+      if(a !== undefined){
+        n++;
+        if(total > 0 && a > total + 0.5){ probs++; add("bad", "The deposit (" + money0(a) + ") is more than the total (" + money(total) + ")."); }
+      }
+    }
+  });
+  if(n && !probs) add("ok", "Key dates: the deposit and part payment fit the total");
+}
+/* the part payment in the key dates worked out again from the printout's total */
+function peKdFix(ed){
+  const total = peTotals(ed).total;
+  ed.kd = ed.kd.map(r => {
+    let s = String(r[1] || "");
+    const pm = s.match(/(\d+(?:\.\d+)?)% of your total \(about \$([\d,]+)/);
+    if(!pm) return r;
+    const a = Math.round(total * Number(pm[1]) / 100);
+    s = s.replace(/(% of your total \(about )\$\d{1,3}(?:,\d{3})*/, (m, p) => p + money0(a));
+    s = s.replace(/less your \$(\d{1,3}(?:,\d{3})*) deposit: about \$\d{1,3}(?:,\d{3})*/, (m, b) => "less your $" + b + " deposit: about " + money0(Math.max(0, a - peNum(b))));
+    return [r[0], s];
+  });
+}
+/* the checks on a printout: [{lvl: "ok" | "warn" | "bad", text, fix: [{label, act}]}] */
+function peChecks(ed){
+  const out = [];
+  const add = (lvl, text, fix) => out.push({lvl: lvl, text: text, fix: fix || null});
+  const t = peTotals(ed);
+  const on = ed.lines.filter(l => l.on);
+  let lineProbs = 0;
+  on.forEach(l => {
+    const want = peLineCalc(l);
+    if(Math.abs(want - peR2(l.amount)) >= 0.01){
+      lineProbs++;
+      const n = peDays(l);
+      const fixes = [{label: "Make it " + money(want), act: () => { l.amount = want; }}];
+      const per = (Number(l.qty) || 0) * n * (1 - peOff(l) / 100);
+      if(per > 0 && !l.credit && Math.abs(peR2(peR2(l.amount / per) * per) - peR2(l.amount)) < 0.005) fixes.push({label: "Price " + money(peR2(l.amount / per)) + " instead", act: () => { l.price = peR2(l.amount / per); }});
+      add("bad", '"' + (l.name || "A line") + '": ' + (l.credit ? money(l.price) : qtyWords(l.qty) + (n > 1 ? " × " + n + " " + (l.nightsWord || "days") : "") + " × " + money(l.price) + (peOff(l) > 0 ? " less " + peOff(l) + "%" : "")) +
+        " = " + money(want) + ", but the line says " + money(l.amount) + ".", fixes);
+    }
+    if(!String(l.name || "").trim()) add("warn", "A line with no name: " + money(l.amount) + ".");
+  });
+  if(on.length && !lineProbs) add("ok", "Every line: quantity × price = amount (" + on.length + " line" + (on.length === 1 ? "" : "s") + ")");
+  if(!on.length) add("warn", "Nothing is ticked to print.");
+  else add("ok", "The lines add up to the subtotal, " + money(t.sub));
+  t.discLines.forEach((x, i) => {
+    const d = ed.discs[i] || {};
+    if(d.mode === "pct" && (Number(d.value) < 0 || Number(d.value) > 100)) add("bad", '"' + x.label + '" is ' + d.value + "%: it has to be between 0 and 100.");
+    else if(x.amount > x.base + 0.005) add("bad", '"' + x.label + '" (' + money(x.amount) + ") is more than what it comes off (" + money(x.base) + ").");
+    const said = String(x.label || "").match(/(\d+(?:\.\d+)?)\s?%/);
+    if(said && x.base > 0 && Math.abs(Number(said[1]) - x.amount / x.base * 100) > 0.5 && d.mode === "pct")
+      add("warn", '"' + x.label + '" says ' + said[1] + "% but takes " + peR2(x.amount / x.base * 100) + "%.");
+  });
+  if(t.total < -0.005) add("bad", "The total is below zero (" + money(t.total) + ").");
+  else add("ok", "Subtotal less discounts = total, " + money(t.total) + "; GST " + money(t.gst) + " is 1/" + ((100 + GST_PCT) / GST_PCT) + " of it");
+  const sumKey = k => ed.secs.filter(s => s.key === k).reduce((a, s) => a + (t.secTot[s.id] || 0), 0);
+  const cred = -sumKey("credit"), ven = sumKey("venue");
+  if(cred > 0.005 && cred > ven + 0.005) add("bad", "The venue credit (" + money(cred) + ") is more than the conference rooms (" + money(ven) + ").");
+  if(ed.pp && !(Number(ed.head.guests) > 0) && t.total > 0) add("warn", "Cost per person is ticked, but the number of guests is blank, so it won't print.");
+  peKdMaths(ed.kd, t.total, add, true);
+  const qt = peR2(totals().total);
+  if(Math.abs(qt - t.total) >= 0.01)
+    add("warn", "This printout comes to " + money(t.total) + "; the quote itself is " + money(qt) + " (" + (t.total > qt ? "+" : "−") + money(Math.abs(t.total - qt)) +
+      "). The organiser's page, accepting, the deposit invoice and RMS use " + money(qt) + ".");
+  else add("ok", "Same total as the quote, " + money(qt));
+  if(ed.from && ed.from.sig && ed.from.sig !== quotePrintSig())
+    add("warn", "The quote has changed since this printout was made from it (it was " + money(ed.from.total) + ").", [{label: "Start again from the quote", act: "reseed"}]);
+  return out;
+}
+/* the checks on the quote itself, for the Prepare tab and the side of the organiser's page */
+function quoteChecks(){
+  const out = [];
+  const add = (lvl, text) => out.push({lvl: lvl, text: text});
+  let t, secs;
+  try{ t = totals(); secs = printSections(); }catch(e){ return out; }
+  const sev = d => Math.abs(d) < 1 ? "warn" : "bad";
+  let rowsSum = 0, nLines = 0, lineProbs = 0;
+  secs.forEach(s => s.rows.forEach(l => {
+    rowsSum += peR2(l.total); nLines++;
+    if(l.credit) return;
+    const n = Number(l.nights) > 1 ? Number(l.nights) : 1;
+    const want = peR2((Number(l.qty) || 0) * n * peR2(l.price) * (1 - Math.min(100, Math.max(0, Number(l.disc) || 0)) / 100));
+    const d = peR2(peR2(l.total) - want);
+    if(Math.abs(d) >= 0.01){
+      lineProbs++;
+      add(sev(d), '"' + l.name + '": ' + qtyWords(l.qty) + (n > 1 ? " × " + n : "") + " × " + money(l.price) + " = " + money(want) + ", but the line says " + money(l.total) +
+        (Math.abs(d) < 1 ? " (the unit price is rounded to the cent)" : "") + ".");
+    }
+  }));
+  if(nLines && !lineProbs) add("ok", "Every line: quantity × price = amount");
+  rowsSum = peR2(rowsSum);
+  const sub = peR2(t.sub);
+  if(Math.abs(rowsSum - sub) >= 0.01) add(sev(rowsSum - sub), "The printed lines add up to " + money(rowsSum) + ", but the subtotal says " + money(sub) + ".");
+  else if(nLines) add("ok", "The lines add up to the subtotal, " + money(sub));
+  const shown = peR2(sub - peR2(t.church) - (t.discLines || []).reduce((a, x) => a + peR2(x.amount), 0));
+  if(Math.abs(shown - peR2(t.total)) >= 0.01) add(sev(shown - t.total), "The subtotal less the discounts is " + money(shown) + ", but the total says " + money(t.total) + ".");
+  else add("ok", "Subtotal less discounts = total, " + money(t.total));
+  if(t.total < -0.005) add("bad", "The total is below zero (" + money(t.total) + ").");
+  if(Math.abs(peR2(peR2(t.total) * GST_PCT / (100 + GST_PCT)) - peR2(t.gst)) >= 0.01) add("bad", "The GST (" + money(t.gst) + ") is not 1/11 of the total.");
+  else if(t.total > 0) add("ok", "GST " + money(t.gst) + " is 1/11 of the total");
+  try{
+    const dep = depositTotal(kdCfg());
+    if(t.total > 0 && dep > peR2(t.total) + 0.5) add("bad", "The deposit (" + money0(dep) + ") is more than the total (" + money(t.total) + ").");
+  }catch(e){}
+  try{
+    const rows = keyDatesRows(true);
+    peKdMaths(rows, peR2(t.total), add, false);
+    if(Array.isArray(Q.kdOver)){
+      const amts = rr => rr.reduce((a, r) => a.concat(peAmounts(r[1])), []);
+      const auto = amts(keyDatesAutoRows(true)), over = amts(rows);
+      const stale = over.filter(a => auto.indexOf(a) < 0), fresh = auto.filter(a => over.indexOf(a) < 0);
+      if(stale.length && fresh.length) add("warn", "The key dates were changed by hand and say " + listWords(stale.map(money0)) + "; worked out from the quote now, they would say " + listWords(fresh.map(money0)) + ".");
+    }
+  }catch(e){}
+  if(perPersonOn() && !(Number(Q.guests) > 0) && t.total > 0) add("warn", "Cost per person is on, but the number of guests is blank.");
+  if(Q.printEdit){
+    const pt = peTotals(peNormal(Q.printEdit)).total;
+    if(Math.abs(pt - peR2(t.total)) >= 0.01) add("warn", "The edited printout (Edit & print) comes to " + money(pt) + "; the quote to " + money(t.total) + ".");
+    if(Q.printEdit.from && Q.printEdit.from.sig && Q.printEdit.from.sig !== quotePrintSig())
+      add("warn", "The quote has changed since its printout was edited" + (Q.printEdit.use !== false ? ": Download PDF still prints the edited printout" : "") + ".");
+  }
+  return out;
+}
+function peStyles(){
+  if(document.getElementById("peStyles")) return;
+  const st = document.createElement("style");
+  st.id = "peStyles";
+  st.textContent =
+    '.tcheck{margin-top:10px;border:1px solid #cfe3c8;background:#f2f8ef;border-radius:8px;padding:7px 10px;font-size:12.5px;line-height:1.45;text-align:left}' +
+    '.tcheck.warn{border-color:#f0d29a;background:#fff8ea}.tcheck.bad{border-color:#f0b4ae;background:#fdf0ee}' +
+    '.tcheck ul{margin:4px 0 0;padding-left:18px}.tcheck li{margin:2px 0}.tcheck li.bad{color:#9b1c14}.tcheck li.warn{color:#7a4a00}.tcheck li.ok{color:#2e6b2f}' +
+    '.tcheck summary{cursor:pointer;color:#4f5b66;margin-top:4px}' +
+    '.pe-info{margin-top:8px;font-size:12px;color:#4f5b66;line-height:1.45;background:#f3f6f9;border-radius:7px;padding:6px 9px}.pe-info label{display:flex;gap:6px;align-items:center;margin-top:4px}' +
+    '#peWrap{position:fixed;inset:0;z-index:9999;background:rgba(20,30,40,.55);display:flex;flex-direction:column;padding:10px;box-sizing:border-box;font-size:13px}' +
+    '#peWrap *{box-sizing:border-box}' +
+    '.pe-bar{background:#fff;border-radius:8px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}' +
+    '.pe-state{flex:1 1 300px;font-size:12px;color:#4f5b66}.pe-state b{color:#1b2a38}.pe-state label{display:inline-flex;gap:5px;align-items:center;margin-left:10px;white-space:nowrap}' +
+    '#peWrap .pe-bar .btn{padding:6px 12px;font-size:13px;min-height:0}' +
+    '.pe-body{flex:1;min-height:0;display:flex;gap:10px;margin-top:8px}' +
+    '.pe-ed{flex:1 1 60%;min-width:0;overflow:auto;background:#fff;border-radius:8px;padding:10px 12px}' +
+    '.pe-pv{flex:0 0 40%;min-width:0;display:flex;flex-direction:column;gap:4px}' +
+    '.pe-pv iframe{flex:1;width:100%;border:0;border-radius:8px;background:#e9edf1}.pe-fit{font-size:11.5px;color:#fff}' +
+    '@media (max-width:1100px){.pe-body{flex-direction:column;overflow:auto}.pe-ed{flex:none;overflow:visible}.pe-pv{flex:none;height:85vh}}' +
+    '.pe-checks{border:1px solid #cfe3c8;background:#f2f8ef;border-radius:8px;padding:7px 10px;margin-bottom:10px}' +
+    '.pe-checks.warn{border-color:#f0d29a;background:#fff8ea}.pe-checks.bad{border-color:#f0b4ae;background:#fdf0ee}' +
+    '.pe-ck{display:flex;gap:6px;align-items:baseline;padding:2px 0;line-height:1.4}.pe-ck i{font-style:normal;font-weight:700;width:14px;flex:none}' +
+    '.pe-ck.bad i,.pe-ck.bad{color:#9b1c14}.pe-ck.warn i,.pe-ck.warn{color:#7a4a00}.pe-ck.ok i{color:#2e7d32}.pe-ck.ok{color:#2e6b2f}' +
+    '.pe-ck button{margin-left:6px;font-size:11.5px;padding:1px 7px;border:1px solid #c9d4dc;border-radius:5px;background:#fff;cursor:pointer;color:#1b2a38}' +
+    '.pe-h{font-size:13.5px;font-weight:700;margin:14px 0 6px;color:#1b2a38;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pe-h span{font-weight:400;font-size:12px;color:#6b7580}' +
+    'table.pe-t{width:100%;border-collapse:collapse;table-layout:fixed}' +
+    'table.pe-t th{font-size:11px;color:#6b7580;text-align:left;font-weight:600;padding:3px;border-bottom:1px solid #dde3e8}table.pe-t th.n{text-align:right}' +
+    'table.pe-t td{padding:3px;vertical-align:top;border-bottom:1px solid #eef1f4}' +
+    '#peWrap input[type=text],#peWrap input[type=number],#peWrap select,#peWrap textarea{width:100%;min-width:0;padding:3px 5px;border:1px solid #cfd6dd;border-radius:5px;font:inherit;font-size:12.5px;background:#fff}' +
+    '#peWrap input.pe-sub{margin-top:3px;font-size:11.5px;color:#4f5b66}' +
+    'table.pe-t td.n input{text-align:right}table.pe-t td.n{text-align:right}' +
+    'table.pe-t tr.off td{opacity:.45}table.pe-t tr.pe-bad input[data-f=amount]{border-color:#d93025;background:#fdecea}' +
+    'table.pe-t tr.pe-sec td{background:#eef3f7;padding:6px 4px;border-top:8px solid #fff}' +
+    'table.pe-t tr.pe-sec .pe-sectot{font-weight:700;padding-top:6px}' +
+    '.pe-acts{white-space:nowrap;text-align:right}' +
+    '.pe-acts button,.pe-mini{width:22px;height:22px;padding:0;border:1px solid #c9d4dc;background:#fff;border-radius:5px;cursor:pointer;font-size:12px;line-height:20px;color:#1b2a38}' +
+    '.pe-acts button.x,.pe-mini.x{color:#b3261e}.pe-acts button.add{color:#1f6f43;font-weight:700}.pe-acts button:disabled{opacity:.35;cursor:default}' +
+    '.pe-addrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}.pe-addrow select{max-width:340px}' +
+    '.pe-tot{margin:10px 0 0 auto;max-width:380px;font-size:13px}.pe-tot>div{display:flex;justify-content:space-between;gap:10px;padding:2px 0}' +
+    '.pe-tot .g{border-top:1.5px solid #1c1c1a;font-weight:700;margin-top:3px;padding-top:4px}.pe-tot .m{color:#6b7580;font-size:12px}.pe-tot .c{color:#3d6f2a}' +
+    '.pe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px 10px}' +
+    '.pe-grid label{font-size:11.5px;color:#4f5b66;display:flex;flex-direction:column;gap:2px}' +
+    '.pe-kd{display:grid;grid-template-columns:150px 1fr 24px;gap:5px;margin-bottom:5px;align-items:start}' +
+    '#peWrap textarea{min-height:40px;resize:vertical}.pe-ticks{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;margin-top:6px}.pe-ticks label{display:flex;gap:5px;align-items:center}' +
+    '@media (max-width:700px){.pe-kd{grid-template-columns:1fr 24px}.pe-kd textarea{grid-column:1}}';
+  document.head.appendChild(st);
+}
+/* the totals check box: on the Prepare tab under the totals, and under Edit & print */
+function quoteCheckHTML(){
+  if(asOrg()) return "";
+  peStyles();
+  const cks = quoteChecks();
+  if(!cks.length) return "";
+  const probs = cks.filter(c => c.lvl !== "ok"), oks = cks.filter(c => c.lvl === "ok");
+  const lvl = probs.some(c => c.lvl === "bad") ? "bad" : probs.length ? "warn" : "ok";
+  return '<div class="tcheck ' + lvl + '"><b>Totals check</b> ' + (probs.length ? '· ' + probs.length + ' to look at' : '✓ everything lines up') +
+    (probs.length ? '<ul>' + probs.map(c => '<li class="' + c.lvl + '">' + esc(c.text) + '</li>').join('') + '</ul>' : '') +
+    (oks.length ? '<details><summary>' + oks.length + ' check' + (oks.length === 1 ? '' : 's') + ' passed</summary><ul>' + oks.map(c => '<li class="ok">' + esc(c.text) + '</li>').join('') + '</ul></details>' : '') +
+  '</div>';
+}
+function peWhen(iso){
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleString("en-AU", {day: "numeric", month: "short", hour: "numeric", minute: "2-digit"});
+}
+/* the side card: the totals check, and the saved printout with its "Download PDF prints it" tick */
+function renderTotalsCheck(){
+  const box = document.getElementById("totalsCheckSide");
+  if(box) box.innerHTML = quoteCheckHTML();
+  const pi = document.getElementById("printEditInfo");
+  if(!pi) return;
+  if(asOrg() || !Q.printEdit){ pi.innerHTML = ""; return; }
+  const pt = peTotals(peNormal(Q.printEdit)).total, qt = peR2(totals().total);
+  pi.innerHTML = '<div class="pe-info">Edited printout' + (Q.printEdit.at ? ' saved ' + esc(peWhen(Q.printEdit.at)) : '') + ' · <b>' + money(pt) + '</b>' +
+    (Math.abs(pt - qt) >= 0.01 ? ' (the quote is ' + money(qt) + ')' : '') +
+    '<label><input type="checkbox" id="peUseCb"' + (Q.printEdit.use !== false ? ' checked' : '') + '> Download PDF prints the edited printout</label></div>';
+  document.getElementById("peUseCb").addEventListener("change", e => { Q.printEdit.use = e.target.checked; autosaveDraft(); });
+}
+/* ---- the editor window ---- */
+function peLineRow(l, first, last){
+  const tr = PE.badIds && PE.badIds[l.id];
+  const num = (f, v, step, dis) => '<td class="n"><input type="number" data-l="' + l.id + '" data-f="' + f + '" value="' + esc(v === "" || v === null || v === undefined ? "" : v) + '" step="' + step + '"' + (dis ? ' disabled' : '') + '></td>';
+  return '<tr data-row="' + l.id + '" class="' + (l.on ? '' : 'off') + (tr ? ' pe-bad' : '') + '">' +
+    '<td><input type="checkbox" data-l="' + l.id + '" data-f="on"' + (l.on ? ' checked' : '') + ' title="Ticked: printed. Untick to leave it off the printout without losing it"></td>' +
+    '<td><input type="text" data-l="' + l.id + '" data-f="name" value="' + esc(l.name) + '" placeholder="Item">' +
+      (l.credit ? '' : '<input type="text" class="pe-sub" data-l="' + l.id + '" data-f="sub" value="' + esc(l.sub) + '" placeholder="details (optional)">') + '</td>' +
+    num("qty", l.credit ? "" : l.qty, "any", l.credit) +
+    num("nights", l.credit || !(Number(l.nights) > 1) ? "" : l.nights, "1", l.credit) +
+    num("price", l.price, "0.01", l.credit) +
+    num("off", l.credit || !(Number(l.off) > 0) ? "" : l.off, "any", l.credit) +
+    num("amount", l.amount, "0.01", false) +
+    '<td class="pe-acts"><button type="button" data-act="up" data-l="' + l.id + '" title="Move up (out of the top of a section into the one above)"' + (first ? ' disabled' : '') + '>▲</button>' +
+      '<button type="button" data-act="down" data-l="' + l.id + '" title="Move down (out of the bottom of a section into the one below)"' + (last ? ' disabled' : '') + '>▼</button>' +
+      '<button type="button" class="add" data-act="addunder" data-l="' + l.id + '" title="Add a new line under this one">+</button>' +
+      '<button type="button" class="x" data-act="del" data-l="' + l.id + '" title="Delete this line">✕</button></td>' +
+  '</tr>';
+}
+/* the price list, for "+ Add from the price list" */
+function pePresetOptions(){
+  return RATE_GROUPS.map(g => {
+    const items = (g.items || []).filter(it => it && it.id && it.name && !it.custom && !isAccomRateId(it.id));
+    if(!items.length) return '';
+    return '<optgroup label="' + esc(g.group) + '">' + items.map(it => '<option value="' + esc(it.id) + '">' + esc(it.name) + ' · ' + money(catEntry(it.id).price) + (it.unit && it.unit !== "flat" ? ' ' + esc(it.unit) : '') + '</option>').join('') + '</optgroup>';
+  }).join('');
+}
+function peRender(){
+  if(!PE) return;
+  const ed = PE.ed, t = peTotals(ed);
+  const pane = document.getElementById("peEd");
+  const scroll = pane.scrollTop;
+  const flat = [];   // the lines in printed order, for ▲ ▼
+  ed.secs.forEach(s => ed.lines.filter(l => l.sec === s.id).forEach(l => flat.push(l.id)));
+  const secOpts = d => '<option value=""' + (!(d.on || []).length ? ' selected' : '') + '>the total so far</option>' +
+    ed.secs.map(s => '<option value="' + s.id + '"' + ((d.on || []).length === 1 && d.on[0] === s.id ? ' selected' : '') + '>' + esc(s.title) + '</option>').join('') +
+    ((d.on || []).length > 1 ? '<option value="' + esc(d.on.join(",")) + '" selected>' + esc(d.on.map(id => (ed.secs.find(s => s.id === id) || {}).title).filter(Boolean).join(" + ")) + '</option>' : '');
+  pane.innerHTML =
+    '<div id="peChecks"></div>' +
+    '<div class="pe-h">Prepared for</div>' +
+    '<div class="pe-grid">' +
+      '<label>Name<input type="text" data-f="head.contact" value="' + esc(ed.head.contact) + '"></label>' +
+      '<label>Organisation<input type="text" data-f="head.org" value="' + esc(ed.head.org) + '"></label>' +
+      '<label>Event<input type="text" data-f="head.event" value="' + esc(ed.head.event) + '"></label>' +
+      '<label>Dates<input type="text" data-f="head.dates" value="' + esc(ed.head.dates) + '"></label>' +
+      '<label>Guests (also for the cost per person)<input type="number" data-f="head.guests" value="' + esc(ed.head.guests) + '" min="0"></label>' +
+      '<label>Line under it (schools)<input type="text" data-f="head.school" value="' + esc(ed.head.school) + '"></label>' +
+    '</div>' +
+    '<div class="pe-h">Lines <span>change Qty, Days, Price or % off and the amount works itself out; type an amount yourself and the checks say if it no longer adds up</span></div>' +
+    '<table class="pe-t"><colgroup><col style="width:26px"><col><col style="width:58px"><col style="width:50px"><col style="width:88px"><col style="width:50px"><col style="width:96px"><col style="width:104px"></colgroup>' +
+    '<thead><tr><th></th><th>Item and details</th><th class="n">Qty</th><th class="n" title="Days or nights it is charged for (blank = once)">Days</th><th class="n">Price $</th><th class="n">% off</th><th class="n">Amount $</th><th></th></tr></thead><tbody>' +
+    ed.secs.map((s, si) =>
+      '<tr class="pe-sec"><td></td><td><input type="text" data-s="' + s.id + '" data-f="title" value="' + esc(s.title) + '" placeholder="Section heading" style="font-weight:700">' +
+          '<input type="text" class="pe-sub" data-s="' + s.id + '" data-f="note" value="' + esc(s.note) + '" placeholder="note beside the heading (optional)"></td>' +
+        '<td colspan="4"></td><td class="n pe-sectot" data-sectot="' + s.id + '">' + money(t.secTot[s.id] || 0) + '</td>' +
+        '<td class="pe-acts"><button type="button" data-act="secup" data-s="' + s.id + '" title="Move this section up"' + (si === 0 ? ' disabled' : '') + '>▲</button>' +
+          '<button type="button" data-act="secdown" data-s="' + s.id + '" title="Move this section down"' + (si === ed.secs.length - 1 ? ' disabled' : '') + '>▼</button>' +
+          '<button type="button" class="add" data-act="secadd" data-s="' + s.id + '" title="Add a line at the end of this section">+</button>' +
+          '<button type="button" class="x" data-act="secdel" data-s="' + s.id + '" title="Take this section off">✕</button></td></tr>' +
+      ed.lines.filter(l => l.sec === s.id).map(l => peLineRow(l, flat[0] === l.id, flat[flat.length - 1] === l.id)).join('')
+    ).join('') +
+    '</tbody></table>' +
+    '<div class="pe-addrow"><button type="button" class="btn" data-act="addsec">+ Add a section</button>' +
+      '<select id="pePreset"><option value="">+ Add from the price list…</option>' + pePresetOptions() + '</select></div>' +
+    '<div class="pe-h">Discounts <span>a % comes off the section you pick, or off the total so far; they come off in this order</span></div>' +
+    (ed.discs.length
+      ? '<table class="pe-t"><colgroup><col><col style="width:66px"><col style="width:80px"><col style="width:150px"><col style="width:96px"><col style="width:30px"></colgroup>' +
+        '<thead><tr><th>Wording on the printout</th><th>%/$</th><th class="n">Value</th><th>Comes off</th><th class="n">Amount $</th><th></th></tr></thead><tbody>' +
+        ed.discs.map((d, i) => '<tr><td><input type="text" data-d="' + d.id + '" data-f="label" value="' + esc(d.label) + '"></td>' +
+          '<td><select data-d="' + d.id + '" data-f="mode"><option value="pct"' + (d.mode === "pct" ? ' selected' : '') + '>%</option><option value="amt"' + (d.mode !== "pct" ? ' selected' : '') + '>$</option></select></td>' +
+          '<td class="n"><input type="number" data-d="' + d.id + '" data-f="value" value="' + esc(d.value) + '" step="0.01"></td>' +
+          '<td><select data-d="' + d.id + '" data-f="on"' + (d.mode !== "pct" ? ' disabled title="A $ discount is its own amount"' : '') + '>' + secOpts(d) + '</select></td>' +
+          '<td class="n" data-damt="' + d.id + '">−' + money((t.discLines[i] || {}).amount || 0) + '</td>' +
+          '<td class="pe-acts"><button type="button" class="x" data-act="ddel" data-d="' + d.id + '" title="Take this discount off">✕</button></td></tr>').join('') +
+        '</tbody></table>'
+      : '<div class="hint" style="font-size:12px;color:#6b7580">No discounts on this printout.</div>') +
+    '<div class="pe-addrow"><button type="button" class="btn" data-act="dadd">+ Add a discount</button></div>' +
+    '<div class="pe-tot" id="peTot"></div>' +
+    '<div class="pe-ticks"><label><input type="checkbox" data-f="pp"' + (ed.pp ? ' checked' : '') + '> Show the cost per person</label>' +
+      '<label><input type="checkbox" data-f="incl"' + (ed.incl ? ' checked' : '') + '> Show the "included" box</label></div>' +
+    '<div class="pe-h">Money &amp; key dates <span>the deposit and part payment are checked against the total</span></div>' +
+    ed.kd.map((r, i) => '<div class="pe-kd"><input type="text" data-k="' + i + '" data-p="0" value="' + esc(r[0]) + '"><textarea data-k="' + i + '" data-p="1" rows="2">' + esc(r[1]) + '</textarea>' +
+      '<button type="button" class="pe-mini x" data-act="kddel" data-i="' + i + '" title="Take this line off">✕</button></div>').join('') +
+    '<div class="pe-addrow"><button type="button" class="btn" data-act="kdadd">+ Add a key date</button>' +
+      '<button type="button" class="btn" data-act="kdfix" title="Work the part payment out again from this printout\'s total">Update the amounts to this total</button></div>' +
+    '<div class="pe-h">Notes</div>' +
+    '<label style="font-size:11.5px;color:#4f5b66">You told us (from the organiser)<textarea data-f="msg" rows="2">' + esc(ed.msg) + '</textarea></label>' +
+    ed.notes.map((n, i) => '<div class="pe-kd" style="grid-template-columns:1fr 24px;margin-top:6px"><textarea data-n="' + i + '" rows="2" placeholder="A note on the printout">' + esc(n) + '</textarea>' +
+      '<button type="button" class="pe-mini x" data-act="ndel" data-i="' + i + '" title="Take this note off">✕</button></div>').join('') +
+    '<div class="pe-addrow"><button type="button" class="btn" data-act="nadd">+ Add a note</button></div>';
+  pane.scrollTop = scroll;
+  peLive(true);
+}
+/* everything worked out from the figures: section and discount amounts, totals, the checks, the bar */
+function peLive(full){
+  if(!PE) return;
+  const ed = PE.ed, t = peTotals(ed);
+  ed.secs.forEach(s => { const c = document.querySelector('[data-sectot="' + s.id + '"]'); if(c) c.textContent = money(t.secTot[s.id] || 0); });
+  t.discLines.forEach(x => { const c = document.querySelector('[data-damt="' + x.id + '"]'); if(c) c.textContent = "−" + money(x.amount); });
+  const g = Number(ed.head.guests) || 0;
+  document.getElementById("peTot").innerHTML =
+    '<div><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
+    t.discLines.map(x => '<div class="c"><span>' + esc(x.label) + '</span><span>−' + money(x.amount) + '</span></div>').join('') +
+    '<div class="g"><span>Total (inc GST)</span><span>' + money(t.total) + '</span></div>' +
+    '<div class="m"><span>Includes GST (' + GST_PCT + '%)</span><span>' + money(t.gst) + '</span></div>' +
+    (g > 0 ? '<div class="m"><span>Per person (' + g + ' guests)</span><span>' + money(t.total / g) + '</span></div>' : '');
+  const cks = peChecks(ed);
+  PE.badIds = {};
+  ed.lines.forEach(l => { if(l.on && Math.abs(peLineCalc(l) - peR2(l.amount)) >= 0.01) PE.badIds[l.id] = 1; });
+  document.querySelectorAll("#peEd tr[data-row]").forEach(tr => tr.classList.toggle("pe-bad", !!PE.badIds[tr.dataset.row]));
+  const probs = cks.filter(c => c.lvl !== "ok");
+  const lvl = probs.some(c => c.lvl === "bad") ? "bad" : probs.length ? "warn" : "ok";
+  PE.fixes = [];
+  const ckRow = c => '<div class="pe-ck ' + c.lvl + '"><i>' + (c.lvl === "ok" ? "✓" : c.lvl === "bad" ? "✕" : "!") + '</i><span>' + esc(c.text) +
+    (c.fix || []).map(f => { PE.fixes.push(f); return '<button type="button" data-fix="' + (PE.fixes.length - 1) + '">' + esc(f.label) + '</button>'; }).join('') + '</span></div>';
+  document.getElementById("peChecks").innerHTML = '<div class="pe-checks ' + lvl + '"><b>Checks</b> ' +
+    (probs.length ? '· ' + probs.length + ' to look at' : '✓ everything lines up') +
+    probs.map(ckRow).join('') + cks.filter(c => c.lvl === "ok").map(ckRow).join('') + '</div>';
+  PE.probs = probs;
+  peBar();
+  clearTimeout(PE.timer);
+  PE.timer = setTimeout(pePreview, full ? 0 : 350);
+}
+function peBar(){
+  const s = document.getElementById("peState");
+  if(!s || !PE) return;
+  s.innerHTML = (PE.dirty ? '<b>Changes not saved</b>' : PE.ed.at ? 'Saved ' + esc(peWhen(PE.ed.at)) : '<b>Not saved yet</b>: made from the quote as it is now') +
+    '<label title="Download PDF on the quote prints this printout instead of the quote as it is"><input type="checkbox" id="peUse"' + (PE.ed.use !== false ? ' checked' : '') + '> Download PDF prints this</label>';
+  document.getElementById("peUse").onchange = e => { PE.ed.use = e.target.checked; PE.dirty = true; peBar(); };
+  const rm = document.getElementById("peRemove");
+  if(rm) rm.hidden = !Q.printEdit;
+}
+function pePreview(){
+  if(!PE) return;
+  const f = document.getElementById("peFrame");
+  if(!f) return;
+  const y = f.contentWindow ? f.contentWindow.scrollY : 0;
+  f.onload = () => {
+    const d = f.contentDocument;
+    if(!d) return;
+    const fits = fitOneSheet(d);
+    const z = Math.min(1, (f.clientWidth - 18) / A4_PX.w);
+    d.body.style.zoom = String(z);
+    d.body.style.background = "#e9edf1";
+    const sh = d.querySelector(".sheet");
+    if(sh){ sh.style.background = "#fff"; sh.style.boxShadow = "0 2px 12px rgba(0,0,0,.18)"; sh.style.margin = "8px auto"; }
+    f.contentWindow.scrollTo(0, y);
+    const fit = document.getElementById("peFit");
+    if(fit) fit.textContent = fits ? "Fits on one page" : "Runs onto a second page: take a line or a note off to bring it back to one";
+  };
+  f.srcdoc = onePageQuoteHtml(PE.ed);
+}
+function peLineById(id){ return PE.ed.lines.find(l => l.id === id); }
+function peNewLine(sec){ return {id: peId(), sec: sec, name: "New line", sub: "", qty: 1, nights: 0, nightsWord: "days", price: 0, off: 0, amount: 0, on: true, credit: false}; }
+function peSecFor(key, title){
+  let s = PE.ed.secs.find(x => x.key === key);
+  if(!s){ s = {id: peId(), key: key, title: title, note: ""}; PE.ed.secs.push(s); }
+  return s;
+}
+function peAct(a, el){
+  const ed = PE.ed;
+  const l = el.dataset.l ? peLineById(el.dataset.l) : null;
+  const si = el.dataset.s ? ed.secs.findIndex(s => s.id === el.dataset.s) : -1;
+  if(a === "up" || a === "down"){
+    if(!l) return;
+    const same = ed.lines.filter(x => x.sec === l.sec);
+    const k = same.indexOf(l);
+    const secIx = ed.secs.findIndex(s => s.id === l.sec);
+    ed.lines.splice(ed.lines.indexOf(l), 1);
+    if(a === "up" && k > 0) ed.lines.splice(ed.lines.indexOf(same[k - 1]), 0, l);
+    else if(a === "down" && k < same.length - 1) ed.lines.splice(ed.lines.indexOf(same[k + 1]) + 1, 0, l);
+    else if(a === "up" && secIx > 0){ l.sec = ed.secs[secIx - 1].id; ed.lines.push(l); }
+    else if(a === "down" && secIx < ed.secs.length - 1){ l.sec = ed.secs[secIx + 1].id; ed.lines.unshift(l); }
+    else ed.lines.splice(ed.lines.length, 0, l);
+  } else if(a === "addunder"){
+    if(!l) return;
+    const n = peNewLine(l.sec);
+    ed.lines.splice(ed.lines.indexOf(l) + 1, 0, n);
+    PE.focus = n.id;
+  } else if(a === "del"){
+    if(!l) return;
+    ed.lines.splice(ed.lines.indexOf(l), 1);
+  } else if(a === "secup" || a === "secdown"){
+    const j = a === "secup" ? si - 1 : si + 1;
+    if(si < 0 || j < 0 || j >= ed.secs.length) return;
+    const s = ed.secs.splice(si, 1)[0];
+    ed.secs.splice(j, 0, s);
+  } else if(a === "secadd"){
+    if(si < 0) return;
+    const n = peNewLine(ed.secs[si].id);
+    ed.lines.push(n);
+    PE.focus = n.id;
+  } else if(a === "secdel"){
+    if(si < 0) return;
+    const s = ed.secs[si];
+    const n = ed.lines.filter(x => x.sec === s.id).length;
+    if(n && !confirm('Take "' + s.title + '" off, with its ' + n + ' line' + (n === 1 ? '' : 's') + '?')) return;
+    ed.lines = ed.lines.filter(x => x.sec !== s.id);
+    ed.secs.splice(si, 1);
+    ed.discs.forEach(d => { d.on = (d.on || []).filter(id => id !== s.id); });
+  } else if(a === "addsec"){
+    ed.secs.push({id: peId(), key: "other", title: "New section", note: ""});
+    const n = peNewLine(ed.secs[ed.secs.length - 1].id);
+    ed.lines.push(n);
+    PE.focus = n.id;
+  } else if(a === "dadd"){
+    ed.discs.push({id: peId(), label: "Discount (10%)", mode: "pct", value: 10, on: []});
+  } else if(a === "ddel"){
+    ed.discs = ed.discs.filter(d => d.id !== el.dataset.d);
+  } else if(a === "kdadd"){
+    ed.kd.push(["Date", "What happens then"]);
+  } else if(a === "kddel"){
+    ed.kd.splice(Number(el.dataset.i), 1);
+  } else if(a === "kdfix"){
+    peKdFix(ed);
+  } else if(a === "nadd"){
+    ed.notes.push("");
+  } else if(a === "ndel"){
+    ed.notes.splice(Number(el.dataset.i), 1);
+  } else return;
+  PE.dirty = true;
+  peRender();
+  if(PE.focus){
+    const inp = document.querySelector('#peEd input[data-l="' + PE.focus + '"][data-f="name"]');
+    PE.focus = null;
+    if(inp){ inp.focus(); inp.select(); }
+  }
+}
+function peInput(e){
+  const el = e.target;
+  if(!PE || !el.dataset) return;
+  const ed = PE.ed, f = el.dataset.f;
+  const val = el.type === "checkbox" ? el.checked : el.value;
+  const numF = ["qty", "nights", "price", "off", "amount", "value"];
+  let structural = false;
+  if(el.dataset.l){
+    const l = peLineById(el.dataset.l);
+    if(!l || !f) return;
+    if(f === "on"){ l.on = !!val; structural = true; }
+    else if(numF.indexOf(f) >= 0){
+      l[f] = val === "" ? 0 : Number(val);
+      if(f === "amount"){ if(l.credit) l.price = l.amount; }
+      else {
+        l.amount = peLineCalc(l);
+        const a = el.closest("tr") && el.closest("tr").querySelector('[data-f="amount"]');
+        if(a) a.value = l.amount;
+      }
+      if(f === "nights" && !(l.nights > 1)) l.nights = 0;
+    } else l[f] = val;
+  } else if(el.dataset.d){
+    const d = ed.discs.find(x => x.id === el.dataset.d);
+    if(!d || !f) return;
+    if(f === "value") d.value = val === "" ? 0 : Number(val);
+    else if(f === "on") d.on = String(val).split(",").filter(Boolean);
+    else if(f === "mode"){ d.mode = val; if(d.mode !== "pct") d.on = []; structural = true; }
+    else d[f] = val;
+  } else if(el.dataset.s){
+    const s = ed.secs.find(x => x.id === el.dataset.s);
+    if(!s || !f) return;
+    s[f] = val;
+  } else if(el.dataset.k !== undefined){
+    const r = ed.kd[Number(el.dataset.k)];
+    if(!r) return;
+    r[Number(el.dataset.p)] = val;
+  } else if(el.dataset.n !== undefined){
+    ed.notes[Number(el.dataset.n)] = val;
+  } else if(f && f.indexOf("head.") === 0){
+    ed.head[f.slice(5)] = val;
+  } else if(f === "msg" || f === "pp" || f === "incl"){
+    ed[f] = val;
+  } else return;
+  PE.dirty = true;
+  if(structural && e.type === "change") peRender(); else peLive(false);
+}
+/* a copy fit to keep: rounded money, nothing the editor only uses while it is open */
+function peClean(ed){
+  const c = JSON.parse(JSON.stringify(ed));
+  c.lines.forEach(l => { ["qty", "nights", "price", "off", "amount"].forEach(k => l[k] = Number(l[k]) || 0); l.amount = peR2(l.amount); l.price = peR2(l.price); });
+  c.kd = c.kd.filter(r => String(r[0] || "").trim() || String(r[1] || "").trim());
+  c.notes = c.notes.map(n => String(n || "")).filter(n => n.trim());
+  return c;
+}
+/* keep the printout on the quote, and save the quote as Save changes does when that is safe here */
+function peKeep(ed, okMsg){
+  Q.printEdit = ed;
+  autosaveDraft();
+  renderTotals();
+  renderTotalsCheck();
+  const booked = (isBookedStatus(Q.status) || Q.accepted) && Q.submittedSel && (submitDirty() || depositRulesChanged());
+  if(!Q.token || booked){
+    showToast(okMsg + " Press Save changes on the quote to keep it on the server copy as well.");
+    return;
+  }
+  if(doSaveQuote({quiet: true}) === false) return;
+  showToast(okMsg + " The quote is saved with it.");
+}
+function peSave(){
+  if(!PE) return;
+  const c = peClean(PE.ed);
+  c.at = new Date().toISOString();
+  c.by = Q.prepBy || "";
+  PE.ed.at = c.at;
+  PE.dirty = false;
+  peKeep(c, "Printout saved on " + Q.num + ".");
+  peBar();
+}
+function closeEditPrint(force){
+  if(PE && PE.dirty && !force && !confirm("Close without saving your changes to the printout?")) return false;
+  const w = document.getElementById("peWrap");
+  if(w) w.remove();
+  if(PE) clearTimeout(PE.timer);
+  PE = null;
+  document.removeEventListener("keydown", peKey, true);
+  return true;
+}
+function peKey(e){ if(e.key === "Escape" && PE){ e.preventDefault(); closeEditPrint(); } }
+function openEditPrint(){
+  commitEdits();
+  if(PE) closeEditPrint(true);
+  peStyles();
+  PE = {ed: Q.printEdit ? peNormal(Q.printEdit) : peSeed(), dirty: false, fixes: [], timer: null};
+  const wrap = document.createElement("div");
+  wrap.id = "peWrap";
+  wrap.innerHTML =
+    '<div class="pe-bar"><b>Edit &amp; print · ' + esc(Q.num) + '</b>' +
+      '<span class="pe-state" id="peState"></span>' +
+      '<button type="button" class="btn primary" id="peSave">Save</button>' +
+      '<button type="button" class="btn" id="pePrint">Print / Save PDF</button>' +
+      '<button type="button" class="btn" id="peReseed" title="Throw the edits away and make the printout again from the quote as it is now">Start again from the quote</button>' +
+      '<button type="button" class="btn" id="peRemove" hidden title="Take the saved printout off this quote: Download PDF prints the quote as it is again">Remove saved printout</button>' +
+      '<button type="button" class="btn ghost" id="peClose">Close</button>' +
+    '</div>' +
+    '<div class="pe-body"><div class="pe-ed" id="peEd"></div>' +
+      '<div class="pe-pv"><span class="pe-fit" id="peFit"></span><iframe id="peFrame" title="The printout"></iframe></div></div>';
+  document.body.appendChild(wrap);
+  const pane = document.getElementById("peEd");
+  pane.addEventListener("input", peInput);
+  pane.addEventListener("change", e => { if(e.target.type === "checkbox" || e.target.tagName === "SELECT") peInput(e); });
+  pane.addEventListener("click", e => {
+    const fx = e.target.closest("[data-fix]");
+    if(fx){
+      const f = PE.fixes[Number(fx.dataset.fix)];
+      if(!f) return;
+      if(f.act === "reseed"){ document.getElementById("peReseed").click(); return; }
+      if(f.act === "kdfix") peKdFix(PE.ed); else f.act();
+      PE.dirty = true;
+      peRender();
+      return;
+    }
+    const b = e.target.closest("[data-act]");
+    if(b && !b.disabled) peAct(b.dataset.act, b);
+  });
+  pane.addEventListener("change", e => {
+    if(e.target.id !== "pePreset" || !e.target.value) return;
+    const id = e.target.value, it = RATE[id] || {};
+    const grp = ITEM_GROUP[id] || "";
+    const key = grp === CATER_GROUP ? "cater" : /^fr\d|_full$|_half$/.test(id) || /conference|venue|room/i.test(grp) ? "venue" : "other";
+    const s = peSecFor(key, (PRINT_SECS.find(x => x.key === key) || {title: "Other items"}).title);
+    const perPerson = /person/i.test(String(it.unit || ""));
+    const n = peNewLine(s.id);
+    n.name = it.name || "New line";
+    n.sub = it.unit && it.unit !== "flat" ? String(it.unit) : "";
+    n.qty = perPerson ? (Number(PE.ed.head.guests) || 1) : 1;
+    n.price = peR2(catEntry(id).price);
+    n.amount = peLineCalc(n);
+    const last = PE.ed.lines.filter(x => x.sec === s.id).pop();
+    PE.ed.lines.splice(last ? PE.ed.lines.indexOf(last) + 1 : PE.ed.lines.length, 0, n);
+    PE.dirty = true;
+    PE.focus = n.id;
+    peRender();
+    const inp = document.querySelector('#peEd input[data-l="' + n.id + '"][data-f="qty"]');
+    PE.focus = null;
+    if(inp){ inp.focus(); inp.select(); }
+  });
+  document.getElementById("peSave").addEventListener("click", peSave);
+  document.getElementById("peClose").addEventListener("click", () => closeEditPrint());
+  document.getElementById("peReseed").addEventListener("click", () => {
+    if(!confirm("Throw the edits away and make the printout again from the quote as it is now?")) return;
+    const use = PE.ed.use, at = PE.ed.at;
+    PE.ed = peSeed();
+    PE.ed.use = use; PE.ed.at = at;
+    PE.dirty = true;
+    peRender();
+  });
+  document.getElementById("peRemove").addEventListener("click", () => {
+    if(!confirm("Take the saved printout off " + Q.num + "? Download PDF prints the quote as it is again.")) return;
+    PE.dirty = false;
+    closeEditPrint(true);
+    peKeep(null, "Saved printout taken off " + Q.num + ".");
+  });
+  document.getElementById("pePrint").addEventListener("click", () => {
+    const bad = (PE.probs || []).filter(c => c.lvl === "bad");
+    if(bad.length && !confirm("The checks found " + bad.length + " thing" + (bad.length === 1 ? "" : "s") + " that don't add up:\n\n" + bad.map(c => "• " + c.text).join("\n") + "\n\nPrint anyway?")) return;
+    printOnePageQuote(peClean(PE.ed));
+  });
+  document.addEventListener("keydown", peKey, true);
+  peRender();
 }
 function cocLinkHTML(){
   const u = cocUrl();
@@ -14833,8 +15506,8 @@ function switchTab(name){
 document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
 /* ---------- form bindings ---------- */
-function softRefresh(){ autosaveDraft(); renderBondField(); renderRoomDisc(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); }
-function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); }
+function softRefresh(){ autosaveDraft(); renderBondField(); renderRoomDisc(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
+function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
 
 
 /* ---------- quoting on a booking already in RMS ----------
@@ -15658,6 +16331,16 @@ function commitEdits(){
 }
 function downloadPDF(){
   commitEdits();
+  /* staff with an edited printout saved (Edit & print, 26 Oct 2026): that is what prints, unless the
+     quote has changed since and they would rather print it as it is now */
+  if(!asOrg() && Q.printEdit && Q.printEdit.use !== false){
+    const pe = peNormal(Q.printEdit);
+    const moved = pe.from && pe.from.sig && pe.from.sig !== quotePrintSig();
+    if(!moved || confirm("The quote has changed since its printout was edited (Edit & print): it was " + money(pe.from.total) + ", it is now " + money(totals().total) + ".\n\nOK prints the edited printout anyway. Cancel prints the quote as it is now.")){
+      printOnePageQuote(pe);
+      return;
+    }
+  }
   /* the one page sheet is its own document, built and measured in a hidden frame */
   if(pdfMode() === "onepage"){ printOnePageQuote(); return; }
   switchTab("client");
