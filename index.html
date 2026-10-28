@@ -2424,7 +2424,7 @@ const INFO_SECTIONS = [
   {id:"deposit", title:"Deposit, payment & security bond", why:"on for every quote",
    text:"1. Once your quote is accepted we make an unconfirmed booking and email you a deposit invoice. 2. The deposit is {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room, payable within {depositdays} of the invoice, to secure your reservation and any church discount. If it is not received we will be in touch, and an unconfirmed booking can be cancelled. 3. Once the deposit is paid, {halfpct} of the total is due {halflead} prior to arrival (as soon as possible if you book inside that time). 4. The remaining balance is due {balancewhen} and must be paid before keys are handed over. It is payable by EFT, cash, EFTPOS, Mastercard or Visa. A {bond} security bond is required, paid prior to or on arrival, and is refunded on departure provided the Code of Conduct has been followed. Deposit and bond funds may be applied towards the cost of repairing any damage caused by a member of your group. All prices include GST and are subject to change."},
   {id:"cancel", title:"Cancellation conditions", why:"on for every quote",
-   text:"Groups of more than {bigunits} cabins and campsites may cancel more than {cancelpct} of their cabins and campsites without penalty up to {cancelbiglead} prior to arrival, and up to {cancelpct} of them without penalty up to {cancellead} prior to arrival. Groups of {bigunits} cabins and campsites or fewer may cancel without penalty up to {cancellead} prior to arrival. Within {cancellead} of arrival nothing can be cancelled without penalty: cabins and campsites cancelled from then on are charged at the full rate, so all numbers must be final {cancellead} before your event."},
+   text:"Groups of more than {bigunits} cabins and campsites may cancel more than {cancelpct} of their cabins and campsites without penalty up to {cancelbiglead} prior to arrival, and up to {cancelpct} of them without penalty up to {cancellead} prior to arrival. Groups of {bigunits} cabins and campsites or fewer may cancel without penalty up to {cancellead} prior to arrival. Within {cancellead} of arrival nothing can be cancelled without penalty: cabins and campsites cancelled from then on are charged at the full rate, so all numbers must be final {cancellead} before your event. In peak season / periods there are no refundable deposits unless the cancellation is made at least 1 month before the arrival date; if cancelled at least one month before arrival, the deposit will be refunded less a $50 booking fee."},
   {id:"conduct", title:"Code of conduct", why:"auto for group stays",
    text:"A responsible adult must be nominated as your Group Manager, and agrees to assist with all conduct and security matters concerning your group; this assistance is essential between 9.00pm and 8.00am. The following are breaches of the Code of Conduct: loutish behaviour by any member of your group; noise emanating from a unit after 10.00pm (this breach may result in the eviction of your entire group, with no credit or refund granted); excessive noise after 10.00pm from a room containing more persons than indicated on the rooming list (a double breach); and the excessive use of alcohol or offensive language. The Group Manager is not permitted to depart the WSLR grounds while any member of the group remains on site, and the Group Manager's nominated mobile phone must not be switched off at any time during your stay."},
   {id:"checkin", title:"Check-in, check-out & facilities", why:"auto for group stays",
@@ -3551,6 +3551,7 @@ function blankQuote(num){
     sections: null,
     secText: {},        // per-quote wording overrides for info sections: {sectionId: {title, text}}
     kdOver: null,       // per-quote "Money & key dates" rows: null = automatic, else [{d, t}]
+    kdOk: null,         // the differences staff chose to keep ("Keep my edits", 26 Oct 2026)
     kdCfg: null,        // per-quote deadline rules; null = the house rules from Settings
     printEdit: null,    // the edited one-page printout (Edit & print, 26 Oct 2026): null = none
     accomPriced: true,  // made under the import-your-prices rule (see normalizeQuote for older quotes)
@@ -3614,6 +3615,7 @@ function normalizeQuote(q){
   if(!q.menu) q.menu = {};
   if(!q.secText || typeof q.secText !== "object") q.secText = {};
   if(q.kdOver === undefined || (q.kdOver !== null && !Array.isArray(q.kdOver))) q.kdOver = null;
+  if(typeof q.kdOk !== "string") q.kdOk = null;
   if(q.kdCfg === undefined || (q.kdCfg !== null && typeof q.kdCfg !== "object")) q.kdCfg = null;
   if(!q.printEdit || typeof q.printEdit !== "object" || !Array.isArray(q.printEdit.lines)) q.printEdit = null;
   if(q.acceptedAt === undefined) q.acceptedAt = (q.status === "Accepted" || q.accepted) ? (q.sentAt || null) : null;
@@ -7036,6 +7038,7 @@ function snapshotQ(){
     sections: Q.sections ? JSON.parse(JSON.stringify(Q.sections)) : null,
     secText: JSON.parse(JSON.stringify(Q.secText || {})),
     kdOver: Array.isArray(Q.kdOver) ? JSON.parse(JSON.stringify(Q.kdOver)) : null,
+    kdOk: typeof Q.kdOk === "string" ? Q.kdOk : null,
     kdCfg: Q.kdCfg ? JSON.parse(JSON.stringify(Q.kdCfg)) : null,
     printEdit: Q.printEdit ? JSON.parse(JSON.stringify(Q.printEdit)) : null,
     accomPriced: Q.accomPriced !== undefined ? Q.accomPriced : true,
@@ -9166,7 +9169,7 @@ function onAcceptClick(){
   if(STAFF_VIEW){ showToast("Staff view: nothing on this page is submitted. Open the quote in the quote tool to change it.", true); return; }
   const sbx = document.getElementById("submitBtn");
   if(sbx && sbx.getAttribute("aria-disabled") === "true"){ submitBlockedHelp(sbx.dataset.why); return; }
-  if(!CLIENT_MODE){ doSubmit(); return; }
+  if(!CLIENT_MODE){ kdGuard("the booking and its deposit invoice", doSubmit); return; }
   const expBlk = quoteAcceptBlock();
   if(expBlk){ updateSubmitState(); showToast(expBlk.title + " " + ACCEPT_BLOCK_CALL, true); return; }
   if(overLines().length || shortStaysBlocking().length){ updateSubmitState(); return; }
@@ -9733,6 +9736,9 @@ function wslrDepositInvoiceHtml(d) {
       "<tr><td style=\"padding:7px 6px;border-top:2px solid #0b5c8e;font-size:12pt;color:#0b5c8e\"><b>TOTAL OF ALL PAYMENTS</b></td><td style=\"border-top:2px solid #0b5c8e\"></td><td class=\"r\" style=\"padding:7px 6px;border-top:2px solid #0b5c8e;font-size:12pt;color:#0b5c8e\"><b>" + m(sumPay) + "</b></td></tr>" +
       "</table><div style=\"font-size:8.5pt;color:#4f5b66;margin-top:4px\">Based on your current selection. If numbers change, the later payments change with them; the deposit counts towards the part payment.</div></div>";
   }
+  if (d.bondNote) {
+    h += "<div style=\"margin:8px 0 0;padding:7px 10px;border:1px solid #e0b25c;background:#fff8ea;border-radius:4px;font-size:9.5pt\"><b>SECURITY BOND</b>: " + e(d.bondNote) + "</div>";
+  }
   if (d.message || (d.schedule && d.schedule.length)) {
     h += "<div class=\"msg\">" + (d.message ? e(d.message).replace(/\n/g, "<br>") : "") +
       (d.schedule && d.schedule.length ? (d.message ? "<br><br>" : "") + "<b>Key dates</b><br>" + d.schedule.map(function (s, i) { return (i + 1) + ". " + e(s); }).join("<br>") : "") + "</div>";
@@ -9907,8 +9913,14 @@ function depositInvoiceData(){
     message: "Thank you for accepting your quote. We have made an unconfirmed booking for you; it is confirmed once this deposit is paid.",
     schedule: schedule,
     plan: {quoteTotal: total, payments: payments},
+    /* 26 Oct 2026 (GKR Karate paid $4,000 + the $900 deposit, taking the deposit for the bond) */
+    bondNote: bondAmount() > 0 ? bondInvoiceNote(bondAmount()) : "",
     preparedBy: "the WSLR quote tool"
   };
+}
+/* the same words as Deposit.gs 1.16.2 depBondNote_ */
+function bondInvoiceNote(amount){
+  return "The security bond of " + money0(amount) + " is not part of this invoice or the payment plan. It is paid prior to or on arrival, and refunded on departure provided the Code of Conduct has been followed.";
 }
 /* the whole booking as it stands: every line of the current selection, the
    discounts, what has been paid and the payment plan */
@@ -9991,7 +10003,8 @@ function fitSheets(doc){
   });
   return sheets.length;
 }
-function printDepositPack(){
+function printDepositPack(opts){
+  if(!(opts && opts.kdChecked === true) && kdStaleNow().length){ kdGuard("the deposit invoice", () => printDepositPack({kdChecked: true})); return; }
   let f = document.getElementById("depPrintFrame");
   if(f) f.remove();
   f = document.createElement("iframe");
@@ -10932,11 +10945,12 @@ function quoteChecks(){
   try{
     const rows = keyDatesRows(true);
     peKdMaths(rows, peR2(t.total), add, false);
-    if(Array.isArray(Q.kdOver)){
-      const amts = rr => rr.reduce((a, r) => a.concat(peAmounts(r[1])), []);
-      const auto = amts(keyDatesAutoRows(true)), over = amts(rows);
-      const stale = over.filter(a => auto.indexOf(a) < 0), fresh = auto.filter(a => over.indexOf(a) < 0);
-      if(stale.length && fresh.length) add("warn", "The key dates were changed by hand and say " + listWords(stale.map(money0)) + "; worked out from the quote now, they would say " + listWords(fresh.map(money0)) + ".");
+    /* 26 Oct 2026: line by line (comparing the amounts as a set missed Q-1074) */
+    const stale = kdStaleItems();
+    if(stale.length){
+      const words = stale.map(i => kdStaleWords(i, true));
+      if(Q.kdOk === kdStaleSig(stale)) add("ok", "Key dates changed by hand, kept on purpose: " + words.join("; "));
+      else add("warn", "The key dates were changed by hand and no longer match the quote: " + words.join("; ") + ".");
     }
   }catch(e){}
   if(perPersonOn() && !(Number(Q.guests) > 0) && t.total > 0) add("warn", "Cost per person is on, but the number of guests is blank.");
@@ -11840,6 +11854,109 @@ function keyDatesRows(showPrices){
   }
   return keyDatesAutoRows(showPrices);
 }
+/* 26 Oct 2026 (GKR Karate, Q-1074: the box still said 11 cabins and a $1,100 deposit while the
+   deposit invoice asked for $900 for 9): a hand-edited box is fixed text, so it is checked line by
+   line against the box worked out from the quote now: the deposit, the security bond, the part
+   payment, the cabin, campsite and conference room counts, and the arrival date. */
+function kdStaleItems(){
+  if(!Array.isArray(Q.kdOver)) return [];
+  let over, auto;
+  try{
+    const sp = (Q.priceMode || "full") !== "noprices";
+    over = keyDatesRows(sp);
+    auto = keyDatesAutoRows(sp);
+  }catch(e){ return []; }
+  const out = [];
+  const add = (what, says, now) => out.push({what: what, says: says, now: now});
+  const byLabel = (rows, re) => rows.find(r => re.test(String(r[0] || "").trim()));
+  const first = r => r ? peAmounts(r[1])[0] : undefined;
+  const differs = (a, b) => a !== undefined && b !== undefined && Math.abs(a - b) > 0.5;
+  [["Deposit", /^deposit\b/i], ["Security bond", /^security bond\b/i]].forEach(x => {
+    const o = byLabel(over, x[1]), a = byLabel(auto, x[1]), oa = first(o), aa = first(a);
+    if(o && a){ if(differs(oa, aa)) add(x[0], money0(oa), money0(aa)); }
+    else if(o && oa > 0) add(x[0], money0(oa), "none");
+    else if(a && aa > 0) add(x[0], "", money0(aa));
+  });
+  /* the part payment: what is left to pay after the deposit */
+  const halfRe = /\d+(?:\.\d+)?% of your total/;
+  const toPay = r => {
+    const t = String(r[1] || "");
+    const m = t.match(/about \$([\d,]+) to pay/) || t.match(/% of your total \(about \$([\d,]+)\)/);
+    return m ? peNum(m[1]) : undefined;
+  };
+  const ho = over.find(r => halfRe.test(String(r[1] || ""))), ha = auto.find(r => halfRe.test(String(r[1] || "")));
+  if(ho && ha){ if(differs(toPay(ho), toPay(ha))) add("Part payment", "about " + money0(toPay(ho)) + " to pay", "about " + money0(toPay(ha))); }
+  else if(ha) add("Part payment", "", toPay(ha) !== undefined ? "about " + money0(toPay(ha)) + " to pay" : "a part payment is due");
+  else if(ho) add("Part payment", "a part payment", "none (the deposit covers it)");
+  /* "for your 11 cabins", "2 conference rooms" */
+  const counts = rows => {
+    const m = {};
+    rows.forEach(r => String(r[1] || "").replace(/\b(\d+) (cabin|campsite|conference room)s?\b/gi, (all, n, w) => { m[w.toLowerCase()] = Number(n); return all; }));
+    return m;
+  };
+  const co = counts(over), ca = counts(auto);
+  Object.keys(co).forEach(w => {
+    const now = ca[w] || 0;
+    if(co[w] !== now) add(w.charAt(0).toUpperCase() + w.slice(1) + "s", String(co[w]), String(now));
+  });
+  /* the cancellation line's "(2 of 11)" */
+  if(!co.cabin && !co.campsite){
+    let n = null;
+    over.forEach(r => { const m = String(r[1] || "").match(/\b\d+ of (\d+)\)/); if(m) n = Number(m[1]); });
+    const tot = unitsSplit().total;
+    if(n !== null && n !== tot) add("Cabins and sites", String(n), String(tot));
+  }
+  /* the dates move with the quote's dates: the arrival line says which day it is */
+  const arrive = rows => rows.find(r => /^(arrival|your event)\b/i.test(String(r[1] || "").trim()));
+  const ao = arrive(over), aa = arrive(auto);
+  if(ao && aa && String(ao[0]).trim() !== String(aa[0]).trim()) add("Arrival", String(ao[0]).trim(), String(aa[0]).trim());
+  return out;
+}
+/* one difference in words: "Deposit: the box says $1,100; ...", or "missing from the box" */
+function kdStaleWords(i, short){
+  return short
+    ? i.what + (i.says ? " says " + i.says : " is missing") + " (now " + i.now + ")"
+    : (i.says ? "the box says " + i.says : "missing from the box") + "; worked out from the quote now: " + i.now;
+}
+function kdStaleSig(items){ return JSON.stringify((items || kdStaleItems()).map(i => [i.what, i.says, i.now])); }
+/* what still needs an answer: nothing once staff chose to keep exactly these differences */
+function kdStaleNow(){
+  const items = kdStaleItems();
+  return items.length && Q.kdOk !== kdStaleSig(items) ? items : [];
+}
+/* before the quote, its link or its deposit invoice goes out (staff only): back to automatic, keep
+   the edits, or stop. `go` runs straight away when there is nothing to ask. */
+function kdGuard(what, go){
+  if(CLIENT_MODE) return go();
+  const items = kdStaleNow();
+  if(!items.length) return go();
+  openWslrModal(
+    '<h4>Money &amp; key dates were changed by hand</h4>' +
+    '<p>The box on ' + esc(Q.num) + ' is fixed text since it was edited, and it no longer matches the quote as it is now, so ' + esc(what) + ' would say something different:</p>' +
+    '<ul class="kdstale">' + items.map(i => '<li><b>' + esc(i.what) + '</b>: ' + esc(kdStaleWords(i)) + '</li>').join('') + '</ul>' +
+    '<div class="modalrow">' +
+      '<button type="button" class="btn primary" id="kdgAuto">Back to automatic, then carry on</button>' +
+      '<button type="button" class="btn" id="kdgKeep">Keep my edits</button>' +
+      '<button type="button" class="btn ghost" id="kdgStop">Cancel</button>' +
+    '</div>' +
+    '<p class="hint" style="margin-top:8px">Back to automatic drops every hand edit to the box and works it out from the quote. Keep my edits carries on as it is and does not ask again until something else changes.</p>'
+  );
+  document.getElementById("kdgAuto").addEventListener("click", () => {
+    closeWslrModal();
+    Q.kdOver = null;
+    Q.kdOk = null;
+    refresh();
+    showToast("Money & key dates are automatic again.");
+    go();
+  });
+  document.getElementById("kdgKeep").addEventListener("click", () => {
+    closeWslrModal();
+    Q.kdOk = kdStaleSig(items);
+    autosaveDraft();
+    go();
+  });
+  document.getElementById("kdgStop").addEventListener("click", closeWslrModal);
+}
 /* `force` renders it for staff even when it is switched off for the organiser */
 function keyDatesHTML(showPrices, editable, force){
   if(!(Q.features && Q.features.depositDates) && !force) return '';
@@ -11906,6 +12023,7 @@ function wireKeyDates(root, showPrices){
   const auto = block.querySelector(".kdAuto");
   if(auto) auto.addEventListener("click", () => {
     Q.kdOver = null;
+    Q.kdOk = null;
     autosaveDraft();
     renderKeyDatesNow();
   });
@@ -13989,12 +14107,13 @@ function fillTemplate(s){
     .trim();
 }
 function emailSubject(){ return fillTemplate(getDefaults().subject); }
-function doEmail(){
+function doEmail(opts){
   if(!readyToSend()) return;
   if(!String(Q.email||"").trim()){
     showToast("Add the client's email address first.");
     return;
   }
+  if(!(opts && opts.kdChecked === true) && kdStaleNow().length){ kdGuard("the emailed quote", () => doEmail({kdChecked: true})); return; }
   sendCore();
   const to = String(Q.email).trim();
   const subject = emailSubject();
@@ -14030,8 +14149,9 @@ function doEmail(){
     showToast("The browser blocked the Outlook tab. Allow pop-ups for this site, then press Email quote again. Quote " + Q.num + " is already logged as sent.");
   }
 }
-function doSend(){
+function doSend(opts){
   if(!readyToSend()) return;
+  if(!(opts && opts.kdChecked === true) && kdStaleNow().length){ kdGuard("the quote you are marking as sent", () => doSend({kdChecked: true})); return; }
   sendCore();
   showToast("Quote " + Q.num + " marked as sent and saved here." +
     (SHEET_REACHABLE ? " Logged to the tracker sheet." : " ⚠ The tracker sheet could not be reached, so the client's link will not work until this computer is back online with the tool open."));
@@ -14067,8 +14187,9 @@ function doSaveQuote(opts){
   return true;
 }
 /* Save & get link (Sept 2026): save it, then show the organiser's link to send yourself */
-function doGetLink(){
+function doGetLink(opts){
   if(!readyToSend()) return;
+  if(!(opts && opts.kdChecked === true) && kdStaleNow().length){ kdGuard("the organiser's link", () => doGetLink({kdChecked: true})); return; }
   if(doSaveQuote({quiet: true}) === false) return;
   const link = linkForToken(Q.token);
   if(!link) return;
@@ -14132,8 +14253,9 @@ function doGetLink(){
 }
 /* staff: a negotiated change to a submitted quote, sent through the same path as an
    organiser's resubmission so RMS, the deposit invoice and the history all follow */
-function doStaffResubmit(){
+function doStaffResubmit(opts){
   if(!readyToSend()) return;
+  if(!(opts && opts.kdChecked === true) && kdStaleNow().length){ kdGuard("the updated deposit invoice", () => doStaffResubmit({kdChecked: true})); return; }
   if(!confirm("Save " + Q.num + " and update the RMS booking? The organiser gets an updated deposit invoice, functions@ gets one email about the change, and it is recorded as a staff change in the history.")) return;
   if(!Q.token) Q.token = genToken();
   const wasStatus = Q.status;
@@ -16329,11 +16451,11 @@ function commitEdits(){
   if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
   renderClient();
 }
-function downloadPDF(){
+function downloadPDF(opts){
   commitEdits();
   /* staff with an edited printout saved (Edit & print, 26 Oct 2026): that is what prints, unless the
      quote has changed since and they would rather print it as it is now */
-  if(!asOrg() && Q.printEdit && Q.printEdit.use !== false){
+  if(!(opts && opts.noEdit) && !asOrg() && Q.printEdit && Q.printEdit.use !== false){
     const pe = peNormal(Q.printEdit);
     const moved = pe.from && pe.from.sig && pe.from.sig !== quotePrintSig();
     if(!moved || confirm("The quote has changed since its printout was edited (Edit & print): it was " + money(pe.from.total) + ", it is now " + money(totals().total) + ".\n\nOK prints the edited printout anyway. Cancel prints the quote as it is now.")){
@@ -16341,6 +16463,7 @@ function downloadPDF(){
       return;
     }
   }
+  if(!(opts && opts.kdChecked === true) && kdStaleNow().length){ kdGuard("the PDF", () => downloadPDF({kdChecked: true, noEdit: true})); return; }
   /* the one page sheet is its own document, built and measured in a hidden frame */
   if(pdfMode() === "onepage"){ printOnePageQuote(); return; }
   switchTab("client");
