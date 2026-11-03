@@ -629,12 +629,26 @@
   .cb-hint{font-size:12.5px; color:var(--muted); margin:2px 0 10px}
   /* sections folded to their heading on the organiser's page (3 Nov 2026) */
   .foldbtn{appearance:none; background:none; border:none; padding:0; margin:0; width:100%; cursor:pointer; text-align:left;
-    font:inherit; color:inherit; letter-spacing:inherit; text-transform:inherit; display:flex; justify-content:space-between; align-items:baseline; gap:12px}
-  .foldbtn:focus-visible{outline:2px solid rgba(42,120,214,.45); outline-offset:3px; border-radius:4px}
-  .foldcue{font-size:12.5px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--accent); white-space:nowrap}
-  .foldsum{font-size:12.5px; color:var(--muted); margin:4px 0 0; cursor:default}
+    font:inherit; color:inherit; letter-spacing:inherit; text-transform:inherit; display:flex; justify-content:space-between; align-items:center; gap:12px}
+  .foldbtn:focus-visible{outline:2px solid rgba(42,120,214,.45); outline-offset:3px; border-radius:6px}
+  .foldtitle{min-width:0}
+  /* open: an ordinary section heading with an outlined Hide button */
+  .foldcue{flex:none; font-size:13px; font-weight:700; letter-spacing:0; text-transform:none; white-space:nowrap;
+    color:var(--accent); border:1.5px solid var(--accent); background:#fff; border-radius:999px; padding:4px 12px}
   .folded > .foldbody{display:none}
   [data-fold]:not(.folded) > .foldsum{display:none}
+  /* folded: a pale blue card, heading in plain words, a solid blue button, and a line saying what is inside */
+  .cbfold.folded, .qpfold.folded{background:#eef4fc; border:1.5px solid rgba(42,120,214,.45); border-radius:12px; padding:14px 16px; margin-top:20px}
+  .cbfold.folded > h3, .qpfold.folded > .qp-sechead{border-top:none; padding:0; margin:0; font-size:16px; font-weight:700;
+    letter-spacing:0; text-transform:none; color:var(--ink)}
+  .folded .foldcue{background:var(--accent); color:#fff; border-color:var(--accent); font-size:14px; padding:7px 16px}
+  .folded .foldbtn:hover .foldcue{background:var(--accent-dn); border-color:var(--accent-dn)}
+  .foldsum{font-size:13.5px; color:var(--ink2); margin:6px 0 0; cursor:pointer}
+  .cbfold.folded:hover, .qpfold.folded:hover{border-color:var(--accent)}
+  @media (max-width:520px){
+    .cbfold.folded > h3, .qpfold.folded > .qp-sechead{font-size:15px}
+    .folded .foldcue{padding:6px 12px; font-size:13.5px}
+  }
   /* Your details: what is still empty is shaded until it is filled in (3 Nov 2026) */
   #yourDetails.cdneeds{background:#fff8e6; border:1px solid rgba(208,138,0,.45); border-radius:10px; padding:0 14px 12px}
   #yourDetails.cdneeds > h3{border-top:none}
@@ -1224,6 +1238,8 @@
     /* the important information always prints in full, folded or not */
     .qpfold > .foldbody{display:block !important}
     .qpfold > .foldsum, .foldcue{display:none !important}
+    .qpfold.folded{background:none; border:none; border-radius:0; padding:0; margin:0}
+    .qpfold.folded > .qp-sechead{margin:26px 0 4px; font-size:12px; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink2); border-top:1.5px solid var(--ink); padding-top:14px}
   }
 </style>
 </head>
@@ -9458,7 +9474,10 @@ function cheapestPanelHTML(){
     ? '<div class="wkloaded">prices and availability loaded for <b>' + esc(shortDateY(span.from)) + ' to ' + esc(shortDateY(span.to)) + '</b>' +
         (w && w.clipped && !w.empty ? ' · searching ' + esc(shortDateY(w.from)) + ' to ' + esc(shortDateY(w.to)) : '') + '</div>'
     : '';
-  return '<div class="cb-sec cheapsec"><h3>Looking for the cheapest time to visit?</h3>' +
+  /* folded on the organiser's page until they open it or have searched (Joel, 3 Nov 2026) */
+  return foldSecHTML("cheap", "Looking for the cheapest time to visit?",
+    "We can search other dates for the cheapest " + n + " night" + (n === 1 ? "" : "s") + " for your cabins.",
+    asOrg() && WEEKENDS === null,
     '<p class="cb-hint">we will take the cabins you have chosen above and find the cheapest <b>' + n + ' night' + (n === 1 ? '' : 's') +
       '</b> for them. Change the number of nights at the top of this page and search again.</p>' +
     rangeHtml +
@@ -9470,8 +9489,8 @@ function cheapestPanelHTML(){
     '</div>' +
     '<button class="wkbtn" id="dpFindWk"' + (haveCabins ? '' : ' disabled title="Choose your cabins above first"') + '>Find the cheapest dates ↓</button>' +
     (haveCabins ? '' : '<p class="cb-hint" style="margin-top:8px">Choose your cabins above first and we will price that exact mix.</p>') +
-    cheapestResultsHTML() +
-  '</div>';
+    cheapestResultsHTML(),
+    "Search dates", "cheapsec");
 }
 function datesPanelHTML(){
   const n = Math.max(1, nightsCount());
@@ -12286,25 +12305,35 @@ let FOLD_OPEN = {}, FOLD_Q = null;
 function foldHasAccom(){ return accomItems().some(it => accomQtyTotal(it.id) > 0 || groupHas(it.id) > 0); }
 function foldHasVenue(){ return VENUES.some(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 || !!venueDayMap(v.key)); }
 function foldHasCater(){ return caterItems().some(it => (Number(((Q.sel.cater || {})[it.id] || {}).days) || 0) > 0); }
-function foldSecHTML(key, title, sum, foldable, body){
-  if(!foldable) return '<div class="cb-sec"><h3>' + title + '</h3>' + body + '</div>';
+/* folded, a section is a pale blue card with a solid blue button, so it can't be missed
+   (Joel, 3 Nov 2026: "far too hard to see"); open, it is an ordinary section with a Hide button */
+function foldCue(open, cue){ return open ? "Hide ▴" : "+ " + (cue || "Show"); }
+function foldSecHTML(key, title, sum, foldable, body, cue, cls){
+  cls = cls ? " " + cls : "";
+  if(!foldable) return '<div class="cb-sec' + cls + '"><h3>' + title + '</h3>' + body + '</div>';
   const open = !!FOLD_OPEN[key];
-  return '<div class="cb-sec cbfold' + (open ? '' : ' folded') + '" data-fold="' + key + '">' +
-    '<h3><button type="button" class="foldbtn" aria-expanded="' + open + '">' + title +
-      '<span class="foldcue">' + (open ? 'hide ▴' : 'show ▾') + '</span></button></h3>' +
+  return '<div class="cb-sec cbfold' + cls + (open ? '' : ' folded') + '" data-fold="' + key + '" data-cue="' + esc(cue || "Show") + '">' +
+    '<h3><button type="button" class="foldbtn" aria-expanded="' + open + '"><span class="foldtitle">' + title + '</span>' +
+      '<span class="foldcue">' + esc(foldCue(open, cue)) + '</span></button></h3>' +
     '<p class="foldsum">' + esc(sum) + '</p>' +
     '<div class="foldbody">' + body + '</div></div>';
 }
 function wireFolds(page){
-  page.querySelectorAll(".cbfold .foldbtn, .qpfold .foldbtn").forEach(b => b.addEventListener("click", () => {
+  page.querySelectorAll(".cbfold .foldbtn, .qpfold .foldbtn").forEach(b => {
     const box = b.closest("[data-fold]");
-    const open = box.classList.contains("folded");
-    FOLD_OPEN[box.dataset.fold] = open;
-    box.classList.toggle("folded", !open);
-    b.setAttribute("aria-expanded", String(open));
-    const cue = b.querySelector(".foldcue");
-    if(cue) cue.textContent = open ? "hide ▴" : (box.dataset.fold === "info" ? "read ▾" : "show ▾");
-  }));
+    const toggle = () => {
+      const open = box.classList.contains("folded");
+      FOLD_OPEN[box.dataset.fold] = open;
+      box.classList.toggle("folded", !open);
+      b.setAttribute("aria-expanded", String(open));
+      const cue = b.querySelector(".foldcue");
+      if(cue) cue.textContent = foldCue(open, box.dataset.cue);
+    };
+    b.addEventListener("click", toggle);
+    /* the line under the heading opens it too */
+    const sum = box.querySelector(":scope > .foldsum");
+    if(sum) sum.addEventListener("click", () => { if(box.classList.contains("folded")) toggle(); });
+  });
 }
 /* Your details: the boxes still empty are shaded, so they are filled in before Accept.
    The organisation is optional (a family or a private group has none). */
@@ -12403,7 +12432,7 @@ function renderClient(){
 
     /* a conference-room-only quote folds its accommodation to the heading (3 Nov 2026) */
     accomHtml = foldSecHTML("accom", "Accommodation",
-      "No cabins on this quote. Staying overnight? Open this to add cabins.",
+      "No cabins on this quote yet. Staying overnight? Tap Show cabins to add some.",
       asOrg() && !foldHasAccom() && foldHasVenue(),
       '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ((quoteLocked() || accomAllLocked()) ? ' · the cabins we have set aside for your group ·' : ' · choose how many of each cabin type you\'d like ·') + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
       rmsLiveBanner() +
@@ -12411,7 +12440,7 @@ function renderClient(){
         : '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
           '<span><b>Some cabins are only needed for part of the stay</b><br>' +
           '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin, you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>') +
-      rows + capHtml + venueCreditPointerHTML(showPrices));
+      rows + capHtml + venueCreditPointerHTML(showPrices), "Show cabins");
   }
 
   /* --- venues (interactive) --- */
@@ -12419,7 +12448,7 @@ function renderClient(){
   /* no rooms on the quote: folded to the heading until they open it (3 Nov 2026) */
   const venueHtml = venuesOn.length
     ? foldSecHTML("venues", "Conference rooms &amp; venues",
-      "No conference rooms on this quote. Open this to see our rooms and add one.",
+      "No conference rooms on this quote yet. Tap Show rooms to see them and add one.",
       asOrg() && !foldHasVenue(),
       '<p class="cb-hint">in half-day steps · a half day is 6 continuous hours or less</p>' +
       venueCreditBannerHTML(showPrices) +
@@ -12476,7 +12505,7 @@ function renderClient(){
           /* the two questions span the whole row, so they read well on a phone */
           venueSwitchAskHTML(v, showPrices) + (v.key === "fr3" ? venueOneSpaceBarHTML() : '') +
         '</div>';
-      }).join(''))
+      }).join(''), "Show rooms")
     : '';
 
   /* --- catering (interactive) --- */
@@ -12497,7 +12526,7 @@ function renderClient(){
   /* no meals on the quote: folded to the heading until they open it (3 Nov 2026) */
   const caterHtml = caterOn.length
     ? foldSecHTML("cater", "Catering",
-      "No meals on this quote. Open this to add breakfast, lunch or dinner.",
+      "No meals on this quote yet. Tap Show meals to add breakfast, lunch or dinner.",
       asOrg() && !foldHasCater(),
       '<p class="cb-hint">buffet style in our Private Dining Room · minimum group size ' + CATER_MIN + ' · your group picks the actual dishes with our catering team closer to the date</p>' +
       caterMinNote(false) +
@@ -12550,7 +12579,7 @@ function renderClient(){
           menuHtml +
         '</div>';
       }).join('') +
-      (extrasTxt ? '<div class="menuextras">' + esc(extrasTxt) + '</div>' : ''))
+      (extrasTxt ? '<div class="menuextras">' + esc(extrasTxt) + '</div>' : ''), "Show meals")
     : '';
 
   /* --- church discount tier (only when staff have marked the group ACNC/church) --- */
@@ -12603,10 +12632,10 @@ function renderClient(){
   /* the organiser's page starts it folded to the heading (Joel, 3 Nov 2026); it always prints in full */
   const infoFold = asOrg();
   const secHtml = secs.length
-    ? '<div class="qpfold' + (infoFold && !FOLD_OPEN.info ? ' folded' : '') + '" data-fold="info">' +
+    ? '<div class="qpfold' + (infoFold && !FOLD_OPEN.info ? ' folded' : '') + '" data-fold="info" data-cue="Read">' +
       (infoFold
-        ? '<div class="qp-sechead"><button type="button" class="foldbtn" aria-expanded="' + !!FOLD_OPEN.info + '">Important information' +
-            '<span class="foldcue">' + (FOLD_OPEN.info ? 'hide ▴' : 'read ▾') + '</span></button></div>' +
+        ? '<div class="qp-sechead"><button type="button" class="foldbtn" aria-expanded="' + !!FOLD_OPEN.info + '"><span class="foldtitle">Important information</span>' +
+            '<span class="foldcue">' + esc(foldCue(!!FOLD_OPEN.info, "Read")) + '</span></button></div>' +
           '<p class="foldsum">' + esc(secs.map(s => s.title).join(' · ')) + '. Please read these before you accept.</p>'
         : '<div class="qp-sechead">Important information</div>') +
       '<div class="foldbody">' +
