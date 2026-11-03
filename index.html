@@ -1320,7 +1320,7 @@
       <div class="card">
         <h2>Quote settings</h2>
         <div class="fields">
-          <label>Quote number<input id="f-num" type="text"></label>
+          <label>Quote number<input id="f-num" type="text" readonly title="Given by the quote server, so every quote has its own number" style="background:#f1f0ec"></label>
           <label>Prepared by<input id="f-prepby" type="text" placeholder="Your name"></label>
           <label title="Where the alert goes when the client accepts or declines online. The functions inbox always gets a copy.">Preparer email<input id="f-prepemail" type="email" placeholder="functions@wslr.com.au"></label>
           <label title="Shown as Valid until on the quote, and drives the follow-up column on the Pipeline">Quote valid for (days)<input id="f-valid" type="number" min="1"></label>
@@ -3208,13 +3208,88 @@ function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
 let SAVED = lsGet(LS_QUOTES, []);
 function saveQuotes(){ lsSet(LS_QUOTES, SAVED); }
 
+/* Quote numbers (4 Nov 2026). The quote server hands them out, so nobody repeats one and everyone
+   follows the latest. The number on a blank page is only a guess from what this computer has seen;
+   the quote gets its own number from the server as soon as anything is typed. NUM_HIGH is the
+   highest number the server has told us about, including deleted quotes'. */
+const LS_NUM_HIGH = "wslr_num_high";
+let NUM_HIGH = Number(lsGet(LS_NUM_HIGH, 0)) || 0;
+let NUM_CLAIM_BUSY = false, NUM_CLAIM_AT = 0;
+function quoteNumVal(s){ const m = /^Q-(\d+)$/.exec(String(s || "").trim()); return m ? Number(m[1]) : 0; }
+function numHighKnown(){
+  let max = Math.max(1000, NUM_HIGH);
+  SAVED.forEach(s => { max = Math.max(max, quoteNumVal(s.num)); });
+  return max;
+}
 function nextQuoteNum(){
-  let max = 1000;
-  const scan = s => { const m = /^Q-(\d+)$/.exec(String(s || "").trim()); if(m) max = Math.max(max, Number(m[1])); };
-  SAVED.forEach(s => scan(s.num));
+  let max = numHighKnown();
   const d = lsGet(LS_DRAFT, null);
-  if(d && d.q) scan(d.q.num);
+  if(d && d.q) max = Math.max(max, quoteNumVal(d.q.num));
   return "Q-" + (max + 1);
+}
+function noteNumHigh(n){
+  n = Number(n) || 0;
+  if(n > NUM_HIGH){ NUM_HIGH = n; lsSet(LS_NUM_HIGH, n); }
+}
+function showQuoteNum(){
+  const el = document.getElementById("f-num");
+  if(el) el.value = Q.num;
+}
+/* a quote with something in it that has never been saved to the server has no number of its own yet */
+function numNeedsClaim(){
+  return !CLIENT_MODE && !STAFF_VIEW && !Q.numClaimed && !Q.token && !Q.sentAt && hasContent(Q);
+}
+function claimQuoteNum(){
+  if(!numNeedsClaim() || NUM_CLAIM_BUSY || Date.now() - NUM_CLAIM_AT < 30000) return;
+  if(!sheetEndpoint() || !staffKey()) return;
+  NUM_CLAIM_BUSY = true;
+  NUM_CLAIM_AT = Date.now();
+  const forQ = Q;
+  fetch(sheetEndpoint(), {
+    method: "POST",
+    headers: {"Content-Type": "text/plain;charset=utf-8"},
+    body: JSON.stringify({token: staffKey(), action: "claimNum", floor: numHighKnown()})
+  })
+    .then(r => r.json())
+    .then(d => {
+      NUM_CLAIM_BUSY = false;
+      if(!d || !d.ok || !quoteNumVal(d.num)) return;
+      NUM_CLAIM_AT = 0;   // the 30 second wait is only for a server that did not answer
+      noteNumHigh(quoteNumVal(d.num));
+      /* moved to another quote, or saved while we waited: the server checks that save itself */
+      if(Q !== forQ || !numNeedsClaim()) return;
+      const old = Q.num;
+      Q.num = d.num;
+      Q.numClaimed = true;
+      SAVED.forEach(s => { if(s.num === old && !s._synced && !s.token){ s.num = d.num; s.numClaimed = true; } });
+      saveQuotes();
+      showQuoteNum();
+      softRefresh();
+      renderPrevOptions();
+      renderPipeline();
+    })
+    .catch(() => { NUM_CLAIM_BUSY = false; });
+}
+/* the server gave a quote a different number when it saved it. Its link keeps working. */
+function applyRenumber(from, to, token){
+  noteNumHigh(quoteNumVal(to));
+  SAVED.forEach(s => { if(s.num === from && s.token === token) s.num = to; });
+  OUTBOX.forEach(o => {
+    const p = o.payload || {};
+    if(p.num === from) p.num = to;
+    if(p.quote && p.quote.num === from && p.quote.token === token) p.quote.num = to;
+  });
+  lsSet(LS_OUTBOX, OUTBOX);
+  saveQuotes();
+  if(Q.num === from && Q.token === token){
+    Q.num = to;
+    showQuoteNum();
+    autosaveDraft();
+    softRefresh();
+  }
+  renderPrevOptions();
+  renderPipeline();
+  showToast(from + " belongs to another quote, so this quote is now " + to + ". Its link still works. If you already gave anyone " + from + ", tell them the new number.");
 }
 
 /* ---------- cross-computer pipeline sync ----------
@@ -3303,10 +3378,14 @@ function flushOutbox(done){
           FLUSH_LAST = {kind: "refused", msg: "bad token", at: Date.now()};
           SHEET_REACHABLE = true; FLUSH_BUSY = false; staffKeyNeeded(true); renderPipeSync(); if(done) done(); return;
         }
+        /* the server could not check the quote number just now: nothing was saved, so it stays queued */
+        if(/^busy\b/.test(String(t).trim())) throw new Error("the quote server is busy");
         FLUSH_LAST = {kind: "ok", msg: "", at: Date.now()};
         SHEET_REACHABLE = true;
-        OUTBOX.shift();
+        const landed = OUTBOX.shift();
         lsSet(LS_OUTBOX, OUTBOX);
+        const moved = /^renumbered (\S+) (\S+)/.exec(String(t).trim());
+        if(moved) applyRenumber(moved[1], moved[2], String((landed.payload && landed.payload.quote && landed.payload.quote.token) || ""));
         step();
       })
       .catch(e => {
@@ -3355,6 +3434,7 @@ function pullPipeline(force){
         if(data && data.error === "bad token") staffKeyNeeded(true);
         if(!data || !data.ok || !Array.isArray(data.quotes)) throw new Error("bad response");
         if(!!data.bigQuotes !== SERVER_BIG){ SERVER_BIG = !!data.bigQuotes; lsSet("wslr_server_big", SERVER_BIG); }
+        noteNumHigh(data.numHigh);
         mergeServerQuotes(data.quotes);
         SHEET_REACHABLE = true;
         PIPE_STATE = "ok";
@@ -3438,12 +3518,14 @@ function mergeServerQuotes(list){
     const mine = SAVED.find(s => s.num === Q.num);
     if(mine && !hasContent(Q) ){
       Q.num = nextQuoteNum();          // this blank page was about to reuse a number another computer took
+      Q.numClaimed = false;
       const nf0 = document.getElementById("f-num");
       if(nf0) nf0.value = Q.num;
       changed = true;
     } else if(mine && Q.status === "Draft" && mine.token && mine.token !== Q.token){
       const old = Q.num;
       Q.num = nextQuoteNum();          // same number, different quote: this draft moves to a free number
+      Q.numClaimed = false;
       const nf1 = document.getElementById("f-num");
       if(nf1) nf1.value = Q.num;       // otherwise one keystroke in that field puts the clash back
       autosaveDraft();
@@ -3454,6 +3536,13 @@ function mergeServerQuotes(list){
       if(mine.sentAt && mine.sentAt !== Q.sentAt){ Q.sentAt = mine.sentAt; changed = true; }
     }
   }
+  /* a blank page follows the latest number, even when the number it showed is free (a deleted quote's) */
+  if(!Q.numClaimed && !Q.token && !Q.sentAt && !hasContent(Q) && quoteNumVal(Q.num) < quoteNumVal(nextQuoteNum())){
+    Q.num = nextQuoteNum();
+    showQuoteNum();
+    changed = true;
+  }
+  claimQuoteNum();
   if(changed){
     saveQuotes();
     renderPrevOptions();
@@ -3879,6 +3968,7 @@ function autosaveDraft(){
     }
   }
   lsSet(LS_DRAFT, {q: Q, t: new Date().toISOString()});
+  claimQuoteNum();
 }
 
 /* ---------- templates ---------- */
@@ -7150,7 +7240,7 @@ function rmsTariffPlan(){
 function snapshotQ(){
   const t = totals();
   return {
-    num: Q.num, contact: Q.contact, org: Q.org, email: Q.email, mobile: Q.mobile, event: Q.event,
+    num: Q.num, numClaimed: !!Q.numClaimed, contact: Q.contact, org: Q.org, email: Q.email, mobile: Q.mobile, event: Q.event,
     dateStart: Q.dateStart, dateEnd: Q.dateEnd, guests: Q.guests,
     validDays: Q.validDays, discountPct: 0, disc: JSON.parse(JSON.stringify(Q.disc || null)), prepBy: Q.prepBy,
     address: JSON.parse(JSON.stringify(Q.address || {})),
@@ -14158,6 +14248,7 @@ function sendCore(){
   if(taken){
     const old = Q.num;
     Q.num = nextQuoteNum();
+    Q.numClaimed = false;
     const nf = document.getElementById("f-num");
     if(nf) nf.value = Q.num;
     showToast(old + " is already in use by another computer, so this quote is now " + Q.num + ".");
