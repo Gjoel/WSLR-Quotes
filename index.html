@@ -57,6 +57,9 @@
   .fields{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px}
   @media (max-width:520px){ .fields{grid-template-columns:1fr} }
   .fields label{display:flex; flex-direction:column; gap:4px; font-size:12.5px; font-weight:600; color:var(--ink2)}
+  /* the organiser's postal address on tab 1 (3 Nov 2026): street across the card, state + postcode share a cell */
+  .fields .fwide{grid-column:1/-1}
+  .fields .fpair{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px}
   /* discount: a single tick box that opens two small rows */
   .discbox{display:flex; flex-direction:column; justify-content:flex-end; gap:5px; font-size:12.5px; color:var(--ink2)}
   .fields .disctgl{flex-direction:row; align-items:center; gap:7px; font-weight:600; cursor:pointer; padding-bottom:8px}
@@ -191,6 +194,20 @@
   .usertable td:last-child{text-align:right; white-space:nowrap}
   .usertable .btn{padding:5px 10px; font-size:13px}
   .usertag{display:inline-block; margin-left:8px; padding:1px 7px; border-radius:10px; background:#eef3fb; color:var(--accent-dn); font-size:11.5px; font-weight:600}
+  /* Manage staff (3 Nov 2026): set a password in the row; no sideways scroll on a phone */
+  .usertable .setpw td{background:#f6f8fc}
+  .setpwbox{display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:flex-end}
+  .setpwbox input{max-width:240px; padding:5px 8px; font-size:13.5px}
+  .adminadd input{max-width:240px}
+  .adminlog{margin-top:14px; font-size:12.5px; color:var(--ink2)}
+  .adminlog b{color:var(--ink)}
+  .adminlog ul{margin:4px 0 0; padding-left:18px}
+  @media (max-width:640px){
+    .usertable tr{display:flex; flex-wrap:wrap; border-bottom:1px solid var(--grid)}
+    .usertable td{border-bottom:none; padding:5px 6px}
+    .usertable td:last-child{white-space:normal; text-align:left; width:100%}
+    .setpwbox{justify-content:flex-start}
+  }
   .btn{
     appearance:none; font:inherit; font-weight:600; font-size:14.5px; cursor:pointer;
     border-radius:9px; padding:10px 18px; border:1px solid var(--border);
@@ -610,6 +627,21 @@
   .cb-sec{margin-top:24px}
   .cb-sec > h3{margin:0 0 2px; font-size:12px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink2); border-top:1.5px solid var(--ink); padding-top:14px}
   .cb-hint{font-size:12.5px; color:var(--muted); margin:2px 0 10px}
+  /* sections folded to their heading on the organiser's page (3 Nov 2026) */
+  .foldbtn{appearance:none; background:none; border:none; padding:0; margin:0; width:100%; cursor:pointer; text-align:left;
+    font:inherit; color:inherit; letter-spacing:inherit; text-transform:inherit; display:flex; justify-content:space-between; align-items:baseline; gap:12px}
+  .foldbtn:focus-visible{outline:2px solid rgba(42,120,214,.45); outline-offset:3px; border-radius:4px}
+  .foldcue{font-size:12.5px; font-weight:600; letter-spacing:0; text-transform:none; color:var(--accent); white-space:nowrap}
+  .foldsum{font-size:12.5px; color:var(--muted); margin:4px 0 0; cursor:default}
+  .folded > .foldbody{display:none}
+  [data-fold]:not(.folded) > .foldsum{display:none}
+  /* Your details: what is still empty is shaded until it is filled in (3 Nov 2026) */
+  #yourDetails.cdneeds{background:#fff8e6; border:1px solid rgba(208,138,0,.45); border-radius:10px; padding:0 14px 12px}
+  #yourDetails.cdneeds > h3{border-top:none}
+  .cdstate{font-size:12.5px; color:#6b4800; margin:0 0 8px}
+  .cdstate:empty{display:none}
+  .cd-grid .cdneed{background:#ffe9b8; border-color:#d08a00}
+  .cd-grid .cdneed:focus{background:#fff}
   .cb-row{
     display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:4px 14px;
     align-items:center; padding:9px 2px; border-bottom:1px dashed var(--grid);
@@ -1189,6 +1221,9 @@
     /* short PDFs: the sections the website covers step aside for the link block */
     .qp-sec.weblinked{display:none !important}
     .qp-weblinks{display:block}
+    /* the important information always prints in full, folded or not */
+    .qpfold > .foldbody{display:block !important}
+    .qpfold > .foldsum, .foldcue{display:none !important}
   }
 </style>
 </head>
@@ -1258,6 +1293,12 @@
           <label title="The departure date, for multi-day events">Last day (departure)<input id="f-date-end" type="date"></label>
           <label>Guests<input id="f-guests" type="number" min="1"></label>
           <label>Mobile<input id="f-mobile" type="tel"></label>
+          <label class="fwide">Postal address<input id="f-addr-line1" class="fAddr" data-a="line1" type="text" placeholder="Street address or PO Box" autocomplete="off"></label>
+          <label>Suburb / town<input id="f-addr-town" class="fAddr" data-a="town" type="text" autocomplete="off"></label>
+          <div class="fpair">
+            <label>State<select id="f-addr-state" class="fAddr" data-a="state"><option></option><option>NSW</option><option>ACT</option><option>VIC</option><option>QLD</option><option>SA</option><option>WA</option><option>TAS</option><option>NT</option></select></label>
+            <label>Postcode<input id="f-addr-postcode" class="fAddr" data-a="postcode" type="text" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+          </div>
         </div>
       </div>
       <div class="card">
@@ -1562,11 +1603,12 @@
     <div class="card" id="adminCard" hidden>
       <div class="cardhead">
         <h2>Manage staff</h2>
-        <span class="hint">only Joel sees this. The names here are the ones on the sign in screen. A new name starts on the standard password. Resetting a password puts it back to the standard one and unlocks the name if it was locked out. Someone taken off the list can't sign in any more, even through "Someone else".</span>
+        <span class="hint">only Joel and Alan see this. The names here are the ones on the sign in screen. Set password gives someone a password you choose (tell them, and they can change it under Your login); it also unlocks a name that was locked out. A new name starts on the standard password unless you type one for them. Someone taken off the list can't sign in any more, even through "Someone else".</span>
       </div>
       <div id="adminUsers"><p class="hint">Loading...</p></div>
-      <div class="actions" style="margin-top:12px; align-items:center">
-        <input type="text" id="adminNewName" placeholder="New staff name" maxlength="40" style="max-width:220px">
+      <div class="actions adminadd" style="margin-top:12px; align-items:center">
+        <input type="text" id="adminNewName" placeholder="New staff name" maxlength="40" autocomplete="off">
+        <input type="text" id="adminNewPw" placeholder="Their password (optional, 6+ characters)" maxlength="100" autocomplete="off">
         <button type="button" class="btn" id="adminAdd">+ Add to the list</button>
       </div>
       <div class="actions" style="margin-top:4px; align-items:center">
@@ -1574,6 +1616,7 @@
         <button type="button" class="btn" id="adminOtherReset">Reset their password</button>
         <span class="pwmsg" id="adminMsg"></span>
       </div>
+      <div id="adminLog"></div>
     </div>
 
     <div class="card">
@@ -2412,7 +2455,7 @@ const INFO_SECTIONS = [
   {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
    text:"All meals are served buffet style, and your group chooses one option per meal service with our catering team closer to the date. {menuoptions}"},
   {id:"catering_info", title:"Catering", why:"auto when catering is quoted",
-   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Menu choices are due on your Final Confirmation form {formdays} before arrival, and final catering numbers {cateringdays} before arrival; catering is subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
+   text:"All meals are served buffet style in our Private Dining Room. All persons in the group must have the catering option if catering is to proceed, and the minimum group size for catering is 20 persons. All persons must arrive at the allocated meal time; multiple meal sittings may be required if your group size exceeds capacity limits. Meal preferences are due on your Final Confirmation form {formdays} before arrival, and final catering numbers {cateringdays} before arrival; catering is subject to availability. If you have suggestions for the type of meal you would like served, please advise and it will be reviewed for approval, otherwise the menu is written by our Catering Manager. We are a non licensed premises; BYO alcohol, and intoxication will not be tolerated. Our kitchen is not available for customer use or for self catered meals."},
   {id:"children", title:"Children's pricing & dietary requirements", why:"auto when catering is quoted",
    text:"Children's catering is charged as: 3 years and under free; 4–12 years 50% of the full rate; 13 years and over full rate. Medically diagnosed special dietary requirements (e.g. gluten free, intolerances, allergies) incur a surcharge of $10.00 per person per meal ($5.00 for children 12 and under); special diet meals are served by our Catering Team Leader on duty, and it is the customer's responsibility to make themselves known to our staff. Any additional persons added after the final numbers ({finaldays} before arrival) incur an additional $10 per person per meal surcharge."},
   {id:"selfcater", title:"Self catering", why:"auto when accommodation is quoted without catering",
@@ -2785,8 +2828,8 @@ function renderWhoAmI(){
   const ac = document.getElementById("adminCard");
   if(ac && staffKey() && staffIsAdmin()){ ac.hidden = false; setupAdminCard(); }
 }
-/* ---------- Manage staff (Joel only) ---------- */
-let ADMIN_USERS = [];
+/* ---------- Manage staff (Joel and Alan; StaffLogin.gs 2.0, 3 Nov 2026) ---------- */
+let ADMIN_USERS = [], ADMIN_LOG = [], ADMIN_SETPW = "";
 function adminSay(t, bad){
   const m = document.getElementById("adminMsg");
   if(m){ m.textContent = t; m.style.color = bad ? "var(--crit)" : "var(--good)"; }
@@ -2796,6 +2839,7 @@ function adminCall(payload){
     if(!res || !res.ok) throw new Error((res && res.error) || "That did not work. Please try again.");
     if(Array.isArray(res.users)){
       ADMIN_USERS = res.users;
+      if(Array.isArray(res.log)) ADMIN_LOG = res.log;
       try{ localStorage.setItem("wslr_staff_names", JSON.stringify(res.users.map(u => u.name))); }catch(e){}
       renderAdminUsers();
     }
@@ -2808,9 +2852,36 @@ function renderAdminUsers(){
   box.innerHTML = '<table class="usertable"><tbody>' + ADMIN_USERS.map((u, i) =>
     '<tr><td><b>' + esc(u.name) + '</b>' + (u.admin ? '<span class="usertag">admin</span>' : '') + '</td>' +
     '<td class="hint">' + (u.ownPassword ? 'has their own password' : 'on the standard password') + '</td>' +
-    '<td><button type="button" class="btn" data-reset="' + i + '">Reset password</button> ' +
-    (u.admin ? '' : '<button type="button" class="btn ghost" data-remove="' + i + '">Remove</button>') + '</td></tr>'
+    '<td><button type="button" class="btn" data-setpw="' + i + '">Set password</button> ' +
+    '<button type="button" class="btn ghost" data-reset="' + i + '">Back to standard</button> ' +
+    (u.admin ? '' : '<button type="button" class="btn ghost" data-remove="' + i + '">Remove</button>') + '</td></tr>' +
+    (ADMIN_SETPW === u.name
+      ? '<tr class="setpw"><td colspan="3"><div class="setpwbox"><span>New password for <b>' + esc(u.name) + '</b></span>' +
+          '<input type="text" id="setPwInp" maxlength="100" autocomplete="off" placeholder="6 or more characters">' +
+          '<button type="button" class="btn primary" id="setPwSave">Save password</button>' +
+          '<button type="button" class="btn ghost" id="setPwCancel">Cancel</button></div></td></tr>'
+      : '')
   ).join("") + '</tbody></table>';
+  box.querySelectorAll("[data-setpw]").forEach(b => b.onclick = () => {
+    const name = ADMIN_USERS[+b.dataset.setpw].name;
+    ADMIN_SETPW = ADMIN_SETPW === name ? "" : name;
+    renderAdminUsers();
+    const inp = document.getElementById("setPwInp");
+    if(inp) inp.focus();
+  });
+  const save = document.getElementById("setPwSave");
+  if(save){
+    const inp = document.getElementById("setPwInp");
+    save.onclick = () => adminSetPw(ADMIN_SETPW, inp.value);
+    inp.onkeydown = e => { if(e.key === "Enter") adminSetPw(ADMIN_SETPW, inp.value); if(e.key === "Escape"){ ADMIN_SETPW = ""; renderAdminUsers(); } };
+    document.getElementById("setPwCancel").onclick = () => { ADMIN_SETPW = ""; renderAdminUsers(); };
+  }
+  const log = document.getElementById("adminLog");
+  if(log) log.innerHTML = ADMIN_LOG.length
+    ? '<div class="adminlog"><b>Recent changes</b><ul>' + ADMIN_LOG.slice(0, 6).map(l =>
+        '<li>' + esc(new Date(l.at).toLocaleString("en-AU", {day: "numeric", month: "short", hour: "numeric", minute: "2-digit"})) + ': ' +
+        esc(l.who) + ' ' + esc(l.what) + '</li>').join("") + '</ul></div>'
+    : '';
   box.querySelectorAll("[data-reset]").forEach(b => b.onclick = () => adminReset(ADMIN_USERS[+b.dataset.reset].name));
   box.querySelectorAll("[data-remove]").forEach(b => b.onclick = () => {
     const name = ADMIN_USERS[+b.dataset.remove].name;
@@ -2822,6 +2893,20 @@ function adminSaveNames(names, done){
   adminSay("Saving...", false);
   adminCall({action: "adminSaveUsers", names: names})
     .then(() => adminSay(done, false))
+    .catch(err => adminSay(err.message, true));
+}
+/* a password Joel or Alan chooses for someone (3 Nov 2026) */
+function adminSetPw(name, pw){
+  pw = String(pw || "");
+  if(!name) return;
+  if(pw.length < 6){ adminSay("The password needs at least 6 characters.", true); return; }
+  adminSay("Saving...", false);
+  adminCall({action: "adminSetPassword", user: name, newPassword: pw})
+    .then(() => {
+      ADMIN_SETPW = "";
+      adminSay(name + "'s password is set. Let them know it; they can change it under Your login.", false);
+      return adminCall({action: "adminUsers"});
+    })
     .catch(err => adminSay(err.message, true));
 }
 function adminReset(name){
@@ -2838,14 +2923,23 @@ function setupAdminCard(){
   ADMIN_READY = true;
   const add = () => {
     const inp = document.getElementById("adminNewName");
+    const pwInp = document.getElementById("adminNewPw");
     const name = inp.value.replace(/\s+/g, " ").trim();
+    const pw = pwInp.value;
     if(!name) return;
     if(ADMIN_USERS.some(u => u.name.toLowerCase() === name.toLowerCase())){ adminSay(name + " is already on the list.", true); return; }
-    inp.value = "";
-    adminSaveNames(ADMIN_USERS.map(u => u.name).concat(name), name + " added. They sign in with the standard password.");
+    if(pw && pw.length < 6){ adminSay("Their password needs at least 6 characters (or leave it empty for the standard one).", true); return; }
+    adminSay("Saving...", false);
+    adminCall({action: "adminSaveUsers", names: ADMIN_USERS.map(u => u.name).concat(name), newUser: pw ? name : "", newPassword: pw})
+      .then(() => {
+        inp.value = ""; pwInp.value = "";
+        adminSay(name + " added. " + (pw ? "They sign in with the password you typed." : "They sign in with the standard password."), false);
+      })
+      .catch(err => adminSay(err.message, true));
   };
   document.getElementById("adminAdd").onclick = add;
   document.getElementById("adminNewName").onkeydown = e => { if(e.key === "Enter") add(); };
+  document.getElementById("adminNewPw").onkeydown = e => { if(e.key === "Enter") add(); };
   document.getElementById("adminOtherReset").onclick = () => {
     const inp = document.getElementById("adminOtherName");
     const name = inp.value.replace(/\s+/g, " ").trim();
@@ -6507,7 +6601,7 @@ function selCaterSub(){
    5. the balance, due balanceDays before arrival (Oct 2026: the day before, so it is
       paid before anyone asks for keys; 0 = on arrival). A due day on a Saturday or Sunday
       moves back to the Friday before (Joel, 15 Oct 2026)
-   6. menu choices, names and room set-ups on the Final Confirmation form formDays before
+   6. meal preferences, names and room set-ups on the Final Confirmation form formDays before
       arrival (14, Joel 15 Oct 2026); catering numbers and final numbers before arrival
    A booking with no cabins and no sites (conference rooms only) pays depositRoomOnly for each
    conference room or space it is charged for (Joel, 15 Oct 2026: $100); with cabins or sites
@@ -6515,7 +6609,17 @@ function selCaterSub(){
 const KD_VERSION = 3;
 const KD_DEFAULTS = {depositPer: 100, depositSite: 50, depositRoom: 0, depositRoomOnly: 100, depositDays: 7, halfPct: 50, halfDays: 90, balanceDays: 1,
   formDays: 14, cateringDays: 10, finalDays: 10, bigUnits: 20, cancelPct: 20, cancelBigDays: 28, cancelDays: 10, holdDays: 14, priceDays: 14,
-  farMonths: 12, farDepositDays: 21};
+  depositDays6: 14, depositDays9: 21, depositDaysFar: 28};
+/* the deposit invoice is given longer to pay the further away the arrival is (Joel, 3 Nov 2026):
+   arriving within 3 months 7 days, 3 to 6 months 14, 6 to 9 months 21, more than 9 months 28.
+   Counted from the day the quote is accepted, as the invoice is. Replaces the single
+   "more than 12 months away: 21 days" rule (farMonths / farDepositDays). */
+const DEP_TIERS = [
+  {months: 3, key: "depositDays", words: "within 3 months"},
+  {months: 6, key: "depositDays6", words: "3 to 6 months away"},
+  {months: 9, key: "depositDays9", words: "6 to 9 months away"},
+  {months: 0, key: "depositDaysFar", words: "more than 9 months away"}
+];
 /* keys whose meaning changed with the 2026 rules: a value saved under the old rules is dropped */
 const KD_CHANGED = ["cateringDays", "finalDays", "bigUnits", "cancelDays"];
 function kdClean(o){
@@ -6552,25 +6656,28 @@ function kdCfg(){
     const n = Number(raw);
     out[k] = isNaN(n) ? KD_DEFAULTS[k] : n;
   });
-  /* an event a long way out is given longer to pay its deposit. A number typed on this
-     quote always wins; otherwise the far-out rule replaces the standard due date. */
+  /* the further away the arrival, the longer the deposit invoice is given (DEP_TIERS). A number
+     typed on this quote always wins; otherwise the arrival's tier sets the due date. */
   const setHere = mine.depositDays !== undefined && mine.depositDays !== null && mine.depositDays !== "";
   out.depositDaysBase = out.depositDays;
-  out.farApplied = false;
-  if(!setHere && out.farDepositDays > 0 && kdFarOut(out.farMonths)){
-    out.depositDays = out.farDepositDays;
-    out.farApplied = out.farDepositDays !== out.depositDaysBase;
-  }
+  out.depTier = setHere ? -1 : kdDepTier();
+  if(out.depTier > 0 && out[DEP_TIERS[out.depTier].key] > 0) out.depositDays = out[DEP_TIERS[out.depTier].key];
   return out;
 }
-/* is the event further away than the far-out mark? (12 months by default) */
-function kdFarOut(months){
-  const m = Math.max(0, Number(months) || 0);
-  if(!m || !Q.dateStart) return false;
-  const mark = new Date(isoDate(today) + "T12:00:00");
-  mark.setMonth(mark.getMonth() + m);
-  const start = new Date(Q.dateStart + "T12:00:00");
-  return !isNaN(start) && start > mark;
+/* which DEP_TIERS row the arrival falls in, counted from today (0 with no dates yet) */
+function kdDepTier(){
+  if(!Q.dateStart || !/^\d{4}-\d{2}-\d{2}$/.test(Q.dateStart)) return 0;
+  for(let i = 0; i < DEP_TIERS.length - 1; i++){
+    if(Q.dateStart <= isoAddMonths(isoDate(today), DEP_TIERS[i].months)) return i;
+  }
+  return DEP_TIERS.length - 1;
+}
+/* 31 Jan + 1 month = 28 (or 29) Feb, not 3 March */
+function isoAddMonths(iso, m){
+  const y = Number(iso.slice(0, 4)), mo = Number(iso.slice(5, 7)) - 1 + m, d = Number(iso.slice(8, 10));
+  const ty = y + Math.floor(mo / 12), tm = ((mo % 12) + 12) % 12;
+  const last = new Date(Date.UTC(ty, tm + 1, 0)).getUTCDate();
+  return ty + "-" + String(tm + 1).padStart(2, "0") + "-" + String(Math.min(d, last)).padStart(2, "0");
 }
 function kdCfgEdited(){
   const mine = Q.kdCfg || {};
@@ -6630,7 +6737,7 @@ function daysPhrase(days){
 /* the two final-details deadlines in one sentence, said the same way everywhere (Joel, 15 Oct 2026) */
 function finalBothWords(c){
   c = c || kdCfg();
-  const form = Number(c.formDays) > 0 ? "Menu choices, names and room set-ups are due on your Final Confirmation form " + daysPhrase(c.formDays) + " before arrival" : "";
+  const form = Number(c.formDays) > 0 ? "Meal preferences, names and room set-ups are due on your Final Confirmation form " + daysPhrase(c.formDays) + " before arrival" : "";
   const fin = Number(c.finalDays) > 0 ? "final numbers " + daysPhrase(c.finalDays) + " before arrival" : "";
   if(form && fin) return form + "; " + fin + ".";
   if(form) return form + ".";
@@ -6666,7 +6773,7 @@ function caterMinNote(staff){
     (staff ? ', and this quote has ' + n + '.</b> ' : '.</b> You have ' + n + '. ') +
     (staff
       ? 'Meals can still be quoted and the organiser can still pick them; the kitchen just has to agree to a sitting this size first.'
-      : 'You can still choose meals here and we will do our best, but the kitchen has to confirm a sitting this small, so please mention it in your message and we will come straight back to you.') +
+      : 'You can still tell us your meal preferences here and we will do our best, but the kitchen has to confirm a sitting this small, so please mention it in your message and we will come straight back to you.') +
     '</div>';
 }
 function unitsSplit(){
@@ -8584,8 +8691,10 @@ function kdFieldsHTML(c, cls, list){
     row("Per campsite", '<span class="kdu">$</span>' + f("depositSite", 10)) +
     row("Per conference room (with cabins or sites)", '<span class="kdu">$</span>' + f("depositRoom", 10)) +
     row("Conference rooms only (no cabins or sites)", '<span class="kdu">$</span>' + f("depositRoomOnly", 10) + '<span class="kdu">per room or space charged (quotes made from 15 Oct 2026)</span>', true) +
-    row("Invoice due", f("depositDays") + '<span class="kdu">days after acceptance</span>') +
-    row("Events more than", f("farMonths") + '<span class="kdu">months away: due</span>' + f("farDepositDays") + '<span class="kdu">days after acceptance</span>', true) +
+    /* a quote shows the one number it uses (its arrival's tier); Settings shows every tier */
+    (list
+      ? row("Invoice due", f("depositDays") + '<span class="kdu">days after acceptance</span>')
+      : DEP_TIERS.map(t => row("Invoice due, arrival " + t.words, f(t.key) + '<span class="kdu">days after acceptance</span>', true)).join('')) +
     grp("Part payment") +
     row("Share of the total bill", f("halfPct") + '<span class="kdu">%, due</span>' + f("halfDays") + '<span class="kdu">days before arrival</span>', true) +
     row("Balance (the rest of the total)", f("balanceDays") + '<span class="kdu">days before arrival (1 = the day before, 0 = on arrival; a Saturday or Sunday moves to the Friday before)</span>', true) +
@@ -8612,8 +8721,8 @@ function renderPrepKeyDates(){
   if(wrap) wrap.innerHTML = '<button type="button" class="pinreset kdcfgReset" style="display:' + (kdCfgEdited() ? 'inline' : 'none') + '; width:auto; padding:0">changed for this quote · back to the house rules</button>';
   host.innerHTML = '<div class="kdsplit">' +
       '<div><div class="kdsublab">The rules</div>' +
-        (kdCfg().farApplied
-          ? '<p class="hint" style="margin:0 0 8px">This event is more than ' + kdCfg().farMonths + ' months away, so the deposit invoice is given <b>' + leadPhrase(kdCfg().depositDays) + '</b> instead of the usual ' + leadPhrase(kdCfg().depositDaysBase) + '. Type over it to use a different number for this quote.</p>'
+        (Q.dateStart && kdCfg().depTier >= 0
+          ? '<p class="hint" style="margin:0 0 8px">The arrival is ' + DEP_TIERS[kdCfg().depTier].words + ', so the deposit invoice is given <b>' + leadPhrase(kdCfg().depositDays) + '</b> (counted from the day they accept). Type over it to use a different number for this quote.</p>'
           : '') +
         kdFieldsHTML(kdCfg(), "kdcfgInp", true) + '</div>' +
       '<div id="kdRowsBox"></div>' +
@@ -9879,7 +9988,7 @@ function depositInvoiceData(){
     const keyWhen = (iso, days) => kdPassed(iso) ? "as soon as possible (normally " + lead(days) + ")" : short(iso) + " (" + lead(days) + ")";
     const catered = caterServicesOn().length > 0;
     const rows = [];
-    if(c.formDays > 0) rows.push({days: c.formDays, label: "Menu choices, names and room set-ups due on your Final Confirmation form"});
+    if(c.formDays > 0) rows.push({days: c.formDays, label: "Meal preferences, names and room set-ups due on your Final Confirmation form"});
     if(c.finalDays > 0){
       if(catered && c.cateringDays > 0 && c.cateringDays !== c.finalDays){
         rows.push({days: c.cateringDays, label: "Catering numbers due"});
@@ -10246,9 +10355,9 @@ function fcNextHTML(compact){
   if(!url || !asOrg()) return '';
   const btn = '<a class="btn accept" href="' + esc(url) + '" target="_blank" rel="noopener">Start your confirmation form →</a>';
   if(compact){
-    return '<div><b>Next step: your confirmation form</b><div class="fcwhat">Tell us who is in each room, your meal choices and any dietary needs' + fcDueWords() + '.' + fcFinalWords() + ' You can start now or come back to it any time from your quote page or the email we have sent you.</div></div>' + btn;
+    return '<div><b>Next step: your confirmation form</b><div class="fcwhat">Tell us who is in each room, your meal preferences and any dietary needs' + fcDueWords() + '.' + fcFinalWords() + ' You can start now or come back to it any time from your quote page or the email we have sent you.</div></div>' + btn;
   }
-  return '<div class="fcbox"><h3>Your confirmation form</h3>Tell us who is in each room, your meal choices, any dietary needs and how you would like your rooms set up' + fcDueWords() + '.' + fcFinalWords() + ' It saves as you go, so you can come back to it as often as you like.' +
+  return '<div class="fcbox"><h3>Your confirmation form</h3>Tell us who is in each room, your meal preferences, any dietary needs and how you would like your rooms set up' + fcDueWords() + '.' + fcFinalWords() + ' It saves as you go, so you can come back to it as often as you like.' +
     '<div class="fcrow">' + btn + '<span class="fcsmall">The same link is in the email we sent to ' + esc(Q.email || 'you') + '.</span></div></div>';
 }
 function renderFcNext(){
@@ -11803,11 +11912,11 @@ function keyDatesAutoRows(showPrices){
           : 'last day to cancel cabins and sites without penalty (' + leadPhrase(c.cancelDays) + ' before arrival). After this nothing can be cancelled without penalty, so all numbers are final');
       }
     }
-    /* 6: the Final Confirmation form (menu choices, names, room set-ups) and the numbers: both
+    /* 6: the Final Confirmation form (meal preferences, names, room set-ups) and the numbers: both
        deadlines, said the same way everywhere (Joel, 15 Oct 2026) */
     if(c.formDays > 0) at(kd.form, kdPassed(kd.form)
-      ? 'menu choices, names and room set-ups due on your Final Confirmation form as soon as possible (normally ' + daysPhrase(c.formDays) + ' before ' + arr + ')'
-      : 'menu choices, names and room set-ups due on your Final Confirmation form (' + daysPhrase(c.formDays) + ' before ' + arr + ')');
+      ? 'meal preferences, names and room set-ups due on your Final Confirmation form as soon as possible (normally ' + daysPhrase(c.formDays) + ' before ' + arr + ')'
+      : 'meal preferences, names and room set-ups due on your Final Confirmation form (' + daysPhrase(c.formDays) + ' before ' + arr + ')');
     const lateWords = anyCater ? '. Extra people after the final numbers are $10 per person per meal' : '';
     if(anyCater && c.cateringDays > 0 && c.cateringDays === c.finalDays){
       at(kd.finalNums, kdPassed(kd.finalNums)
@@ -12166,7 +12275,65 @@ function renderViewBar(){
   if(look) look.addEventListener("click", () => { ORG_LOOK = true; renderClient(); window.scrollTo({top: 0}); });
   if(back) back.addEventListener("click", () => { ORG_LOOK = false; renderClient(); });
 }
+/* ---------- folded sections on the organiser's page (Joel, 3 Nov 2026) ----------
+   A section with nothing picked in it starts folded to its heading, and a tap opens it:
+   conference rooms and catering when the quote has none, accommodation when the quote is
+   conference rooms only. A section with something picked in it is always open, so a warning
+   that points at one of its rows always finds it. The important information starts folded
+   too (and prints in full). Staff editing tab 2 see everything open; tab 2's organiser look
+   folds as the organiser's page does. What was opened by hand stays open for this quote. */
+let FOLD_OPEN = {}, FOLD_Q = null;
+function foldHasAccom(){ return accomItems().some(it => accomQtyTotal(it.id) > 0 || groupHas(it.id) > 0); }
+function foldHasVenue(){ return VENUES.some(v => (Number((Q.sel.venues || {})[v.key]) || 0) > 0 || !!venueDayMap(v.key)); }
+function foldHasCater(){ return caterItems().some(it => (Number(((Q.sel.cater || {})[it.id] || {}).days) || 0) > 0); }
+function foldSecHTML(key, title, sum, foldable, body){
+  if(!foldable) return '<div class="cb-sec"><h3>' + title + '</h3>' + body + '</div>';
+  const open = !!FOLD_OPEN[key];
+  return '<div class="cb-sec cbfold' + (open ? '' : ' folded') + '" data-fold="' + key + '">' +
+    '<h3><button type="button" class="foldbtn" aria-expanded="' + open + '">' + title +
+      '<span class="foldcue">' + (open ? 'hide ▴' : 'show ▾') + '</span></button></h3>' +
+    '<p class="foldsum">' + esc(sum) + '</p>' +
+    '<div class="foldbody">' + body + '</div></div>';
+}
+function wireFolds(page){
+  page.querySelectorAll(".cbfold .foldbtn, .qpfold .foldbtn").forEach(b => b.addEventListener("click", () => {
+    const box = b.closest("[data-fold]");
+    const open = box.classList.contains("folded");
+    FOLD_OPEN[box.dataset.fold] = open;
+    box.classList.toggle("folded", !open);
+    b.setAttribute("aria-expanded", String(open));
+    const cue = b.querySelector(".foldcue");
+    if(cue) cue.textContent = open ? "hide ▴" : (box.dataset.fold === "info" ? "read ▾" : "show ▾");
+  }));
+}
+/* Your details: the boxes still empty are shaded, so they are filled in before Accept.
+   The organisation is optional (a family or a private group has none). */
+function detailNeeds(el){
+  const k = el.dataset.f || el.dataset.a;
+  const v = String(el.value || "").trim();
+  if(k === "org") return false;
+  if(k === "postcode") return !/^\d{4}$/.test(v);
+  if(k === "email") return !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+  if(k === "guests") return !(Number(v) > 0);
+  return !v;
+}
+function markDetailsNeed(){
+  const box = document.getElementById("yourDetails");
+  if(!box) return;
+  let n = 0;
+  box.querySelectorAll(".cdInp, .adInp").forEach(el => {
+    const need = detailNeeds(el);
+    el.classList.toggle("cdneed", need);
+    if(need) n++;
+  });
+  box.classList.toggle("cdneeds", n > 0);
+  const st = document.getElementById("cdState");
+  if(st) st.innerHTML = n
+    ? '<b>Please fill in the ' + (n === 1 ? 'shaded box' : n + ' shaded boxes') + '.</b> We need them to make your booking and send your deposit invoice.'
+    : '';
+}
 function renderClient(){
+  if(FOLD_Q !== Q){ FOLD_Q = Q; FOLD_OPEN = {}; }
   const t = totals();
   const pm = Q.priceMode || "full";
   const showPrices = pm !== "noprices";
@@ -12234,20 +12401,26 @@ function renderClient(){
 
     const capHtml = capBarHTML();
 
-    accomHtml = '<div class="cb-sec"><h3>Accommodation</h3>' +
+    /* a conference-room-only quote folds its accommodation to the heading (3 Nov 2026) */
+    accomHtml = foldSecHTML("accom", "Accommodation",
+      "No cabins on this quote. Staying overnight? Open this to add cabins.",
+      asOrg() && !foldHasAccom() && foldHasVenue(),
       '<p class="cb-hint">' + (Q.dateStart ? n + ' night' + (n === 1 ? '' : 's') + ' · ' + esc(fmtRange(Q.dateStart, Q.dateEnd || Q.dateStart)) : 'per night') + ((quoteLocked() || accomAllLocked()) ? ' · the cabins we have set aside for your group ·' : ' · choose how many of each cabin type you\'d like ·') + tourLink(TOUR_FULL, 'take the full virtual tour') + '</p>' +
       rmsLiveBanner() +
       (asOrg() && quoteLocked() ? ''
         : '<label class="splitrow"><input type="checkbox" id="cbSplit"' + (split ? ' checked' : '') + '>' +
           '<span><b>Some cabins are only needed for part of the stay</b><br>' +
           '<span class="cb-avail">Tick this to set arrive &amp; leave dates per cabin, you can add the same cabin type more than once for different dates (e.g. 6 cabins for the whole stay, plus 2 for the weekend only). Nightly prices are worked out from the exact dates.</span></span></label>') +
-      rows + capHtml + venueCreditPointerHTML(showPrices) + '</div>';
+      rows + capHtml + venueCreditPointerHTML(showPrices));
   }
 
   /* --- venues (interactive) --- */
   const venuesOn = VENUES.filter(v => (RATE[v.fullId] || RATE[v.halfId]) && catEntry(v.fullId).on);
+  /* no rooms on the quote: folded to the heading until they open it (3 Nov 2026) */
   const venueHtml = venuesOn.length
-    ? '<div class="cb-sec"><h3>Conference rooms &amp; venues</h3>' +
+    ? foldSecHTML("venues", "Conference rooms &amp; venues",
+      "No conference rooms on this quote. Open this to see our rooms and add one.",
+      asOrg() && !foldHasVenue(),
       '<p class="cb-hint">in half-day steps · a half day is 6 continuous hours or less</p>' +
       venueCreditBannerHTML(showPrices) +
       venuesOn.map(v => {
@@ -12303,7 +12476,7 @@ function renderClient(){
           /* the two questions span the whole row, so they read well on a phone */
           venueSwitchAskHTML(v, showPrices) + (v.key === "fr3" ? venueOneSpaceBarHTML() : '') +
         '</div>';
-      }).join('') + '</div>'
+      }).join(''))
     : '';
 
   /* --- catering (interactive) --- */
@@ -12321,8 +12494,11 @@ function renderClient(){
       '<label>Special dietary, 12 &amp; under <span class="whonote">medically diagnosed · +' + money0(dietKidsPerMeal()) + ' per meal</span><input type="number" class="whoInp" data-w="dietKids" min="0" value="' + esc(w.dietKids) + '"></label>' +
       '</div>'
     : '';
+  /* no meals on the quote: folded to the heading until they open it (3 Nov 2026) */
   const caterHtml = caterOn.length
-    ? '<div class="cb-sec"><h3>Catering</h3>' +
+    ? foldSecHTML("cater", "Catering",
+      "No meals on this quote. Open this to add breakfast, lunch or dinner.",
+      asOrg() && !foldHasCater(),
       '<p class="cb-hint">buffet style in our Private Dining Room · minimum group size ' + CATER_MIN + ' · your group picks the actual dishes with our catering team closer to the date</p>' +
       caterMinNote(false) +
       whoHtml +
@@ -12374,8 +12550,7 @@ function renderClient(){
           menuHtml +
         '</div>';
       }).join('') +
-      (extrasTxt ? '<div class="menuextras">' + esc(extrasTxt) + '</div>' : '') +
-      '</div>'
+      (extrasTxt ? '<div class="menuextras">' + esc(extrasTxt) + '</div>' : ''))
     : '';
 
   /* --- church discount tier (only when staff have marked the group ACNC/church) --- */
@@ -12425,14 +12600,23 @@ function renderClient(){
   /* a section the website covers is marked, so the PDF can drop it and print the link
      block instead. On screen everything still shows, whatever the setting. */
   const webCls = s => webSectionKind(s) ? ' weblinked' : '';
+  /* the organiser's page starts it folded to the heading (Joel, 3 Nov 2026); it always prints in full */
+  const infoFold = asOrg();
   const secHtml = secs.length
-    ? '<div class="qp-sechead">Important information</div>' +
+    ? '<div class="qpfold' + (infoFold && !FOLD_OPEN.info ? ' folded' : '') + '" data-fold="info">' +
+      (infoFold
+        ? '<div class="qp-sechead"><button type="button" class="foldbtn" aria-expanded="' + !!FOLD_OPEN.info + '">Important information' +
+            '<span class="foldcue">' + (FOLD_OPEN.info ? 'hide ▴' : 'read ▾') + '</span></button></div>' +
+          '<p class="foldsum">' + esc(secs.map(s => s.title).join(' · ')) + '. Please read these before you accept.</p>'
+        : '<div class="qp-sechead">Important information</div>') +
+      '<div class="foldbody">' +
       secs.map(s => asOrg()
         ? '<div class="qp-sec' + webCls(s) + '"><h4>' + esc(s.title) + '</h4>' + escLink(s.text) + '</div>'
         : '<div class="qp-sec' + webCls(s) + '" data-sec="' + esc(s.id) + '"><h4 contenteditable data-sece="title" title="Click to edit this heading for this quote">' + esc(s.title) + '</h4>' +
           '<div class="sectext" contenteditable data-sece="text" title="Click to edit this wording for this quote">' + esc(s.text) + '</div>' +
           (s.edited ? '<button class="pinreset secreset staffedit-ui" data-sec="' + esc(s.id) + '">edited for this quote · back to standard</button>' : '') +
           '</div>').join('') +
+      '</div></div>' +
       webLinksHTML(secs)
     : '';
 
@@ -12486,15 +12670,10 @@ function renderClient(){
       '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">' + (quoteLocked()
         ? 'Everything below is what we have put together for your group. Have a read, and accept it at the foot of the page when you are happy.'
         : 'Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.') + '</p>' +
-      churchHtml +
-      siteInviteHTML() +
-      datesPanelHTML() +
-      schoolPanelHTML() +
-      accomHtml + cabinMapHTML() + venueHtml + caterHtml + fixedHtml +
-      '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
-      keyDatesHTML(showPrices, true) +
+      /* Your details first (Joel, 3 Nov 2026): empty boxes are shaded until they are filled in */
       '<div class="cb-sec" id="yourDetails"><h3>Your details</h3>' +
         '<p class="cb-hint">check these are right and correct anything that isn\'t, they come through to us with your submission</p>' +
+        '<div class="cdstate" id="cdState"></div>' +
         '<div class="cd-grid">' +
           '<label>Contact name<input class="cdInp" data-f="contact" type="text" value="' + esc(Q.contact) + '"></label>' +
           '<label>Organisation / group<input class="cdInp" data-f="org" type="text" value="' + esc(Q.org) + '"></label>' +
@@ -12507,8 +12686,15 @@ function renderClient(){
           '<label>State<select class="adInp" data-a="state">' + ['', 'NSW', 'ACT', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT'].map(x => '<option' + (((Q.address || {}).state || '') === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></label>' +
           '<label>Postcode<input class="adInp" data-a="postcode" type="text" inputmode="numeric" maxlength="4" autocomplete="postal-code" value="' + esc((Q.address || {}).postcode || '') + '"></label>' +
         '</div>' +
-        '<p class="cb-hint" style="margin-top:8px">Your dates are at the top of this page and you are welcome to move them. If a date has no price against it, press Request prices and we will send them back to you.</p>' +
+        '<p class="cb-hint" style="margin-top:8px">Your dates are below and you are welcome to move them. If a date has no price against it, press Request prices and we will send them back to you.</p>' +
       '</div>' +
+      churchHtml +
+      siteInviteHTML() +
+      datesPanelHTML() +
+      schoolPanelHTML() +
+      accomHtml + cabinMapHTML() + venueHtml + caterHtml + fixedHtml +
+      '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
+      keyDatesHTML(showPrices, true) +
       '<div class="cb-sec orgmsg"><h3>Anything we should know?</h3>' +
         '<p class="cb-hint">questions, arrival plans, dietary details, how you\'ll use the rooms, this comes straight to our team with your submission</p>' +
         '<textarea id="cbMsg" rows="3" placeholder="Type anything you\'d like us to know…">' + esc(Q.sel.message || '') + '</textarea></div>' +
@@ -12530,6 +12716,8 @@ function renderClient(){
   /* staff who opened the organiser's real link: everything they could change is frozen */
   if(CLIENT_MODE && STAFF_VIEW) page.querySelectorAll(".cb-live, .coctick").forEach(el => { el.inert = true; });
   wireSelSteppers(page);
+  wireFolds(page);
+  markDetailsNeed();
   const splitCb = document.getElementById("cbSplit");
   if(splitCb) splitCb.addEventListener("change", e => setSplit(e.target.checked));
   /* the "your dates" panel: a typed arrival date counts once the box is left (watchDateTyping),
@@ -12723,6 +12911,8 @@ function renderClient(){
   page.querySelectorAll(".adInp").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", e => {
     if(!Q.address) Q.address = {};
     Q.address[e.target.dataset.a] = e.target.value;
+    if(!CLIENT_MODE) syncAddrForm();   /* keep the staff form in step */
+    markDetailsNeed();
     autosaveDraft();
     updateSubmitState();
   }));
@@ -12731,6 +12921,7 @@ function renderClient(){
     Q[f] = (e.target.type === "number") ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value;
     const sf = document.getElementById("f-" + f);
     if(sf) sf.value = e.target.value;   /* keep the staff form in step */
+    markDetailsNeed();
     const qf = document.getElementById("qpFor");
     if(qf) qf.innerHTML = qpForHTML();
     const qe = document.getElementById("qpEvent");
@@ -13233,7 +13424,7 @@ function matchAccomId(name){
   });
   return (best && bestScore >= 0.7) ? best.id : "";
 }
-/* their meal choices are free text inside a known slot, so the slot does the work */
+/* their meal preferences are free text inside a known slot, so the slot does the work */
 /* Morning and afternoon tea from the website (its calculator, round 2, 15 Oct 2026). The Quotes tab
    has no column for them, so they come in the enquiry's own copy, meals.teas ("Morning tea,
    Afternoon tea"); a row read back without it still has the "TEAS: Morning + Afternoon tea (in
@@ -16072,11 +16263,23 @@ BINDINGS.forEach(pair => {
     softRefresh();
   });
 });
+/* the organiser's postal address, typed by staff on tab 1 (3 Nov 2026): the same Q.address the
+   organiser fills in under Your details, so it arrives filled in on their page */
+function syncAddrForm(){
+  const a = Q.address || {};
+  document.querySelectorAll(".fAddr").forEach(el => { if(document.activeElement !== el) el.value = a[el.dataset.a] || ""; });
+}
+document.querySelectorAll(".fAddr").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
+  Q.address = Object.assign({line1: "", town: "", state: "", postcode: ""}, Q.address || {});
+  Q.address[el.dataset.a] = el.value;
+  softRefresh();
+}));
 function syncForm(){
   /* a different quote (or the same one reloaded): nothing half-asked carries over */
   VENUE_SWITCH_ASK = false;
   SCHOOL_DATE_EDIT = null;
   BINDINGS.forEach(pair => { document.getElementById(pair[0]).value = Q[pair[1]]; });
+  syncAddrForm();
   renderBondField();
   syncDiscForm();
   const endEl = document.getElementById("f-date-end");
