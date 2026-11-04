@@ -1427,6 +1427,14 @@
 
       <div class="pkgsec">
         <div class="pkghead">
+          <h3>Day visitors not having a meal</h3>
+          <span class="hint">anyone booked for at least one meal pays nothing extra</span>
+        </div>
+        <div id="prepDayVis"></div>
+      </div>
+
+      <div class="pkgsec">
+        <div class="pkghead">
           <h3>Menu shown to the organiser</h3>
           <span class="hint">from Kate's menu selection form, untick anything not on offer for this event. They can't order from it; it shows what they could get.</span>
         </div>
@@ -3017,7 +3025,7 @@ function postToSheet(payload, onFail){
           /* a reply we can read (not the usual opaque one): the server refusing an expired or
              withdrawn quote ("expired" / "unavailable", code.gs 13.18) goes to the same handler */
           if(!r || r.type === "opaque" || !onFail || typeof r.text !== "function") return;
-          return r.text().then(function(t){ const k = String(t || "").trim(); if(k === "expired" || k === "unavailable") onFail(k); });
+          return r.text().then(function(t){ const k = String(t || "").trim(); if(k === "expired" || k === "unavailable" || k === "taken") onFail(k); });
         }, function(){ if(onFail) onFail(); })
         .catch(function(){});
     }catch(e){ if(onFail) onFail(); }
@@ -3079,7 +3087,7 @@ function orgPostReadable(url, payload, onFail){
         if(!r || !r.ok){ unsure(); return; }
         return r.text().then(function(t){
           const k = String(t || "").trim();
-          if(k === "expired" || k === "unavailable") fail(k);
+          if(k === "expired" || k === "unavailable" || k === "taken") fail(k);
           else if(/^error\b/i.test(k) || k === "bad token" || k === "unknown action") refused(k);
         }, unsure);
       }, unsure)
@@ -3380,12 +3388,34 @@ function flushOutbox(done){
         }
         /* the server could not check the quote number just now: nothing was saved, so it stays queued */
         if(/^busy\b/.test(String(t).trim())) throw new Error("the quote server is busy");
+        /* 4 Nov 2026 (Q-1110): the server answered "error: ..." and this change was dropped as if it had
+           worked, so a delete or a Declined never happened and the reminders carried on. Now it stays
+           queued, and after 3 tries it is set aside with a Try again button. A submission is left out:
+           sending one twice could book twice. */
+        const act = OUTBOX[0].payload && OUTBOX[0].payload.action;
+        if(/^error\b/i.test(String(t).trim()) && act !== "submitted") throw new Error(String(t).trim().slice(0, 200));
+        /* 4 Nov 2026: the server refused a staff booking (part of it was taken after the check, or RMS
+           could not be read): nothing was booked, so it is set aside, not dropped as if it had worked */
+        const refusedBooking = act === "submitted" && /(^|\| )(taken|error: availability could not be checked)$/.test(String(t).trim());
+        if(refusedBooking){
+          const head = OUTBOX.shift();
+          const why = /taken$/.test(String(t).trim()) ? "part of this booking is no longer free in RMS" : "RMS could not be read to check what is free";
+          OUTBOX_STUCK.push(Object.assign({}, head, {setAside: new Date().toISOString(), why: why}));
+          lsSet(LS_OUTBOX, OUTBOX); lsSet(LS_OUTBOX_STUCK, OUTBOX_STUCK);
+          FLUSH_LAST = {kind: "stuck", msg: why, at: Date.now(), num: outboxNum(head)};
+          SHEET_REACHABLE = true;
+          showToast("Nothing was booked for " + outboxNum(head) + ": " + why + ".", true);
+          renderPipeSync();
+          step();
+          return;
+        }
         FLUSH_LAST = {kind: "ok", msg: "", at: Date.now()};
         SHEET_REACHABLE = true;
         const landed = OUTBOX.shift();
         lsSet(LS_OUTBOX, OUTBOX);
         const moved = /^renumbered (\S+) (\S+)/.exec(String(t).trim());
         if(moved) applyRenumber(moved[1], moved[2], String((landed.payload && landed.payload.quote && landed.payload.quote.token) || ""));
+        if(landed.payload && landed.payload.action === "delete") showToast("Done: " + String(t).trim().slice(0, 200));
         step();
       })
       .catch(e => {
@@ -4960,7 +4990,7 @@ function mealsSummary(){
   Q.lines.forEach(l => {
     if(isAccomLine(l)) return;
     /* a school package meal: its covers are on the catering row, not here */
-    if(l.pkgMeal) return;
+    if(l.pkgMeal || l.dv) return;   // day visitors not having a meal: nothing for the kitchen
     add(l.id, lineItem(l).custom ? (l.desc || "") : lineItem(l).name, (Number(l.qty) || 0) * lineNights(l));
   });
   return m;
@@ -5109,7 +5139,7 @@ function displayLines(){
     const it = lineItem(l);
     out.push({
       sec: fixedLineSec(l), name: lineName(l), qty: l.qty,
-      nights: lineNights(l) > 1 ? lineNights(l) : 0, nightsWord: "nights",
+      nights: lineNights(l) > 1 ? lineNights(l) : 0, nightsWord: l.dv ? "days" : "nights",
       beds: "", price: Number(l.price) || 0, disc: lineDiscPct(l),
       unit: lineUnit(l), when: it.meal ? fmtWhen(l.when) : "", total: lineTotal(l), fixed: true
     });
@@ -5243,6 +5273,49 @@ function lineDiscPct(l){
 function lineNights(l){
   const n = Number(l.nights);
   return (n && n > 0) ? n : 1;
+}
+/* ---------- day visitors not having a meal (Alan + Joel, 4 Nov 2026) ----------
+   $10 an adult a day, $5 ages 4 to 12, 3 and under free; $15 an adult with tea, coffee and water in
+   the room, and half that for 4 to 12s, the way children's meals go. Anyone booked for at least one
+   meal pays nothing extra, so only people not eating are counted. They travel as ordinary lines on
+   the quote (l.dv keeps the numbers), so totals, print and the organiser's page need nothing new.
+   Not part of the church discount, which is for accommodation and rooms. */
+const DAY_VISIT = {adult: 10, kid: 5, teaAdult: 15, teaKid: 7.5};
+function dayVisNow(){
+  const l = (Q.lines || []).find(x => x && x.dv);
+  return l ? l.dv : {adults: 0, kids: 0, under: 0, days: Math.max(1, nightsCount() + 1), tea: false};
+}
+function dayVisApply(dv){
+  const n = v => Math.max(0, Math.round(Number(v) || 0));
+  const d = {adults: n(dv.adults), kids: n(dv.kids), under: n(dv.under), days: Math.max(1, n(dv.days)), tea: !!dv.tea};
+  Q.lines = (Q.lines || []).filter(l => !l.dv);
+  const tail = (d.tea ? " (with tea, coffee and water)" : "") + (d.under ? ", " + d.under + " aged 3 and under free" : "");
+  if(d.adults) Q.lines.push({id: "custom", desc: "Day visitors not having a meal, adults" + tail, qty: d.adults, price: d.tea ? DAY_VISIT.teaAdult : DAY_VISIT.adult, nights: d.days, unit: "per person per day", dv: d});
+  if(d.kids) Q.lines.push({id: "custom", desc: "Day visitors not having a meal, ages 4 to 12" + (d.adults ? (d.tea ? " (with tea, coffee and water)" : "") : tail), qty: d.kids, price: d.tea ? DAY_VISIT.teaKid : DAY_VISIT.kid, nights: d.days, unit: "per person per day", dv: d});
+}
+function renderDayVisBox(){
+  const el = document.getElementById("prepDayVis");
+  if(!el) return;
+  const d = dayVisNow();
+  const box = (k, label, v) => '<label style="display:inline-flex;align-items:center;gap:6px;margin:0 14px 6px 0">' + label + ' <input type="number" class="pin dvIn" data-k="' + k + '" min="0" step="1" value="' + (Number(v) || 0) + '" style="width:70px"></label>';
+  const rate = d.tea ? [DAY_VISIT.teaAdult, DAY_VISIT.teaKid] : [DAY_VISIT.adult, DAY_VISIT.kid];
+  const tot = (d.adults * rate[0] + d.kids * rate[1]) * d.days;
+  el.innerHTML = box("adults", "Adults", d.adults) + box("kids", "Ages 4 to 12", d.kids) + box("under", "3 and under (free)", d.under) + box("days", "Days", d.days) +
+    '<label style="display:inline-flex;align-items:center;gap:6px;margin:0 14px 6px 0"><input type="checkbox" class="dvIn" data-k="tea"' + (d.tea ? " checked" : "") + '> With tea, coffee and water in the room</label>' +
+    '<div class="hint">' + money(rate[0]) + ' an adult a day, ' + money(rate[1]) + ' ages 4 to 12. ' + (tot > 0 ? 'On this quote: <b>' + money(tot) + '</b>.' : 'Nothing on this quote yet.') + ' Organisers confirm the final numbers on the Final Confirmation form.</div>';
+}
+document.addEventListener("change", e => {
+  if(!e.target || !e.target.classList || !e.target.classList.contains("dvIn")) return;
+  const d = Object.assign({}, dayVisNow());
+  const k = e.target.dataset.k;
+  d[k] = k === "tea" ? e.target.checked : e.target.value;
+  dayVisApply(d);
+  refresh();
+  renderDayVisBox();
+});
+function dayVisNoteHTML(showPrices){
+  if(!showPrices) return '';
+  return '<p class="cb-hint">Day visitors who aren\'t having a meal with us are ' + money(DAY_VISIT.adult) + ' an adult a day, ' + money(DAY_VISIT.kid) + ' ages 4 to 12, and free for 3 and under (' + money(DAY_VISIT.teaAdult) + ' and ' + money(DAY_VISIT.teaKid) + ' with tea, coffee and water in the room). Anyone booked for a meal pays nothing extra. You give us the numbers on your Final Confirmation form.</p>';
 }
 function lineTotal(l){
   return (Number(l.qty)||0) * lineNights(l) * (Number(l.price)||0) * (1 - lineDiscPct(l)/100);
@@ -8599,6 +8672,7 @@ function renderPrep(){
     '</div>';
   }).join("");
 
+  renderDayVisBox();
   /* catering */
   const cwarn = document.getElementById("prepCaterWarn");
   if(cwarn) cwarn.innerHTML = caterMinNote(true);
@@ -9316,15 +9390,44 @@ function setEventDates(from, nights){
    server what is free right now (nothing is stored), so nothing that has gone since the
    page was opened can be booked. */
 const AVAIL_CHECK = {busy: false, at: 0};
+/* 4 Nov 2026 (Joel: they can't accept if some of their booking has been taken): what the server says
+   cannot be booked in full, in its own words, for as long as the selection is the one it checked */
+let ACCEPT_TAKEN = null;
+function acceptTakenNow(){ return ACCEPT_TAKEN && ACCEPT_TAKEN.sig === submitSig() ? ACCEPT_TAKEN.list : []; }
+function noteAcceptTaken(problems){
+  const list = (Array.isArray(problems) ? problems : []).map(x => String((x && x.text) || "")).filter(Boolean);
+  ACCEPT_TAKEN = list.length ? {sig: submitSig(), list: list} : null;
+  return list.length > 0;
+}
+const ACCEPT_TAKEN_SAY = "Part of this booking has just been taken, so it has not been accepted and nothing has been booked. Please see the note above the button.";
+function showAcceptTaken(){
+  refresh();
+  showToast(ACCEPT_TAKEN_SAY, true);
+  const z = document.getElementById("submitZone");
+  if(z) z.scrollIntoView({behavior: "smooth", block: "center"});
+}
+/* the server refused the acceptance as it arrived (reply "taken"): ask what has gone, to show it */
+function acceptRefusedTaken(){
+  serverAvailCheck(r => {
+    if(r) noteAcceptTaken(r.acceptProblems);
+    if(!acceptTakenNow().length && !overLines().length) ACCEPT_TAKEN = {sig: submitSig(), list: ["Part of what you picked is no longer available"]};
+    showAcceptTaken();
+  }, true);
+}
+function takenBlockHTML(list){
+  return '<div class="availblock"><b>Part of this booking has been taken, so it can\'t be accepted yet:</b> ' + esc(list.join("; ")) + '.' +
+    '<br>Please change it above, or call us on ' + esc(VENUE_PHONE) + ' or email ' + esc(VENUE_EMAIL) + ' and we will work it out with you. Nothing has been booked.</div>';
+}
 /* what the quote server's availability check reads from the selection (RMS.gs rmsDemand_ and
    rmsVenueRuns_; code.gs quoteAvailabilityCheck puts the probe's sel in place of the stored one) */
 const AVAIL_PROBE_SEL = ["accom", "venues", "venueDays", "prefUnits"];
-function serverAvailCheck(done){
+function serverAvailCheck(done, forAccept){
   const run = (typeof google !== "undefined" && google.script && google.script.run) ? google.script.run : null;
   if(!CLIENT_MODE || STAFF_VIEW || !Q.token || (!run && !sheetEndpoint())){ done(null); return; }
   AVAIL_CHECK.busy = true;
   updateSubmitState();
   const probe = {dateStart: Q.dateStart || "", dateEnd: Q.dateEnd || "", sel: JSON.parse(JSON.stringify(Q.sel || {}))};
+  if(forAccept) probe.accept = 1;
   const failed = () => { AVAIL_CHECK.busy = false; done(null); };
   const answered = r => {
     AVAIL_CHECK.busy = false;
@@ -9357,6 +9460,7 @@ function serverAvailCheck(done){
   const timer = setTimeout(() => { if(ctl) try{ ctl.abort(); }catch(e){} bad(); }, 25000);
   try{
     const q = {dateStart: probe.dateStart, dateEnd: probe.dateEnd, sel: {}};
+    if(forAccept) q.accept = 1;
     AVAIL_PROBE_SEL.forEach(k => { if(probe.sel && probe.sel[k] !== undefined) q.sel[k] = probe.sel[k]; });
     const url = sheetEndpoint();
     fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "avail=" + encodeURIComponent(Q.token) + "&probe=" + encodeURIComponent(JSON.stringify(q)),
@@ -9380,11 +9484,35 @@ function submitBlockedHelp(why){
     showToast("Please choose at least one cabin, room or meal first.", true);
   }
 }
+/* 4 Nov 2026 (Joel: staff going over could be dangerous): staff can't book part of a quote either.
+   Asks the quote server (RMS.gs rmsAcceptCheck_, strict) and only then books. No answer = no booking. */
+function staffAcceptCheck(go){
+  const url = sheetEndpoint();
+  if(!url){ go(); return; }
+  showToast("Checking what is free in RMS…");
+  const sel = {};
+  ["accom", "venues", "venueDays", "prefUnits"].forEach(k => { if(Q.sel && Q.sel[k] !== undefined) sel[k] = Q.sel[k]; });
+  const quote = {num: Q.num, token: Q.token || "", dateStart: Q.dateStart || "", dateEnd: Q.dateEnd || "", guests: Q.guests, catalog: Q.catalog || {}, sel: sel, rmsLink: Q.rmsLink || null};
+  const no = why => { alert("Nothing was booked.\n\n" + why); };
+  fetch(url, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, cache: "no-store",
+              body: JSON.stringify({token: staffKey(), action: "acceptCheck", quote: quote})})
+    .then(r => r.text())
+    .then(t => {
+      let r = null;
+      try{ r = JSON.parse(t); }catch(e){}
+      if(!r){ no("The quote server could not check what is free (" + String(t).slice(0, 80) + "). Please try again in a minute."); return; }
+      if(!r.ok){ no("RMS could not be read to check what is free. Please try again in a minute."); return; }
+      const list = (r.problems || []).map(x => String((x && x.text) || "")).filter(Boolean);
+      if(list.length){ no("Part of this booking is no longer free in RMS:\n\n- " + list.join("\n- ") + "\n\nChange the quote so all of it fits, then try again."); return; }
+      go();
+    })
+    .catch(() => no("The quote server could not be reached to check what is free. Please try again in a minute."));
+}
 function onAcceptClick(){
   if(STAFF_VIEW){ showToast("Staff view: nothing on this page is submitted. Open the quote in the quote tool to change it.", true); return; }
   const sbx = document.getElementById("submitBtn");
   if(sbx && sbx.getAttribute("aria-disabled") === "true"){ submitBlockedHelp(sbx.dataset.why); return; }
-  if(!CLIENT_MODE){ kdGuard("the booking and its deposit invoice", doSubmit); return; }
+  if(!CLIENT_MODE){ kdGuard("the booking and its deposit invoice", () => staffAcceptCheck(doSubmit)); return; }
   const expBlk = quoteAcceptBlock();
   if(expBlk){ updateSubmitState(); showToast(expBlk.title + " " + ACCEPT_BLOCK_CALL, true); return; }
   if(overLines().length || shortStaysBlocking().length){ updateSubmitState(); return; }
@@ -9417,9 +9545,13 @@ function onAcceptClick(){
       if(z) z.scrollIntoView({behavior: "smooth", block: "center"});
       return;
     }
-    /* could not ask RMS: go ahead; the booking itself only ever takes what is free */
+    /* the server's own answer to "can all of this be booked?": it knows what the page can't,
+       such as no one cabin being free for the whole stay (4 Nov 2026) */
+    if(r && noteAcceptTaken(r.acceptProblems)){ showAcceptTaken(); return; }
+    /* could not ask RMS: go ahead; the quote server checks again before it books anything, and
+       refuses (reply "taken") if some of it has gone (code.gs 13.24) */
     doSubmit();
-  });
+  }, true);
   });
 }
 function stepNights(dir){
@@ -9855,6 +9987,7 @@ function submitStateSig(){
   return [Q.status, Q.accepted ? 1 : 0, submitDirty() ? 1 : 0, anySel ? 1 : 0, firstName(Q.contact), depositTotal(), Q.email || "", addressMissing().join(","), (Q.history || []).length, Q.submittedAt || "", schoolShort(),
     CLIENT_MODE ? overLines().map(x => x.id + ":" + (x.by || (x.days || []).join(","))).join(",") : "",
     CLIENT_MODE ? shortStaysBlocking().map(shortKey).join(",") : "", AVAIL_CHECK.busy ? 1 : 0,
+    CLIENT_MODE ? acceptTakenNow().join("~") : "",
     CLIENT_MODE ? (orgSaveDirty() ? 1 : 0) + ":" + ((Q.orgDraft && Q.orgDraft.at) || "") + ":" + (ORG_SAVE.busy ? 1 : 0) : ""].join("|");
 }
 /* the Invoice Maker's logo, so the deposit invoice on screen matches the emailed PDF */
@@ -11757,7 +11890,10 @@ function submitZoneHTML(){
   if(!CLIENT_MODE) return html;
   const ov = overLines();
   const sh = shortStaysBlocking();
-  if(!ov.length && !sh.length && !AVAIL_CHECK.busy) return html;
+  if(!ov.length && !sh.length && !AVAIL_CHECK.busy){
+    const tk = acceptTakenNow();
+    return tk.length ? takenBlockHTML(tk) + html : html;
+  }
   html = html.replace('id="submitBtn"', 'id="submitBtn" disabled title="' +
     (AVAIL_CHECK.busy ? 'Checking what is available on your dates' : ov.length ? 'Some of what you picked is not available on your dates' : 'Your dates are shorter than our minimum stay') + '"');
   return (AVAIL_CHECK.busy
@@ -12542,6 +12678,7 @@ function renderClient(){
       asOrg() && !foldHasVenue(),
       '<p class="cb-hint">in half-day steps · a half day is 6 continuous hours or less</p>' +
       venueCreditBannerHTML(showPrices) +
+      dayVisNoteHTML(showPrices) +
       venuesOn.map(v => {
         const c = catEntry(v.fullId), ch = catEntry(v.halfId);
         const d = Number((Q.sel.venues || {})[v.key]) || 0;
@@ -12705,7 +12842,7 @@ function renderClient(){
         const nn = lineNights(l);
         const when = lineItem(l).meal ? fmtWhen(l.when) : '';
         const mid = asOrg()
-          ? '<div class="cb-avail" style="text-align:right">' + l.qty + (nn > 1 ? ' × ' + nn + ' nights' : '') + (lineDiscPct(l) > 0 ? ' · −' + lineDiscPct(l) + '%' : '') + '</div>'
+          ? '<div class="cb-avail" style="text-align:right">' + l.qty + (nn > 1 ? ' × ' + nn + (l.dv ? ' days' : ' nights') : '') + (lineDiscPct(l) > 0 ? ' · −' + lineDiscPct(l) + '%' : '') + '</div>'
           : '<div class="spline staffedit-ui"><input type="number" class="spLine" data-i="' + x.i + '" data-k="qty" min="0" value="' + (Number(l.qty) || 0) + '" title="Quantity"> ×' + (nn > 1 ? ' ' + nn + ' nights ×' : '') + ' $<input type="number" class="spLine" data-i="' + x.i + '" data-k="price" step="0.5" min="0" value="' + (Number(l.price) || 0) + '" title="Unit price"> − <input type="number" class="spLine" data-i="' + x.i + '" data-k="disc" min="0" max="100" value="' + lineDiscPct(l) + '" title="Line-only discount %">%</div>';
         return '<div class="cb-row"><div><span class="pkgname"' + (asOrg() ? '' : ' contenteditable data-li="' + x.i + '" title="Click to rename this line"') + '>' + esc(lineName(l)) + '</span><span class="fixedtag">fixed</span>' +
           (when ? '<div class="pkgmeta">' + when + '</div>' : '') + '</div>' +
@@ -13287,7 +13424,7 @@ function deleteQuote(num){
   postToSheet({action: "delete", num: num});
   renderPrevOptions();
   renderPipeline();
-  showToast("Quote " + num + " deleted here and removed from the tracker sheet.");
+  showToast("Deleting " + num + ". It isn't gone until the next message says Done. If that doesn't come, check the Pipeline for changes waiting.");
 }
 /* ---------- reopen a sent quote for editing ----------
    A quote that is still with the organiser (Draft, Sent or Viewed) can be brought
@@ -14567,6 +14704,7 @@ function doGetLink(opts){
 function doStaffResubmit(opts){
   if(!readyToSend()) return;
   if(!(opts && opts.kdChecked === true) && kdStaleNow().length){ kdGuard("the updated deposit invoice", () => doStaffResubmit({kdChecked: true})); return; }
+  if(!(opts && opts.availChecked === true)){ staffAcceptCheck(() => doStaffResubmit({kdChecked: true, availChecked: true})); return; }
   if(!confirm("Save " + Q.num + " and update the RMS booking? The organiser gets an updated deposit invoice, functions@ gets one email about the change, and it is recorded as a staff change in the history.")) return;
   if(!Q.token) Q.token = genToken();
   const wasStatus = Q.status;
@@ -14619,8 +14757,8 @@ function doSubmit(){
     Q.status = wasStatus; Q.submittedSel = wasSel; Q.submittedAt = wasAt; Q.history = wasHist; Q.accepted = wasStatus === "Accepted";
     /* the quote server refused it: past its "valid until" date, or Expired / Declined (code.gs 13.18) */
     const k = String(reply || "").trim();
-    if(k === "expired" || k === "unavailable" || k === "unconfirmed"){
-      if(k !== "unconfirmed") ACCEPT_BLOCK_REPLY = k;
+    if(k === "expired" || k === "unavailable" || k === "unconfirmed" || k === "taken"){
+      if(k === "expired" || k === "unavailable") ACCEPT_BLOCK_REPLY = k;
       if(DEP_WAIT){ clearInterval(DEP_WAIT.timer); DEP_WAIT = null; }
       if(NO_DEP_WAIT){ clearInterval(NO_DEP_WAIT.timer); NO_DEP_WAIT = null; }
       const scr = document.getElementById("depScreen");
@@ -14630,6 +14768,7 @@ function doSubmit(){
       document.body.style.overflow = "";
       renderClient();
       syncSideNote();
+      if(k === "taken"){ acceptRefusedTaken(); return; }
       if(k === "unconfirmed"){
         showToast("We could not confirm your booking yet. Please call us on " + VENUE_PHONE + " or email " + VENUE_EMAIL + " so we can check it for you.", true);
         return;
