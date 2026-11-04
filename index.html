@@ -1302,9 +1302,8 @@
         <h2>Event &amp; client</h2>
         <div class="fields">
           <label>Contact name<input id="f-contact" type="text"></label>
-          <label>Organisation<input id="f-org" type="text"></label>
+          <label>Organisation / event<input id="f-org" type="text"></label>
           <label>Email<input id="f-email" type="email"></label>
-          <label>Event<input id="f-event" type="text"></label>
           <label>First day<input id="f-date-start" type="date"></label>
           <label title="The departure date, for multi-day events">Last day (departure)<input id="f-date-end" type="date"></label>
           <label>Guests<input id="f-guests" type="number" min="1"></label>
@@ -1419,6 +1418,7 @@
           <span class="hint">the organiser picks meals × people × days · minimum group size 20</span>
         </div>
         <div id="prepCaterWarn"></div>
+        <div id="prepKitchen"></div>
         <div class="preprow prephead">
           <span class="prepcol"></span><span class="prepcol">Meal</span><span class="prepcol">$ / person</span><span class="prepcol"></span><span class="prepcol">Suggest</span><span class="prepcol">Suggested $</span>
         </div>
@@ -1582,7 +1582,7 @@
       <div class="pfilt" id="pipeFilt"></div>
       <div class="tablewrap">
         <table class="pipe">
-          <thead id="pipeHead"><tr><th class="c-q" data-sort="num">Quote</th><th data-sort="client">Client</th><th class="c-ct" data-sort="contact">Contact</th><th class="c-em" data-sort="email">Email</th><th class="c-ph" data-sort="phone">Phone</th><th data-sort="event">Event</th><th class="c-ed" data-sort="evdate">Event date</th><th class="c-sent" data-sort="sent">Date sent</th><th class="num c-val" data-sort="value">Value</th><th class="c-st" data-sort="status">Status</th><th class="c-fu" data-sort="follow">Follow-up</th><th class="c-act"></th></tr></thead>
+          <thead id="pipeHead"><tr><th class="c-q" data-sort="num">Quote</th><th data-sort="client">Client</th><th class="c-ct" data-sort="contact">Contact</th><th class="c-em" data-sort="email">Email</th><th class="c-ph" data-sort="phone">Phone</th><th class="c-ed" data-sort="evdate">Event date</th><th class="c-sent" data-sort="sent">Date sent</th><th class="num c-val" data-sort="value">Value</th><th class="c-st" data-sort="status">Status</th><th class="c-fu" data-sort="follow">Follow-up</th><th class="c-act"></th></tr></thead>
           <tbody id="pipeBody"></tbody>
         </table>
       </div>
@@ -1739,6 +1739,11 @@
       <p class="hint" style="margin-top:8px">Shared with every computer. This sets what new quotes start with: each quote keeps the list it was made with. Quotes made before 7 Oct 2026 keep their prices unless "New catering prices" is ticked on their Prepare tab. Children 4–12 still pay half, and the dietary surcharge is not changed.</p>
     </div>
     <div class="card">
+      <h2>Kitchen limit</h2>
+      <label style="display:block">People per meal, across all groups <input type="number" id="s-kitchen-limit" class="pin" min="0" step="1" style="width:90px"></label>
+      <p class="hint" style="margin-top:8px">Added up for each breakfast, lunch and dinner. Over this, staff see a red warning, the organiser sees those meals aren't confirmed yet, and the accepted email says to call them. They can still accept. 0 switches the check off.</p>
+    </div>
+    <div class="card">
       <h2>Confirmation form the moment a quote is accepted</h2>
       <label class="secitem" style="padding:0"><input type="checkbox" id="s-autoform"> <span><span class="sectitle">Make the organiser's Final Confirmation form as soon as they accept</span><span class="secwhy">the quote server asks the website to build it (prefilled from the quote and the units held in RMS) straight after the RMS booking, emails the organiser their link and shows it on their thank-you screen. The group is marked "Made automatically" on the builder until someone checks and saves it. Untick to go back to building every form by hand from the Accepted quotes tab.</span></span></label>
       <p class="hint" style="margin-top:8px">Shared with every computer, and the server reads it too. Any single quote can still be switched on or off on its Prepare tab, under "Extras on the organiser's page". Needs the server's AutoForm.gs and the website's plugin 1.0.99 with the shared secret set; until then nothing is made and the quote waits on the Accepted quotes tab as before.</p>
@@ -1784,7 +1789,7 @@
     <div class="card">
       <h2>Email subject line</h2>
       <input type="text" id="s-subject">
-      <p class="hint" style="margin-top:8px">Used by the Email quote button. You can use {number}, {event}, {org} and {contact}.</p>
+      <p class="hint" style="margin-top:8px">Used by the Email quote button. You can use {number}, {org} and {contact}.</p>
     </div>
 
     <div class="card">
@@ -2733,6 +2738,33 @@ const STAFF_PASS_LS = "wslr_staff_pass";
 const STAFF_ADMIN_LS = "wslr_staff_admin";
 function staffPass(){ try{ return localStorage.getItem(STAFF_PASS_LS) || ""; }catch(e){ return ""; } }
 function staffIsAdmin(){ try{ return localStorage.getItem(STAFF_ADMIN_LS) === "1" && !!staffPass(); }catch(e){ return false; } }
+/* 4 Nov 2026 (Joel): the shared settings are his and Alan's, and apply to everyone preparing quotes. The server has the
+   last word (saveSettings checks the signed pass); here it only saves people from typing into a locked form. */
+const SETTINGS_OWNERS_LS = "wslr_settings_owners";
+function settingsOwners(){ try{ return JSON.parse(localStorage.getItem(SETTINGS_OWNERS_LS) || "null") || ["Joel", "Alan"]; }catch(e){ return ["Joel", "Alan"]; } }
+function staffIsSettingsOwner(){
+  const me = staffUser().toLowerCase();
+  return staffIsAdmin() && settingsOwners().some(n => String(n).toLowerCase() === me);
+}
+function applySettingsLock(){
+  const tab = document.getElementById("tab-settings");
+  if(!tab) return;
+  const mine = staffIsSettingsOwner();
+  let note = document.getElementById("settingsLockNote");
+  if(!note){
+    note = document.createElement("div");
+    note.id = "settingsLockNote";
+    note.className = "availblock";
+    note.style.marginBottom = "12px";
+    tab.insertBefore(note, tab.firstChild);
+  }
+  note.hidden = mine;
+  note.textContent = "These settings apply to everyone preparing quotes, and only " + settingsOwners().join(" or ") + " can change them. Your own login and how this computer sends email are below." + (settingsOwners().some(n => String(n).toLowerCase() === staffUser().toLowerCase()) && !mine ? " Please sign out and back in to unlock them." : "");
+  tab.querySelectorAll("input, select, textarea, button").forEach(el => {
+    if(el.closest("#userCard") || el.closest("#adminCard") || el.id === "s-emailvia") return;
+    el.disabled = !mine;
+  });
+}
 function signOut(){
   try{ [STAFF_KEY_LS, STAFF_PASS_LS, STAFF_ADMIN_LS].forEach(k => localStorage.removeItem(k)); }catch(e){}
   location.reload();
@@ -3140,6 +3172,7 @@ function loadSharedSettings(){
     .then(r => r.json())
     .then(data => {
       if(data && data.error === "bad token") staffKeyNeeded(true);
+      if(data && Array.isArray(data.owners)){ try{ localStorage.setItem(SETTINGS_OWNERS_LS, JSON.stringify(data.owners)); }catch(e){} applySettingsLock(); }
       if(data && data.settings && applySharedSettings(data.settings)){
         renderTplOptions();
         /* this response can land seconds after the page opens: don't rebuild the
@@ -3162,6 +3195,11 @@ function loadSharedSettings(){
 let SETTINGS_PUSH_TIMER = null;
 function pushSharedSettings(){
   clearTimeout(SETTINGS_PUSH_TIMER);
+  /* not the settings owner: nothing is sent, and the next load puts the shared settings back on this computer */
+  if(!staffIsSettingsOwner()){
+    showToast("Shared settings can only be changed by " + settingsOwners().join(" or ") + ", so that change stays on this computer until the tool next loads.", true);
+    return;
+  }
   SETTINGS_PUSH_TIMER = setTimeout(function(){
     const url = sheetEndpoint();
     if(!url) return;
@@ -3171,11 +3209,16 @@ function pushSharedSettings(){
     fetch(url, {
       method: "POST",
       headers: {"Content-Type": "text/plain;charset=utf-8"}, // avoids a CORS preflight; Apps Script reads it fine
-      body: JSON.stringify({token: staffKey(), action: "saveSettings", settings: collectSharedSettings()})
+      body: JSON.stringify({token: staffKey(), pass: staffPass(), action: "saveSettings", settings: collectSharedSettings()})
     })
       .then(r => r.text())
       .then(t => {
         if(String(t).trim() === "bad token"){ staffKeyNeeded(true); SETTINGS_SYNC_STATE = "offline"; renderSyncBadge(); return; }
+        if(String(t).trim() === "not settings owner"){
+          SETTINGS_SYNC_STATE = "offline"; renderSyncBadge();
+          showToast("The server did not save that: please sign out and back in, then change it again.", true);
+          return;
+        }
         SETTINGS_SYNC_STATE = "synced"; renderSyncBadge();
       })
       .catch(() => { SETTINGS_SYNC_STATE = "offline"; renderSyncBadge(); });
@@ -3659,6 +3702,7 @@ function getDefaults(){
     notes: "Room hire includes setup and pack-down. {finalboth} We can hold your dates for {holddays} from the quote date. All accommodation is subject to availability at the time of booking.",
     terms: "When you accept this quote we make an unconfirmed booking and email you a deposit invoice ({deposit} per cabin, {depositsite} per campsite, {depositroom} per conference room), due within {depositdays}. {halfpct} of the total is due {halflead} before arrival, and the balance {balancewhen}, before keys are handed over. Payment by EFT is preferred; please use your reservation number (on your deposit invoice) as the payment reference for every payment.",
     bond: 2000,
+    kitchenLimit: 200,  // people per meal across all groups (Kitchen.gs); 0 = no check
     cheapest: true,
     cocUrl: "",         // the digital Code of Conduct page; blank = COC_URL_DEFAULT (the WSLR page)
     quoteLinkBase: "",  // the wslr.com.au page that shows a quote (links in emails); blank = QUOTE_LINK_DEFAULT (www.wslr.com.au/your-quote/)
@@ -3821,6 +3865,9 @@ function blankSel(){
 }
 /* upgrade quotes saved by earlier versions into the current model */
 function normalizeQuote(q){
+  /* 5 Nov 2026 (Joel): one box, Organisation / event. A quote with only an event moves it across. One with both keeps
+     its saved event, because many are website picks like "Church or community group", which would look wrong on an invoice. */
+  if(q && !String(q.org || "").trim() && String(q.event || "").trim().length > 1){ q.org = String(q.event).trim(); q.event = ""; }
   if(q.mobile === undefined || q.mobile === null) q.mobile = "";
   /* discounts (Sept 2026): accommodation and catering, each a % or a $ amount. The
      old single "extra discount %" on the whole quote is carried as "whole quote". */
@@ -7348,6 +7395,7 @@ function snapshotQ(){
     locked: !!Q.locked,
     internalNotes: String(Q.internalNotes || ""),
     cocAgreed: Q.cocAgreed ? JSON.parse(JSON.stringify(Q.cocAgreed)) : null,
+    acceptedBy: Q.acceptedBy ? JSON.parse(JSON.stringify(Q.acceptedBy)) : null,
     rmsLink: Q.rmsLink ? JSON.parse(JSON.stringify(Q.rmsLink)) : null,
     rmsTariff: (() => { try { return rmsTariffPlan(); } catch(e){ return null; } })(),   // 23 Oct 2026: RMS.gs 5.1.1
     submittedAt: Q.submittedAt || null,
@@ -9385,6 +9433,66 @@ function setEventDates(from, nights){
   refresh();
   datesMovedPull();
 }
+/* ---------- the kitchen's limit per meal, across all groups (Joel, 4 Nov 2026; Kitchen.gs) ----------
+   A warning, never a block. The server does the adding up, from its hourly "Kitchen load" tab. */
+var KITCHEN = {res: null, sig: "", timer: null};
+function kitchenSig(){
+  return JSON.stringify([Q.dateStart || "", Q.dateEnd || "", Q.guests || "", (Q.sel && Q.sel.cater) || {}, (Q.school && Q.school.meals) || null]);
+}
+function kitchenSchedule(){
+  try{
+    if(typeof Q === "undefined" || !Q) return;
+    const sig = kitchenSig();
+    if(sig === KITCHEN.sig) return;
+    const first = !KITCHEN.sig;
+    KITCHEN.sig = sig;
+    /* the organiser's page opened with the answer for these meals */
+    if(first && CLIENT_MODE && BOOT && BOOT.kitchen){ KITCHEN.res = BOOT.kitchen; kitchenPaint(); return; }
+    clearTimeout(KITCHEN.timer);
+    KITCHEN.timer = setTimeout(kitchenAsk, first ? 300 : 1200);
+  }catch(e){}
+}
+function kitchenAsk(){
+  const url = sheetEndpoint();
+  if(!url || !Q.dateStart || (STAFF_VIEW && CLIENT_MODE)) return;
+  const asked = KITCHEN.sig;
+  const got = r => { if(asked === KITCHEN.sig && r && r.ok){ KITCHEN.res = r; kitchenPaint(); } };
+  if(CLIENT_MODE){
+    if(!Q.token) return;
+    const probe = {dateStart: Q.dateStart, dateEnd: Q.dateEnd || "", sel: {cater: (Q.sel && Q.sel.cater) || {}}};
+    fetch(url + (url.indexOf("?") >= 0 ? "&" : "?") + "kitchen=" + encodeURIComponent(Q.token) + "&probe=" + encodeURIComponent(JSON.stringify(probe)), {credentials: "omit", cache: "no-store"})
+      .then(r => r.json()).then(got, () => {});
+    return;
+  }
+  if(!staffKey()) return;
+  const quote = {num: Q.num, token: Q.token || "", dateStart: Q.dateStart, dateEnd: Q.dateEnd || "", guests: Q.guests, catalog: Q.catalog || {}, school: Q.school || null,
+                 sel: {cater: (Q.sel && Q.sel.cater) || {}}, groupId: (Q.rmsHold && Q.rmsHold.groupId) || (Q.rmsLink && Q.rmsLink.groupId) || ""};
+  fetch(url, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, cache: "no-store", body: JSON.stringify({token: staffKey(), action: "kitchenCheck", quote: quote})})
+    .then(r => r.json()).then(got, () => {});
+}
+function kitchenWhen(x){ return dayLabel(x.iso) + " " + String(x.meal || "").toLowerCase(); }
+function kitchenStaffHTML(){
+  const r = KITCHEN.res;
+  if(!r || !r.limit) return "";
+  const over = r.over || [], tight = r.tight || [];
+  const line = x => '<div style="margin-top:4px"><b>' + esc(kitchenWhen(x)) + ':</b> ' + x.total + ' of ' + r.limit + '. ' +
+    ((x.who || []).length ? 'Booked: ' + x.who.map(w => esc(w.name) + ' ' + w.people).join(', ') + '. ' : '') + 'This quote: ' + x.mine + '.' + (x.open ? ' +' + x.open + ' on open quotes.' : '') + '</div>';
+  let h = '';
+  if(over.length) h += '<div class="availblock"><b>Over the kitchen limit. These meals are not confirmed, and we need to talk to the organiser:</b>' + over.map(line).join('') + '</div>';
+  if(tight.length) h += '<div class="availblock" style="border-color:#ef8f00;background:#fff4e0;color:#7a4a00"><b>Over the kitchen limit only if open quotes are accepted:</b>' + tight.map(line).join('') + '</div>';
+  return h;
+}
+function kitchenOrganiserHTML(){
+  const over = (KITCHEN.res && KITCHEN.res.limit && KITCHEN.res.over) || [];
+  if(!over.length) return '';
+  return '<div class="availblock" style="border-color:#ef8f00;background:#fff4e0;color:#7a4a00"><b>Some of your meals aren\'t confirmed yet:</b> ' + esc(over.map(kitchenWhen).join(", ")) +
+    '. Our kitchen is close to full at ' + (over.length === 1 ? 'that meal' : 'those meals') + ', so we\'ll need to talk to you about ' + (over.length === 1 ? 'it' : 'them') + '. You can still accept this quote: we\'ll be in touch.</div>';
+}
+function kitchenPaint(){
+  const el = document.getElementById("prepKitchen");
+  if(el) el.innerHTML = kitchenStaffHTML();
+  if(CLIENT_MODE && typeof updateSubmitState === "function") updateSubmitState();
+}
 /* ---------- asking RMS again from the organiser's page (Sept 2026) ----------
    When they move their dates, and the moment they press Accept, the page asks the quote
    server what is free right now (nothing is stored), so nothing that has gone since the
@@ -9471,6 +9579,12 @@ function serverAvailCheck(done, forAccept){
 /* the Accept button: ask RMS first; anything gone since the page opened stops it */
 /* Q5 (19 Oct 2026): a greyed-out accept button still answers a tap, with what is missing */
 function submitBlockedHelp(why){
+  if(!CLIENT_MODE && why === "coc"){
+    const box = document.getElementById("staffAccept");
+    if(box) box.scrollIntoView({behavior: "smooth", block: "center"});
+    showToast("Tick that WSLR has accepted this for the organiser, and say how they told us, then press the button again.", true);
+    return;
+  }
   const flash = el => { if(!el) return; el.scrollIntoView({behavior: "smooth", block: "center"}); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); };
   if(why === "coc"){
     flash(document.querySelector(".coctick"));
@@ -9512,7 +9626,11 @@ function onAcceptClick(){
   if(STAFF_VIEW){ showToast("Staff view: nothing on this page is submitted. Open the quote in the quote tool to change it.", true); return; }
   const sbx = document.getElementById("submitBtn");
   if(sbx && sbx.getAttribute("aria-disabled") === "true"){ submitBlockedHelp(sbx.dataset.why); return; }
-  if(!CLIENT_MODE){ kdGuard("the booking and its deposit invoice", () => staffAcceptCheck(doSubmit)); return; }
+  if(!CLIENT_MODE){
+    if(!staffAcceptReady()){ submitBlockedHelp("coc"); return; }
+    kdGuard("the booking and its deposit invoice", () => staffAcceptCheck(doSubmit));
+    return;
+  }
   const expBlk = quoteAcceptBlock();
   if(expBlk){ updateSubmitState(); showToast(expBlk.title + " " + ACCEPT_BLOCK_CALL, true); return; }
   if(overLines().length || shortStaysBlocking().length){ updateSubmitState(); return; }
@@ -9842,7 +9960,7 @@ function capBarHTML(){
 function qpForHTML(){ return 'Prepared for <b>' + esc(Q.contact) + '</b>' + (Q.org ? ' · ' + esc(Q.org) : ''); }
 function qpEventHTML(){
   const sch = schoolFirstPageText();
-  return esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests' +
+  return fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests' +
     (sch ? '<div class="qp-school">' + esc(sch) + '</div>' : '');
 }
 
@@ -9988,6 +10106,8 @@ function submitStateSig(){
     CLIENT_MODE ? overLines().map(x => x.id + ":" + (x.by || (x.days || []).join(","))).join(",") : "",
     CLIENT_MODE ? shortStaysBlocking().map(shortKey).join(",") : "", AVAIL_CHECK.busy ? 1 : 0,
     CLIENT_MODE ? acceptTakenNow().join("~") : "",
+    !CLIENT_MODE ? JSON.stringify(staffAcceptState()) : "",
+    CLIENT_MODE ? kitchenOrganiserHTML().length : "",
     CLIENT_MODE ? (orgSaveDirty() ? 1 : 0) + ":" + ((Q.orgDraft && Q.orgDraft.at) || "") + ":" + (ORG_SAVE.busy ? 1 : 0) : ""].join("|");
 }
 /* the Invoice Maker's logo, so the deposit invoice on screen matches the emailed PDF */
@@ -10940,8 +11060,8 @@ function onePageQuoteHtml(ed){
         (Q.prepBy ? '<div>Prepared by ' + esc(Q.prepBy) + '</div>' : '') +
         '<div style="margin-top:4px">Phone ' + VENUE_PHONE + '<br>' + VENUE_EMAIL + '<br>www.wslr.com.au</div></div></div>' +
     '<div class="for">Prepared for <b>' + esc(H.contact) + '</b>' + (H.org ? ' · ' + esc(H.org) : '') + '</div>' +
-    '<div class="ev">' + (ed ? esc([ed.head.event, ed.head.dates, String(ed.head.guests || "").trim() ? ed.head.guests + ' guests' : ''].filter(x => String(x || '').trim()).join(' · '))
-      : esc(Q.event) + ' · ' + fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests') + '</div>' +
+    '<div class="ev">' + (ed ? esc([ed.head.dates, String(ed.head.guests || "").trim() ? ed.head.guests + ' guests' : ''].filter(x => String(x || '').trim()).join(' · '))
+      : fmtRange(Q.dateStart, Q.dateEnd) + ' · ' + esc(Q.guests) + ' guests') + '</div>' +
     (school ? '<div class="ev" style="color:#1b2a38;font-weight:600">' + esc(school) + '</div>' : '') +
     ((ed ? ed.lines.some(l => l.on) : pricedLines().length)
       ? '<table class="it"><thead><tr><th>Item</th><th class="n">Qty</th>' +
@@ -11434,7 +11554,6 @@ function peRender(){
     '<div class="pe-grid">' +
       '<label>Name<input type="text" data-f="head.contact" value="' + esc(ed.head.contact) + '"></label>' +
       '<label>Organisation<input type="text" data-f="head.org" value="' + esc(ed.head.org) + '"></label>' +
-      '<label>Event<input type="text" data-f="head.event" value="' + esc(ed.head.event) + '"></label>' +
       '<label>Dates<input type="text" data-f="head.dates" value="' + esc(ed.head.dates) + '"></label>' +
       '<label>Guests (also for the cost per person)<input type="number" data-f="head.guests" value="' + esc(ed.head.guests) + '" min="0"></label>' +
       '<label>Line under it (schools)<input type="text" data-f="head.school" value="' + esc(ed.head.school) + '"></label>' +
@@ -11806,7 +11925,45 @@ function cocTickHTML(){
     (done ? '<em>Agreed ' + esc(new Date(Q.cocAgreed.at).toLocaleString("en-AU", {day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit"})) +
       (Q.cocAgreed.by ? ' by ' + esc(Q.cocAgreed.by) : '') + '</em>' : '') + '</span></label>';
 }
-function cocBlocks(){ return cocNeeded() && !(Q.cocAgreed && Q.cocAgreed.at); }
+function cocBlocks(){
+  if(!CLIENT_MODE) return !staffAcceptReady();
+  return cocNeeded() && !(Q.cocAgreed && Q.cocAgreed.at);
+}
+/* ---------- staff accepting for the organiser (Joel, 5 Nov 2026) ----------
+   Staff never tick the organiser's own code of conduct box. They tick that WSLR accepted, and say how the
+   organiser told us; Q.acceptedBy {by, how, at} goes with the submission and the server's email says so. */
+var STAFF_ACCEPT = {num: "", on: false, how: "", coc: false};
+function staffAcceptState(){
+  if(STAFF_ACCEPT.num !== Q.num) STAFF_ACCEPT = {num: Q.num, on: false, how: "", coc: false};
+  return STAFF_ACCEPT;
+}
+function staffAcceptReady(){ const a = staffAcceptState(); return !!(a.on && a.how); }
+function staffAcceptHTML(){
+  const a = staffAcceptState();
+  return '<div id="staffAccept" style="border:2px solid #5b2a86;background:#f3edf9;border-radius:8px;padding:10px 14px;margin:0 0 12px">' +
+    '<label style="display:flex;align-items:center;gap:8px;font-weight:600;margin:0"><input type="checkbox" id="staffAcceptTick" style="width:auto;margin:0;flex:none"' + (a.on ? ' checked' : '') + '> WSLR has accepted this quote for the organiser</label>' +
+    '<div class="hint" style="margin:4px 0 8px">Staff only. This makes the same booking and deposit invoice as if they had accepted it themselves, and records you as the person who accepted.</div>' +
+    (a.on ? '<label style="display:block;margin-bottom:6px">How did they tell us? <select id="staffAcceptHow"><option value=""' + (a.how ? '' : ' selected') + '>Choose...</option>' +
+        ["Phone", "Email", "In person", "Other"].map(h => '<option' + (a.how === h ? ' selected' : '') + '>' + h + '</option>').join('') + '</select></label>' +
+      (cocNeeded() ? '<label style="display:flex;align-items:center;gap:8px;margin:0"><input type="checkbox" id="staffAcceptCoc" style="width:auto;margin:0;flex:none"' + (a.coc ? ' checked' : '') + '> <span>They told us they agree to the <a href="' + esc(cocUrl()) + '" target="_blank" rel="noopener">Code of Conduct</a></span></label>' : '') : '') +
+    '</div>';
+}
+function acceptTickHTML(){ return CLIENT_MODE ? cocTickHTML() : staffAcceptHTML(); }
+function acceptedByHTML(){
+  const a = Q.acceptedBy;
+  if(!a || !a.at) return '';
+  const when = new Date(a.at).toLocaleDateString("en-AU", {day: "numeric", month: "short", year: "numeric"});
+  return '<span>' + (CLIENT_MODE ? 'Accepted for you by our team on ' + esc(when) + '.' : 'Accepted for the organiser by ' + esc(a.by || 'staff') + ' on ' + esc(when) + (a.how ? ' (' + esc(String(a.how).toLowerCase()) + ')' : '') + '.') + '</span>';
+}
+document.addEventListener("change", e => {
+  const id = e.target && e.target.id;
+  if(id !== "staffAcceptTick" && id !== "staffAcceptHow" && id !== "staffAcceptCoc") return;
+  const a = staffAcceptState();
+  if(id === "staffAcceptTick"){ a.on = e.target.checked; if(!a.on){ a.how = ""; a.coc = false; } }
+  if(id === "staffAcceptHow") a.how = e.target.value;
+  if(id === "staffAcceptCoc") a.coc = e.target.checked;
+  updateSubmitState();
+});
 /* Sept 2026: the organiser can't accept while anything on the quote is more than is free
    (or while the page is asking RMS); staff who opened the real link can't submit at all */
 /* ---------- a quote that has run out (Joel, 15 Oct 2026) ----------
@@ -11888,6 +12045,7 @@ function submitZoneHTML(){
   if(expBlk) return acceptBlockHTML(expBlk);
   let html = submitZoneBaseHTML();
   if(!CLIENT_MODE) return html;
+  html = kitchenOrganiserHTML() + html;
   const ov = overLines();
   const sh = shortStaysBlocking();
   if(!ov.length && !sh.length && !AVAIL_CHECK.busy){
@@ -12003,7 +12161,7 @@ function submitZoneBaseHTML(){
   if(Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted){
     const dirty = submitDirty();
     const booked = bookingsOnSubmit() || !!(Q.rmsHold && Q.rmsHold.deposit);
-    return '<div class="submitted-box">✓ ' + (booked ? 'Quote accepted' : 'Selection received') + ', ' + esc(firstName(Q.contact)) + '.' +
+    return '<div class="submitted-box">✓ ' + (booked ? 'Quote accepted' : 'Selection received') + ', ' + esc(firstName(Q.contact)) + '.' + acceptedByHTML() +
       (booked && bookedNoDeposit()
         ? '<span>' + (NO_DEP_WAIT ? NO_DEP_PENDING : NO_DEP_THANKS) + '</span>' + fcNextHTML(false) + '</div>'
         : booked && confirmedNoDepositNowDue()
@@ -12020,11 +12178,11 @@ function submitZoneBaseHTML(){
     const block = !anySel ? ' aria-disabled="true" data-why="empty" title="Choose at least one item first"'
       : (schoolCallBlocks() ? ' disabled title="Please call us about your numbers first"'
       : (miss.length ? ' aria-disabled="true" data-why="address" title="Add your postal address first"'
-      : (cocBlocks() ? ' aria-disabled="true" data-why="coc" title="Please tick the code of conduct first"' : '')));
+      : (cocBlocks() ? ' aria-disabled="true" data-why="coc" title="' + (CLIENT_MODE ? 'Please tick the code of conduct first' : 'Tick that WSLR has accepted this, and say how they told us') + '"' : '')));
     return schoolCallBarHTML() +
       (miss.length && anySel && !schoolCallBlocks() ? '<div class="tierwarn" style="text-align:center">Please add your postal address in <b>Your details</b> above (' + esc(miss.join(", ")) + ') so we can make your booking.</div>' : '') +
-      cocTickHTML() +
-      '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + block + '>Accept ' + (quoteLocked() ? 'this quote' : 'quote') + ' &amp; book</button>' + askBtn + '</div>' +
+      acceptTickHTML() +
+      '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + block + '>' + (CLIENT_MODE ? 'Accept ' + (quoteLocked() ? 'this quote' : 'quote') + ' &amp; book' : 'Accept for the organiser &amp; book') + '</button>' + (CLIENT_MODE ? askBtn : '') + '</div>' +
       (noDepositBooking()
         ? '<p class="qp-aud" style="text-align:center; margin-top:6px">' + esc(noDepAcceptWords()) + '</p>'
         : '<p class="qp-aud" style="text-align:center; margin-top:6px">' + esc(depositAcceptWords(d)) + '</p>');
@@ -12032,8 +12190,8 @@ function submitZoneBaseHTML(){
   const missA = addressMissing();
   return schoolCallBarHTML() +
     (missA.length && anySel && !schoolCallBlocks() ? '<div class="tierwarn" style="text-align:center">Please add your postal address in <b>Your details</b> above (' + esc(missA.join(", ")) + ').</div>' : '') +
-    cocTickHTML() +
-    '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? (schoolCallBlocks() ? ' disabled title="Please call us about your numbers first"' : (missA.length ? ' aria-disabled="true" data-why="address" title="Add your postal address first"' : (cocBlocks() ? ' aria-disabled="true" data-why="coc" title="Please tick the code of conduct first"' : ''))) : ' aria-disabled="true" data-why="empty" title="Choose at least one item first"') + '>' +
+    acceptTickHTML() +
+    '<div class="acceptrow"><button class="btn accept" id="submitBtn"' + (anySel ? (schoolCallBlocks() ? ' disabled title="Please call us about your numbers first"' : (missA.length ? ' aria-disabled="true" data-why="address" title="Add your postal address first"' : (cocBlocks() ? ' aria-disabled="true" data-why="coc" title="' + (CLIENT_MODE ? 'Please tick the code of conduct first' : 'Tick that WSLR has accepted this, and say how they told us') + '"' : ''))) : ' aria-disabled="true" data-why="empty" title="Choose at least one item first"') + '>' +
       (quoteLocked() ? 'Accept this quote' : 'Submit my selection for confirmation') + '</button>' + askBtn + '</div>' +
     '<p class="qp-aud" style="text-align:center; margin-top:6px">' + (quoteLocked()
       ? 'Accepting tells us you are happy with the quote above. Our team then confirms it with you.'
@@ -12935,7 +13093,6 @@ function renderClient(){
           '<label>Organisation / group<input class="cdInp" data-f="org" type="text" value="' + esc(Q.org) + '"></label>' +
           '<label>Email<input class="cdInp" data-f="email" type="email" value="' + esc(Q.email) + '"></label>' +
           '<label>Mobile<input class="cdInp" data-f="mobile" type="tel" value="' + esc(Q.mobile) + '"></label>' +
-          '<label>Event<input class="cdInp" data-f="event" type="text" value="' + esc(Q.event) + '"></label>' +
           '<label>Guests<input class="cdInp" data-f="guests" type="number" min="1" value="' + esc(Q.guests) + '"></label>' +
           '<label class="cdwide">Postal address<input class="adInp" data-a="line1" type="text" autocomplete="street-address" placeholder="Street address or PO Box" value="' + esc((Q.address || {}).line1 || '') + '"></label>' +
           '<label>Suburb / town<input class="adInp" data-a="town" type="text" autocomplete="address-level2" value="' + esc((Q.address || {}).town || '') + '"></label>' +
@@ -13779,7 +13936,7 @@ function buildQuoteFromInterest(ref){
   Q.org = e.group || "";
   Q.email = e.email || "";
   Q.mobile = e.mobile || "";
-  Q.event = e.event || "";
+  Q.event = "";   // 5 Nov 2026: what they called it is in the notes above (L: "They called it")
   Q.dateStart = e.arrival || "";
   Q.dateEnd = e.departure || "";
   Q.guests = Number(e.guests) || "";
@@ -14272,7 +14429,7 @@ function renderPipeline(){
   const tb = document.getElementById("pipeBody");
   if(!rows.length){
     renderPipeFilters(rows, rows);
-    tb.innerHTML = '<tr class="emptyrow"><td colspan="12">No quotes yet. Build one on tab 1 and email it or mark it as sent; it will appear here and in the tracker sheet.</td></tr>';
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="11">No quotes yet. Build one on tab 1 and email it or mark it as sent; it will appear here and in the tracker sheet.</td></tr>';
     return;
   }
   const find = String((document.getElementById("pipeFind") || {}).value || "").trim().toLowerCase();
@@ -14282,7 +14439,7 @@ function renderPipeline(){
   const allBtn = document.getElementById("pipeOpenAll");
   if(allBtn) allBtn.textContent = shown.length && shown.every(r => PIPE_OPEN[r.num]) ? "Close all details" : "Open all details";
   if(!shown.length){
-    tb.innerHTML = '<tr class="emptyrow"><td colspan="12">' + (find ? 'No quote matches “' + esc(find) + '”' : 'No quotes') + (Object.keys(PIPE_FILTER.hide).length || PIPE_FILTER.past ? ' with these filters. Press <b>Show all</b> above to see every quote.' : '.') + '</td></tr>';
+    tb.innerHTML = '<tr class="emptyrow"><td colspan="11">' + (find ? 'No quote matches “' + esc(find) + '”' : 'No quotes') + (Object.keys(PIPE_FILTER.hide).length || PIPE_FILTER.past ? ' with these filters. Press <b>Show all</b> above to see every quote.' : '.') + '</td></tr>';
     return;
   }
   tb.innerHTML = shown.map(r =>
@@ -14292,7 +14449,6 @@ function renderPipeline(){
       '<td>' + pipeContactCell(r) + '</td>' +
       '<td class="c-em">' + pipeEmailCell(r) + '</td>' +
       '<td class="c-ph">' + pipePhoneCell(r) + '</td>' +
-      '<td><span class="tcut" title="' + esc(r.event || "") + '">' + esc(r.event || "-") + '</span></td>' +
       '<td title="' + esc(fmtRange(r.dateStart, r.dateEnd)) + '">' + esc(shortRange(r.dateStart, r.dateEnd)) + rmsPipeChip(r) + '</td>' +
       '<td>' + (r.unsaved ? '<span class="fmuted">-</span>' : '<input type="date" class="sentInp" data-num="' + esc(r.num) + '" value="' + esc(String(r.sentAt || "").slice(0, 10)) + '" title="Change the date sent">') + '</td>' +
       '<td class="num">' + (r.total === null || r.total === undefined ? '<span class="fmuted" title="A row typed straight into the tracker sheet, no value stored">-</span>' : money0(r.total)) + '</td>' +
@@ -14300,7 +14456,7 @@ function renderPipeline(){
       '<td><span class="fcell">' + followCell(followFor(r)) + '</span></td>' +
       '<td>' + (Array.isArray(r.history) && r.history.length > 1 ? '<button class="histBtn" data-num="' + esc(r.num) + '" title="Every version the organiser has submitted">History ' + r.history.length + '</button>' : '') + editCell(r) + (r.unsaved ? '' : '<button class="xBtn delQ" data-num="' + esc(r.num) + '" title="Delete this quote here and in the tracker sheet">×</button>') + '</td>' +
     '</tr>' +
-    (PIPE_OPEN[r.num] ? '<tr class="pdet"><td colspan="12">' + pipeDetailsHTML(r) + '</td></tr>' : '')
+    (PIPE_OPEN[r.num] ? '<tr class="pdet"><td colspan="11">' + pipeDetailsHTML(r) + '</td></tr>' : '')
   ).join("");
 
   /* a click anywhere on a row opens its details, except on its own buttons, boxes and links */
@@ -14534,7 +14690,7 @@ function fillTemplate(s){
     /* no name to sign with: drop that line rather than print a stand-in */
     .replace(/^[ \t]*\{prepBy\}[ \t]*\r?\n/m, String(Q.prepBy || "").trim() ? "{prepBy}\n" : "")
     .split("{number}").join(Q.num)
-    .split("{event}").join(Q.event || "your event")
+    .split("{event}").join(Q.event || Q.org || "your event")
     .split("{org}").join(Q.org || "")
     .split("{contact}").join(firstName(Q.contact))
     .split("{link}").join(linkForToken(Q.token))
@@ -14744,6 +14900,11 @@ function doSubmit(){
   Q.status = "Submitted";
   Q.accepted = false;
   Q.submittedAt = new Date().toISOString();
+  if(!CLIENT_MODE && staffAcceptReady()){
+    const sa = staffAcceptState(), by = staffUser() || String(Q.prepBy || "").trim() || "Staff";
+    Q.acceptedBy = {by: by, how: sa.how, at: Q.submittedAt};
+    if(sa.coc && cocNeeded()) Q.cocAgreed = {at: Q.submittedAt, by: String(Q.contact || "").trim() + " (told " + by + ", " + sa.how.toLowerCase() + ")", url: cocUrl(), viaStaff: by};
+  }
   /* the server keeps the real history; this shows the new version straight away */
   if(Array.isArray(Q.history) && Q.history.length) Q.history = Q.history.concat([{v: Q.history.length + 1, at: Q.submittedAt, changes: ["Sent just now"], total: totals().total}]);
   Q.submittedSel = submitSig();
@@ -14823,7 +14984,7 @@ function copyFromQuote(num){
   const b = blankQuote(nextQuoteNum());
   const fresh = JSON.parse(JSON.stringify({features: b.features, caterSched: b.caterSched}));   // today's rules, before the copy lands on b
   Q = Object.assign(b, JSON.parse(JSON.stringify({
-    contact: s.contact, org: s.org, email: s.email, event: s.event,
+    contact: s.contact, org: s.org || s.event || "", email: s.email, event: "",
     dateStart: s.dateStart, dateEnd: s.dateEnd, guests: s.guests,
     validDays: s.validDays, discountPct: s.discountPct, disc: s.disc || null,
     notes: s.notes, terms: s.terms,
@@ -15218,6 +15379,10 @@ function renderSecEditor(){
   }));
 }
 function renderSettings(){
+  renderSettingsInner();
+  applySettingsLock();
+}
+function renderSettingsInner(){
   const d = getDefaults();
   /* the price list sheet (16 Oct 2026) */
   const pls = document.getElementById("plState"); if(pls) pls.innerHTML = plStatusHtml();
@@ -15234,6 +15399,7 @@ function renderSettings(){
   document.getElementById("s-vc-site").value = vcNum_(d.vcCabin, VENUE_CREDIT_CABIN) / 2;
   renderCaterFutureSettings();
   document.getElementById("s-autoform").checked = d.autoForm !== false;
+  document.getElementById("s-kitchen-limit").value = d.kitchenLimit === undefined || d.kitchenLimit === null || d.kitchenLimit === "" ? 200 : d.kitchenLimit;
   document.getElementById("s-coc").value = d.cocUrl || "";
   document.getElementById("s-qlink").value = d.quoteLinkBase || "";
   renderQlinkNote();
@@ -16079,7 +16245,7 @@ document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () =>
 
 /* ---------- form bindings ---------- */
 function softRefresh(){ autosaveDraft(); renderBondField(); renderRoomDisc(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
-function refresh(){ Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
+function refresh(){ kitchenSchedule(); Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
 
 
 /* ---------- quoting on a booking already in RMS ----------
@@ -16208,7 +16374,7 @@ function applyResBooking(g, opts){
   Q.org = gu.org || "";
   Q.email = gu.email || "";
   Q.mobile = gu.mobile || "";
-  Q.event = gu.event || "";
+  Q.event = "";
   if(gu.address) Q.address = Object.assign({line1: "", town: "", state: "", postcode: ""}, gu.address);
   /* a repeat moves the whole booking onto the new dates, keeping its shape */
   const shiftDays = (repeat && /^\d{4}-\d{2}-\d{2}$/.test(String(opts.newStart || "")) && g.arrival) ? isoDiffDays(g.arrival, opts.newStart) : 0;
@@ -16487,7 +16653,7 @@ function renderRoomDiscSum(){
   });
 })();
 const BINDINGS = [
-  ["f-contact", "contact"], ["f-org", "org"], ["f-email", "email"], ["f-mobile", "mobile"], ["f-event", "event"],
+  ["f-contact", "contact"], ["f-org", "org"], ["f-email", "email"], ["f-mobile", "mobile"],
   ["f-date-start", "dateStart"], ["f-date-end", "dateEnd"], ["f-guests", "guests"],
   ["f-num", "num"], ["f-prepby", "prepBy"], ["f-prepemail", "prepEmail"], ["f-valid", "validDays"],
   ["f-pricemode", "priceMode"],
@@ -16832,6 +16998,14 @@ document.getElementById("s-venuecredit").addEventListener("change", e => {
   showToast(e.target.checked
     ? "New quotes take " + vcMoney(vcRates().cabin) + " per cabin and " + vcMoney(vcRates().site) + " per site a day off their conference rooms (one room first, any left over to the next)."
     : "New quotes will not give the venue credit. Quotes already made keep their own setting.");
+});
+document.getElementById("s-kitchen-limit").addEventListener("change", e => {
+  const n = Math.max(0, Math.round(Number(e.target.value) || 0));
+  e.target.value = n;
+  saveDefaults({kitchenLimit: n});
+  KITCHEN.sig = "";
+  kitchenSchedule();
+  showToast(n ? "Kitchen limit set to " + n + " people a meal, for everyone." : "The kitchen check is switched off, for everyone.");
 });
 document.getElementById("s-autoform").addEventListener("change", e => {
   saveDefaults({autoForm: e.target.checked});
