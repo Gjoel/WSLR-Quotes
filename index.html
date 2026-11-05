@@ -6510,8 +6510,9 @@ function recurStart(){
   Q.recurDates = Q.dateStart ? [Q.dateStart] : [];
   Q.sel.accom = [];
   Q.sel.cater = {};
+  accomItems().concat(caterItems()).forEach(it => setCat(it.id, "on", false));
   refresh();
-  showToast("Recurring room hire: add each date, then pick the room. Cabins and catering are not on this kind of quote.");
+  showToast("Recurring room hire: add each date and the room, then press Live from RMS to check the dates. Cabins and catering are not on this kind of quote.");
   const inp = document.getElementById("recurAdd");
   if(inp) inp.focus();
 }
@@ -6531,6 +6532,7 @@ function recurRemoveDate(iso){
 function recurStop(){
   const first = recurDates()[0] || Q.dateStart;
   delete Q.recurDates;
+  accomItems().concat(caterItems()).forEach(it => setCat(it.id, "on", true));
   Q.dateStart = first;
   Q.dateEnd = first;
   Object.keys(Q.sel.venueDays || {}).forEach(k => {
@@ -7456,6 +7458,7 @@ function snapshotQ(){
   return {
     num: Q.num, numClaimed: !!Q.numClaimed, contact: Q.contact, org: Q.org, email: Q.email, mobile: Q.mobile, event: Q.event,
     dateStart: Q.dateStart, dateEnd: Q.dateEnd, guests: Q.guests,
+    recurDates: recurOn() ? Q.recurDates.slice() : undefined,
     validDays: Q.validDays, discountPct: 0, disc: JSON.parse(JSON.stringify(Q.disc || null)), prepBy: Q.prepBy,
     address: JSON.parse(JSON.stringify(Q.address || {})),
     prepEmail: String(Q.prepEmail || "").trim() || DEFAULT_PREP_EMAIL,
@@ -15901,8 +15904,48 @@ function rmsWindow(){
   if(to < end) { from = Q.dateStart < t ? t : Q.dateStart; to = end; }
   return {from: from, to: to};
 }
+function pullRecurRooms(){
+  const dates = recurDates();
+  if(!dates.length){ showToast("Add the dates first, then press ↻ Live from RMS.", true); return; }
+  if(RMS_PULLING) return;
+  if(!getRmsSettings().enabled) setRmsSettings({enabled: true});
+  const forQ = Q, sig = dates.join("|"), got = {};
+  let asAt = "";
+  RMS_PULLING = true; renderImp3();
+  let chain = ensureRmsCatalog(false);
+  dates.forEach(d => {
+    chain = chain.then(() => rmsGet({rms: "grid", from: d, to: isoAddDays(d, 1), fresh: 1})).then(g => {
+      asAt = g.asAt || asAt;
+      Object.keys(g.avail || {}).forEach(id => {
+        const v = (g.avail[id] || {})[d];
+        if(v === undefined) return;
+        got[id] = got[id] || {};
+        got[id][d] = v;
+      });
+    });
+  });
+  chain.then(() => {
+    RMS_PULLING = false;
+    if(Q !== forQ || recurDates().join("|") !== sig){ renderImp3(); return; }
+    Q.impError = null;
+    Q.availCal = got;
+    Q.availInfo = {from: dates[0], to: dates[dates.length - 1], items: Object.keys(got).length, file: "RMS live", live: true, asAt: asAt};
+    const taken = [];
+    VENUES.forEach(v => {
+      if(!(Number((Q.sel.venues || {})[v.key]) > 0)) return;
+      const off = dates.filter(d => (got[v.fullId] || {})[d] === 0);
+      if(off.length) taken.push(v.name + ": " + off.map(dayLabel).join(", "));
+    });
+    refresh();
+    showToast(taken.length ? "Live from RMS: already taken on " + taken.join("; ") : "Live from RMS: " + dates.length + " dates checked, as at " + rmsAsAt(asAt) + ". The rooms on this quote are free on all of them.", taken.length > 0);
+  }).catch(e => {
+    RMS_PULLING = false; renderImp3();
+    showToast("RMS could not be reached: " + e.message + ". Press ↻ Live from RMS again.", true);
+  });
+}
 function pullRmsRates(manual){
   if(CLIENT_MODE) return;
+  if(recurOn()){ if(manual) pullRecurRooms(); return; }
   const w = rmsWindow();
   if(!w){ showToast("Set the event dates first, then press ↻ Live from RMS.", true); return; }
   /* RMS only prices from today on. A quote whose stay has already gone (an old quote
