@@ -1306,6 +1306,7 @@
           <label>Email<input id="f-email" type="email"></label>
           <label>First day<input id="f-date-start" type="date"></label>
           <label title="The departure date, for multi-day events">Last day (departure)<input id="f-date-end" type="date"></label>
+          <div id="recurBox" class="fwide" style="display:none"></div>
           <label>Guests<input id="f-guests" type="number" min="1"></label>
           <label>Mobile<input id="f-mobile" type="tel"></label>
           <label class="fwide">Postal address<input id="f-addr-line1" class="fAddr" data-a="line1" type="text" placeholder="Street address or PO Box" autocomplete="off"></label>
@@ -2340,6 +2341,7 @@ function shortDate(x){
 }
 function fmtRange(s, e){
   if(!s) return "-";
+  if(typeof Q !== "undefined" && Q && recurOn() && Q.recurDates.length && s === Q.dateStart && e === Q.dateEnd) return recurWords();
   if(!e || e === s) return fmtDate(s);
   const a = new Date(s + "T12:00:00"), b = new Date(e + "T12:00:00");
   if(isNaN(a) || isNaN(b) || b < a) return fmtDate(s);
@@ -3938,6 +3940,7 @@ function normalizeQuote(q){
     if(q.sel.who) mergeInfants_(q.sel.who);
     if(!q.sel.venueTimes) q.sel.venueTimes = {};
     if(!q.sel.venueDays || typeof q.sel.venueDays !== "object") q.sel.venueDays = {};
+    if(q.recurDates !== undefined && !Array.isArray(q.recurDates)) delete q.recurDates;
     if(q.sel.message === undefined) q.sel.message = "";
     /* older drafts stored a single per-meal total; carry it into the adults band */
     Object.keys(q.sel.cater || {}).forEach(id => {
@@ -4054,6 +4057,7 @@ const TEMPLATES = [
   {name:"Conference day (room only)", venues:{fr13: 1}},
   {name:"Catered group stay (daily meals)", cater:["bf_cont", "din2"], caterAllDays: true},
   {name:"Auditorium event",           venues:{aud: 1}},
+  {name:"Recurring room hire (several separate dates)", recurring: true},
 ];
 /* the two standing school templates read their price from the Settings tab */
 function builtInSchoolTemplates(){
@@ -4981,6 +4985,7 @@ function applyTemplate(idx){
   const t = allTemplates()[idx];
   if(!t) return;
   if(t.school) return applySchoolTemplate(t.school);
+  if(t.recurring) return recurStart();
   const g = Number(Q.guests) || 0;
   Object.keys(t.venues || {}).forEach(k => {
     Q.sel.venues[k] = Math.max(Number(Q.sel.venues[k]) || 0, t.venues[k]);
@@ -5361,7 +5366,7 @@ document.addEventListener("change", e => {
   renderDayVisBox();
 });
 function dayVisNoteHTML(showPrices){
-  if(!showPrices) return '';
+  if(!showPrices || recurOn()) return '';
   return '<p class="cb-hint">Day visitors who aren\'t having a meal with us are ' + money(DAY_VISIT.adult) + ' an adult a day, ' + money(DAY_VISIT.kid) + ' ages 4 to 12, and free for 3 and under (' + money(DAY_VISIT.teaAdult) + ' and ' + money(DAY_VISIT.teaKid) + ' with tea, coffee and water in the room). Anyone booked for a meal pays nothing extra. You give us the numbers on your Final Confirmation form.</p>';
 }
 function lineTotal(l){
@@ -6107,7 +6112,7 @@ function venueCreditRoomsOffered(){
   return VENUES.some(v => VENUE_CREDIT_KEYS.indexOf(v.key) >= 0 && (RATE[v.fullId] || RATE[v.halfId]) && catEntry(v.fullId).on && !venueIsFree(v));
 }
 function venueCreditBannerHTML(showPrices){
-  if(!venueCreditOn() || !showPrices || !venueCreditRoomsOffered()) return '';
+  if(recurOn() || !venueCreditOn() || !showPrices || !venueCreditRoomsOffered()) return '';
   const per = venueCreditPerDay(), r = vcRates();
   if(per <= 0){
     if(!(r.cabin > 0)) return '';
@@ -6471,7 +6476,94 @@ function venueDepartWarnHTML(v){
   return '<div class="departwarn staffedit-ui">⚠ ' + day + ' is check-out day: a staying group has the rooms ' + DEPART_WORD +
     ' (a morning, half-day price). ' + (bad === "full" ? 'A full day' : 'An afternoon') + ' is saved here, priced as sent: tap the day to make it a morning.</div>';
 }
+/* ---------- recurring room hire (Joel, 5 Nov 2026) ----------
+   One quote for the same room on several separate dates, e.g. a training course every
+   two months. Q.recurDates is the sorted list of dates; the first and last are also
+   Q.dateStart and Q.dateEnd. Each room's days are the existing Q.sel.venueDays, so the price
+   is the day rate x the dates, and the server books each date as its own reservation in one
+   RMS group (rmsVenueRuns_). The server books the WHOLE window for a room with no days, so a
+   room on one of these quotes must always have them: recurSync sees to that. Rooms only: no
+   cabins or catering, which are priced by nights and days in a row. */
+function recurOn(){ return Array.isArray(Q.recurDates); }
+function recurDates(){ return recurOn() ? Q.recurDates.slice() : []; }
+function recurSync(){
+  if(!recurOn()) return;
+  const dates = Q.recurDates = Array.from(new Set(Q.recurDates.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))).sort();
+  if(!dates.length) return;
+  Q.dateStart = dates[0];
+  Q.dateEnd = dates[dates.length - 1];
+  if(!Q.sel.venueDays) Q.sel.venueDays = {};
+  Object.keys(Q.sel.venues || {}).forEach(k => {
+    if(!(Number(Q.sel.venues[k]) > 0)) return;
+    const was = Q.sel.venueDays[k] || {}, now = {};
+    dates.forEach(d => { if(was[d]) now[d] = was[d]; });
+    if(!Object.keys(now).length) dates.forEach(d => { now[d] = "full"; });
+    Q.sel.venueDays[k] = now;
+  });
+  ["f-date-start", "f-date-end"].forEach(id => { const el = document.getElementById(id); if(el && id === "f-date-start") el.value = Q.dateStart; else if(el) el.value = Q.dateEnd; });
+}
+function recurWords(){
+  const dates = recurDates();
+  return dates.length + " date" + (dates.length === 1 ? "" : "s") + ": " + dates.map(d => dayLabel(d) + " " + d.slice(0, 4)).join(", ");
+}
+function recurStart(){
+  Q.recurDates = Q.dateStart ? [Q.dateStart] : [];
+  Q.sel.accom = [];
+  Q.sel.cater = {};
+  refresh();
+  showToast("Recurring room hire: add each date, then pick the room. Cabins and catering are not on this kind of quote.");
+  const inp = document.getElementById("recurAdd");
+  if(inp) inp.focus();
+}
+function recurAddDate(iso){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+  if(iso < isoDate(today)){ showToast("That date has already passed.", true); return; }
+  if(Q.recurDates.indexOf(iso) >= 0){ showToast("That date is already on the list.", true); return; }
+  Q.recurDates.push(iso);
+  Object.keys(Q.sel.venueDays || {}).forEach(k => { if(Number((Q.sel.venues || {})[k]) > 0) Q.sel.venueDays[k][iso] = "full"; });
+  refresh();
+}
+function recurRemoveDate(iso){
+  Q.recurDates = Q.recurDates.filter(d => d !== iso);
+  Object.keys(Q.sel.venueDays || {}).forEach(k => { if(Q.sel.venueDays[k]) delete Q.sel.venueDays[k][iso]; });
+  refresh();
+}
+function recurStop(){
+  const first = recurDates()[0] || Q.dateStart;
+  delete Q.recurDates;
+  Q.dateStart = first;
+  Q.dateEnd = first;
+  Object.keys(Q.sel.venueDays || {}).forEach(k => {
+    const was = Q.sel.venueDays[k] || {};
+    Q.sel.venueDays[k] = was[first] ? {[first]: was[first]} : {};
+  });
+  const a = document.getElementById("f-date-start"), b = document.getElementById("f-date-end");
+  if(a) a.value = first || "";
+  if(b) b.value = first || "";
+  refresh();
+}
+function renderRecurBox(){
+  const box = document.getElementById("recurBox");
+  if(!box) return;
+  const on = recurOn();
+  ["f-date-start", "f-date-end"].forEach(id => { const el = document.getElementById(id); if(el && el.closest("label")) el.closest("label").style.display = on ? "none" : ""; });
+  box.style.display = on ? "" : "none";
+  if(!on){ box.innerHTML = ""; return; }
+  const dates = recurDates();
+  box.innerHTML = '<b>Dates for this room hire</b> (' + dates.length + ')' +
+    (dates.length ? '<div style="margin:6px 0">' + dates.map(d =>
+      '<div style="display:flex;align-items:center;gap:8px;padding:2px 0">' + esc(dayLabel(d) + " " + d.slice(0, 4)) +
+      ' <button type="button" class="recurDel" data-d="' + esc(d) + '" title="Take this date off">×</button></div>').join("") + '</div>'
+      : '<div class="ratehint" style="margin:6px 0">No dates yet.</div>') +
+    '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><input id="recurAdd" type="date" aria-label="Date to add"><button type="button" id="recurAddBtn">+ Add date</button>' +
+    '<button type="button" id="recurStopBtn">Back to one date</button></div>';
+  box.querySelectorAll(".recurDel").forEach(b => { b.onclick = () => recurRemoveDate(b.getAttribute("data-d")); });
+  const add = () => { const v = document.getElementById("recurAdd").value; if(v){ recurAddDate(v); const i = document.getElementById("recurAdd"); if(i) i.focus(); } };
+  document.getElementById("recurAddBtn").onclick = add;
+  document.getElementById("recurStopBtn").onclick = recurStop;
+}
 function eventDays(){
+  if(recurOn() && Q.recurDates.length) return recurDates();
   if(!Q.dateStart) return [];
   const out = [Q.dateStart];
   const end = (Q.dateEnd && Q.dateEnd > Q.dateStart) ? Q.dateEnd : Q.dateStart;
@@ -7275,6 +7367,7 @@ const SHEET_SAFE_SIZE = 45000;
 function stayWindow(pad){
   if(!Q.dateStart) return null;
   const p = pad || 0;
+  if(recurOn()) return {from: isoAddDays(Q.dateStart, -p), to: isoAddDays(Q.dateEnd || Q.dateStart, 1 + p)};
   return {from: isoAddDays(Q.dateStart, -p), to: isoAddDays(Q.dateStart, nightsCount() + p)};
 }
 function pruneDated(map, win, cap){
@@ -7283,6 +7376,7 @@ function pruneDated(map, win, cap){
     const inner = map[id] || {};
     const keep = {};
     Object.keys(inner).sort().forEach(d => {
+      if(recurOn() && Q.recurDates.indexOf(d) < 0) return;
       if(win){ if(d < win.from || d > win.to) return; }
       else if(Object.keys(keep).length >= (cap || 62)) return;
       keep[d] = inner[d];
@@ -7582,6 +7676,7 @@ function renderTotals(){
 
 /* ---------- selection mutators (shared by staff pre-fill and the organiser's page) ---------- */
 function nightsCount(){
+  if(recurOn()) return 1;
   if(!Q.dateStart) return 1;
   const a = new Date(Q.dateStart + "T12:00:00");
   const b = Q.dateEnd ? new Date(Q.dateEnd + "T12:00:00") : null;
@@ -9403,7 +9498,7 @@ function schoolDateBoxChange(which){
 }
 function setEventDates(from, nights){
   if(!from) return;
-  if(schoolDatesLocked() || existingDatesLocked()){ showToast("To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au"); return; }
+  if(schoolDatesLocked() || existingDatesLocked() || recurOn()){ showToast("To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au"); return; }
   const n = Math.max(1, Number(nights) || 1);
   const shift = (Q.dateStart && from) ? isoDiffDays(Q.dateStart, from) : 0;
   const prevDates = {start: Q.dateStart, end: Q.dateEnd};
@@ -9815,6 +9910,7 @@ function cheapestPanelHTML(){
         (w && w.clipped && !w.empty ? ' · searching ' + esc(shortDateY(w.from)) + ' to ' + esc(shortDateY(w.to)) : '') + '</div>'
     : '';
   /* folded on the organiser's page until they open it or have searched (Joel, 3 Nov 2026) */
+  if(recurOn()) return "";
   return foldSecHTML("cheap", "Looking for the cheapest time to visit?",
     "We can search other dates for the cheapest " + n + " night" + (n === 1 ? "" : "s") + " for your cabins.",
     asOrg() && WEEKENDS === null,
@@ -9833,6 +9929,7 @@ function cheapestPanelHTML(){
     "Search dates", "cheapsec");
 }
 function datesPanelHTML(){
+  if(recurOn()) return '';
   const n = Math.max(1, nightsCount());
   const from = Q.dateStart || '';
   const to = from ? isoAddDays(from, n) : '';
@@ -9894,7 +9991,7 @@ function perPersonHTML(t){
   /* an edited printout (Edit & print) brings its own guests and its own tick */
   const g = t.guests !== undefined ? (Number(t.guests) || 0) : (Number(Q.guests) || 0);
   if((t.ppOff !== undefined ? t.ppOff : !perPersonOn()) || g <= 0 || !(t.total > 0)) return '';
-  const n = Q.dateStart ? Math.max(1, nightsCount()) : 0;
+  const n = (Q.dateStart && !recurOn()) ? Math.max(1, nightsCount()) : 0;
   const pp = t.total / g;
   let out = '≈ <b>' + money0(pp) + '</b> per person across your ' + g + ' guest' + (g === 1 ? '' : 's');
   if(n > 0) out += ' &nbsp;·&nbsp; <b>' + money0(pp / n) + '</b> per person per night over ' + n + ' night' + (n === 1 ? '' : 's');
@@ -12601,7 +12698,7 @@ function buildDisplayPayload(){
     sections: resolvedSections(),
     perPerson: (perPersonOn() && pm === "full" && g > 0 && t.total > 0)
       ? ("≈ " + money0(t.total / g) + " per person across " + g + " guest" + (g === 1 ? "" : "s") +
-         (Q.dateStart ? (" · " + money0(t.total / g / Math.max(1, nightsCount())) + " per person per night over " +
+         ((Q.dateStart && !recurOn()) ? (" · " + money0(t.total / g / Math.max(1, nightsCount())) + " per person per night over " +
             Math.max(1, nightsCount()) + " night" + (Math.max(1, nightsCount()) === 1 ? "" : "s")) : "")) : "",
     keyDates: (Q.features && Q.features.depositDates) ? keyDatesRows(pm !== "noprices") : [],
     deposit: depositBreakdown(),
@@ -12865,7 +12962,7 @@ function renderClient(){
         const pairEach = money0(PAIR_ROOM_FULL) + ' a day (' + money0(PAIR_ROOM_HALF) + ' a half day)';
         const pairHint = pr > 0 ? '<div class="cb-free">' + (pwhy === "all3" ? "All three rooms booked: charged as Conference Rooms 1, 2 &amp; 3 (combined)" : (pwhy === "12" ? "Rooms 1 &amp; 2" : "Rooms 2 &amp; 3") + " booked together: each is " + pairEach) + ' (−' + money(pr) + ')</div>'
           : (["fr1", "fr2", "fr3"].indexOf(v.key) >= 0 && showPrices && !isFree ? '<div class="cb-note">(Book ' + (v.key === "fr2" ? "Room 1 or 3" : "Room 2") + ' as well, the same day, and each is ' + pairEach + ')</div>' : '');
-        const creditHint = (!venueCreditOn() || isFree || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || !showPrices) ? ''
+        const creditHint = (recurOn() || !venueCreditOn() || isFree || VENUE_CREDIT_KEYS.indexOf(v.key) < 0 || !showPrices) ? ''
           : vcr > 0
             ? '<div class="cb-free">Venue credit −' + money(vcr) + ' with your stay (' + esc(vcMoney(venueCreditPerDay())) + ' a day, shared across your rooms)</div>'
             : '<div class="cb-note">(' + [vcRates().cabin > 0 ? vcMoney(vcRates().cabin) + ' a day off for every cabin you book' : '', vcRates().site > 0 ? vcMoney(vcRates().site) + ' for every site' : ''].filter(Boolean).join(', ') + ', doubled in June, July and August)</div>';
@@ -13099,13 +13196,13 @@ function renderClient(){
           '<label>State<select class="adInp" data-a="state">' + ['', 'NSW', 'ACT', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'NT'].map(x => '<option' + (((Q.address || {}).state || '') === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></label>' +
           '<label>Postcode<input class="adInp" data-a="postcode" type="text" inputmode="numeric" maxlength="4" autocomplete="postal-code" value="' + esc((Q.address || {}).postcode || '') + '"></label>' +
         '</div>' +
-        '<p class="cb-hint" style="margin-top:8px">Your dates are below and you are welcome to move them. If a date has no price against it, press Request prices and we will send them back to you.</p>' +
+        (recurOn() ? '' : '<p class="cb-hint" style="margin-top:8px">Your dates are below and you are welcome to move them. If a date has no price against it, press Request prices and we will send them back to you.</p>') +
       '</div>' +
       churchHtml +
       siteInviteHTML() +
       datesPanelHTML() +
       schoolPanelHTML() +
-      accomHtml + cabinMapHTML() + venueHtml + caterHtml + fixedHtml +
+      (recurOn() ? "" : accomHtml + cabinMapHTML()) + venueHtml + (recurOn() ? "" : caterHtml) + fixedHtml +
       '<div id="cbTotals">' + cbTotalsHTML(t, pm) + '</div>' +
       keyDatesHTML(showPrices, true) +
       '<div class="cb-sec orgmsg"><h3>Anything we should know?</h3>' +
@@ -16245,7 +16342,7 @@ document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () =>
 
 /* ---------- form bindings ---------- */
 function softRefresh(){ autosaveDraft(); renderBondField(); renderRoomDisc(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
-function refresh(){ kitchenSchedule(); Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
+function refresh(){ recurSync(); renderRecurBox(); kitchenSchedule(); Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
 
 
 /* ---------- quoting on a booking already in RMS ----------
