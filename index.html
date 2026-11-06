@@ -2399,12 +2399,12 @@ function dayName(iso){
 
 /* ---------- NSW public school holidays ----------------------------------
    Official student vacation dates, Eastern division, published by the NSW
-   Department of Education. CHECK THESE ONCE A YEAR and add the next year to
-   the bottom of the list, nothing else needs changing.
+   Department of Education. These are the built-in copy: staff read the "Dates" tab
+   of the price sheet (datesLoad), so add each new year there.
    For the quote we widen each break to the weekend either side, because that
    is when families actually travel.
    ----------------------------------------------------------------------- */
-const NSW_HOLIDAYS = [
+let NSW_HOLIDAYS = [
   {name:"Summer holidays", from:"2025-12-22", to:"2026-01-26"},
   {name:"Autumn holidays", from:"2026-04-07", to:"2026-04-17"},
   {name:"Winter holidays", from:"2026-07-06", to:"2026-07-17"},
@@ -2587,10 +2587,22 @@ function checkoutRoomsWords(){
   return " On your check-out day the conference rooms are yours in the morning, " + DEPART_WORD + ", at the half-day price." +
     (kept ? " A full day or afternoon already on your quote for that day stays as we sent it." : "");
 }
+/* no bond on the quote (Joel, 6 Nov 2026): the sentence holding {bond} comes out, rather
+   than printing "A $0 security bond is required", and no other wording speaks of one */
+function dropBondWording(t){
+  return String(t)
+    .replace(/(^|[.!?\n])[ \t]*[^.!?\n]*\{bond\}[^.!?\n]*[.!?]?/g, "$1")
+    .replace(/\bdeposit and bond funds\b/gi, m => m.charAt(0) + "eposit funds")
+    .replace(/^[ \t]+/, "");
+}
+function bondTitle(title){
+  return bondAmount() > 0 ? title : String(title).replace(/^deposit, payment & security bond$/i, "Deposit & payment");
+}
 /* {bond} and the deposit & deadline rules, filled into any wording on the quote */
 function fillQuoteText(t){
   const k = kdCfg();
-  return String(t === null || t === undefined ? "" : t)
+  const raw = String(t === null || t === undefined ? "" : t);
+  return (bondAmount() > 0 ? raw : dropBondWording(raw))
     .split("{bond}").join(money0(bondAmount()))
     .split("{depositsite}").join(money0(k.depositSite))
     /* a conference-room-only booking pays its own room deposit (15 Oct 2026) */
@@ -2711,7 +2723,7 @@ function resolvedSections(){
     const baseText = sectionBaseText(id, c);
     return {
       id: id,
-      title: po.title !== undefined ? po.title : c.title,
+      title: po.title !== undefined ? po.title : bondTitle(c.title),
       /* per-quote wording gets the same filling as the standard text, so a placeholder in it
          (a school quote's copied {finallead}) never prints raw (15 Oct 2026) */
       text: po.text !== undefined ? sectionBaseText(id, {text: po.text}) : baseText,
@@ -3846,7 +3858,7 @@ function blankQuote(num){
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
     caterSched: caterFutureHouse(), // the new catering prices and the date they start, as they were when this quote was made
-    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
+    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, vcNoConfRooms: true, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
     minStay: {},        // RMS minimum stays for the quoted rate: {itemId: {"2026-10-03": {s: 2, a: 0}}}, only nights with a rule
     staffShort: null,   // stays staff sent below the minimum on purpose: ["itemId|from|to", ...]
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
@@ -4077,18 +4089,67 @@ const SCHOOL_MIN = 20;
    warning and can still go ahead. NSW Eastern division, the days STUDENTS attend. CHECK ONCE A
    YEAR (education.nsw.gov.au/schooling/calendars) and keep in step with the website's school box.
    2028 is the whole term dates (staff development days included) until the student dates are out. */
-const SCHOOL_TERMS = [
+let SCHOOL_TERMS = [
   ["2026-02-02", "2026-04-02"], ["2026-04-22", "2026-07-03"], ["2026-07-21", "2026-09-25"], ["2026-10-13", "2026-12-17"],
   ["2027-02-03", "2027-04-09"], ["2027-04-29", "2027-07-02"], ["2027-07-20", "2027-09-24"], ["2027-10-12", "2027-12-20"],
   ["2028-01-31", "2028-04-07"], ["2028-04-24", "2028-07-07"], ["2028-07-24", "2028-09-29"], ["2028-10-16", "2028-12-21"]
 ];
+/* the "Dates" tab of the price sheet: school holidays and terms, staff side only (Joel, 6 Nov 2026).
+   Can't read it: the last good copy, then the built-in lists above. */
+const DATES_SHEET = "1Sg0eaAMRXym1rWJVv3hOAipsku5uwE_Uz3DY2kcPrD4";
+const DATES_KEY = "wslr_dates_v1";
+function datesIso(c){
+  if(!c || c.v == null) return "";
+  const pad = n => String(n).padStart(2, "0"), v = String(c.v).trim();
+  const m = /^Date\((\d+),(\d+),(\d+)/.exec(v);
+  if(m) return m[1] + "-" + pad(+m[2] + 1) + "-" + pad(+m[3]);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  const d = new Date(c.f || v);
+  return isNaN(d) ? "" : d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+}
+function datesParse(resp){
+  const lab = resp.table.cols.map(c => String(c.label || "").trim().toLowerCase());
+  const ti = lab.indexOf("type"), ni = lab.indexOf("name"), fi = lab.indexOf("from"), oi = lab.indexOf("to");
+  if(ti < 0 || fi < 0 || oi < 0) return null;
+  const holidays = [], terms = [];
+  resp.table.rows.forEach(r => {
+    const c = r.c || [], type = String((c[ti] && c[ti].v) || "").trim().toLowerCase(), from = datesIso(c[fi]), to = datesIso(c[oi]);
+    if(!from || !to || to < from) return;
+    if(/^school hol/.test(type)) holidays.push({name: String((c[ni] && c[ni].v) || "School holidays").trim(), from: from, to: to});
+    else if(/term/.test(type)) terms.push([from, to]);
+  });
+  holidays.sort((a, b) => a.from < b.from ? -1 : 1);
+  terms.sort((a, b) => a[0] < b[0] ? -1 : 1);
+  return {holidays: holidays, terms: terms};
+}
+function datesApply(d){
+  if(!d) return;
+  if(d.holidays && d.holidays.length){ NSW_HOLIDAYS = d.holidays; HOLIDAY_WINDOWS = null; }
+  if(d.terms && d.terms.length) SCHOOL_TERMS = d.terms;
+}
+function datesLoad(){
+  if(!PL_ON) return Promise.resolve(false);
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(DATES_KEY) || "null"); } catch(e) {}
+  if(cached) datesApply(cached);
+  if(cached && Date.now() - new Date(cached.at).getTime() < 3600e3) return Promise.resolve(false);
+  return fetch("https://docs.google.com/spreadsheets/d/" + DATES_SHEET + "/gviz/tq?tqx=out:json&headers=1&sheet=Dates&_=" + Date.now()).then(r => r.text()).then(text => {
+    const a = text.indexOf("{"), b = text.lastIndexOf("}"), resp = JSON.parse(text.slice(a, b + 1));
+    const d = resp.status === "ok" ? datesParse(resp) : null;
+    if(!d || (!d.holidays.length && !d.terms.length)) return false;
+    d.at = new Date().toISOString();
+    datesApply(d);
+    try { localStorage.setItem(DATES_KEY, JSON.stringify(d)); } catch(e) {}
+    return true;
+  }).catch(e => { console.warn("Dates tab", e); return false; });
+}
 function schoolTermOn(iso){ return SCHOOL_TERMS.some(t => iso >= t[0] && iso <= t[1]); }
 /* what stops these nights getting the school rate, in words ("" = nothing) */
 function schoolWindowProblem(nights){
   nights = nights || [];
   if(!nights.length) return "";
   const last = SCHOOL_TERMS[SCHOOL_TERMS.length - 1][1];
-  if(nights.some(d => d > last)) return "the school terms for " + nights[nights.length - 1].slice(0, 4) + " are not loaded yet (SCHOOL_TERMS), so check the dates by hand";
+  if(nights.some(d => d > last)) return "the school terms for " + nights[nights.length - 1].slice(0, 4) + " are not loaded yet (Dates tab of the price sheet), so check the dates by hand";
   const day = d => new Date(d + "T12:00:00").getDay();
   const wkend = nights.filter(d => day(d) === 5 || day(d) === 6);
   const hols = nights.filter(d => day(d) <= 4 && !schoolTermOn(d));
@@ -5143,6 +5204,8 @@ function displayLines(){
       : "↳ Rooms 2 & 3 booked together: " + money0(PAIR_ROOM_FULL) + " a day each", venuePairFor(v));
     adj("credit", "↳ Venue credit with your stay (" + venueCreditShort() + ")", vca.byKey[v.key] || 0);
   });
+  /* the Dining Room for the meals, at no charge (6 Nov 2026) */
+  if(diningMealsOn()) out.push({sec: "venue", vkey: "din-meals", name: "Dining Room for your meals (" + diningMealDaysWords() + "), no charge", qty: 1, nights: 0, beds: "", price: 0, disc: 0, unit: "", when: "", total: 0});
   if(kidsOn()){
     let dietMeals = 0, dietKidMeals = 0;
     caterItems().forEach(it => {
@@ -5554,12 +5617,13 @@ function groupAtFloor(id){
   return !!groupFloor(id) && stayNightsList().some(d => groupHasOn(id, d) > 0 && usedOn(id, d) <= groupHasOn(id, d));
 }
 /* the organiser's page: the fewest of a type they may have (what the group already has) */
-function groupFloor(id){ return asOrg() ? groupHas(id) : 0; }
+/* 6 Nov 2026 (Joel): no floor any more. They can go below what is booked, in red, and that cancels those cabins (see accomReduce) */
+function groupFloor(id){ return 0; }
 /* the organiser's page: how far below what the group already has the quote is, type by night
    ({id|iso: n}); a change may never make any of these bigger */
 function groupFloorGaps(){
   const gaps = {};
-  if(!asOrg() || !groupUnits().length) return gaps;
+  return gaps;   // 6 Nov 2026: see groupFloor
   const ids = [];
   groupUnits().forEach(u => { if(u && !u.venue && ids.indexOf(u.itemId) < 0) ids.push(u.itemId); });
   ids.forEach(id => stayNightsList().forEach(d => { const g = groupHasOn(id, d) - usedOn(id, d); if(g > 0) gaps[id + "|" + d] = g; }));
@@ -5602,6 +5666,72 @@ function groupFloorStop(id, after){
     ". To have fewer, please call us on " + VENUE_PHONE + " or email functions@wslr.com.au", true);
   return true;
 }
+/* ---------- fewer cabins than are booked (Joel, 6 Nov 2026) ----------
+   "Red when they minus under what they've got booked already, which will cancel those cabins." Measured from what the
+   quote said when it was opened (or last saved), so a quote that always listed fewer than the group has in RMS cancels
+   nothing by itself. Goes to the server as q.reduceBy {itemId: n}; it cancels unconfirmed ones only. */
+var ACCOM_BASE = {num: "", byId: null};
+function accomQtyOf(sel){
+  const out = {};
+  ((sel && sel.accom) || []).forEach(b => { const n = Number(b.qty) || 0; if(n > 0) out[b.id] = (out[b.id] || 0) + n; });
+  return out;
+}
+function accomBaseline(){
+  if(!CLIENT_MODE){
+    const saved = (typeof SAVED !== "undefined" ? SAVED : []).find(x => x && x.num === Q.num);
+    return saved && saved.sel ? accomQtyOf(saved.sel) : null;
+  }
+  if(ACCOM_BASE.num !== Q.num || !ACCOM_BASE.byId) ACCOM_BASE = {num: Q.num, byId: accomQtyOf(Q.sel)};
+  return ACCOM_BASE.byId;
+}
+function accomBookedOf(id){
+  const h = Q.rmsHold;
+  const units = h && h.status === "held" && Array.isArray(h.units) ? h.units : groupUnits();
+  return units.filter(u => u && u.itemId === id && !u.venue && !u.meals).length;
+}
+function accomReduce(id){
+  const booked = accomBookedOf(id);
+  if(!booked) return 0;
+  const base = accomBaseline();
+  const from = base ? Math.min(booked, base[id] || 0) : booked;
+  return Math.max(0, from - (accomQtyOf(Q.sel)[id] || 0));
+}
+function accomReduceNow(){
+  const out = {};
+  accomItems().forEach(it => { const n = accomReduce(it.id); if(n > 0) out[it.id] = n; });
+  return out;
+}
+function accomReduceWords(id, n){ return n + " " + ((RATE[id] || {}).name || "cabin") + (n === 1 ? "" : "s"); }
+function accomReduceRowHTML(id){
+  const n = accomReduce(id);
+  if(!n) return '';
+  return '<span class="overnote">⚠ This cancels ' + n + ' already booked when ' + (asOrg() ? 'you submit' : 'it is saved') + '</span>';
+}
+/* Joel, 6 Nov 2026: they can cancel without us, but they are warned when they resubmit. In the page, not a browser
+   pop-up: this page runs inside the www.wslr.com.au frame. */
+var CABIN_CANCEL_OK = "";
+function cabinCancelAgreed(again){
+  const r = accomReduceNow(), ids = Object.keys(r);
+  if(!ids.length) return true;
+  const sig = JSON.stringify(r);
+  if(CABIN_CANCEL_OK === sig){ CABIN_CANCEL_OK = ""; return true; }
+  const list = ids.map(id => accomReduceWords(id, r[id])).join(", ");
+  const back = openWslrModal('<h3 style="margin-top:0;color:#b01c1c">You are cancelling cabins that are already reserved</h3>' +
+    '<p>This cancels <b>' + esc(list) + '</b> from ' + (asOrg() ? 'your booking' : 'this booking') + '. ' + (asOrg() ? 'Cancellation conditions may apply. Any that are already confirmed stay until our team has talked to you.' : 'Unconfirmed ones are cancelled in RMS. Confirmed ones stay and are listed in the email.') + '</p>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button type="button" class="btn" id="cabinCancelBack">Keep my cabins</button><button type="button" class="btn accept" id="cabinCancelYes" style="background:#b01c1c;border-color:#b01c1c">Yes, cancel them</button></div>');
+  back.style.zIndex = "2147483000";   // above the deposit screen, if it is open
+  back.querySelector("#cabinCancelBack").onclick = closeWslrModal;
+  back.querySelector("#cabinCancelYes").onclick = () => { closeWslrModal(); CABIN_CANCEL_OK = sig; again(); };
+  return false;
+}
+function accomReduceZoneHTML(){
+  const r = accomReduceNow(), ids = Object.keys(r);
+  if(!ids.length) return '';
+  const list = esc(ids.map(id => accomReduceWords(id, r[id])).join(", "));
+  return '<div class="availblock"><b>This cancels cabins already booked:</b> ' + list + '. ' +
+    (asOrg() ? 'They are cancelled when you submit, and cancellation conditions may apply. Any that are already confirmed stay until our team has talked to you.'
+             : 'Unconfirmed ones are cancelled in RMS when this goes through. Confirmed ones stay and are listed in the email, for you to cancel by hand.') + '</div>';
+}
 /* how many of a type are free for this quote on a night; null when nothing is known */
 function freeOn(id, iso){
   const a = availOn(id, iso);
@@ -5613,11 +5743,8 @@ function freeOn(id, iso){
 function datesAsSent(){
   return !BOOT || (String(Q.dateStart || "") === String(BOOT.quote.dateStart || "") && String(Q.dateEnd || "") === String(BOOT.quote.dateEnd || ""));
 }
-function staffExtra(key, iso){
-  if(!CLIENT_MODE || !iso || !datesAsSent()) return 0;
-  const s = Q.staffOver && Q.staffOver[key];
-  return s ? (Number(s[iso]) || 0) : 0;
-}
+/* Joel, 6 Nov 2026: what staff put on over availability no longer passes on the organiser's page (it part-booked, like Q-1053) */
+function staffExtra(key, iso){ return 0; }
 /* the most of a type that may be on the quote on a night; null = not known */
 function capOn(id, iso){
   const f = freeOn(id, iso);
@@ -5870,6 +5997,56 @@ function caterServicesOn(){
    round 2's "free all day on any day we cater" before it went out; quotes made before 15 Oct
    keep the rule they were sent with (free once any meal is on the quote). */
 function diningMealsOnlyOn(){ return !!(Q.features && Q.features.diningMealsOnly); }
+/* ---------- the Dining Room for the meals (Joel, 6 Nov 2026) ----------
+   "Automatically select the dining room when a meal is selected, so we don't have catering but nowhere to eat it. We can
+   manually unselect it. Should also be free." Ticked by itself, $0, and on the quote as its own line. It is not a booked
+   day on the row below it, which is hire at other times and is charged. The days are the ones the quote server books in
+   RMS as "Dining Room (meals)" (RMS.gs rmsMealDays_, same rule): a packed lunch or a tea needs no room. Only staff can untick
+   it (Q.sel.dinMealsOff). */
+const DINING_MEALS = {bf_hot: "morning", bf_cont: "morning", lunch_sit: "day", din1: "night", din2: "night"};
+function diningMealKindDays(days, kind){
+  if(days.length <= 1) return days.slice();
+  return kind === "morning" ? days.slice(1) : kind === "night" ? days.slice(0, -1) : days.slice();
+}
+function diningMealDays(){
+  const days = eventDays();
+  if(!days.length) return [];
+  const set = {};
+  const cater = (Q.sel && Q.sel.cater) || {};
+  Object.keys(cater).forEach(id => {
+    const kind = DINING_MEALS[id], n = Math.round(Number(cater[id] && cater[id].days) || 0);
+    if(!kind || n <= 0 || !catEntry(id).on) return;
+    diningMealKindDays(days, kind).slice(0, n).forEach(d => { set[d] = true; });
+  });
+  if(schoolOn()){
+    diningMealKindDays(days, "morning").forEach(d => { set[d] = true; });
+    const m = Q.school.meals;
+    if(m === "dbb") diningMealKindDays(days, "night").forEach(d => { set[d] = true; });
+    else if(m && typeof m === "object") Object.keys(m).forEach(id => {
+      const kind = DINING_MEALS[id];
+      if(!kind) return;
+      const valid = diningMealKindDays(days, kind);
+      const picked = (Array.isArray(m[id] && m[id].days) ? m[id].days : []).filter(d => valid.indexOf(d) >= 0);
+      (picked.length ? picked : valid).forEach(d => { set[d] = true; });
+    });
+  }
+  return Object.keys(set).sort();
+}
+function diningMealsWanted(){ return diningMealDays().length > 0; }
+function diningMealsOn(){ return diningMealsWanted() && !(Q.sel && Q.sel.dinMealsOff); }
+function diningMealDaysWords(){ return diningMealDays().map(d => dayLabel(d)).join(", "); }
+function diningMealsTickHTML(staffSide){
+  if(!diningMealsWanted()) return '';
+  const on = diningMealsOn();
+  if(staffSide) return '<label class="cb-free" style="display:flex;gap:6px;align-items:flex-start;margin:4px 0"><input type="checkbox" class="dinMealsTick" style="width:auto;margin:2px 0 0;flex:none"' + (on ? ' checked' : '') + '><span>' + (on ? 'Selected for the meals, no charge: ' + esc(diningMealDaysWords()) : 'Not selected for the meals: this quote has catering but no room to eat it in') + '</span></label>';
+  return on ? '<div class="cb-free" style="margin:4px 0 8px">✓ Dining Room selected for your meals, at no charge: ' + esc(diningMealDaysWords()) + '</div>' : '';
+}
+document.addEventListener("change", e => {
+  if(!e.target || !e.target.classList || !e.target.classList.contains("dinMealsTick")) return;
+  if(!Q.sel) return;
+  if(e.target.checked) delete Q.sel.dinMealsOff; else Q.sel.dinMealsOff = true;
+  refresh();
+});
 function diningIsFree(){
   if(diningMealsOnlyOn()) return false;
   return caterServicesOn().length > 0;
@@ -5970,6 +6147,14 @@ function vcMoney(n){ return Math.round(n) === n ? money0(n) : money(n); }
 /* the Dining Room too, on any day it is charged (Joel, 15 Oct 2026); a day it is free with the meals has nothing to take off */
 const VENUE_CREDIT_KEYS = ["fr13", "fr1", "fr2", "fr3", "fr5", "aud", "din"];
 function venueCreditOn(){ return !!(Q.features && Q.features.venueCredit); }
+/* Joel, 6 Nov 2026: on new quotes conference rooms don't take the credit; the Auditorium and a hired Dining Room still do.
+   Quotes made before keep the rule they were sent with, because only new ones carry the flag. */
+function vcNoConf(){ return !!(Q.features && Q.features.vcNoConfRooms); }
+function vcRoomCounts(key){ return !vcNoConf() || key === "aud" || key === DINING_KEY; }
+function vcText(s){
+  if(!vcNoConf()) return s;
+  return String(s).replace(/your conference room hire/g, "the Auditorium or Dining Room hire").replace(/your conference rooms|the conference rooms|the conference room prices/g, "the Auditorium or Dining Room");
+}
 function venueCreditPerDay(){
   if(!venueCreditOn()) return 0;
   const u = unitsSplit();
@@ -6044,7 +6229,7 @@ function venueCreditAlloc(){
   const out = {byKey: {}, total: 0, winterDays: 0, days: []};
   if(per <= 0) return out;
   const days = {};                      // day key -> [{key, use (1 or .5), price after the pair deal}]
-  venueDayRows().forEach(r => { (days[r.day] = days[r.day] || []).push(r); });
+  venueDayRows().filter(r => vcRoomCounts(r.key)).forEach(r => { (days[r.day] = days[r.day] || []).push(r); });
   Object.keys(days).forEach(day => {
     const rows = days[day].slice().sort((a, b) => b.price - a.price);
     /* a day count with no picked days runs from the arrival day */
@@ -6100,7 +6285,7 @@ function venueCreditWords(){
   if(u.cabins > 0 && r.cabin > 0) bits.push(u.cabins + " cabin" + (u.cabins === 1 ? "" : "s") + " × " + vcMoney(r.cabin));
   if(u.sites > 0 && r.site > 0) bits.push(u.sites + " site" + (u.sites === 1 ? "" : "s") + " × " + vcMoney(r.site));
   const w = venueCreditAlloc().winterDays;
-  return bits.join(" + ") + " = " + vcMoney(venueCreditPerDay()) + " a day off your conference rooms, one room first, any left over to the next" +
+  return bits.join(" + ") + " = " + vcMoney(venueCreditPerDay()) + " a day off " + vcText("your conference rooms") + ", one room first, any left over to the next" +
     (w ? "; doubled to " + vcMoney(venueCreditPerDay() * 2) + " on " + (w === 1 ? "your winter day" : "your " + w + " winter days") : "");
 }
 
@@ -6113,6 +6298,7 @@ function venueCreditRoomsOffered(){
 }
 function venueCreditBannerHTML(showPrices){
   if(recurOn() || !venueCreditOn() || !showPrices || !venueCreditRoomsOffered()) return '';
+  if(vcNoConf() && venueCreditTotal() <= 0) return '';   // nothing to promise on conference rooms now
   const per = venueCreditPerDay(), r = vcRates();
   if(per <= 0){
     if(!(r.cabin > 0)) return '';
@@ -6124,8 +6310,8 @@ function venueCreditBannerHTML(showPrices){
   const u = unitsSplit(), bits = [];
   if(u.cabins > 0 && r.cabin > 0) bits.push(u.cabins + ' cabin' + (u.cabins === 1 ? '' : 's') + ' × ' + vcMoney(r.cabin));
   if(u.sites > 0 && r.site > 0) bits.push(u.sites + ' site' + (u.sites === 1 ? '' : 's') + ' × ' + vcMoney(r.site));
-  return '<div class="vcbanner"><div class="vcbig">Venue credit: ' + vcMoney(per) + ' a day to use on your conference rooms</div>' +
-    '<div class="vcsmall">Your <b>' + bits.join(' + ') + ' = ' + vcMoney(per) + '</b> comes off your conference room hire each day you use a room' +
+  return '<div class="vcbanner"><div class="vcbig">Venue credit: ' + vcMoney(per) + ' a day to use on ' + vcText('your conference rooms') + '</div>' +
+    '<div class="vcsmall">Your <b>' + bits.join(' + ') + ' = ' + vcMoney(per) + '</b> comes off ' + vcText('your conference room hire') + ' each day you use a room' +
       ' (half that on a day with only a morning or an afternoon' + (a.winterDays ? ', double on your ' + (a.winterDays === 1 ? 'winter day' : a.winterDays + ' winter days') : '') + '). ' +
       'There is nothing to claim: it comes off by itself.<br>' +
       (a.total > 0 ? '<b>Taking ' + money(a.total) + ' off the rooms you have picked below.</b>' : '<b>Pick your rooms below and it comes straight off.</b>') +
@@ -6134,8 +6320,9 @@ function venueCreditBannerHTML(showPrices){
 /* under the cabins: a pointer down to the credit they are earning */
 function venueCreditPointerHTML(showPrices){
   if(!venueCreditOn() || !showPrices || !venueCreditRoomsOffered()) return '';
+  if(vcNoConf() && venueCreditTotal() <= 0) return '';
   const per = venueCreditPerDay();
-  return per > 0 ? '<div class="vcpoint">Your cabins also give you ' + vcMoney(per) + ' a day off your conference rooms ↓</div>' : '';
+  return per > 0 ? '<div class="vcpoint">Your cabins also give you ' + vcMoney(per) + ' a day off ' + vcText('your conference rooms') + ' ↓</div>' : '';
 }
 /* ---------- Rooms 1, 2 & 3 inside the combined space (Joel, 15 Oct 2026) ----------
    When "Conference Rooms 1, 2 & 3 (combined)" is picked, the three single rooms show as
@@ -6415,7 +6602,7 @@ function venueCreditStaffHTML(){
 function venueCreditStaffPointerHTML(){
   if(!venueCreditOn() || !venueCreditRoomsOffered()) return '';
   const per = venueCreditPerDay();
-  return per > 0 ? '<div class="vcpoint">These cabins give ' + vcMoney(per) + ' a day of venue credit off the conference rooms ↓</div>' : '';
+  return per > 0 ? '<div class="vcpoint">These cabins give ' + vcMoney(per) + ' a day of venue credit off ' + vcText('the conference rooms') + ' ↓</div>' : '';
 }
 /* ---------- the conference rooms: one space or three rooms, never both ---------
    Picking "Conference Rooms 1, 2 & 3" takes all three rooms, so the single rooms
@@ -7493,6 +7680,7 @@ function snapshotQ(){
     internalNotes: String(Q.internalNotes || ""),
     cocAgreed: Q.cocAgreed ? JSON.parse(JSON.stringify(Q.cocAgreed)) : null,
     acceptedBy: Q.acceptedBy ? JSON.parse(JSON.stringify(Q.acceptedBy)) : null,
+    reduceBy: Q.reduceBy || undefined,
     rmsLink: Q.rmsLink ? JSON.parse(JSON.stringify(Q.rmsLink)) : null,
     rmsTariff: (() => { try { return rmsTariffPlan(); } catch(e){ return null; } })(),   // 23 Oct 2026: RMS.gs 5.1.1
     submittedAt: Q.submittedAt || null,
@@ -7671,7 +7859,7 @@ function renderTotals(){
   const pm = Q.priceMode || "full";
   const tt = totals();
   document.getElementById("totals").innerHTML = totalsHTML(tt, "Total (inc GST)") +
-    (tt.venueCredit > 0 ? '<div class="totnote">Includes ' + money(tt.venueCredit) + ' venue credit, already off the conference room prices (' + esc(vcMoney(venueCreditPerDay())) + ' a day)</div>' : '') +
+    (tt.venueCredit > 0 ? '<div class="totnote">Includes ' + money(tt.venueCredit) + ' venue credit, already off ' + vcText('the conference room prices') + ' (' + esc(vcMoney(venueCreditPerDay())) + ' a day)</div>' : '') +
     (pm === "nototal" ? '<div class="hiddenflag">final total hidden on the client quote</div>'
      : pm === "noprices" ? '<div class="hiddenflag">all prices hidden on the client quote</div>' : '') +
     quoteCheckHTML();
@@ -8801,13 +8989,14 @@ function renderPrep(){
         (incl ? venueInclLineHTML(v, incl) + venueInclDaysHTML(v, incl)
           : venueInclHeadHTML(v) +
             (free ? '<div class="cb-free">no charge ' + esc(venueFreeReason(v)) + '</div>' : '') +
+            (v.key === DINING_KEY ? diningMealsTickHTML(true) : '') +
             /* the Dining Room on a new quote (15 Oct 2026): booked days are charged; their meals
                there, and the hours around them, never need booking */
             (v.key === DINING_KEY && diningMealsOnlyOn() ? '<div class="cb-note">' + (d > 0 ? 'charged as a function space; ' : '') +
               'meals are served here at no charge, with the room theirs for the hours around each meal (no booking needed for that)</div>' : '') +
             venueDepartWarnHTML(v) +
             (venueCreditFor(v) > 0 ? '<div class="cb-free">venue credit −' + money(venueCreditFor(v)) + ' (from ' + esc(vcMoney(venueCreditPerDay())) + ' a day, shared)</div>' : '') +
-            (vov ? '<span class="overnote">⚠ Over availability: picked on ' + esc(takenDaysWords(vov.days)) + ', when RMS shows it already booked</span>' : '') +
+            (vov ? '<span class="overnote">⚠ Over availability: picked on ' + esc(takenDaysWords(vov.days)) + ', when RMS shows it already booked. The organiser can\'t accept this until it is free.</span>' : '') +
             venueAvailNote(v)) + '</div>' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.fullId) + '" step="0.5" min="0" value="' + c.price + '" title="Full-day price on this quote">' +
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
@@ -9732,6 +9921,7 @@ function onAcceptClick(){
   const expBlk = quoteAcceptBlock();
   if(expBlk){ updateSubmitState(); showToast(expBlk.title + " " + ACCEPT_BLOCK_CALL, true); return; }
   if(overLines().length || shortStaysBlocking().length){ updateSubmitState(); return; }
+  if(!cabinCancelAgreed(onAcceptClick)) return;
   const sb = document.getElementById("submitBtn");
   if(sb){ sb.disabled = true; sb.textContent = "Checking what is free…"; }
   /* the quote server has the last word on whether this quote can still be accepted (it also
@@ -10208,6 +10398,7 @@ function submitStateSig(){
     CLIENT_MODE ? acceptTakenNow().join("~") : "",
     !CLIENT_MODE ? JSON.stringify(staffAcceptState()) : "",
     CLIENT_MODE ? kitchenOrganiserHTML().length : "",
+    JSON.stringify(accomReduceNow()),
     CLIENT_MODE ? (orgSaveDirty() ? 1 : 0) + ":" + ((Q.orgDraft && Q.orgDraft.at) || "") + ":" + (ORG_SAVE.busy ? 1 : 0) : ""].join("|");
 }
 /* the Invoice Maker's logo, so the deposit invoice on screen matches the emailed PDF */
@@ -12143,7 +12334,7 @@ function submitZoneHTML(){
   if(CLIENT_MODE && STAFF_VIEW) return staffViewZoneHTML();
   const expBlk = quoteAcceptBlock();
   if(expBlk) return acceptBlockHTML(expBlk);
-  let html = submitZoneBaseHTML();
+  let html = accomReduceZoneHTML() + submitZoneBaseHTML();
   if(!CLIENT_MODE) return html;
   html = kitchenOrganiserHTML() + html;
   const ov = overLines();
@@ -12870,7 +13061,7 @@ function renderClient(){
       const has = groupHas(it.id), more = has ? groupMoreFree(it.id) : null;
       const meta = has ? (more === null ? '' : more > 0 ? 'up to ' + more + ' more available on your dates' : 'no more available on your dates')
         : avail !== null ? ('up to ' + avail + ' available on your dates') : '';
-      const hasNote = has ? '<div class="cb-has">✓ You already have ' + has + ' booked' + (groupExtra(it.id) > 0 ? ', plus ' + groupExtra(it.id) + ' more on this quote' : '') + '</div>' : '';
+      const hasNote = (has ? '<div class="cb-has">✓ You already have ' + has + ' booked' + (groupExtra(it.id) > 0 ? ', plus ' + groupExtra(it.id) + ' more on this quote' : '') + '</div>' : '') + accomReduceRowHTML(it.id);
       /* rooms at their own % (staff, under Discount): said in brackets here, and the
          price beside the stepper is what this room type costs with them in it */
       const rdMine = rdParts.filter(p => blocks.some(x => x.i === p.block));
@@ -12942,14 +13133,14 @@ function renderClient(){
         const d = Number((Q.sel.venues || {})[v.key]) || 0;
         const isFree = venueIsFree(v);
         const can = venueCanAdd(v);
-        const freeHint = (v.key === DINING_KEY && diningMealsOnlyOn()) ? diningHintHTML(showPrices)
+        const freeHint = (v.key === DINING_KEY && !asOrg() ? diningMealsTickHTML(true) : '') + ((v.key === DINING_KEY && diningMealsOnlyOn()) ? diningHintHTML(showPrices)
           : (v.key === DINING_KEY || v.key === MARQUEE_KEY)
           ? (isFree
               ? '<div class="cb-free">Included at no charge ' + esc(venueFreeReason(v)) + '</div>'
               : '<div class="cb-note">(' + (v.key === DINING_KEY
                   ? 'free during the meal service if you add catering'
                   : 'free if you are staying onsite, just add your cabins above') + ')</div>')
-          : '';
+          : '');
         /* a single room inside the picked combined space: ticked, locked, same days, Included
            (display only, nothing is stored on it; Joel, 15 Oct 2026) */
         const incl = venueIncludedIn(v);
@@ -13015,6 +13206,7 @@ function renderClient(){
       asOrg() && !foldHasCater(),
       '<p class="cb-hint">buffet style in our Private Dining Room · minimum group size ' + CATER_MIN + ' · your group picks the actual dishes with our catering team closer to the date</p>' +
       caterMinNote(false) +
+      (asOrg() ? diningMealsTickHTML(false) : '') +
       whoHtml +
       caterOn.map(it => {
         const c = catEntry(it.id);
@@ -14440,6 +14632,22 @@ function pipeWhen(x){
   if(isNaN(d)) return esc(String(x));
   return esc(fmtDate(isoDate(d)) + (String(x).length > 10 ? ", " + d.toLocaleTimeString("en-AU", {hour: "numeric", minute: "2-digit"}) : ""));
 }
+/* 6 Nov 2026 (Joel): the guest's link from the Pipeline. Opening it here uses the staff view, which looks the same but
+   doesn't mark the quote as Viewed by them; Copy gives the guest's real link to paste into an email. */
+function pipeGuestRowHTML(r){
+  if(!r.token) return '';
+  return '<div style="font-size:11px;white-space:nowrap;font-weight:normal"><a href="' + esc(staffLinkForToken(r.token)) + '" target="_blank" rel="noopener" title="Opens their page as they see it, without marking it as Viewed by them">Guest link ↗</a> · <a href="#" class="pipeCopyLink" data-link="' + esc(linkForToken(r.token)) + '" title="Copy the guest\'s real link">Copy</a></div>';
+}
+document.addEventListener("click", e => {
+  const a = e.target && e.target.closest ? e.target.closest(".pipeCopyLink") : null;
+  if(!a) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const link = a.dataset.link;
+  const said = () => showToast("Guest link copied: " + link);
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(said, () => window.prompt("Copy the guest's link:", link));
+  else window.prompt("Copy the guest's link:", link);
+});
 function pipeDetailsHTML(r){
   const s = pipeSrc(r);
   const sel = s.sel || {};
@@ -14545,7 +14753,7 @@ function renderPipeline(){
   tb.innerHTML = shown.map(r =>
     '<tr data-num="' + esc(r.num) + '" class="prow ' + (PIPE_OPEN[r.num] ? "open " : "") + (r.mine ? "mine " : "") + (r.catered ? "catered" : (r.selfcater ? "selfcater" : "")) + '">' +
       '<td><button type="button" class="pdTog" data-num="' + esc(r.num) + '" aria-expanded="' + (PIPE_OPEN[r.num] ? "true" : "false") + '" title="Show or hide everything on this quote">' + (PIPE_OPEN[r.num] ? "▾" : "▸") + '</button><b>' + esc(r.num) + '</b>' + (r.token ? ' <a class="qlink" href="' + esc(staffLinkForToken(r.token)) + '" target="_blank" rel="noopener" title="Open their page as they see it (staff view: nothing can be changed or submitted, and it does not count as them opening it)">↗</a>' : '') + (r.mine ? '<span class="you">' + (r.unsaved ? "editing now" : "this quote") + '</span>' : '') + '</td>' +
-      '<td><span class="tcut" title="' + esc(r.org || r.contact || "") + '">' + esc(r.org || r.contact || "-") + '</span></td>' +
+      '<td><span class="tcut" title="' + esc(r.org || r.contact || "") + '">' + esc(r.org || r.contact || "-") + '</span>' + pipeGuestRowHTML(r) + '</td>' +
       '<td>' + pipeContactCell(r) + '</td>' +
       '<td class="c-em">' + pipeEmailCell(r) + '</td>' +
       '<td class="c-ph">' + pipePhoneCell(r) + '</td>' +
@@ -14960,14 +15168,21 @@ function doGetLink(opts){
 function doStaffResubmit(opts){
   if(!readyToSend()) return;
   if(!(opts && opts.kdChecked === true) && kdStaleNow().length){ kdGuard("the updated deposit invoice", () => doStaffResubmit({kdChecked: true})); return; }
-  if(!(opts && opts.availChecked === true)){ staffAcceptCheck(() => doStaffResubmit({kdChecked: true, availChecked: true})); return; }
+  if(!(opts && opts.availChecked === true)){
+    if(!cabinCancelAgreed(() => doStaffResubmit(opts))) return;
+    staffAcceptCheck(() => doStaffResubmit({kdChecked: true, availChecked: true}));
+    return;
+  }
   if(!confirm("Save " + Q.num + " and update the RMS booking? The organiser gets an updated deposit invoice, functions@ gets one email about the change, and it is recorded as a staff change in the history.")) return;
   if(!Q.token) Q.token = genToken();
   const wasStatus = Q.status;
   Q.status = "Submitted";
   Q.submittedAt = new Date().toISOString();
   Q.submittedSel = submitSig();
+  const reduceNow = accomReduceNow();
+  if(Object.keys(reduceNow).length) Q.reduceBy = reduceNow;
   const snap = snapshotQ();
+  delete Q.reduceBy;
   upsertSnapshot(snap);
   const payload = sheetQuotePayload(snap);
   payload.staffEdit = {by: String(Q.prepBy || "").trim() || "staff", at: Q.submittedAt};
@@ -15010,11 +15225,16 @@ function doSubmit(){
   Q.submittedSel = submitSig();
   if(!Q.sentAt) Q.sentAt = Q.submittedAt;
   if(!Q.token) Q.token = genToken();
+  const reduceNow = accomReduceNow(), wasBase = ACCOM_BASE;
+  if(Object.keys(reduceNow).length) Q.reduceBy = reduceNow;
   const snap = snapshotQ();
+  delete Q.reduceBy;
+  ACCOM_BASE = {num: Q.num, byId: accomQtyOf(Q.sel)};
   upsertSnapshot(snap);
   /* the full selection travels to the tracker sheet: who's eating, message, venue times, totals */
   postToSheet({action: "submitted", quote: sheetQuotePayload(snap)}, CLIENT_MODE ? SUBMIT_UNDO = function(reply){
     SUBMIT_UNDO = null;
+    ACCOM_BASE = wasBase;
     Q.status = wasStatus; Q.submittedSel = wasSel; Q.submittedAt = wasAt; Q.history = wasHist; Q.accepted = wasStatus === "Accepted";
     /* the quote server refused it: past its "valid until" date, or Expired / Declined (code.gs 13.18) */
     const k = String(reply || "").trim();
@@ -15122,6 +15342,7 @@ function copyFromQuote(num){
     if(!Q.features) Q.features = {}; if(k in fresh.features) Q.features[k] = fresh.features[k]; else delete Q.features[k];
   });
   Q.caterSched = fresh.caterSched;
+  if(Q.features) Q.features.vcNoConfRooms = true;   // 6 Nov 2026: a copy is a new quote
   const droppedRooms = [];
   Q.lines = (Q.lines || []).filter(l => {
     if(l.room){ droppedRooms.push((Number(l.qty) || 0) + " × " + (l.desc || "room")); return false; }   // rooms from an old RMS statement: old prices
@@ -17350,6 +17571,7 @@ if(!CLIENT_MODE){
     plFetch(true).then(ok => { if(ok) plApply(); renderSettings(); refresh(); }); });
   if(plBtn) plBtn.addEventListener("click", () => { document.getElementById("plState").textContent = "Reading..."; plFetch(true).then(ok => { if(ok) plApply(); renderSettings(); refresh(); }); });
   plLoadCache(); plApply();
+  datesLoad().then(ok => { if(ok) try { refresh(); } catch(e) {} });
   plFetch(false).then(ok => { if(!ok) return; plApply(); try { renderSettings(); refresh(); } catch(e) {} });
 }
 if(CLIENT_MODE){
