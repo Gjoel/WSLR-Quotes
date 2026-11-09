@@ -6034,7 +6034,40 @@ function diningMealDays(){
 }
 function diningMealsWanted(){ return diningMealDays().length > 0; }
 function diningMealsOn(){ return diningMealsWanted() && !(Q.sel && Q.sel.dinMealsOff); }
-function diningMealDaysWords(){ return diningMealDays().map(d => dayLabel(d)).join(", "); }
+/* each meal is reserved in RMS for its own period only (Joel, 9 Nov 2026); RMS.gs RMS_MEAL_TIMES holds the same times */
+const DINING_MEAL_PERIODS = {morning: {name: "breakfast", words: "7am to 10am"}, day: {name: "lunch", words: "11:30am to 2:30pm"}, night: {name: "dinner", words: "5pm to 8:30pm"}};
+function diningMealSlotsByKind(){
+  const days = eventDays(), out = {morning: {}, day: {}, night: {}};
+  if(!days.length) return out;
+  const cater = (Q.sel && Q.sel.cater) || {};
+  Object.keys(cater).forEach(id => {
+    const kind = DINING_MEALS[id], n = Math.round(Number(cater[id] && cater[id].days) || 0);
+    if(!kind || n <= 0 || !catEntry(id).on) return;
+    diningMealKindDays(days, kind).slice(0, n).forEach(d => { out[kind][d] = true; });
+  });
+  if(schoolOn()){
+    diningMealKindDays(days, "morning").forEach(d => { out.morning[d] = true; });
+    const m = Q.school.meals;
+    if(m === "dbb") diningMealKindDays(days, "night").forEach(d => { out.night[d] = true; });
+    else if(m && typeof m === "object") Object.keys(m).forEach(id => {
+      const kind = DINING_MEALS[id];
+      if(!kind) return;
+      const valid = diningMealKindDays(days, kind);
+      const picked = (Array.isArray(m[id] && m[id].days) ? m[id].days : []).filter(d => valid.indexOf(d) >= 0);
+      (picked.length ? picked : valid).forEach(d => { out[kind][d] = true; });
+    });
+  }
+  return out;
+}
+/* "breakfast 7am to 10am (Thu 2 Sep, Fri 3 Sep); dinner 5pm to 8:30pm (Wed 1 Sep, Thu 2 Sep)" */
+function diningMealDaysWords(){
+  const by = diningMealSlotsByKind();
+  const bits = ["morning", "day", "night"].map(k => {
+    const ds = Object.keys(by[k]).sort();
+    return ds.length ? DINING_MEAL_PERIODS[k].name + " " + DINING_MEAL_PERIODS[k].words + " (" + ds.map(d => dayLabel(d)).join(", ") + ")" : "";
+  }).filter(Boolean);
+  return bits.length ? bits.join("; ") : diningMealDays().map(d => dayLabel(d)).join(", ");
+}
 function diningMealsTickHTML(staffSide){
   if(!diningMealsWanted()) return '';
   const on = diningMealsOn();
@@ -6186,7 +6219,9 @@ function venueDayRows(){
     const d = venueDaysSel(v.key);
     if(d <= 0) return;
     const fullP = Number(catEntry(v.fullId).price) || 0, halfP = Number(catEntry(v.halfId).price) || 0;
-    const add = (day, use, part) => { (days[day] = days[day] || []).push({day: day, key: v.key, use: use, part: part || "", price: use === 1 ? fullP : halfP, pair: 0}); };
+    /* Joel, 9 Nov 2026: a room at $0 that day (the Dining Room priced at nothing, say) is not hire, so it is left out
+       here. Before, adding it turned a half-day credit pot into a full one and the other rooms' prices moved. */
+    const add = (day, use, part) => { const pr = use === 1 ? fullP : halfP; if(!(pr > 0)) return; (days[day] = days[day] || []).push({day: day, key: v.key, use: use, part: part || "", price: pr, pair: 0}); };
     const m = venueDayMap(v.key);
     if(m) Object.keys(m).forEach(iso => add(iso, m[iso] === "full" ? 1 : 0.5, m[iso]));
     else {
@@ -6862,12 +6897,12 @@ function roomIdsOf(raw){
 }
 /* how many rooms a shared venue holds in total (0 for anything else) */
 function venueSharedRooms(v){ return v && Number(v.shared) > 0 ? Number(v.shared) : 0; }
-/* the rooms a group of this size takes: up to 50 one, 51-100 two, over 100 all three */
+/* the rooms a group of this size takes (Joel, 9 Nov 2026): under 40 CONF 6 only, 40 to 80 CONF 6 and 7, over 80 all three */
 function sharedRoomsWanted(v){
   const max = venueSharedRooms(v);
   if(!max) return 0;
   const g = Number(Q.guests) || 0;
-  return Math.max(1, Math.min(max, g > 100 ? 3 : (g > 50 ? 2 : 1)));
+  return Math.max(1, Math.min(max, g > 80 ? 3 : (g >= 40 ? 2 : 1)));
 }
 function venueBlockedBy(v){
   if(!v) return null;
@@ -9002,7 +9037,7 @@ function renderPrep(){
       '<input type="number" class="pin prepPrice" data-id="' + esc(v.halfId) + '" step="0.5" min="0" value="' + ch.price + '" title="Half-day price on this quote">' +
       (incl ? venueInclPillHTML(v, incl)
         : stepperHTML("venue", v.key, d > 0 ? d + "d" : 0, {canDown: d > 0, canUp: can.ok || !!(v.members && venueBlockedBy(v)), upTitle: can.why})) +
-      '<div class="pkgsub">' + (incl ? '<span class="incltag">Included</span>' : (d > 0 ? (free ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : '<span class="fmuted">-</span>')) + '</div>' +
+      '<div class="pkgsub">' + (incl ? '<span class="incltag">Included</span>' : (d > 0 ? (free ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : (v.key === DINING_KEY && diningMealsOn() ? '<span class="freetag" title="Selected for the meals, no charge">Meals ✓</span>' : '<span class="fmuted">-</span>'))) + '</div>' +
       (incl ? '' : venueSwitchAskHTML(v, true) + (v.key === "fr3" ? venueOneSpaceBarHTML() : '')) +
     '</div>';
   }).join("");
@@ -13177,7 +13212,7 @@ function renderClient(){
             })() : '') +
           '</div>' +
           stepperHTML("venue", v.key, d > 0 ? d + 'd' : 0, {canDown: d > 0, canUp: can.ok || !!(v.members && venueBlockedBy(v)), upTitle: can.why, lock: lockedItem(v.fullId, "venue")}) +
-          '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : (d > 0 ? d + 'd ✓' : '<span class="fmuted">-</span>')) + '</div>' +
+          '<div class="pkgsub">' + (d > 0 && showPrices ? (isFree ? '<span class="freetag">Free</span>' : venueSubHTML(v, d)) : (d > 0 ? d + 'd ✓' : (v.key === DINING_KEY && diningMealsOn() ? '<span class="freetag" title="Selected for your meals, no charge">Meals ✓</span>' : '<span class="fmuted">-</span>'))) + '</div>' +
           /* the two questions span the whole row, so they read well on a phone */
           venueSwitchAskHTML(v, showPrices) + (v.key === "fr3" ? venueOneSpaceBarHTML() : '') +
         '</div>';
