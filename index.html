@@ -2482,7 +2482,7 @@ const INFO_SECTIONS = [
   {id:"church", title:"Church or Charity Discount conditions", why:"auto when a church or charity discount is applied",
    text:"Wollongong Surf Leisure Resort seeks to support church groups with concessional discounted rates, and can do so where the group works in with WSLR to make the smooth running of the conference possible. The 50% discount on accommodation and venue hire applies if: a) 3 group catered main meals are included during your stay and all people staying in accommodation onsite at WSLR are catered for; b) deposits of {deposit} per cabin, {depositsite} per campsite and {depositroom} per conference room booked are paid on time; c) the group organiser provides requested final numbers on time; d) the group organiser provides all data on occupants of cabins on time, checks in all cabins and ensures all cabin keys are returned on time; e) the group provides volunteers to assist in serving the meals from the bain-marie, if required; and f) the group provides volunteers to assist in wiping down tables after meals, if required. The 20% discount on accommodation and venue hire applies on conditions b) to d) if you choose to self cater or have fewer than 3 group main meals during your stay. The discount applies to accommodation and venue hire only, never to catering."},
   {id:"venue_info", title:"Conference rooms & auditorium", why:"auto when venue hire is quoted",
-   text:"Conference Rooms 1, 2 & 3 sit side by side, and the walls between them open up into one space, Conference Rooms 1, 2 & 3 (combined), for up to 150 people; each room can also be booked on its own. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds up to 500 people standing, and the Marquee 160 persons (the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability). Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). What is included: Conference Rooms 1, 2, 3 and 5 and the Dining Room each have a TV with HDMI (bring your laptop), and a projector and screen are available in the Auditorium and the Marquee. We lend urns, microphones (corded and cordless) and stands, whiteboards and a butcher's paper board on request, subject to availability: ask for them on your Final Confirmation form. Wi-Fi is complimentary for all conference delegates. Our kitchen is not available to groups. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee.{checkoutrooms} No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner. Our Private Dining Room seats up to 120 people. {diningrule} Like the Marquee, it still has to be booked in advance and is subject to availability."},
+   text:"Conference Rooms 1, 2 & 3 sit side by side, and the walls between them open up into one space, Conference Rooms 1, 2 & 3 (combined), for up to 150 people; each room can also be booked on its own. Conference Room 5 is completely separate and holds a maximum of 45 persons. The Auditorium holds up to 500 people standing, and the Marquee 160 persons {marqrule}. Dimensions: Room 1: 6.7m × 11.3m · Room 2: 6.7m × 11.2m · Room 3: 6.7m × 7.6m · Room 5: 6.0m × 12.6m · Auditorium: 30.0m × 15.0m (8.0m high). What is included: Conference Rooms 1, 2, 3 and 5 and the Dining Room each have a TV with HDMI (bring your laptop), and a projector and screen are available in the Auditorium and the Marquee. We lend urns, microphones (corded and cordless) and stands, whiteboards and a butcher's paper board on request, subject to availability: ask for them on your Final Confirmation form. Wi-Fi is complimentary for all conference delegates. Our kitchen is not available to groups. Half day rates apply to 6 continuous hours or less (not split hours across the day). There is a 12am cut-off for use of the conference rooms, auditorium and marquee.{checkoutrooms} No food is permitted in the conference rooms or auditorium at any time, and surcharges may apply for rooms left in an untidy manner. Our Private Dining Room seats up to 120 people. {diningrule} Like the Marquee, it still has to be booked in advance and is subject to availability."},
   {id:"menu", title:"Catering menu options", why:"auto when catering is quoted",
    text:"All meals are served buffet style, and your group chooses one option per meal service with our catering team closer to the date. {menuoptions}"},
   {id:"catering_info", title:"Catering", why:"auto when catering is quoted",
@@ -2568,6 +2568,12 @@ function activeSectionIds(){
 function roomsOnlyQuoteFilled(){
   try{ return !!Q.sel && (hasSel(Q) || (Q.lines || []).some(l => (Number(l.qty) || 0) > 0)) && roomsOnlyBooking(); }catch(e){ return false; }
 }
+/* the Marquee in the conference rooms section, by the rule this quote was made with (11 Nov 2026) */
+function marqueeRuleWords(){
+  if(!marqueeChargedOn()) return "(the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability)";
+  const fp = catEntry("marq_full").price, hp = catEntry("marq_half").price;
+  return "(the Marquee is " + money0(fp) + " a full day" + (hp > 0 ? " or " + money0(hp) + " a half day" : "") + "; it must be booked in advance and is subject to availability)";
+}
 /* the Dining Room sentence in the conference rooms section: the rule this quote was made with */
 function diningRuleWords(){
   if(!diningMealsOnlyOn()) return "It is included at no charge while your group's meal service is running.";
@@ -2637,6 +2643,9 @@ function fillQuoteText(t){
     .replace(/\{diningrule\}\s*Like the Marquee, it still has to be booked in advance and is subject to availability\./g,
       m => diningMealsOnlyOn() ? "{diningrule} Booking it for other times is subject to availability." : m)
     .split("{diningrule}").join(diningRuleWords())
+    .split("{marqrule}").join(marqueeRuleWords())
+    /* a house-saved copy of the old wording (11 Nov 2026) */
+    .split("(the Marquee is complimentary if you are staying onsite; it still must be booked in advance and is subject to availability)").join(marqueeRuleWords())
     .split("{checkoutrooms}").join(checkoutRoomsWords())
     .split("{finalleadbig}").join(leadPhrase(k.finalDays))
     .split("{finallead}").join(leadPhrase(k.finalDays))
@@ -3858,7 +3867,7 @@ function blankQuote(num){
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
     caterSched: caterFutureHouse(), // the new catering prices and the date they start, as they were when this quote was made
-    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, vcNoConfRooms: true, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
+    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, vcNoConfRooms: true, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, marqueeCharged: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
     minStay: {},        // RMS minimum stays for the quoted rate: {itemId: {"2026-10-03": {s: 2, a: 0}}}, only nights with a rule
     staffShort: null,   // stays staff sent below the minimum on purpose: ["itemId|from|to", ...]
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
@@ -3942,6 +3951,7 @@ function normalizeQuote(q){
   /* and the Dining Room: meals there at no charge, booked days charged (15 Oct 2026): quotes
      made before it keep "free on every booked day once any meal is on the quote" */
   if(q.features.diningMealsOnly === undefined) q.features.diningMealsOnly = false;
+  if(q.features.marqueeCharged === undefined) q.features.marqueeCharged = false;   // 11 Nov 2026: saved before, keeps the free Marquee
   /* and the $100 deposit per conference room on a rooms-only booking (15 Oct 2026): a quote
      made before it was sent as "no deposit", and keeps that */
   if(q.features.roomOnlyDeposit === undefined) q.features.roomOnlyDeposit = false;
@@ -5976,7 +5986,9 @@ function selAccomSub(){
        on the quote) it is charged (new quotes from 15 Oct 2026, Q.features.diningMealsOnly).
        Quotes made before then keep the old rule: included on every booked day once any meal
        is on the quote
-     · the Marquee is complimentary for a group staying onsite
+     · the Marquee: complimentary for a group staying onsite on quotes made before 11 Nov 2026;
+       from then on it is $150 a full day / $75 a half day for everyone (Joel 11 Nov 2026: "I don't
+       want that to be the case it should be $150 per day", Q.features.marqueeCharged)
    Both still have to be booked in advance and are subject to availability (on a new quote,
    only the Dining Room's other times are booked: meal times need no booking).
    ------------------------------------------------------------------------ */
@@ -6094,7 +6106,8 @@ function stayingOnsite(){
   return (Q.sel.accom || []).some(b => (Number(b.qty) || 0) > 0 && catEntry(b.id).on) ||
     Q.lines.some(l => (Number(l.qty) || 0) > 0 && isAccomLine(l));
 }
-function marqueeIsFree(){ return stayingOnsite(); }
+function marqueeChargedOn(){ return !!(Q.features && Q.features.marqueeCharged); }
+function marqueeIsFree(){ return !marqueeChargedOn() && stayingOnsite(); }
 /* plain English list of the meals that make it free, e.g. "your breakfast and dinner service" */
 function mealServiceWords(){
   const words = [];
@@ -6149,7 +6162,7 @@ function venueFreeReason(v){
   if(!v) return "";
   if(schoolOn() && SCHOOL_FREE_VENUES.indexOf(v.key) >= 0) return "with your school package";
   if(v.key === DINING_KEY) return diningMealsOnlyOn() ? "" : "with " + mealServiceWords();
-  if(v.key === MARQUEE_KEY) return "with your stay";
+  if(v.key === MARQUEE_KEY) return marqueeIsFree() ? "with your stay" : "";
   if(freeRoomKeys().indexOf(v.key) >= 0) return "with your " + unitsSplit().cabins + " cabins";
   return "";
 }
@@ -13169,7 +13182,7 @@ function renderClient(){
         const isFree = venueIsFree(v);
         const can = venueCanAdd(v);
         const freeHint = (v.key === DINING_KEY && !asOrg() ? diningMealsTickHTML(true) : '') + ((v.key === DINING_KEY && diningMealsOnlyOn()) ? diningHintHTML(showPrices)
-          : (v.key === DINING_KEY || v.key === MARQUEE_KEY)
+          : (v.key === DINING_KEY || (v.key === MARQUEE_KEY && (isFree || !marqueeChargedOn())))   // 11 Nov 2026: no "free if staying" hint once it is charged
           ? (isFree
               ? '<div class="cb-free">Included at no charge ' + esc(venueFreeReason(v)) + '</div>'
               : '<div class="cb-note">(' + (v.key === DINING_KEY
@@ -15373,7 +15386,7 @@ function copyFromQuote(num){
     delete Q.catalog[id].price;
     delete Q.catalog[id].avail;
   });
-  ["freeRooms", "venueCredit", "vcCabin", "vcSite", "caterFuture", "diningMealsOnly", "roomOnlyDeposit"].forEach(k => {
+  ["freeRooms", "venueCredit", "vcCabin", "vcSite", "caterFuture", "diningMealsOnly", "marqueeCharged", "roomOnlyDeposit"].forEach(k => {
     if(!Q.features) Q.features = {}; if(k in fresh.features) Q.features[k] = fresh.features[k]; else delete Q.features[k];
   });
   Q.caterSched = fresh.caterSched;
