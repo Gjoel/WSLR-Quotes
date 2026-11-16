@@ -1454,6 +1454,7 @@
             <option value="50">Preset 50%, 3+ group catered main meals, everyone catered for</option>
           </select>
         </div>
+        <div id="churchBlock"></div>
         <p class="hint" style="margin-top:6px">Ticked: the 20%/50% concessional conditions appear on the quote and the organiser can pick their tier, choosing 50% without at least 3 group-catered main meals (with everyone staying onsite catered for) explains why it doesn't qualify. The discount applies to accommodation and venue hire only, never catering. Unticked: no church content appears anywhere.</p>
       </div>
 
@@ -2540,7 +2541,7 @@ function autoSectionIds(){
   const accom = quoteHasAccom(), venue = quoteHasVenue(), cater = quoteHasCater();
   const on = {
     accom_notes: accom,
-    church: !!Q.acnc || (Number(Q.sel.church) || 0) > 0,
+    church: (!!Q.acnc || (Number(Q.sel.church) || 0) > 0) && !blockChurchOff(),
     venue_info: venue,
     menu: cater,
     catering_info: cater,
@@ -3867,7 +3868,7 @@ function blankQuote(num){
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
     caterSched: caterFutureHouse(), // the new catering prices and the date they start, as they were when this quote was made
-    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, vcNoConfRooms: true, venueCredit: d.venueCredit !== false, caterFuture: true, diningMealsOnly: true, marqueeCharged: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
+    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, vcNoConfRooms: true, venueCredit: d.venueCredit !== false, caterFuture: true, blockNoChurch: true, diningMealsOnly: true, marqueeCharged: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
     minStay: {},        // RMS minimum stays for the quoted rate: {itemId: {"2026-10-03": {s: 2, a: 0}}}, only nights with a rule
     staffShort: null,   // stays staff sent below the minimum on purpose: ["itemId|from|to", ...]
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
@@ -3948,6 +3949,8 @@ function normalizeQuote(q){
   if(q.features.venueCredit === undefined) q.features.venueCredit = false;
   /* and the new catering prices for stays from 27 Sept 2027 (7 Oct 2026) */
   if(q.features.caterFuture === undefined) q.features.caterFuture = false;
+  /* and no church discount on block-out nights (16 Nov 2026): older quotes keep theirs unless staff tick it */
+  if(q.features.blockNoChurch === undefined) q.features.blockNoChurch = false;
   /* and the Dining Room: meals there at no charge, booked days charged (15 Oct 2026): quotes
      made before it keep "free on every booked day once any meal is on the quote" */
   if(q.features.diningMealsOnly === undefined) q.features.diningMealsOnly = false;
@@ -4152,6 +4155,56 @@ function datesLoad(){
     try { localStorage.setItem(DATES_KEY, JSON.stringify(d)); } catch(e) {}
     return true;
   }).catch(e => { console.warn("Dates tab", e); return false; });
+}
+/* block-out nights: the "Calendar" tab of the same sheet, "Blockout" in column C (Joel, 16 Nov 2026).
+   No church discount if any night of the stay is one. Staff side reads it; the nights that hit are
+   saved on the quote (Q.blockOut) so the organiser's page follows the same rule.
+   Built-in copy = the tab on 16 Nov 2026, used until the tab has been read. */
+let BLOCK_RANGES = [["2026-09-25","2026-10-10"],["2026-12-18","2027-01-26"],["2027-03-26","2027-03-29"],["2027-04-23","2027-04-26"],
+  ["2027-06-11","2027-06-14"],["2027-09-24","2027-10-10"],["2027-12-17","2028-01-30"],["2028-04-14","2028-04-17"],["2029-03-30","2029-04-02"]];
+let BLOCK_SET = null;
+const BLOCK_KEY = "wslr_blockout_v1";
+function blockSet(){
+  if(BLOCK_SET) return BLOCK_SET;
+  BLOCK_SET = new Set();
+  BLOCK_RANGES.forEach(r => { for(let d = r[0]; d <= r[1]; d = isoAddDays(d, 1)) BLOCK_SET.add(d); });
+  return BLOCK_SET;
+}
+function blockApply(nights){ if(nights && nights.length){ BLOCK_SET = new Set(nights); } }
+function blockLoad(){
+  if(!PL_ON) return Promise.resolve(false);
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(BLOCK_KEY) || "null"); } catch(e) {}
+  if(cached) blockApply(cached.nights);
+  if(cached && Date.now() - new Date(cached.at).getTime() < 3600e3) return Promise.resolve(false);
+  return fetch("https://docs.google.com/spreadsheets/d/" + DATES_SHEET + "/gviz/tq?tqx=out:json&headers=1&sheet=Calendar&_=" + Date.now()).then(r => r.text()).then(text => {
+    const a = text.indexOf("{"), b = text.lastIndexOf("}"), resp = JSON.parse(text.slice(a, b + 1));
+    if(resp.status !== "ok") return false;
+    const lab = resp.table.cols.map(c => String(c.label || "").trim().toLowerCase());
+    const ni = lab.indexOf("night of"), bi = lab.findIndex(l => /^block/.test(l));
+    if(ni < 0 || bi < 0 || resp.table.rows.length < 300) return false;
+    const nights = [];
+    resp.table.rows.forEach(r => {
+      const c = r.c || [], d = datesIso(c[ni]);
+      if(d && /block/i.test(String((c[bi] && c[bi].v) || ""))) nights.push(d);
+    });
+    blockApply(nights);
+    try { localStorage.setItem(BLOCK_KEY, JSON.stringify({at: new Date().toISOString(), nights: nights})); } catch(e) {}
+    return true;
+  }).catch(e => { console.warn("Calendar tab", e); return false; });
+}
+/* staff side: note on the quote which of its nights are block-outs (saved with it) */
+function blockSync(){
+  if(CLIENT_MODE || !Q) return;
+  const set = blockSet();
+  Q.blockOut = stayNightsList().filter(d => set.has(d));
+}
+function blockChurchOff(){
+  return !!(Q && Q.features && Q.features.blockNoChurch && Array.isArray(Q.blockOut) && Q.blockOut.length);
+}
+function blockNightsText(){
+  const n = (Q.blockOut || []);
+  return n.slice(0, 4).map(d => dayLabel(d)).join(", ") + (n.length > 4 ? " and " + (n.length - 4) + " more" : "");
 }
 function schoolTermOn(iso){ return SCHOOL_TERMS.some(t => iso >= t[0] && iso <= t[1]); }
 /* what stops these nights getting the school rate, in words ("" = nothing) */
@@ -7699,7 +7752,7 @@ function snapshotQ(){
     prepEmail: String(Q.prepEmail || "").trim() || DEFAULT_PREP_EMAIL,
     notes: Q.notes, terms: Q.terms,
     priceMode: Q.priceMode || "full",
-    bond: bondAmount(), bondManual: !!Q.bondManual, acnc: !!Q.acnc,
+    bond: bondAmount(), bondManual: !!Q.bondManual, acnc: !!Q.acnc, blockOut: Array.isArray(Q.blockOut) ? Q.blockOut.slice() : [],
     sections: Q.sections ? JSON.parse(JSON.stringify(Q.sections)) : null,
     secText: JSON.parse(JSON.stringify(Q.secText || {})),
     kdOver: Array.isArray(Q.kdOver) ? JSON.parse(JSON.stringify(Q.kdOver)) : null,
@@ -8820,6 +8873,7 @@ function mainMealServices(){
 /* Bug test Q1 (Joel, 19 Oct 2026): the 50% tier is only charged while its conditions are met.
    When the meals stop qualifying, the total takes 20% and the page says what brings back 50%. */
 function churchPctNow(){
+  if(blockChurchOff()) return 0;
   const p = Number(Q.sel && Q.sel.church) || 0;
   return (p === 50 && !fiftyCheck().ok) ? 20 : p;
 }
@@ -13310,7 +13364,10 @@ function renderClient(){
   /* --- church discount tier (only when staff have marked the group ACNC/church) --- */
   const churchPct = Number(Q.sel.church) || 0;
   const f50 = fiftyCheck();
-  const churchHtml = Q.acnc
+  const churchHtml = (Q.acnc && blockChurchOff())
+    ? '<div class="cb-sec"><h3>Church or Charity Discount</h3>' +
+      '<div class="tierwarn">Your dates include block-out nights (' + esc(blockNightsText()) + '), when the church and charity discount is not available. Please ask us about other dates if you would like the concessional rates.</div></div>'
+    : Q.acnc
     ? '<div class="cb-sec"><h3>Church or Charity Discount</h3>' +
       '<p class="cb-hint">as a registered church / ACNC charity your group can choose a concessional tier, the full conditions are in the important information below</p>' +
       '<select id="cbChurch">' +
@@ -16654,7 +16711,7 @@ document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () =>
 
 /* ---------- form bindings ---------- */
 function softRefresh(){ autosaveDraft(); renderBondField(); renderRoomDisc(); renderPrep(); renderSecBoxes(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
-function refresh(){ recurSync(); renderRecurBox(); kitchenSchedule(); Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
+function refresh(){ blockSync(); renderChurchBlock(); recurSync(); renderRecurBox(); kitchenSchedule(); Object.keys((Q.sel && Q.sel.venueDays) || {}).forEach(syncVenueCount); autosaveDraft(); renderBondField(); renderRoomDisc(); renderResLink(); renderLockSwitch(); renderPrep(); renderSecBoxes(); renderLines(); renderTotals(); renderClient(); renderPipeline(); renderTotalsCheck(); }
 
 
 /* ---------- quoting on a booking already in RMS ----------
@@ -17215,6 +17272,23 @@ function renderLockSwitch(){
     done();
   });
 });
+/* the block-out note under the church box (16 Nov 2026) */
+function renderChurchBlock(){
+  const el = document.getElementById("churchBlock");
+  if(!el) return;
+  const hit = Q && Q.acnc && Array.isArray(Q.blockOut) && Q.blockOut.length;
+  if(!hit){ el.innerHTML = ""; return; }
+  const on = !!(Q.features && Q.features.blockNoChurch);
+  el.innerHTML = '<div class="tierwarn" style="margin-top:6px">Block-out night' + (Q.blockOut.length === 1 ? '' : 's') + ' in this stay: ' + esc(blockNightsText()) + '.<br>' +
+    '<label style="font-weight:600"><input type="checkbox" id="f-blockchurch"' + (on ? ' checked' : '') + '> No church or charity discount on block-out dates</label>' +
+    (on ? '' : ' <span class="hint">(unticked: this quote keeps the discount)</span>') + '</div>';
+  document.getElementById("f-blockchurch").addEventListener("change", e => {
+    if(!Q.features) Q.features = {};
+    Q.features.blockNoChurch = e.target.checked;
+    refresh();
+    showToast(e.target.checked ? "No church discount on this quote: its dates include block-out nights." : "Church discount allowed on this quote despite the block-out nights.");
+  });
+}
 document.getElementById("f-church").addEventListener("change", e => {
   setChurchTier(e.target.value);
   showToast(Number(e.target.value) > 0
@@ -17620,6 +17694,7 @@ if(!CLIENT_MODE){
   if(plBtn) plBtn.addEventListener("click", () => { document.getElementById("plState").textContent = "Reading..."; plFetch(true).then(ok => { if(ok) plApply(); renderSettings(); refresh(); }); });
   plLoadCache(); plApply();
   datesLoad().then(ok => { if(ok) try { refresh(); } catch(e) {} });
+  blockLoad().then(ok => { if(ok) try { refresh(); } catch(e) {} });
   plFetch(false).then(ok => { if(!ok) return; plApply(); try { renderSettings(); refresh(); } catch(e) {} });
 }
 if(CLIENT_MODE){
