@@ -10761,7 +10761,7 @@ function depositInvoiceData(){
     number: dep && dep.number ? dep.number : (prev && prev.number ? "Being issued (replaces " + prev.number + ")" : "Being issued"),
     date: short(issued),
     due: short(due),
-    reservation: h.groupId ? String(h.groupId) : "Being created",
+    reservation: payRefNumber() || "Being created (shows here in a minute or two)",
     payRef: h.groupId ? String(h.groupId) : (payRefNumber() || (bookingsOnSubmit() || h.deposit ? "your reservation number (on the deposit invoice we email you)" : "")),
     /* a conference-room-only booking lists its rooms, not "0 cabins and sites" */
     reservationNote: (roomsOnly && venueNames.length ? venueNames.join(", ") : units + (units === 1 ? " cabin or site" : " cabins and sites")) +
@@ -10985,6 +10985,8 @@ function waitForBooking(){
     box.hidden = true;
     renderClient();
     openDepositScreen();
+    /* still no reservation number: keep asking quietly and fill it in when it lands (17 Nov 2026) */
+    if(!payRefNumber()) resNumberLater();
   };
   const poll = () => {
     if(DEP_WAIT !== st) { clearInterval(st.timer); return; }
@@ -11031,6 +11033,29 @@ function waitForBooking(){
   draw();
   st.timer = setInterval(poll, 2500);
   setTimeout(poll, 4000);
+}
+/* The reservation number, wherever it was not ready yet (17 Nov 2026, Joel: "a res number show
+   up instead of it saying it's being created"). Asks the quote server every 8 s for up to 5
+   minutes; when RMS has the group, the page, deposit invoice and full bill redraw with it. */
+let RES_LATER = null;
+function resNumberLater(){
+  if(RES_LATER || payRefNumber() || !Q.token) return;
+  const start = Date.now();
+  RES_LATER = setInterval(() => {
+    if(Date.now() - start > 300000 || payRefNumber()){ clearInterval(RES_LATER); RES_LATER = null; return; }
+    bookingStatus(r => {
+      if(!r || r.failed || !r.rmsHold || !r.rmsHold.groupId) return;
+      Q.rmsHold = r.rmsHold;
+      if(r.confirmation) Q.confirmation = r.confirmation;
+      clearInterval(RES_LATER); RES_LATER = null;
+      renderClient();
+      const scr = document.getElementById("depScreen");
+      if(scr && scr.classList.contains("open") && !scr.classList.contains("waiting")){
+        showDepView(DEP_VIEW === "bill" ? "bill" : "deposit");
+      }
+      showToast("Your reservation number is " + payRefNumber() + ". Please quote it when you pay.");
+    });
+  }, 8000);
 }
 /* ---------- a booking with no deposit: wait for the server to say it took it (15 Oct 2026) ----------
    There is no deposit screen to wait on, so the accepted box says "we are confirming your
@@ -17718,6 +17743,8 @@ if(CLIENT_MODE){
      !bookedNoDeposit() && !confirmedNoDepositNowDue()){
     setTimeout(openDepositScreen, 50);
   }
+  /* accepted, but RMS had not given the reservation number when this page was made */
+  if((Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted) && bookingsOnSubmit() && !payRefNumber()) resNumberLater();
   syncSideNote();
   ORG_SAVE.sig = orgDraftSig(orgDraftNow());
   if(orgRestored){
