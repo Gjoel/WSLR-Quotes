@@ -14842,18 +14842,52 @@ function pipeDetailsHTML(r){
     (String(s.internalNotes || "").trim() ? '<div class="pdnotes"><b>Internal notes</b>' + esc(s.internalNotes) + '</div>' : '') +
     (String(sel.message || "").trim() ? '<div class="pdnotes"><b>Their notes</b>' + esc(sel.message) + '</div>' : '');
 }
+/* money taken in RMS on this month's accepted quotes (17 Nov 2026, Joel: "check the res numbers and
+   the accounts to see how much has been taken in"): receipts less refunds on each group, read through
+   the quote server's rms=existing&part=paid, kept for 10 minutes so redraws do not re-ask RMS */
+const PIPE_PAID = {};
+function pipeTakenWords(list){
+  const withRes = list.filter(r => r.rmsHold && r.rmsHold.groupId);
+  if(!withRes.length) return "no RMS bookings yet";
+  let sum = 0, known = 0, want = [];
+  withRes.forEach(r => {
+    const g = String(r.rmsHold.groupId), c = PIPE_PAID[g];
+    if(c && Date.now() - c.at < 600000){ if(c.paid !== null){ sum += c.paid; known++; } }
+    else want.push(r);
+  });
+  if(want.length) pipeFetchPaid(want);
+  return want.length && !known ? "checking RMS…" : money0(sum) + " taken" + (known < withRes.length ? " (" + known + " of " + withRes.length + " read)" : "");
+}
+function pipeFetchPaid(list){
+  list.forEach(r => {
+    const h = r.rmsHold, g = String(h.groupId);
+    if(PIPE_PAID[g] && PIPE_PAID[g].busy) return;
+    PIPE_PAID[g] = {busy: true, at: 0, paid: null};
+    const ids = [].concat(h.reservationIds || [], h.otherIds || []).map(Number).filter(n => n > 0).slice(0, 400);
+    rmsGet({rms: "existing", part: "paid", res: g, ids: ids.join(",")})
+      .then(x => { PIPE_PAID[g] = {at: Date.now(), paid: x && x.ok ? Number(x.paid) || 0 : null}; })
+      .catch(() => { PIPE_PAID[g] = {at: Date.now(), paid: null}; })
+      .then(() => {
+        if(Object.values(PIPE_PAID).some(c => c.busy)) return;
+        const el = document.getElementById("accTaken");
+        if(el) renderPipeline();
+      });
+  });
+}
 function renderPipeline(){
   renderEditBar();   // tab 1's "editing a sent quote" bar follows the same events the pipeline does
   const rows = pipelineRows();
   const monthName = today.toLocaleDateString("en-GB", {month: "long"});
   const open    = rows.filter(r => r.status === "Draft" || r.status === "Sent" || r.status === "Viewed");
-  const acc     = rows.filter(r => r.status === "Accepted");
-  const decided = rows.filter(r => r.status === "Accepted" || r.status === "Declined" || r.status === "Expired");
+  /* 17 Nov 2026 (Joel): an organiser's acceptance is stored as "Submitted", so it counts as accepted */
+  const isWon   = r => r.status === "Accepted" || r.status === "Submitted";
+  const acc     = rows.filter(isWon);
+  const decided = rows.filter(r => isWon(r) || r.status === "Declined" || r.status === "Expired");
   const overdue = rows.filter(r => { const f = followFor(r); return f !== null && f < 0; });
-  /* counted by when it was accepted, falling back to the date sent for quotes
-     accepted before that was recorded */
+  /* counted by when it was submitted (accepted by the organiser), else when staff accepted it,
+     else the date sent for quotes accepted before either was recorded */
   const accMonth = acc.filter(r => {
-    const d = new Date(r.acceptedAt || r.sentAt || "");
+    const d = new Date(r.submittedAt || r.acceptedAt || r.sentAt || "");
     return !isNaN(d) && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
   });
   const win = decided.length ? Math.round(acc.length / decided.length * 100) : 0;
@@ -14861,7 +14895,7 @@ function renderPipeline(){
   document.getElementById("tiles").innerHTML =
     '<div class="tile"><div class="tlabel">Open quotes</div><div class="tval">' + money0(open.reduce((s,r) => s + (Number(r.total)||0), 0)) + '</div><div class="tsub">' + open.length + ' in progress or with clients</div></div>' +
     '<div class="tile"><div class="tlabel">Needs a nudge</div><div class="tval">' + overdue.length + '</div><div class="tsub">' + (overdue.length ? '<span class="overdue">⚠ follow-up overdue</span>' : 'all followed up') + '</div></div>' +
-    '<div class="tile"><div class="tlabel">Accepted in ' + monthName + '</div><div class="tval">' + money0(accMonth.reduce((s,r) => s + (Number(r.total)||0), 0)) + '</div><div class="tsub">' + accMonth.length + ' events confirmed</div></div>' +
+    '<div class="tile"><div class="tlabel">Accepted in ' + monthName + '</div><div class="tval">' + money0(accMonth.reduce((s,r) => s + (Number(r.total)||0), 0)) + '</div><div class="tsub">' + accMonth.length + ' submitted · <span id="accTaken">' + pipeTakenWords(accMonth) + '</span></div></div>' +
     '<div class="tile"><div class="tlabel">Win rate</div><div class="tval">' + win + '%</div><div class="tsub">of decided quotes</div></div>';
 
   const tb = document.getElementById("pipeBody");
