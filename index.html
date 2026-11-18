@@ -134,7 +134,7 @@
   .pipe td{padding:5px 5px; vertical-align:middle; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .pipe td:first-child, .pipe th:first-child{padding-left:2px}
   .pipe .c-q{width:86px} .pipe .c-ph{width:110px} .pipe .c-sent{width:112px} .pipe .c-val{width:76px}
-  .pipe .c-st{width:106px} .pipe .c-fu{width:98px} .pipe .c-act{width:112px} .pipe .c-ct{width:118px} .pipe .c-ed{width:176px}
+  .pipe .c-st{width:106px} .pipe .c-fu{width:98px} .pipe .c-act{width:126px} .pipe .c-ct{width:118px} .pipe .c-ed{width:176px}
   .pipe .stSel{display:block; margin:0; width:100%; font-size:11.5px; font-weight:600; padding:2px 3px; border-radius:99px; border:1px solid transparent}
   .pipe .sentInp{width:100%; padding:2px 4px; font-size:11.5px}
   .pipe .editQ{padding:2px 7px; font-size:11.5px}
@@ -435,6 +435,17 @@
   .restorebar button{appearance:none; border:none; background:none; font:inherit; font-weight:700; color:var(--accent); cursor:pointer; padding:0}
   .restorebar button.dis{color:var(--muted); font-weight:400}
   .restorebar button:hover{text-decoration:underline}
+  /* reactivating an expired quote (19 Nov 2026): what changed, inside the blue bar */
+  .reactbox{flex-basis:100%; background:#fdf3ec; border:1px solid #d98b4a; border-radius:8px; padding:9px 12px; line-height:1.5}
+  .reactbox p{margin:0 0 4px} .reactbox p:last-child{margin:0}
+  .reactbox .rbad{color:var(--crit); font-weight:600}
+  .reactbox .rbtns{display:flex; gap:14px; flex-wrap:wrap; margin-top:4px}
+  .reactQ{
+    appearance:none; border:1px solid #d98b4a; background:#fdf3ec; color:#b4541f; font:inherit;
+    font-size:11.5px; font-weight:700; border-radius:6px; cursor:pointer; padding:2px 7px; white-space:nowrap;
+  }
+  .reactQ:hover{background:#f9e3d2}
+  .pipe .reactQ{padding:2px 5px; font-size:11px}
   .stSel{display:block; margin-top:4px; width:auto; font-size:11.5px; padding:2px 4px; color:var(--ink2); border-radius:6px}
   .emptyrow td{color:var(--muted); font-size:13.5px; padding:16px 8px}
   .discInp{width:74px; text-align:right}
@@ -14045,8 +14056,118 @@ function showHistory(num){
 }
 function editCell(r){
   if(r.unsaved || r.rowOnly || r.mine) return "";
+  if(quoteRunOut(r)) return '<button class="reactQ" data-num="' + esc(r.num) + '" title="Past its Valid until date: set it back to Sent, reopen it on tab 1 with today\'s RMS prices, then Save changes to give it a new date">↻ Reactivate</button> ';
   if(editBlockReason(r)) return "";
   return '<button class="editQ" data-num="' + esc(r.num) + '" title="Reopen this quote on tab 1 to change it">Edit</button> ';
+}
+/* ---------- reactivate an expired quote (Joel, 19 Nov 2026) ----------
+   One press on the Pipeline does what took four steps: an Expired status goes back to
+   Sent, the quote reopens on tab 1, and today's prices and free units come from RMS.
+   The blue bar then shows what changed and the new Valid until date. Nothing reaches the
+   organiser until staff press Save changes, and that is what moves the date
+   (validUntilISO: today + Quote valid for). The quote server takes it again from then on:
+   organiserAcceptBlock_ reads the saved validUntil and the row's status. */
+let REACT = null;
+function quoteRunOut(r){
+  if(!r || r.unsaved || r.rowOnly || r.mine) return false;
+  if(r.status === "Expired") return true;
+  if(r.status !== "Sent" && r.status !== "Viewed") return false;
+  const h = r.rmsHold || {};
+  if(r.accepted || r.submittedAt || (h.groupId && h.status === "held")) return false;   // never blocked by date (code.gs)
+  const vu = String(r.validUntil || "").slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(vu) && vu < sydneyTodayISO();
+}
+function reactivateQuote(num){
+  const s = SAVED.find(x => x.num === num);
+  if(!s){ showToast("Quote " + num + " is not on this computer yet, press Sync now first.", true); return; }
+  REACT = {num: num, wasUntil: String(s.validUntil || "").slice(0, 10), savedAt: s.savedAt || "", state: "opening"};
+  if(s.status === "Expired") setStatus(num, "Sent");
+  if(Q.num === num){ switchTab("staff"); reactivateAfterLoad(); return; }
+  openQuoteForEdit(num);
+}
+function reactClone(x){ return x === undefined || x === null ? x : JSON.parse(JSON.stringify(x)); }
+function reactItemName(id){
+  const it = accomItems().find(i => i.id === id);
+  if(it) return it.name;
+  const v = VENUES.find(x => x.fullId === id || x.halfId === id);
+  return v ? v.name : ((RATE[id] || {}).name || id);
+}
+/* the quote is on tab 1 as it was sent: note its total, then ask RMS for today */
+function reactivateAfterLoad(){
+  const R = REACT;
+  if(!R || R.num !== Q.num) return;
+  R.savedAt = ((SAVED.find(x => x.num === Q.num) || {}).savedAt) || "";
+  R.wasTotal = totals().total;
+  R.old = {rates: reactClone(Q.rates || {}), rateFixed: reactClone(Q.rateFixed || {}), ratesInfo: reactClone(Q.ratesInfo || null)};
+  const onBefore = {};
+  accomItems().forEach(it => { if(catEntry(it.id).on) onBefore[it.id] = true; });
+  VENUES.forEach(v => { if(catEntry(v.fullId).on) onBefore[v.fullId] = true; });
+  R.onBefore = onBefore;
+  const lastNight = stayNightsList().slice(-1)[0] || Q.dateStart;
+  if(!Q.dateStart) R.state = "nodates";
+  else if(lastNight < isoDate(today)) R.state = "past";
+  else if(recurOn()) R.state = "manual";
+  else {
+    R.state = "pulling";
+    pullRmsRates(true, ok => {
+      if(REACT !== R || Q.num !== R.num) return;
+      R.state = ok ? "done" : "failed";
+      if(ok) reactCompare(R);
+      renderEditBar();
+    });
+  }
+  renderEditBar();
+}
+function reactCompare(R){
+  R.fresh = {rates: reactClone(Q.rates || {}), rateFixed: reactClone(Q.rateFixed || {}), ratesInfo: reactClone(Q.ratesInfo || null)};
+  R.nowTotal = totals().total;
+  R.asAt = (Q.ratesInfo && Q.ratesInfo.asAt) || "";
+  R.gone = Object.keys(R.onBefore || {}).filter(id => !catEntry(id).on).map(reactItemName);
+  let over = {};
+  try{ over = staffOverNow() || {}; }catch(e){}
+  R.over = Object.keys(over).map(reactItemName);
+  R.kept = false;
+}
+/* staff may hold the old prices (a rate agreed with them); free units stay today's */
+function reactUsePrices(old){
+  const R = REACT;
+  if(!R || !R.old || !R.fresh) return;
+  const p = old ? R.old : R.fresh;
+  Q.rates = reactClone(p.rates); Q.rateFixed = reactClone(p.rateFixed); Q.ratesInfo = reactClone(p.ratesInfo);
+  R.kept = !!old;
+  refresh();
+  showToast(old ? "Back to the prices quoted before. Free units are still today's from RMS." : "Today's RMS prices are back on the quote.");
+}
+function reactBoxHTML(){
+  const R = REACT;
+  const s = SAVED.find(x => x.num === Q.num);
+  if(!R || R.num !== Q.num || !s || (s.savedAt || "") !== R.savedAt){ REACT = null; return ""; }
+  const newUntil = fmtDate(validUntilISO());
+  const days = Number(Q.validDays) || 14;
+  const p = [];
+  p.push('<p><b>Reactivating ' + esc(Q.num) + '.</b> ' + (R.wasUntil ? 'It was valid until ' + esc(fmtDate(R.wasUntil)) + '. ' : '') +
+    'Save changes makes it valid until <b>' + esc(newUntil) + '</b> (today + ' + days + ' day' + (days === 1 ? '' : 's') + ', from Quote valid for) and their link takes acceptances again.</p>');
+  if(R.state === "opening") p.push('<p>Opening the quote…</p>');
+  else if(R.state === "pulling") p.push('<p>Getting today\'s prices and free units from RMS…</p>');
+  else if(R.state === "failed") p.push('<p class="rbad">RMS could not be reached, so the prices are still the ones quoted before. Press ↻ Live from RMS to try again, or save with those prices.</p>');
+  else if(R.state === "past") p.push('<p class="rbad">The stay (' + esc(fmtRange(Q.dateStart, Q.dateEnd)) + ') is already in the past. Change the event dates first; today\'s prices then load for the new dates.</p>');
+  else if(R.state === "nodates") p.push('<p class="rbad">This quote has no event dates. Add them first; prices then load for them.</p>');
+  else if(R.state === "manual") p.push('<p>Press ↻ Live from RMS to check the room is still free on each date.</p>');
+  else if(R.state === "done"){
+    const nowT = totals().total;
+    const d = Math.round((nowT - R.wasTotal) * 100) / 100;
+    p.push('<p>' + (R.kept ? 'Keeping the prices quoted before' : 'Prices are RMS\'s today') + (R.asAt ? ' (free units as at ' + esc(rmsAsAt(R.asAt)) + ')' : '') +
+      '. Total was ' + money(R.wasTotal) + ', now <b>' + money(nowT) + '</b>' +
+      (Math.abs(d) < 0.005 ? ' (no change)' : ' (' + (d > 0 ? 'up ' : 'down ') + money(Math.abs(d)) + ')') + '.</p>');
+    if(R.gone && R.gone.length) p.push('<p class="rbad">Nothing free now, so taken off the picker: ' + esc(R.gone.join(", ")) + '.</p>');
+    if(R.over && R.over.length) p.push('<p class="rbad">More on the quote than RMS has free: ' + esc(R.over.join(", ")) + '. Change these before saving, or the organiser can\'t accept.</p>');
+    if(R.old && R.fresh && JSON.stringify(R.old.rates) !== JSON.stringify(R.fresh.rates))
+      p.push('<div class="rbtns">' + (R.kept
+        ? '<button type="button" id="reactNew">Use today\'s prices</button>'
+        : '<button type="button" id="reactOld">Keep the prices quoted before</button>') + '</div>');
+  }
+  p.push('<p>Check it, then press <b>Save changes</b>.</p>');
+  return '<div class="reactbox" id="reactBox">' + p.join("") + '</div>';
 }
 /* the full copy of one quote from the tracker sheet: the copy kept on this
    computer leaves the nightly rates and availability calendar behind to keep
@@ -14138,6 +14259,8 @@ function loadQuoteForEdit(src, haveRates, note){
   showToast("Editing " + Q.num + " under its own number." + odNote +
     (haveRates ? "" : " The tracker sheet could not be reached, so its nightly prices are missing: load them again or type a price on each cabin before saving.") +
     " Press Save changes (or Email quote) when you're done and the organiser's link shows the new version." + note);
+  if(REACT && REACT.num === Q.num && REACT.state === "opening") reactivateAfterLoad();
+  else REACT = null;
 }
 function renderEditBar(){
   renderResLink();
@@ -14147,7 +14270,8 @@ function renderEditBar(){
   if(!known || !Q.sentAt || !hasContent(Q)){ bar.style.display = "none"; return; }
   const who = Q.org || Q.contact || "no name";
   const editable = EDITABLE_STATUSES.indexOf(Q.status) >= 0;
-  bar.innerHTML = ((isBookedStatus(Q.status) || Q.accepted)
+  const react = reactBoxHTML();
+  bar.innerHTML = react + ((isBookedStatus(Q.status) || Q.accepted)
     ? '<b>' + esc(Q.num) + '</b> (' + esc(who) + ') is ' + esc(String(Q.status).toLowerCase()) + ' and booked. If they have negotiated a change, adjust it here or on tab 2, then press Save &amp; update booking + invoice. '
     : editable
     ? '<b>' + esc(Q.num) + '</b> (' + esc(who) + ') was sent ' + esc(fmtDate(String(Q.sentAt).slice(0, 10))) + '. Changes you make here reach the organiser\'s link when you press Save changes. '
@@ -14159,6 +14283,9 @@ function renderEditBar(){
         '<button id="editBarEmail">Email quote again</button>') +
     '<button id="editBarClose" class="dis" title="Leave the quote as last saved and start a fresh one">Close without saving</button>';
   bar.style.display = "flex";
+  const ro = document.getElementById("reactOld"), rn = document.getElementById("reactNew");
+  if(ro) ro.addEventListener("click", () => reactUsePrices(true));
+  if(rn) rn.addEventListener("click", () => reactUsePrices(false));
   document.getElementById("editBarSave").addEventListener("click", () => doSaveQuote({linkOnly: !!document.getElementById("editBarBook")}));
   const eb = document.getElementById("editBarEmail");
   if(eb) eb.addEventListener("click", doEmail);
@@ -14166,6 +14293,7 @@ function renderEditBar(){
   if(bk) bk.addEventListener("click", doStaffResubmit);
   document.getElementById("editBarClose").addEventListener("click", () => {
     const old = Q.num;
+    REACT = null;
     Q = blankQuote(nextQuoteNum());
     lsDel(LS_DRAFT);
     syncForm();
@@ -14940,6 +15068,9 @@ function renderPipeline(){
   }));
   tb.querySelectorAll(".editQ").forEach(el => el.addEventListener("click", e => {
     openQuoteForEdit(e.currentTarget.dataset.num);
+  }));
+  tb.querySelectorAll(".reactQ").forEach(el => el.addEventListener("click", e => {
+    reactivateQuote(e.currentTarget.dataset.num);
   }));
   tb.querySelectorAll(".histBtn").forEach(el => el.addEventListener("click", e => {
     showHistory(e.currentTarget.dataset.num);
@@ -16328,20 +16459,23 @@ function pullRecurRooms(){
     showToast("RMS could not be reached: " + e.message + ". Press ↻ Live from RMS again.", true);
   });
 }
-function pullRmsRates(manual){
+function pullRmsRates(manual, after){
+  /* after(ok): told once the answer is on the quote, or that none came (reactivate, 19 Nov 2026) */
+  const fin = ok => { if(typeof after === "function"){ const f = after; after = null; f(ok); } };
   if(CLIENT_MODE) return;
-  if(recurOn()){ if(manual) pullRecurRooms(); return; }
+  if(recurOn()){ if(manual) pullRecurRooms(); fin(false); return; }
   const w = rmsWindow();
-  if(!w){ showToast("Set the event dates first, then press ↻ Live from RMS.", true); return; }
+  if(!w){ showToast("Set the event dates first, then press ↻ Live from RMS.", true); fin(false); return; }
   /* RMS only prices from today on. A quote whose stay has already gone (an old quote
      reopened, or a year typed wrong) cannot be priced live, so say that plainly
      instead of asking RMS and reporting the nights as "outside the window". */
   const lastNight = stayNightsList().slice(-1)[0] || Q.dateStart;
   if(lastNight < isoDate(today)){
     showToast("This quote's stay (" + fmtRange(Q.dateStart, Q.dateEnd) + ") is in the past, so RMS has no live rates for it. Change the event dates to today or later, then press ↻ Live from RMS. The prices already on the quote have been left as they are.", true);
+    fin(false);
     return;
   }
-  if(RMS_PULLING) return;
+  if(RMS_PULLING){ fin(false); return; }
   /* pressing the button is the decision to use RMS, so it switches the link on and
      loads (and maps) the catalogue itself. Nothing has to be done on the Settings
      tab first, and nothing loads until this is pressed. */
@@ -16352,7 +16486,7 @@ function pullRmsRates(manual){
   RMS_PULLING = true; renderImp3();
   ensureRmsCatalog(false).then(() => rmsGet({rms: "grid", from: w.from, to: w.to, fresh: manual ? 1 : 0})).then(g => {
     RMS_PULLING = false;
-    if(rmsPullOvertaken(forQ, sig)) return;
+    if(rmsPullOvertaken(forQ, sig)){ fin(false); return; }
     const items = Object.keys(g.rates || {}).length;
     Q.rmsBase = null; Q.rmsOver = null; Q.impError = null; Q.needsTariff = false;
     Q.rates = g.rates || {};
@@ -16380,8 +16514,10 @@ function pullRmsRates(manual){
     if(errs.length) Q.impError = errs.slice();
     refresh();
     showToast(notes.concat(errs).join(" · "), errs.length > 0);
+    fin(true);
   }).catch(e => {
     RMS_PULLING = false; renderImp3();
+    fin(false);
     if(rmsPullOvertaken(forQ, sig)) return;
     showToast("RMS could not be reached: " + e.message + ". Type a nightly price on each cabin, or drop in the rates report instead.", true);
   });
