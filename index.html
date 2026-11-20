@@ -388,6 +388,8 @@
   .lockBtn.on{background:#fff4e0; border-color:#ef8f00}
   .lockedqty{display:flex; align-items:center; justify-content:center; gap:6px; font-weight:700; font-size:15px}
   .lockpill{background:#eef3f7; color:#4f5b66; border-radius:20px; padding:1px 8px; font-size:11px; font-weight:600; letter-spacing:.02em}
+  .bookedro input:disabled, .bookedro select:disabled, .bookedro textarea:disabled, .bookedro button:disabled{opacity:.55; cursor:not-allowed}
+  .bookedbox.flash, .bookedbar.flash{animation:chflash 1.6s ease 2}
   .lockbar{background:#eef3f7; border:1.5px solid #1f5fae; border-radius:10px; padding:10px 14px; margin:0 0 14px; font-size:14px; line-height:1.6}
   .lockbar b{display:inline}
   .lockstaff{display:block; margin-top:4px; color:#8e1c1c; font-size:12.5px}
@@ -8950,6 +8952,7 @@ function itemLockOn(id){ return !!((Q.catalog && Q.catalog[id] && Q.catalog[id].
    a packed lunch; anything included at no charge is part of what they were promised */
 function lockedItem(id, kind){
   if(itemLockOn(id)) return true;
+  if(bookedLock()) return true;
   if(!quoteLocked()) return false;
   if(kind === "cater") return (catEntry(id).price || 0) === 0;
   return true;
@@ -8960,7 +8963,38 @@ function schoolDatesLocked(){ return !!(CLIENT_MODE && schoolOn()); }
 /* 23 Oct review: a quote on a booking already in RMS keeps its dates on the organiser's page;
    moving them would leave the existing reservations on the old dates */
 function existingDatesLocked(){ return !!(asOrg() && Q.rmsLink && Q.rmsLink.groupId && groupUnits().length); }
-function lockedDates(){ return quoteLocked() || schoolDatesLocked() || existingDatesLocked(); }
+/* Joel, 20 Nov 2026: once a quote is accepted AND booked in RMS (it has a reservation number),
+   the organiser changes it through their Final Confirmation form, not this page. Their page
+   becomes read-only: no Submit changes, every choice locked, a button to the form instead.
+   Staff on tab 1 keep Save & update booking + invoice for agreed changes. */
+function bookedLock(){
+  return !!(asOrg() && (Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted) && payRefNumber());
+}
+const BOOKED_CHANGE_WORDS = "Your booking is made, so any changes (cabins, numbers, meals, dates or room set-ups) are now made in your Final Confirmation form, not on this quote.";
+function bookedFormBtnHTML(){
+  const url = fcLink();
+  return url
+    ? '<a class="btn accept" href="' + esc(url) + '" target="_blank" rel="noopener">Make changes in your confirmation form →</a>'
+    : '<a class="btn" href="mailto:' + VENUE_EMAIL + '?subject=' + encodeURIComponent("Change to booking " + (payRefNumber() || Q.num)) + '">Email us about a change</a>';
+}
+function bookedChangeBoxHTML(){
+  return '<div class="changebox bookedbox"><b>Need to change something?</b> ' + BOOKED_CHANGE_WORDS +
+    (fcLink() ? ' Open the form, make your changes and our team will update your booking and invoice.' : ' Your form is on its way; until then email us or call ' + esc(VENUE_PHONE) + '.') +
+    '<div class="acceptrow" style="margin-top:10px">' + bookedFormBtnHTML() + '</div></div>';
+}
+/* every choice on the organiser page is read-only while booked (links and the deposit buttons stay) */
+function applyBookedReadOnly(page){
+  if(!page) return;
+  page.classList.toggle("bookedro", bookedLock());
+  if(!bookedLock()) return;
+  page.querySelectorAll("input, select, textarea, button").forEach(el => {
+    if(el.closest(".submitted-box, .bookedbox, .bookedbar, .histlist, .paybox, .fcbox")) return;
+    if(el.id === "depOpenBtn") return;
+    el.disabled = true;
+    el.title = "Booked: make changes in your Final Confirmation form";
+  });
+}
+function lockedDates(){ return quoteLocked() || bookedLock() || schoolDatesLocked() || existingDatesLocked(); }
 /* every cabin on offer is locked: the organiser is being shown a rooming, not a menu */
 function accomAllLocked(){
   const on = accomItems().filter(it => catEntry(it.id).on);
@@ -9803,6 +9837,7 @@ function schoolDateBoxChange(which){
 }
 function setEventDates(from, nights){
   if(!from) return;
+  if(bookedLock()){ showToast(BOOKED_CHANGE_WORDS); return; }
   if(schoolDatesLocked() || existingDatesLocked() || recurOn()){ showToast("To change your dates, please call us on (02) 4283 6999 or email functions@wslr.com.au"); return; }
   const n = Math.max(1, Number(nights) || 1);
   const shift = (Q.dateStart && from) ? isoDiffDays(Q.dateStart, from) : 0;
@@ -11174,6 +11209,12 @@ function closeDepositScreen(){
   const chg = document.getElementById("depChange");
   if(chg) chg.addEventListener("click", () => {
     closeDepositScreen();
+    if(bookedLock()){
+      const box = document.querySelector("#submitZone .bookedbox") || document.querySelector(".bookedbar");
+      if(box){ box.scrollIntoView({behavior: "smooth", block: "center"}); box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash"); }
+      if(fcLink()) window.open(fcLink(), "_blank", "noopener");
+      return;
+    }
     /* straight to the selection, with the change box lit up at the bottom */
     const sel = document.querySelector("#quotePage .cb-sec") || document.getElementById("quotePage");
     if(sel) sel.scrollIntoView({behavior: "smooth", block: "start"});
@@ -11258,6 +11299,7 @@ function depositPayHTML(){
 }
 /* after submitting: the organiser can change things and send them again, as often as they need */
 function changeZoneHTML(dirty, askBtn){
+  if(bookedLock()) return bookedChangeBoxHTML();
   const miss = addressMissing();
   const n = Array.isArray(Q.history) ? Q.history.length : 0;
   const last = Q.submittedAt ? new Date(Q.submittedAt) : null;
@@ -11294,6 +11336,11 @@ function historyListHTML(){
 /* the accept/submit area at the foot of the organiser page */
 /* the strip at the top of a locked quote */
 function lockBannerHTML(){
+  if(bookedLock()){
+    return '<div class="lockbar bookedbar">🔒 <b>Booked' + (payRefNumber() ? ', reservation ' + esc(payRefNumber()) : '') + '.</b> ' + BOOKED_CHANGE_WORDS +
+      (!CLIENT_MODE ? '<span class="lockstaff">Staff: the organiser sees this read-only. Agreed changes can still be made on tab 1 with Save &amp; update booking + invoice.</span>' : '') +
+      '<div style="margin-top:8px">' + bookedFormBtnHTML() + '</div></div>';
+  }
   if(!quoteLocked()) return '';
   const staff = !asOrg() ? '<span class="lockstaff">Staff: this is locked, the organiser can only accept it. Unlock it in Quote settings on tab 1.</span>' : '';
   return '<div class="lockbar">🔒 <b>This is your quote, set by our team.</b> ' +
@@ -12422,6 +12469,7 @@ function serverAcceptBlockCheck(done){
 }
 /* the hint in the side card */
 function sideNoteText(){
+  if(bookedLock()) return BOOKED_CHANGE_WORDS;
   if(quoteAcceptBlock()) return quoteAcceptBlock().title + " " + ACCEPT_BLOCK_CALL;
   return quoteLocked()
     ? "This quote is set by our team: read it through and accept it at the foot of the page, or ask us for a change and we will update it for you."
@@ -13514,7 +13562,9 @@ function renderClient(){
     '<div class="qp-for" id="qpFor">' + qpForHTML() + '</div>' +
     '<div class="qp-event" id="qpEvent">' + qpEventHTML() + '</div>' +
     '<div class="cb-live">' +
-      '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">' + (quoteLocked()
+      '<p class="cb-hint" style="font-size:13.5px; color:var(--ink2)">' + (bookedLock()
+        ? 'This is what is booked for your group.'
+        : quoteLocked()
         ? 'Everything below is what we have put together for your group. Have a read, and accept it at the foot of the page when you are happy.'
         : 'Build your package below, pick what suits your group and the numbers update as you go. Nothing is locked in until our team confirms it with you.') + '</p>' +
       /* Your details first (Joel, 3 Nov 2026): empty boxes are shaded until they are filled in */
@@ -13810,6 +13860,7 @@ function renderClient(){
   const dob = document.getElementById("depOpenBtn");
   if(dob) dob.addEventListener("click", openDepositScreen);
   bindDepFix(document.getElementById("quotePage"));
+  applyBookedReadOnly(document.getElementById("quotePage"));
   const nb = document.getElementById("negoBook");
   if(nb) nb.addEventListener("click", doStaffResubmit);
   const ns = document.getElementById("negoSave");
@@ -15491,6 +15542,7 @@ function doStaffResubmit(opts){
 let SUBMIT_UNDO = null;                 // puts the page back if the latest submission did not go through
 function doSubmit(){
   if(STAFF_VIEW) return;
+  if(bookedLock()){ showToast(BOOKED_CHANGE_WORDS, true); return; }
   /* belt and braces: the button is already held, but never take a booking for rooms
      we do not have */
   if(schoolCallBlocks()){
