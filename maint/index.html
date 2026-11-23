@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  WSLR Maintenance - home-screen launcher (23 Nov 2026).
+  Google does not let an Apps Script web app set its own home-screen icon, so staff add THIS page to their home
+  screen instead: it carries the WSLR logo (iPhone apple-touch-icon, Android manifest) and opens the Maintenance
+  View app full screen inside it. Nothing here stores or sends anything; the staff PIN is asked by the app itself.
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WSLR Maintenance</title>
+<meta name="theme-color" content="#0b6e8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="WSLR Maint">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="favicon-64.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  html, body { margin:0; height:100%; background:#0b6e8a; overflow:hidden; }
+  /* the app's tab bar stays clear of the iPhone home bar and the notch */
+  .wrap { position:fixed; inset:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); box-sizing:border-box; background:#f2f5f7; }
+  iframe { width:100%; height:100%; border:0; display:block; background:#f2f5f7; }
+  .splash { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:#fff; font:15px -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; color:#66727f; transition:opacity .3s; }
+  .splash img { width:160px; height:auto; }
+  .splash a { color:#0b6e8a; font-weight:600; text-decoration:none; margin-top:20px; font-size:13px; }
+  .splash.gone { opacity:0; pointer-events:none; }
+</style>
+</head>
+<body>
+<div class="wrap"><iframe id="app" title="WSLR Maintenance" allow="clipboard-write"></iframe></div>
+<div class="splash" id="splash">
+  <img src="icon-512.png" alt="Surf Leisure Resort">
+  <div>Opening…</div>
+  <a id="direct" href="#">Not opening? Tap here</a>
+</div>
+<script>
+  var APP = 'https://script.google.com/macros/s/AKfycbySZ0Sfv2oPt-lR7lb_2hNlfMSz40IUEwWut8P4AZojIkJzUiscqfIudrFPs-I4cAce/exec';
+  document.getElementById('direct').href = APP;
+  var f = document.getElementById('app'), s = document.getElementById('splash');
+  f.addEventListener('load', function () { setTimeout(function () { s.classList.add('gone'); }, 400); });
+  f.src = APP;
+</script>
+</body>
+</html>
