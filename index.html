@@ -2638,9 +2638,15 @@ function fillQuoteText(t){
     /* school quotes copied the standard sentence with $5 put in for $10, which read
        "$5.00 per person per meal ($5.00 for children 12 and under)" */
     .split("$5.00 per person per meal ($5.00 for children 12 and under)").join("$5.00 per person per meal")
+    /* no part payment (a school package, 23 Nov 2026): the sentence about it comes out and the
+       balance follows straight after the deposit */
+    .replace(/(\d+)\.\s*Once the deposit is paid, \{halfpct\}[^.]*(?:\([^)]*\))?\.\s*\d+\.\s*The remaining balance/g, (m, n) => k.halfPct > 0 ? m : n + ". The balance")
+    .replace(/\{halfpct\} of (?:the |your )?total is due \{halflead\} (?:before|prior to) arrival, and the balance /g, m => k.halfPct > 0 ? m : "The balance is due ")
+    .replace(/[^.]*\{halfpct\}[^.]*(?:\([^)]*\))?\.\s*/g, m => k.halfPct > 0 ? m : "")
     .split("{halfpct}").join(k.halfPct + "%")
     .replace(/\{halflead\} before arrival/g, m => shortNotice() ? "as soon as possible (normally {halflead} before arrival)" : m)
     .split("{halflead}").join(leadPhrase(k.halfDays))
+    .replace(/\{balancewhen\} and must/g, m => edconnectOn(k) ? "{balancewhen}, and must" : m)
     .split("{balancewhen}").join(roomsOnlyQuoteFilled() ? eventWords(balanceWhenPhrase(k)) : balanceWhenPhrase(k))
     .split("{depositlead}").join(leadPhrase(k.halfDays))
     .split("{emaillead}").join(leadPhrase(k.halfDays))
@@ -5085,6 +5091,13 @@ function buildSchoolQuote(sc, counts){
   const per = (sc.per && typeof sc.per === "object") ? sc.per : ((Q.school || {}).per || null);
   Q.school = Object.assign({}, Q.school, {level: sc.level, base: Number(sc.base) || schoolBaseRate(sc), meals: schoolMealsOf(sc),
     rates: sc.rates || null, packName: sc.packName || "", teachersOwn: sc.teachersOwn !== false, keepRooms: keep, per: per});
+  /* deposit + final payment only (kdCfg); staff can still type a part payment on Prepare.
+     The 0% is written into the quote's own rules too, as the server (Deposit.gs depRules_,
+     part payment reminders) reads q.kdCfg */
+  Q.school.noPart = true;
+  const kdMine = Q.kdCfg || {};
+  if(kdMine.halfPct === undefined || kdMine.halfPct === null || kdMine.halfPct === "")
+    Q.kdCfg = Object.assign({}, kdMine, {halfPct: 0, kdVer: KD_VERSION});
   /* the rooms, the meals, the price and the wording all follow the numbers */
   const plan = schoolNumbers(Q.school, c);
   const pr = schoolPricing(Q.school, c);
@@ -7230,7 +7243,7 @@ function selCaterSub(){
 const KD_VERSION = 3;
 const KD_DEFAULTS = {depositPer: 100, depositSite: 50, depositRoom: 0, depositRoomOnly: 100, depositDays: 7, halfPct: 50, halfDays: 90, balanceDays: 1,
   formDays: 14, cateringDays: 10, finalDays: 10, bigUnits: 20, cancelPct: 20, cancelBigDays: 28, cancelDays: 10, holdDays: 14, priceDays: 14,
-  depositDays6: 14, depositDays9: 21, depositDaysFar: 28};
+  depositDays6: 14, depositDays9: 21, depositDaysFar: 28, edconnectDays: 14};
 /* the deposit invoice is given longer to pay the further away the arrival is (Joel, 3 Nov 2026):
    arriving within 3 months 7 days, 3 to 6 months 14, 6 to 9 months 21, more than 9 months 28.
    Counted from the day the quote is accepted, as the invoice is. Replaces the single
@@ -7280,6 +7293,11 @@ function kdCfg(){
   /* the further away the arrival, the longer the deposit invoice is given (DEP_TIERS). A number
      typed on this quote always wins; otherwise the arrival's tier sets the due date. */
   const setHere = mine.depositDays !== undefined && mine.depositDays !== null && mine.depositDays !== "";
+  /* a school package has only the deposit ($100 a cabin) and the final payment (Joel, 23 Nov
+     2026): no part payment unless one is typed on this quote. Q.school.noPart is set when the
+     school template builds the quote, so school quotes sent before then keep their 50%. */
+  const halfHere = mine.halfPct !== undefined && mine.halfPct !== null && mine.halfPct !== "";
+  if(!halfHere && Q.school && Q.school.noPart && schoolOn()) out.halfPct = 0;
   out.depositDaysBase = out.depositDays;
   out.depTier = setHere ? -1 : kdDepTier();
   if(out.depTier > 0 && out[DEP_TIERS[out.depTier].key] > 0) out.depositDays = out[DEP_TIERS[out.depTier].key];
@@ -7318,10 +7336,26 @@ function leadPhrase(days){
    a weekend)", "3 days before arrival (...)", "on arrival" */
 const BAL_WEEKEND_WORDS = " (or the Friday before, if that's a weekend)";
 function balanceWhenPhrase(c){
-  const n = Math.max(0, Math.round(Number((c || kdCfg()).balanceDays) || 0));
-  if(n === 0) return "on arrival";
-  if(n === 1) return "the day before arrival" + BAL_WEEKEND_WORDS;
-  return leadPhrase(n) + " before arrival" + BAL_WEEKEND_WORDS;
+  c = c || kdCfg();
+  const n = Math.max(0, Math.round(Number(c.balanceDays) || 0));
+  const p = n === 0 ? "on arrival" : (n === 1 ? "the day before arrival" : leadPhrase(n) + " before arrival") + BAL_WEEKEND_WORDS;
+  return p + edconnectWords(c);
+}
+/* a school pays the balance the day before arrival by card or direct debit, or 2 weeks before
+   arrival through EdConnect (Joel, 23 Nov 2026). Both numbers are on the Prepare tab. */
+function edconnectOn(c){
+  c = c || kdCfg();
+  return schoolOn() && Math.round(Number(c.edconnectDays) || 0) > Math.round(Number(c.balanceDays) || 0);
+}
+function edconnectWords(c){
+  c = c || kdCfg();
+  if(!edconnectOn(c)) return "";
+  return " if paying by card or direct debit, or " + leadPhrase(c.edconnectDays) + " before arrival if paying through EdConnect";
+}
+/* the EdConnect due date: edconnectDays before arrival, a weekend moving back to the Friday */
+function edconnectDueIso(c, arrive){
+  c = c || kdCfg();
+  return balanceDueIso(Object.assign({}, c, {balanceDays: Math.max(1, Math.round(Number(c.edconnectDays) || 0))}), arrive);
 }
 /* the day the balance is due: balanceDays before arrival, and a Saturday or Sunday moves back
    to the Friday before (Joel, 15 Oct 2026). On arrival (0) stays the arrival day. */
@@ -7484,6 +7518,7 @@ function depositBreakdown(){
           perRoom: dr.per, roomsOnly: u.total === 0, roomNames: dr.per > 0 ? dr.list.map(v => v.name) : [], total: depositTotal(c), days: c.depositDays,
           capped: !!(ro && ro.capped),
           halfPct: c.halfPct, halfDays: c.halfDays, balanceDays: c.balanceDays, balanceDue: balanceDueIso(c),
+          edconnectDays: edconnectOn(c) ? c.edconnectDays : 0, edconnectDue: edconnectOn(c) && Q.dateStart ? edconnectDueIso(c) : "",
           formDays: c.formDays, finalDays: c.finalDays, cateringDays: c.cateringDays,
           halfAmount: Math.round(partShareBase() * c.halfPct) / 100};
 }
@@ -9360,6 +9395,7 @@ function kdFieldsHTML(c, cls, list){
     grp("Part payment") +
     row("Share of the total bill", f("halfPct") + '<span class="kdu">%, due</span>' + f("halfDays") + '<span class="kdu">days before arrival</span>', true) +
     row("Balance (the rest of the total)", f("balanceDays") + '<span class="kdu">days before arrival (1 = the day before, 0 = on arrival; a Saturday or Sunday moves to the Friday before)</span>', true) +
+    row("Schools paying through EdConnect", f("edconnectDays") + '<span class="kdu">days before arrival (school quotes only; card or direct debit uses the balance day above)</span>', true) +
     grp("Cancellation without penalty") +
     row("A bigger group is more than", f("bigUnits") + '<span class="kdu">cabins &amp; sites</span>') +
     row("Bigger groups: more than", f("cancelPct") + '<span class="kdu">% until</span>' + f("cancelBigDays") + '<span class="kdu">days out</span>', true) +
@@ -9402,9 +9438,11 @@ function renderPrepKeyDates(){
   }));
   const reset = document.querySelector(".kdcfgReset");
   if(reset) reset.addEventListener("click", () => {
-    Q.kdCfg = null;
+    /* a school package keeps its no-part-payment rule (23 Nov 2026) */
+    const noPart = !!(Q.school && Q.school.noPart && schoolOn());
+    Q.kdCfg = noPart ? {halfPct: 0, kdVer: KD_VERSION} : null;
     refresh();
-    showToast("Back to the house rules set on the Settings tab.");
+    showToast(noPart ? "Back to the house rules, with no part payment as this is a school package." : "Back to the house rules set on the Settings tab.");
   });
   renderKdRows();
 }
@@ -10778,7 +10816,8 @@ function depositInvoiceData(){
   if(Q.dateStart && !covered) payments.push({label: "Balance", amount: balance,
     due: c.balanceDays > 0 ? (kdPassed(balDue) ? "As soon as possible" : short(balDue)) : (roomsOnly ? "On the day, " : "On arrival, ") + short(Q.dateStart),
     note: roomsOnly ? (c.balanceDays > 0 ? "Due " + eventWords(balanceWhenOn(c)) : "Paid on the day")
-      : (c.balanceDays > 0 ? "Due " + balanceWhenOn(c) + "; p" : "P") + "aid before keys are handed over"});
+      : (c.balanceDays > 0 ? "Due " + balanceWhenOn(c) + (edconnectOn(c) ? " by card or direct debit" : "") + "; p" : "P") + "aid before keys are handed over" +
+        (edconnectOn(c) ? ". Paying through EdConnect: due " + short(edconnectDueIso(c)) + " (" + leadPhrase(c.edconnectDays) + " before arrival)" : "")});
   const schedule = [];
   /* both final-details deadlines (Joel, 15 Oct 2026), earliest first; one already gone reads
      "as soon as possible (normally ...)". The numbers as Deposit.gs 1.13 gives them: one line
@@ -12815,10 +12854,17 @@ function keyDatesAutoRows(showPrices){
        rooms-only booking. */
     const bw = split.total === 0 ? eventWords(balanceWhenOn(c)) : balanceWhenOn(c);
     const covered = total > 0 && partShareBase() > 0 && total >= partShareBase() - 0.004;
+    const edOn = split.total > 0 && edconnectOn(c);
+    if(!covered && edOn){
+      const edIso = edconnectDueIso(c);
+      at(edIso, kdPassed(edIso)
+        ? 'paying through EdConnect: the remaining balance is due as soon as possible (normally ' + leadPhrase(c.edconnectDays) + ' before arrival)'
+        : 'paying through EdConnect: the remaining balance is due (' + leadPhrase(c.edconnectDays) + ' before arrival)');
+    }
     if(c.balanceDays > 0){
       if(!covered) at(kd.balance, kdPassed(kd.balance)
-        ? 'the remaining balance is due as soon as possible (normally ' + bw + ')'
-        : 'the remaining balance is due (' + bw + ')');
+        ? 'the remaining balance is due as soon as possible' + (edOn ? ' by card or direct debit' : '') + ' (normally ' + bw + ')'
+        : 'the remaining balance is due' + (edOn ? ' by card or direct debit' : '') + ' (' + bw + ')');
       dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), split.total === 0 ? 'your event' : 'arrival. Keys are handed over once the balance is paid']});
     } else dated.push({iso: kd.arrive, row: [fmtDate(kd.arrive), split.total === 0
       ? (covered ? 'your event' : 'your event. The remaining balance is paid on the day')
