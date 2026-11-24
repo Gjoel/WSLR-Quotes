@@ -1028,7 +1028,9 @@
   .vday.full span{color:#d7e8f5}
   .vday.am, .vday.pm{background:#e3f0fa; border-color:#5b9bd0}
   .vday.am span, .vday.pm span{color:#174a87; font-weight:700}
-  .vday.taken{background:repeating-linear-gradient(45deg,#f6f1f1,#f6f1f1 5px,#efe6e6 5px,#efe6e6 10px); border-style:dashed; color:#9a6060; cursor:not-allowed}
+  /* a day RMS shows booked: a red bubble (Joel, 24 Nov 2026) */
+  .vday.taken{background:#fde4e4; border-color:#c95b5b; color:#9b2c2c; cursor:not-allowed}
+  .vday.taken span{color:#b23a3a; font-weight:700}
   .vday.taken.full, .vday.taken.am, .vday.taken.pm{background:#c95b5b; border-color:#c95b5b; color:#fff; cursor:pointer}
   .vday.tight{border-color:#e0a24a}
   .vday:disabled{opacity:.9}
@@ -6503,12 +6505,13 @@ function venueInclDaysHTML(v, p){
     days.map(iso => {
       const st = m[iso] || "";
       /* the check-out morning reads the same as on the combined space (15 Oct 2026) */
-      const word = iso === dep && st === "am" ? "Morning, " + DEPART_WORD : VDAY_WORD[st];
-      const a = venueDayAvail(p, iso);
-      const taken = a !== null && Number(a) <= 0;
+      /* booked in RMS on the combined space (any of its rooms taken), the same days as its red
+         "already booked" line: a red bubble whether or not the day is picked (Joel, 24 Nov 2026) */
+      const taken = venueTakenOn(p, iso);
+      const word = taken && !st ? "Booked" : (iso === dep && st === "am" ? "Morning, " + DEPART_WORD : VDAY_WORD[st]);
       /* read-only copies: out of the tab order (the pill is the one control on the row) */
-      return '<button type="button" tabindex="-1" aria-disabled="true" class="vday vdro' + (st ? ' ' + st : '') + (taken && st ? ' taken' : '') + (iso === dep ? ' vdep' : '') + '" data-incl="' + esc(v.key) + '" title="' +
-        esc(shortDate(iso) + ': ' + word + ', as ' + p.name) + '"><b>' + esc(dayLabel(iso)) + '</b><span>' + esc(word) + '</span></button>';
+      return '<button type="button" tabindex="-1" aria-disabled="true" class="vday vdro' + (st ? ' ' + st : '') + (taken ? ' taken' : '') + (iso === dep ? ' vdep' : '') + '" data-incl="' + esc(v.key) + '" title="' +
+        esc(shortDate(iso) + ': ' + (taken ? p.name + ' already booked in RMS' + (st ? ', but picked' : '') : word + ', as ' + p.name)) + '"><b>' + esc(dayLabel(iso)) + '</b><span>' + esc(word) + '</span></button>';
     }).join('') + '</div>';
 }
 /* the locked green pill in place of the +/− buttons: "✓ 1.5d" */
