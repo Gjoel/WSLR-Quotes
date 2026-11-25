@@ -1813,7 +1813,7 @@
       <h2>Email message</h2>
       <textarea id="s-body" rows="8"></textarea>
       <p class="hint" style="margin-top:8px">Prefilled into the email; you can still edit every email before sending. {link} becomes the client's quote link, and {number}, {event}, {org}, {contact} and {prepBy} fill themselves in.<br>
-        Whole sentences that write themselves from the quote, and disappear when they don't apply: <b>{stayline}</b> the dates, nights and guests · <b>{roomsline}</b> how many rooms you prefilled and how to change them · <b>{cateringline}</b> the meals included · <b>{venueline}</b> the rooms booked · <b>{churchline}</b> the 20% / 50% concessional rates, only for a group ticked as a church or ACNC charity.<br>
+        Whole sentences that write themselves from the quote, and disappear when they don't apply: <b>{stayline}</b> the dates, nights and guests · <b>{roomsline}</b> how many rooms you prefilled and how to change them · <b>{cateringline}</b> the meals included · <b>{venueline}</b> the rooms booked · <b>{churchline}</b> the 20% / 50% concessional rates, only for a group ticked as a church or ACNC charity · <b>{acceptline}</b> booked as soon as they accept, and the Final Confirmation form straight after.<br>
         Bare values, if you would rather write the sentence yourself: {dates}, {nights}, {guests}, {rooms}, {total}.</p>
     </div>
 
@@ -3703,6 +3703,8 @@ const OLD_EMAIL_BODIES = [
   "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is attached as a PDF. You can also view and accept it online here:\n\n{link}\n\nIf anything needs adjusting, just reply to this email and we will update it for you.",
   "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready to view and accept online here:\n\n{link}\n\nYou can accept the quote from that page, and download a PDF copy for your records. If anything needs adjusting, just reply to this email and we will update it for you.\n\nKind regards\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999",
   /* until 28 Sept 2026: the link twice, each detail on a line of its own */
+  /* until 25 Nov 2026: no {acceptline} (booked the moment they accept, form straight after) */
+  "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready. You can view it, change anything you need and accept it online here:\n{link}\n\n{stayline} {roomsline} {cateringline} {venueline}\n\n{churchline}\n\nAnything you change on that page comes straight back to us when you accept it, and you can download a PDF copy for your records. If something needs adjusting, or you would rather talk it through, just reply to this email or call us on 02 4283 6999.\n\nWe look forward to working with you.\n\nKind regards,\n{prepBy}\nFunctions Team, Wollongong Surf Leisure Resort\n02 4283 6999 · functions@wslr.com.au",
   "Hi {contact},\n\nThank you for your enquiry. I have put a quote together for {event} that you can price up yourself here:\n\n{link}\n\n{stayline}\n{roomsline}\n{cateringline}\n{venueline}\n{churchline}\n\nAnything you change on that page comes straight back to us when you submit it, and there is a PDF copy to download for your records. If something needs adjusting, or you would rather talk it through, just reply to this email or call us on 02 4283 6999.\n\nWe look forward to working with you.\n\n{prepBy}\nWollongong Surf Leisure Resort\n02 4283 6999\n\nQuote {number} - Wollongong Surf Leisure Resort\n{link}"
 ];
 const OLD_TERMS = [
@@ -3754,7 +3756,7 @@ function getDefaults(){
     schoolPacks: [],    // school packages staff have added themselves
     accomRates: [],
     subject: "Wollongong Surf Leisure Resort Functions Quote {number} - {event}",
-    body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready. You can view it, change anything you need and accept it online here:\n{link}\n\n{stayline} {roomsline} {cateringline} {venueline}\n\n{churchline}\n\nAnything you change on that page comes straight back to us when you accept it, and you can download a PDF copy for your records. If something needs adjusting, or you would rather talk it through, just reply to this email or call us on 02 4283 6999.\n\nWe look forward to working with you.\n\nKind regards,\n{prepBy}\nFunctions Team, Wollongong Surf Leisure Resort\n02 4283 6999 · functions@wslr.com.au"
+    body: "Hi {contact},\n\nThank you for your enquiry. Your quote {number} for {event} is ready. You can view it, change anything you need and accept it online here:\n{link}\n\n{stayline} {roomsline} {cateringline} {venueline}\n\n{churchline}\n\n{acceptline}\n\nAnything you change on that page comes straight back to us when you accept it, and you can download a PDF copy for your records. If something needs adjusting, or you would rather talk it through, just reply to this email or call us on 02 4283 6999.\n\nWe look forward to working with you.\n\nKind regards,\n{prepBy}\nFunctions Team, Wollongong Surf Leisure Resort\n02 4283 6999 · functions@wslr.com.au"
   }, dropStaleDefaults(lsGet(LS_DEFAULTS, {})));
 }
 function saveDefaults(part){
@@ -15382,6 +15384,12 @@ function emailBits(){
       ? ("Catering is in there as " + meals + ", and your group picks the actual dishes with our catering team closer to the date.")
       : "",
     venueline: venues ? ("It also includes " + venues + ".") : "",
+    /* Joel 25 Nov 2026: say it is booked the moment they accept, and that the Final Confirmation
+       form is there straight after (when this quote makes it automatically) */
+    acceptline: "As soon as you accept it online, your booking is made and we email you the deposit invoice. " +
+      (autoFormOn()
+        ? "Your Final Confirmation form, where you add names, meal preferences and room set-ups, is ready for you directly after you finish."
+        : "We will then send you your Final Confirmation form, where you add names, meal preferences and room set-ups."),
     churchline: Q.acnc
       ? "As a church or registered charity you can pick your concessional rate inside the quote as well: 20% off accommodation and room hire, or 50% if you have three or more group catered main meals with everyone staying onsite catered for."
       : ""
@@ -15408,6 +15416,7 @@ function fillTemplate(s){
     .split("{cateringline}").join(b.cateringline)
     .split("{venueline}").join(b.venueline)
     .split("{churchline}").join(b.churchline)
+    .split("{acceptline}").join(b.acceptline)
     /* tidy up after the sentences that came out empty: no double spaces, no blank-ish lines */
     .split("\n").map(l => l.replace(/[ \t]{2,}/g, " ").trim()).join("\n")
     .replace(/\n{3,}/g, "\n\n")
