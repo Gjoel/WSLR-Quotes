@@ -6027,17 +6027,9 @@ function untickBookedOut(){
   return off;
 }
 /* the red banner staff see when the quote is over what RMS shows free */
-/* Joel 25 Nov 2026: the minimum-stay banner only matters when the organiser could move the
-   dates themselves. A school package, a locked quote, a quote on an existing RMS booking or
-   a booked quote keeps its dates on the organiser's page, so the warning is not shown. */
-function orgCantMoveDates(){
-  return quoteLocked() || schoolOn() ||
-    !!(Q.rmsLink && Q.rmsLink.groupId && groupUnits().length) ||
-    !!((Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted) && payRefNumber());
-}
 function overWarnHTML(){
   if(asOrg()) return "";
-  const sh = orgCantMoveDates() ? [] : shortStays();
+  const sh = shortStays();
   const shHtml = sh.length
     ? '<div class="overwarn staffedit-ui">⚠ Shorter than RMS\'s minimum stay: ' + esc(sh.map(shortWords).join("; ")) + '.' +
       '<span>You can still send it, and the organiser can accept it as sent, but if they change their dates they will need to meet the minimum.</span></div>'
@@ -16526,12 +16518,33 @@ document.getElementById("rms-rate").addEventListener("change", e => {
 });
 
 /* ---- the Prepare tab: tonight's rates and unit counts for this quote ---- */
+/* Joel 25 Nov 2026 (Q-1155, a Tuesday school night, was flagged "needs 2 nights"): RMS's
+   minStayOnArrival in a week-long grid answer is the rule for the week's first day, copied onto
+   every night (asked from a Friday, every night said 2; asked from a Tuesday, none did). So an
+   arrival rule only counts on the days a week starts, which rmsWindow lines up with the arrival.
+   The per-night rule (s) is kept as it comes. */
+function rmsArrivalRulesOnly(ms, from){
+  const out = {};
+  Object.keys(ms || {}).forEach(id => {
+    Object.keys(ms[id] || {}).forEach(iso => {
+      const c = ms[id][iso] || {}, s = Number(c.s) || 0;
+      const a = (((isoDiffDays(from, iso) % 7) + 7) % 7 === 0) ? (Number(c.a) || 0) : 0;
+      if(s < 2 && a < 2) return;
+      (out[id] = out[id] || {})[iso] = {s: s, a: a};
+    });
+  });
+  return out;
+}
 function rmsWindow(){
   if(!Q.dateStart) return null;
   const end = (Q.dateEnd && Q.dateEnd > Q.dateStart) ? Q.dateEnd : isoAddDays(Q.dateStart, 1);
   const t = isoDate(today);
-  let from = isoAddDays(Q.dateStart, -60), to = isoAddDays(end, 60);   // room for the cheapest-dates search
-  if(from < t) from = t;
+  /* 56, not 60 (Joel 25 Nov 2026): the quote server asks RMS a week at a time from "from", and RMS
+     gives every night of that week the arrival rule of the week's FIRST day. Starting a whole
+     number of weeks before arrival makes each week start on the arrival weekday, so the minimum
+     stay read for the arrival day is the real one (see rmsArrivalRulesOnly). */
+  let from = isoAddDays(Q.dateStart, -56), to = isoAddDays(end, 60);   // room for the cheapest-dates search
+  if(from < t) from = Q.dateStart >= t ? isoAddDays(Q.dateStart, -7 * Math.floor(isoDiffDays(t, Q.dateStart) / 7)) : t;
   if(to < end) to = end;
   const span = Math.round((new Date(to) - new Date(from)) / 86400000);
   if(span > 170) to = isoAddDays(from, 170);
@@ -16610,7 +16623,7 @@ function pullRmsRates(manual, after){
     Q.rates = g.rates || {};
     Q.rateFixed = {};
     Q.availCal = g.avail || {};
-    if(g.minStay) Q.minStay = g.minStay;   /* older quote servers don't send it: keep what we had */
+    if(g.minStay) Q.minStay = rmsArrivalRulesOnly(g.minStay, w.from);   /* older quote servers don't send it: keep what we had */
     Q.ratesInfo = {from: g.from, to: g.to, items: items, file: "RMS live · " + (g.rate ? g.rate.name : ""), live: true, asAt: g.asAt};
     Q.availInfo = {from: g.from, to: g.to, items: Object.keys(g.avail || {}).length, file: "RMS live", live: true, asAt: g.asAt};
     const nFixed = applyFixedRates();
