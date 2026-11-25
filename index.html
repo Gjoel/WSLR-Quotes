@@ -6027,9 +6027,17 @@ function untickBookedOut(){
   return off;
 }
 /* the red banner staff see when the quote is over what RMS shows free */
+/* Joel 25 Nov 2026: the minimum-stay banner only matters when the organiser could move the
+   dates themselves. A school package, a locked quote, a quote on an existing RMS booking or
+   a booked quote keeps its dates on the organiser's page, so the warning is not shown. */
+function orgCantMoveDates(){
+  return quoteLocked() || schoolOn() ||
+    !!(Q.rmsLink && Q.rmsLink.groupId && groupUnits().length) ||
+    !!((Q.status === "Submitted" || Q.status === "Accepted" || Q.accepted) && payRefNumber());
+}
 function overWarnHTML(){
   if(asOrg()) return "";
-  const sh = shortStays();
+  const sh = orgCantMoveDates() ? [] : shortStays();
   const shHtml = sh.length
     ? '<div class="overwarn staffedit-ui">⚠ Shorter than RMS\'s minimum stay: ' + esc(sh.map(shortWords).join("; ")) + '.' +
       '<span>You can still send it, and the organiser can accept it as sent, but if they change their dates they will need to meet the minimum.</span></div>'
@@ -15386,7 +15394,7 @@ function emailBits(){
     venueline: venues ? ("It also includes " + venues + ".") : "",
     /* Joel 25 Nov 2026: say it is booked the moment they accept, and that the Final Confirmation
        form is there straight after (when this quote makes it automatically) */
-    acceptline: "As soon as you accept it online, your booking is made and we email you the deposit invoice. " +
+    acceptline: "As soon as you accept it online, your booking is made and you'll see the deposit invoice. " +
       (autoFormOn()
         ? "Your Final Confirmation form, where you add names, meal preferences and room set-ups, is ready for you directly after you finish."
         : "We will then send you your Final Confirmation form, where you add names, meal preferences and room set-ups."),
