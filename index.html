@@ -3891,7 +3891,7 @@ function blankQuote(num){
     availInfo: null,
     menu: {},           // menu option overrides: {optionKey: false} (default on)
     caterSched: caterFutureHouse(), // the new catering prices and the date they start, as they were when this quote was made
-    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, vcNoConfRooms: true, venueCredit: d.venueCredit !== false, caterFuture: true, blockNoChurch: true, diningMealsOnly: true, marqueeCharged: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
+    features: {perPerson: true, depositDates: true, kids: true, cheapest: d.cheapest !== false, cabinMap: d.cabinMap === true, freeRooms: false, vcNoConfRooms: false, venueCredit: d.venueCredit !== false, caterFuture: true, blockNoChurch: true, diningMealsOnly: true, marqueeCharged: true, roomOnlyDeposit: true, vcCabin: (typeof plGet === "function" && plGet("credit_cabin") !== null) ? plGet("credit_cabin") : ((d.vcCabin === null || d.vcCabin === undefined) ? 25 : d.vcCabin), autoForm: d.autoForm !== false}, // toggleable organiser-page extras (the cabin map is off unless switched on, Sept 2026; autoForm = their confirmation form is made the moment they accept, 6 Oct 2026)
     minStay: {},        // RMS minimum stays for the quoted rate: {itemId: {"2026-10-03": {s: 2, a: 0}}}, only nights with a rule
     staffShort: null,   // stays staff sent below the minimum on purpose: ["itemId|from|to", ...]
     staffOver: null,    // what staff put on beyond what RMS showed free, when they last saved: {itemId: {iso: n}, "venue:key": {iso: 1}}
@@ -15747,7 +15747,7 @@ function copyFromQuote(num){
     if(!Q.features) Q.features = {}; if(k in fresh.features) Q.features[k] = fresh.features[k]; else delete Q.features[k];
   });
   Q.caterSched = fresh.caterSched;
-  if(Q.features) Q.features.vcNoConfRooms = true;   // 6 Nov 2026: a copy is a new quote
+  if(Q.features) Q.features.vcNoConfRooms = false;   // a copy is a new quote; venue credit comes off every conference room again (Joel, 26 Nov 2026)
   const droppedRooms = [];
   Q.lines = (Q.lines || []).filter(l => {
     if(l.room){ droppedRooms.push((Number(l.qty) || 0) + " × " + (l.desc || "room")); return false; }   // rooms from an old RMS statement: old prices
